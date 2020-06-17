@@ -970,6 +970,43 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->glowMapNameText.setText( (%material).glowMap[%layer] );
       MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( (%material).glowMap[%layer] );
    }
+   // material damage
+      
+   if((%material).albedoDamageMap[%layer] $= "") 
+   {
+      MaterialEditorPropertiesWindow-->albedoDamageMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->albedoDamageMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->albedoDamageMapNameText.setText( (%material).albedoDamageMap[%layer] );
+      MaterialEditorPropertiesWindow-->albedoDamageMapDisplayBitmap.setBitmap( (%material).albedoDamageMap[%layer] );
+   }
+   
+   if((%material).normalDamageMap[%layer] $= "") 
+   {
+      MaterialEditorPropertiesWindow-->normalDamageMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->normalDamageMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->normalDamageMapNameText.setText( (%material).normalDamageMap[%layer] );
+      MaterialEditorPropertiesWindow-->normalDamageMapDisplayBitmap.setBitmap( (%material).normalDamageMap[%layer] );
+   }
+   
+   if((%material).compositeDamageMap[%layer] $= "") 
+   {
+      MaterialEditorPropertiesWindow-->compositeDamageMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->compositeDamageMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->compositeDamageMapNameText.setText( (%material).normalDamageMap[%layer] );
+      MaterialEditorPropertiesWindow-->compositeDamageMapDisplayBitmap.setBitmap( (%material).compositeDamageMap[%layer] );
+   }
+   
+   MaterialEditorPropertiesWindow-->minDamageTextEdit.setText((%material).minDamage[%layer]);
+   MaterialEditorPropertiesWindow-->minDamageSlider.setValue((%material).minDamage[%layer]);
    
    MaterialEditorPropertiesWindow-->accuScaleTextEdit.setText((%material).accuScale[%layer]);
    MaterialEditorPropertiesWindow-->accuScaleTextEdit.setText((%material).accuScale[%layer]);
