@@ -329,6 +329,63 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
          detailBumpScale->constSortPos = cspPass;
          meta->addStatement( new GenOp( "   @.xy += @.xy * @;\r\n", bumpNorm, detailBump, detailBumpScale ) );
       }
+      if (fd.features.hasFeature(MFT_NormalDamage))
+      {
+         bumpMap = new Var;
+         bumpMap->setName("normalDamageMap");
+         bumpMap->setType("SamplerState");
+         bumpMap->uniform = true;
+         bumpMap->sampler = true;
+         bumpMap->constNum = Var::getTexUnitNum();
+         bumpMap->setType("SamplerState");
+
+         Var* damageBumpTex = new Var;
+         damageBumpTex->setName("detailBumpTex");
+         damageBumpTex->setType("Texture2D");
+         damageBumpTex->uniform = true;
+         damageBumpTex->texture = true;
+         damageBumpTex->constNum = bumpMap->constNum;
+
+         texCoord = getInTexCoord("texCoord", "float2", componentList);
+         texOp = new GenOp("@.Sample(@, @)", damageBumpTex, bumpMap, texCoord);
+
+         Var *damageBump = new Var;
+         damageBump->setName("damageBump");
+         damageBump->setType("float4");
+         meta->addStatement(expandNormalMap(texOp, new DecOp(damageBump), damageBump, fd));
+
+		 if (fd.features.hasFeature(MFT_AlbedoDamage))
+		 {
+			 Var *albedoDamageTex = (Var*)LangElement::find("albedoDamageTex");
+			 Var *albedoDamage = (Var*)LangElement::find("albedoDamageMap");
+
+			 meta->addStatement(new GenOp("   @.a = @.Sample(@, @).a;\r\n",
+				 damageBump, albedoDamageTex, albedoDamage, texCoord));
+		 }
+
+         Var *damage = (Var*)LangElement::find("materialDamage");
+         if (!damage){
+            damage = new Var("materialDamage", "float");
+            damage->uniform = true;
+            damage->constSortPos = cspPrimitive;
+         }
+         Var *floor = (Var*)LangElement::find("materialDamageMin");
+         if (!floor){
+            floor = new Var("materialDamageMin", "float");
+            floor->uniform = true;
+            floor->constSortPos = cspPrimitive;
+         }
+
+         Var *damageResult = (Var*)LangElement::find("damageResult");
+         if (!damageResult){
+            damageResult = new Var("damageResult", "float");
+            meta->addStatement(new GenOp("   @ = max(@,@);\r\n", new DecOp(damageResult), floor, damage));
+         }
+         else
+            meta->addStatement(new GenOp("   @ = max(@,@);\r\n", damageResult, floor, damage));
+
+         meta->addStatement(new GenOp("   @.xyz = lerp(@.xyz, @.xyz, @.a*@);\r\n", bumpNorm, bumpNorm, damageBump, damageBump, damageResult));
+      }
 
       // This var is read from GBufferConditionerHLSL and 
       // used in the deferred output.
@@ -495,6 +552,12 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
          passData.mTexType[ texIndex ] = Material::DetailBump;
          passData.mSamplerNames[texIndex] = "detailBumpMap";
          passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_DetailNormalMap );
+      }      
+      if (  fd.features.hasFeature( MFT_NormalDamage ) )
+      {
+         passData.mTexType[texIndex] = Material::Bump;
+         passData.mSamplerNames[texIndex] = "normalDamageMap";
+         passData.mTexSlot[texIndex++].texObject = stageDat.getTex(MFT_NormalDamage);
       }
    }
    else if (  !fd.features[MFT_Parallax] && !fd.features[MFT_PBRConfigMap] &&
@@ -510,6 +573,14 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
          passData.mTexType[ texIndex ] = Material::DetailBump;
          passData.mSamplerNames[ texIndex ] = "detailBumpMap";
          passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_DetailNormalMap );
+      }
+
+      if (fd.features[MFT_DeferredConditioner] &&
+         fd.features.hasFeature(MFT_NormalDamage))
+      {
+         passData.mTexType[texIndex] = Material::Bump;
+         passData.mSamplerNames[texIndex] = "normalDamageMap";
+         passData.mTexSlot[texIndex++].texObject = stageDat.getTex(MFT_NormalDamage);
       }
    }
 }

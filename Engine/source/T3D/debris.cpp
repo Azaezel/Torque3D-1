@@ -1016,6 +1016,7 @@ void Debris::prepBatchRender( SceneRenderState *state )
    LightQuery query;
    query.init( getWorldSphere() );
    rdata.setLightQuery( &query );
+   rdata.mMaterialDamage = 1.0f;
 
    if( mShape )
    {

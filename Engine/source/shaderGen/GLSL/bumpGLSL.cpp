@@ -173,6 +173,54 @@ void BumpFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
       meta->addStatement( new GenOp( "   @.xy += @.xy * @;\r\n", bumpNorm, detailBump, detailBumpScale ) );
    }
 	
+   if (fd.features.hasFeature(MFT_NormalDamage))
+   {
+      bumpMap = new Var;
+      bumpMap->setType("sampler2D");
+      bumpMap->setName("normalDamageMap");
+      bumpMap->uniform = true;
+      bumpMap->sampler = true;
+      bumpMap->constNum = Var::getTexUnitNum();
+
+      texCoord = getInTexCoord("texCoord", "vec2", componentList);
+      texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
+
+      Var *damageBump = new Var;
+      damageBump->setName("damageBump");
+      damageBump->setType("vec4");
+      meta->addStatement(expandNormalMap(texOp, new DecOp(damageBump), damageBump, fd));
+
+	  if (fd.features.hasFeature(MFT_AlbedoDamage))
+	  {
+		  Var *albedoDamage = (Var*)LangElement::find("albedoDamageMap");
+
+		  meta->addStatement(new GenOp("   @.a = texture(@, @).a;\r\n",
+			  damageBump, albedoDamage, texCoord));
+	  }
+
+      Var *damage = (Var*)LangElement::find("materialDamage");
+      if (!damage){
+         damage = new Var("materialDamage", "float");
+         damage->uniform = true;
+         damage->constSortPos = cspPrimitive;
+      }
+      Var *floor = (Var*)LangElement::find("materialDamageMin");
+      if (!floor){
+         floor = new Var("materialDamageMin", "float");
+         floor->uniform = true;
+         floor->constSortPos = cspPrimitive;
+      }
+
+      Var *damageResult = (Var*)LangElement::find("damageResult");
+      if (!damageResult){
+         damageResult = new Var("damageResult", "float");
+         meta->addStatement(new GenOp("   @ = max(@,@);\r\n", new DecOp(damageResult), floor, damage));
+      }
+      else
+         meta->addStatement(new GenOp("   @ = max(@,@);\r\n", damageResult, floor, damage));
+      meta->addStatement(new GenOp("   @.xyz = mix(@.xyz, @.xyz, @.a*@);\r\n", bumpNorm, bumpNorm, damageBump, damageBump, damageResult));
+   }
+	
    // We transform it into world space by reversing the 
    // multiplication by the worldToTanget transform.
    Var *wsNormal = new Var( "wsNormal", "vec3" );
@@ -207,6 +255,14 @@ ShaderFeature::Resources BumpFeatGLSL::getResources( const MaterialFeatureData &
          res.numTexReg++;
    }
 		
+   // Do we have damage normal mapping?
+   if (fd.features[MFT_NormalDamage])
+   {
+      res.numTex++;
+      if (!fd.features[MFT_NormalDamage])
+         res.numTexReg++;
+   }
+		
    return res;
 }
 
@@ -232,6 +288,13 @@ void BumpFeatGLSL::setTexData(   Material::StageData &stageDat,
       passData.mTexType[ texIndex ] = Material::DetailBump;
       passData.mSamplerNames[ texIndex ] = "detailBumpMap";
       passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_DetailNormalMap );
+   }
+
+   if (fd.features[MFT_NormalDamage])
+   {
+      passData.mTexType[texIndex] = Material::Bump;
+      passData.mSamplerNames[texIndex] = "normalDamageMap";
+      passData.mTexSlot[texIndex++].texObject = stageDat.getTex(MFT_NormalDamage);
    }
 }
 

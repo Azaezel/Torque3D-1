@@ -35,6 +35,7 @@
 // Deferred Shading
 #include "lighting/advanced/hlsl/deferredShadingFeaturesHLSL.h"
 #include "shaderGen/HLSL/accuFeatureHLSL.h"
+#include "shaderGen/HLSL/materialDamageHLSL.h"
 
 static ShaderGen::ShaderGenInitDelegate sInitDelegate;
 
@@ -76,6 +77,12 @@ void _initShaderGenHLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_RenderTarget2_Zero, new RenderTargetZeroHLSL( ShaderFeature::RenderTarget2 ) );
    FEATUREMGR->registerFeature( MFT_RenderTarget3_Zero, new RenderTargetZeroHLSL( ShaderFeature::RenderTarget3 ) );
    FEATUREMGR->registerFeature( MFT_Imposter, new NamedFeatureHLSL( "Imposter" ) );
+   
+   //damage blend 
+   FEATUREMGR->registerFeature(MFT_AlbedoDamage, new AlbedoDamageFeatHLSL);
+   FEATUREMGR->registerFeature(MFT_NormalDamage, new NamedFeatureHLSL("Damage Normal Map"));
+   FEATUREMGR->registerFeature(MFT_CompositeDamage, new CompositeDamageFeatHLSL);
+   FEATUREMGR->registerFeature(MFT_Damage, new NamedFeatureHLSL("materialDamage"));
 
    FEATUREMGR->registerFeature( MFT_DiffuseMapAtlas, new NamedFeatureHLSL( "Diffuse Map Atlas" ) );
    FEATUREMGR->registerFeature( MFT_NormalMapAtlas, new NamedFeatureHLSL( "Normal Map Atlas" ) );

@@ -37,18 +37,22 @@ ImplementFeatureType( MFT_AccuStrength, MFG_PreTexture, 4.0f, true );
 ImplementFeatureType( MFT_AccuCoverage, MFG_PreTexture, 4.0f, true );
 ImplementFeatureType( MFT_AccuSpecular, MFG_PreTexture, 4.0f, true );
 
+ImplementFeatureType( MFT_Damage, MFG_Texture, 1.0f, true);
 ImplementFeatureType( MFT_DiffuseMap, MFG_Texture, 2.0f, true );
 ImplementFeatureType( MFT_OverlayMap, MFG_Texture, 3.0f, true );
 ImplementFeatureType( MFT_DetailMap, MFG_Texture, 4.0f, true );
 ImplementFeatureType( MFT_DiffuseColor, MFG_Texture, 5.0f, true );
 ImplementFeatureType( MFT_DiffuseVertColor, MFG_Texture, 6.0f, true );
+ImplementFeatureType( MFT_AlbedoDamage, MFG_Texture, 6.5f, true);
 ImplementFeatureType( MFT_AlphaTest, MFG_Texture, 7.0f, true );
 ImplementFeatureType( MFT_InvertSmoothness, U32(-1), -1, true);
 ImplementFeatureType( MFT_PBRConfigMap, MFG_Texture, 8.0f, true);
 ImplementFeatureType( MFT_PBRConfigVars, MFG_Texture, 8.0f, true);
 ImplementFeatureType( MFT_MatInfoFlags, MFG_Texture, 9.0f, true);
-ImplementFeatureType( MFT_NormalMap, MFG_Texture, 11.0f, true );
-ImplementFeatureType( MFT_DetailNormalMap, MFG_Texture, 12.0f, true );
+ImplementFeatureType(MFT_CompositeDamage, MFG_Texture, 9.0f, true);
+ImplementFeatureType(MFT_NormalMap, MFG_Texture, 10.0f, true);
+ImplementFeatureType(MFT_NormalDamage, MFG_Texture, 11.0f, true);
+ImplementFeatureType(MFT_DetailNormalMap, MFG_Texture, 12.0f, true);
 ImplementFeatureType( MFT_Imposter, U32(-1), -1, true );
 
 ImplementFeatureType( MFT_AccuMap, MFG_PreLighting, 2.0f, true );

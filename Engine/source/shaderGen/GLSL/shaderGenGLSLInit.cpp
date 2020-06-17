@@ -32,6 +32,7 @@
 #include "materials/materialFeatureTypes.h"
 #include "core/module.h"
 #include "shaderGen/GLSL/accuFeatureGLSL.h"
+#include "shaderGen/GLSL/materialDamageGLSL.h"
 
 // Deferred Shading
 #include "lighting/advanced/glsl/deferredShadingFeaturesGLSL.h"
@@ -87,6 +88,12 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_IsSinglePassParaboloid, new NamedFeatureGLSL( "Single Pass Paraboloid" ) );
    FEATUREMGR->registerFeature( MFT_UseInstancing, new NamedFeatureGLSL( "Hardware Instancing" ) );
 	
+   //damage blend 
+   FEATUREMGR->registerFeature(MFT_AlbedoDamage, new AlbedoDamageFeatGLSL);
+   FEATUREMGR->registerFeature(MFT_NormalDamage, new NamedFeatureGLSL("Damage Normal Map"));
+   FEATUREMGR->registerFeature(MFT_CompositeDamage, new CompositeDamageFeatGLSL);
+   FEATUREMGR->registerFeature(MFT_Damage, new NamedFeatureGLSL("materialDamage"));
+
    FEATUREMGR->registerFeature( MFT_DiffuseMapAtlas, new NamedFeatureGLSL( "Diffuse Map Atlas" ) );
    FEATUREMGR->registerFeature( MFT_NormalMapAtlas, new NamedFeatureGLSL( "Normal Map Atlas" ) );
 

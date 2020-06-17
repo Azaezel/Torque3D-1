@@ -514,6 +514,27 @@ void ProcessedMaterial::_setStageData()
          if (!mStages[i].getTex(MFT_GlowMap))
             mMaterial->logError("Failed to load glow map %s for stage %i", _getTexturePath(mMaterial->mGlowMapFilename[i]).c_str(), i);
       }
+      // DamageMap -Albedo
+      if (mMaterial->mAlbedoDamageMapFilename[i].isNotEmpty())
+      {
+         mStages[i].setTex(MFT_AlbedoDamage, _createTexture(mMaterial->mAlbedoDamageMapFilename[i], &GFXStaticTextureSRGBProfile));
+         if (!mStages[i].getTex(MFT_AlbedoDamage))
+            mMaterial->logError("Failed to load albedo damage map %s for stage %i", _getTexturePath(mMaterial->mAlbedoDamageMapFilename[i]).c_str(), i);
+      }
+      // DamageMap -Normal
+      if (mMaterial->mNormalDamageMapFilename[i].isNotEmpty())
+      {
+         mStages[i].setTex(MFT_NormalDamage, _createTexture(mMaterial->mNormalDamageMapFilename[i], &GFXNormalMapProfile));
+         if (!mStages[i].getTex(MFT_NormalDamage))
+            mMaterial->logError("Failed to load normal damage map %s for stage %i", _getTexturePath(mMaterial->mNormalDamageMapFilename[i]).c_str(), i);
+      }
+      // DamageMap -Composite
+      if (mMaterial->mCompositeDamageMapFilename[i].isNotEmpty())
+      {
+         mStages[i].setTex(MFT_CompositeDamage, _createTexture(mMaterial->mCompositeDamageMapFilename[i], profile));
+         if (!mStages[i].getTex(MFT_CompositeDamage))
+            mMaterial->logError("Failed to load composite damage map %s for stage %i", _getTexturePath(mMaterial->mCompositeDamageMapFilename[i]).c_str(), i);
+      }
    }
 
    mMaterial->mCubemapData = dynamic_cast<CubemapData*>(Sim::findObject(mMaterial->mCubemapName));

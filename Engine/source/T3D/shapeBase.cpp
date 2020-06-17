@@ -2726,6 +2726,7 @@ void ShapeBase::prepBatchRender(SceneRenderState* state, S32 mountedImageIndex )
    rdata.setSceneState( state );
    if ( mCubeReflector.isEnabled() )
       rdata.setCubemap( mCubeReflector.getCubemap() );
+   rdata.setMaterialDamage(getMin(mDamage / mDataBlock->maxDamage, 1.0f));
    rdata.setFadeOverride( (1.0f - mCloakLevel) * mFadeVal );
 
    // We might have some forward lit materials

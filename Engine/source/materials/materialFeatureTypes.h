@@ -97,6 +97,10 @@ DeclareFeatureType( MFT_DiffuseColor );
 DeclareFeatureType( MFT_DetailNormalMap );
 DeclareFeatureType( MFT_Imposter );
 
+DeclareFeatureType(MFT_Damage);
+DeclareFeatureType(MFT_AlbedoDamage);
+DeclareFeatureType(MFT_NormalDamage);
+DeclareFeatureType(MFT_CompositeDamage);
 DeclareFeatureType( MFT_AccuMap );
 DeclareFeatureType( MFT_AccuScale );
 DeclareFeatureType( MFT_AccuDirection );

@@ -211,6 +211,7 @@ void TSMesh::innerRender( TSMaterialList *materials, const TSRenderState &rdata,
 
    coreRI->visibility = meshVisibility;  
    coreRI->cubemap = rdata.getCubemap();
+   coreRI->mMaterialDamage = rdata.getMaterialDamage();
 
    if ( getMeshType() == TSMesh::SkinMeshType )
    {
