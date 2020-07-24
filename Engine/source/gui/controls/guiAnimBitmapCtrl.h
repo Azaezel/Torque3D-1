@@ -39,7 +39,6 @@ protected:
    StringTableEntry  mAnimTexFramesString;
    /// frames to use (internal)
    Vector<S32>       mAnimTexFrames;
-   U32               mNumFrames;
    S32               mCurFrameIndex;
 
    bool              mLoop;
@@ -52,6 +51,7 @@ protected:
    static bool ptSetFrame(void *object, const char *index, const char *data);
    static bool ptSetFrameRanges(void *object, const char *index, const char *data);
 public:
+   U32               mNumFrames;
    guiAnimBitmapCtrl();
    ~guiAnimBitmapCtrl();
    bool onAdd();
