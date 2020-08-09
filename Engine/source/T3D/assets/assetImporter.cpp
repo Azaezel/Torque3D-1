@@ -338,7 +338,7 @@ void AssetImportObject::initPersistFields()
 
    addField("tamlFilePath", TypeRealString, Offset(tamlFilePath, AssetImportObject), "What is the ultimate asset taml file path for this import item");
 
-   addField("imageSuffixType", TypeRealString, Offset(imageSuffixType, AssetImportObject), "Specific to ImageAsset type. What is the image asset's suffix type. Options are: Albedo, Normal, Roughness, AO, Metalness, PBRConfig");
+   addField("imageType", TypeRealString, Offset(imageSuffixType, AssetImportObject), "Specific to ImageAsset type. What is the image asset's suffix type. Options are: Albedo, Normal, Roughness, AO, Metalness, PBRConfig");
 
    addField("shapeInfo", TYPEID< GuiTreeViewCtrl >(), Offset(shapeInfo, AssetImportObject), "Specific to ShapeAsset type. Processed information about the shape file. Contains numbers and lists of meshes, materials and animations");
 }
@@ -1939,6 +1939,10 @@ void AssetImporter::resolveAssetItemIssues(AssetImportObject* assetItem)
          resetAssetValidationStatus(assetItem);
          importIssues = false;
       }
+      else if (activeImportConfig.DuplicatAutoResolution == String("UseExisting"))
+      {
+
+      }
    }
    else if (assetItem->statusType == String("MissingFile"))
    {
@@ -2455,7 +2459,7 @@ Torque::Path AssetImporter::importMaterialAsset(AssetImportObject* assetItem)
          }
          else if (imageType == ImageAsset::ImageTypes::PBRConfig)
          {
-            mapFieldName = "PBRConfig";
+            mapFieldName = "PBRConfigMap";
          }
          else if (imageType == ImageAsset::ImageTypes::Metalness)
          {
