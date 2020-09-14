@@ -1291,11 +1291,11 @@ void TerrainCompositeMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
 	}
 	else
 	{
-		meta->addStatement(new GenOp("   @ = lerp(vec3(0,1,0),@.rgb,@);\r\n", new DecOp(matinfoCol), texOp, detailBlend));
+		meta->addStatement(new GenOp("   @ = lerp(vec3(1.0,1.0,0.0),@.rgb,@);\r\n", new DecOp(matinfoCol), texOp, detailBlend));
 		meta->addStatement(new GenOp("   @ = vec4(0.0,@);\r\n", pbrConfig, matinfoCol));
 	}
 
-   if (!fd.features[MFT_InvertRoughness])
+   if (fd.features[MFT_InvertRoughness])
    {
       meta->addStatement(new GenOp("   @.b = 1.0-@.b;\r\n", pbrConfig, pbrConfig));
    }
@@ -1340,7 +1340,7 @@ void TerrainBlankInfoMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
       material->setStructName("OUT");
    }
 
-   meta->addStatement(new GenOp("   @ = vec4(0.0,0.0,1.0,0);\r\n", material));
+   meta->addStatement(new GenOp("   @ = vec4(0.0,1.0,1.0,0.0);\r\n", material));
 
    output = meta;
 }
