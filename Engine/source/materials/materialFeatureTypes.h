@@ -124,7 +124,7 @@ DeclareFeatureType( MFT_VertLitTone );
 
 DeclareFeatureType( MFT_StaticCubemap );
 DeclareFeatureType( MFT_CubeMap );
-DeclareFeatureType( MFT_InvertSmoothness );
+DeclareFeatureType( MFT_InvertRoughness );
 DeclareFeatureType( MFT_PBRConfigMap );
 DeclareFeatureType( MFT_PBRConfigVars );
 

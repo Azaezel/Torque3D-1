@@ -83,7 +83,7 @@ protected:
    F32 mParallaxScale;
 
    bool mIsSRGB;
-   bool mInvertSmoothness;
+   bool mInvertRoughness;
 
 public:
 
@@ -134,7 +134,7 @@ public:
 
    bool getIsSRGB() const { return mIsSRGB; }
 
-   bool getInvertSmoothness() const { return mInvertSmoothness; }
+   bool getInvertRoughness() const { return mInvertRoughness; }
 
 };
 

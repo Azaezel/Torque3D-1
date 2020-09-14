@@ -1313,7 +1313,7 @@ void TerrainCompositeMapFeatHLSL::processPix(Vector<ShaderComponent*> &component
       meta->addStatement(new GenOp("   @ = float4(0.0,@);\r\n", pbrConfig, matinfoCol));
    }
 
-   if (!fd.features[MFT_InvertSmoothness])
+   if (!fd.features[MFT_InvertRoughness])
    {
       meta->addStatement(new GenOp("   @.b = 1.0-@.b;\r\n", pbrConfig, pbrConfig));
    }

@@ -157,7 +157,7 @@ void DebugVizHLSL::processPix(Vector<ShaderComponent*>& componentList,
 
       Var* matinfo = (Var*)LangElement::find("PBRConfig");
       Var* metalness = (Var*)LangElement::find("metalness");
-      Var* smoothness = (Var*)LangElement::find("smoothness");
+      Var* roughness = (Var*)LangElement::find("roughness");
 
       Var* wsEyePos = (Var*)LangElement::find("eyePosWorld");
 

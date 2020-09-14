@@ -60,7 +60,7 @@ void ShaderConstHandles::init( GFXShader *shader, Vector<CustomShaderFeatureData
    mTexMatSC = shader->getShaderConstHandle(ShaderGenVars::texMat);
    mToneMapTexSC = shader->getShaderConstHandle(ShaderGenVars::toneMap);
    mPBRConfigSC = shader->getShaderConstHandle(ShaderGenVars::pbrConfig);
-   mSmoothnessSC = shader->getShaderConstHandle(ShaderGenVars::smoothness);
+   mRoughnessSC = shader->getShaderConstHandle(ShaderGenVars::roughness);
    mMetalnessSC = shader->getShaderConstHandle(ShaderGenVars::metalness);
    mGlowMulSC = shader->getShaderConstHandle(ShaderGenVars::glowMul);
    mAccuScaleSC = shader->getShaderConstHandle("$accuScale");
@@ -317,8 +317,8 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
 
    // First we add all the features which the 
    // material has defined.
-   if (mMaterial->mInvertSmoothness[stageNum])
-      fd.features.addFeature(MFT_InvertSmoothness);
+   if (mMaterial->mInvertRoughness[stageNum])
+      fd.features.addFeature(MFT_InvertRoughness);
 
    if ( mMaterial->isTranslucent() )
    {
@@ -1122,7 +1122,7 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
    if ( !shaderConsts->wasLost() )
       return;
 
-   shaderConsts->setSafe(handles->mSmoothnessSC, mMaterial->mSmoothness[stageNum]);
+   shaderConsts->setSafe(handles->mRoughnessSC, mMaterial->mRoughness[stageNum]);
    shaderConsts->setSafe(handles->mMetalnessSC, mMaterial->mMetalness[stageNum]);
    shaderConsts->setSafe(handles->mGlowMulSC, mMaterial->mGlowMul[stageNum]);
 

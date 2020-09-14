@@ -497,7 +497,7 @@ void ProcessedMaterial::_setStageData()
          if (mMaterial->mRoughMapFilename[i].isNotEmpty() && mMaterial->mMetalMapFilename[i].isNotEmpty())
          {
             U32 inputKey[4];
-            inputKey[0] = mMaterial->mSmoothnessChan[i];
+            inputKey[0] = mMaterial->mRoughnessChan[i];
             inputKey[1] = mMaterial->mAOChan[i];
             inputKey[2] = mMaterial->mMetalChan[i];
             inputKey[3] = 0;

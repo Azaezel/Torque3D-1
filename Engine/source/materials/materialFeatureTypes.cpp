@@ -43,7 +43,7 @@ ImplementFeatureType( MFT_DetailMap, MFG_Texture, 4.0f, true );
 ImplementFeatureType( MFT_DiffuseColor, MFG_Texture, 5.0f, true );
 ImplementFeatureType( MFT_DiffuseVertColor, MFG_Texture, 6.0f, true );
 ImplementFeatureType( MFT_AlphaTest, MFG_Texture, 7.0f, true );
-ImplementFeatureType( MFT_InvertSmoothness, U32(-1), -1, true);
+ImplementFeatureType( MFT_InvertRoughness, U32(-1), -1, true);
 ImplementFeatureType( MFT_PBRConfigMap, MFG_Texture, 8.0f, true);
 ImplementFeatureType( MFT_PBRConfigVars, MFG_Texture, 8.0f, true);
 ImplementFeatureType( MFT_MatInfoFlags, MFG_Texture, 9.0f, true);

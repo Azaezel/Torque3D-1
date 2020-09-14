@@ -69,7 +69,7 @@ TerrainMaterial::TerrainMaterial()
       mMacroDistance( 500.0f ),
       mParallaxScale( 0.0f ),
       mIsSRGB(false),
-      mInvertSmoothness(false)
+      mInvertRoughness(false)
 {
 }
 
@@ -105,7 +105,7 @@ void TerrainMaterial::initPersistFields()
 
    addField("pbrConfigMap", TypeStringFilename, Offset(mCompositeMap, TerrainMaterial), "Composite map for the PBR Configuration of the material");
    addField("isSRGB", TypeBool, Offset(mIsSRGB, TerrainMaterial), "Is the PBR Config map's image in sRGB format?");
-   addField("invertSmoothness", TypeBool, Offset(mInvertSmoothness, TerrainMaterial), "Should the smoothness channel of the PBR Config map be inverted?");
+   addField("invertRoughness", TypeBool, Offset(mInvertRoughness, TerrainMaterial), "Should the roughness channel of the PBR Config map be inverted?");
 
    Parent::initPersistFields();
 

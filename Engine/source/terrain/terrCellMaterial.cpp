@@ -446,8 +446,8 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
             features.addFeature(MFT_TerrainCompositeMap, featureIndex);
             features.removeFeature(MFT_DeferredTerrainBlankInfoMap);
          }
-         if (mat->getInvertSmoothness())
-            features.addFeature(MFT_InvertSmoothness);
+         if (mat->getInvertRoughness())
+            features.addFeature(MFT_InvertRoughness);
 
          pass->materials.push_back( (*materials)[i] );
          normalMaps.increment();

@@ -87,19 +87,19 @@ void PBRConfigMapHLSL::processPix( Vector<ShaderComponent*> &componentList, cons
    
    Var *metalness = (Var*)LangElement::find("metalness");
    if (!metalness) metalness = new Var("metalness", "float");
-   Var *smoothness = (Var*)LangElement::find("smoothness");
-   if (!smoothness) smoothness = new Var("smoothness", "float");
+   Var *roughness = (Var*)LangElement::find("roughness");
+   if (!roughness) roughness = new Var("roughness", "float");
    Var* ao = (Var*)LangElement::find("ao");
    if (!ao) ao = new Var("ao", "float");
 
 
    meta->addStatement(new GenOp("   @.bga = @.rgb;\r\n", pbrConfig, texOp));
 
-   meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(smoothness), pbrConfig));
-   if (fd.features[MFT_InvertSmoothness])
+   meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(roughness), pbrConfig));
+   if (fd.features[MFT_InvertRoughness])
    {
       meta->addStatement(new GenOp("   @.b = 1.0-@.b;\r\n", pbrConfig, pbrConfig));
-      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
+      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", roughness, roughness));
    }
    meta->addStatement(new GenOp("   @ = @.g;\r\n", new DecOp(ao), pbrConfig));
    meta->addStatement(new GenOp("   @ = @.a;\r\n", new DecOp(metalness), pbrConfig));
@@ -210,15 +210,15 @@ void PBRConfigVarsHLSL::processPix( Vector<ShaderComponent*> &componentList, con
    metalness->uniform = true;
    metalness->constSortPos = cspPotentialPrimitive;
 
-   Var *smoothness = new Var("smoothness", "float");
-   smoothness->uniform = true;
-   smoothness->constSortPos = cspPotentialPrimitive;
+   Var *roughness = new Var("roughness", "float");
+   roughness->uniform = true;
+   roughness->constSortPos = cspPotentialPrimitive;
 
    //matinfo.g slot reserved for AO later
    meta->addStatement(new GenOp("   @.g = 1.0;\r\n", pbrConfig));
-   meta->addStatement(new GenOp("   @.b = @;\r\n", pbrConfig, smoothness));
-   if (fd.features[MFT_InvertSmoothness])
-      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
+   meta->addStatement(new GenOp("   @.b = @;\r\n", pbrConfig, roughness));
+   if (fd.features[MFT_InvertRoughness])
+      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", roughness, roughness));
    meta->addStatement(new GenOp("   @.a = @;\r\n", pbrConfig, metalness));
    output = meta;
 }

@@ -305,10 +305,10 @@ public:
    String RoughnessTypeSuffixes;
 
    /// <summary>
-   /// What type of suffixes are scanned to detect if an importing image is a smoothness map.
-   /// e.g. _smoothness or _smooth
+   /// What type of suffixes are scanned to detect if an importing image is a roughness map.
+   /// e.g. _roughness or _smooth
    /// </summary>
-   String SmoothnessTypeSuffixes;
+   String RoughnessTypeSuffixes;
 
    /// <summary>
    /// What type of suffixes are scanned to detect if an importing image is a ambient occlusion map.

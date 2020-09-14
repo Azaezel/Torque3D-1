@@ -83,7 +83,7 @@ AssetImportConfig::AssetImportConfig() :
    NormalTypeSuffixes("_NORMAL,_NORM,_N,-NORMAL,-NORM,-N"),
    MetalnessTypeSuffixes("_METAL,_MET,_METALNESS,_METALLIC,_M,-METAL, -MET, -METALNESS, -METALLIC, -M"),
    RoughnessTypeSuffixes("_ROUGH,_ROUGHNESS,_R,-ROUGH,-ROUGHNESS,-R"),
-   SmoothnessTypeSuffixes("_SMOOTH,_SMOOTHNESS,_S,-SMOOTH,-SMOOTHNESS,-S"),
+   RoughnessTypeSuffixes("_SMOOTH,_SMOOTHNESS,_S,-SMOOTH,-SMOOTHNESS,-S"),
    AOTypeSuffixes("_AO,_AMBIENT,_AMBIENTOCCLUSION,-AO,-AMBIENT,-AMBIENTOCCLUSION"),
    PBRTypeSuffixes("_COMP,_COMPOSITE,_PBR,-COMP,-COMPOSITE,-PBR"),
    TextureFilteringMode("Bilinear"),
@@ -191,7 +191,7 @@ void AssetImportConfig::initPersistFields()
       addField("NormalTypeSuffixes", TypeRealString, Offset(NormalTypeSuffixes, AssetImportConfig), "What type of suffixes are scanned to detect if an importing image is a normal map. \n e.g. _Normal or _Norm");
       addField("MetalnessTypeSuffixes", TypeRealString, Offset(MetalnessTypeSuffixes, AssetImportConfig), "What type of suffixes are scanned to detect if an importing image is a metalness map. \n e.g. _Metalness or _Metal");
       addField("RoughnessTypeSuffixes", TypeRealString, Offset(RoughnessTypeSuffixes, AssetImportConfig), "What type of suffixes are scanned to detect if an importing image is a roughness map.\n e.g. _roughness or _rough");
-      addField("SmoothnessTypeSuffixes", TypeRealString, Offset(SmoothnessTypeSuffixes, AssetImportConfig), "What type of suffixes are scanned to detect if an importing image is a smoothness map. \n e.g. _smoothness or _smooth");
+      addField("RoughnessTypeSuffixes", TypeRealString, Offset(RoughnessTypeSuffixes, AssetImportConfig), "What type of suffixes are scanned to detect if an importing image is a roughness map. \n e.g. _roughness or _smooth");
       addField("AOTypeSuffixes", TypeRealString, Offset(AOTypeSuffixes, AssetImportConfig), "What type of suffixes are scanned to detect if an importing image is a ambient occlusion map. \n e.g. _ambient or _ao");
       addField("PBRTypeSuffixes", TypeRealString, Offset(PBRTypeSuffixes, AssetImportConfig), "What type of suffixes are scanned to detect if an importing image is a PBRConfig map.\n e.g. _Composite or _PBR");
       addField("TextureFilteringMode", TypeRealString, Offset(TextureFilteringMode, AssetImportConfig), "Indicates what filter mode images imported with this configuration utilizes. Options are Linear, Bilinear, Trilinear");
@@ -279,7 +279,7 @@ void AssetImportConfig::loadImportConfig(Settings* configSettings, String config
    NormalTypeSuffixes = configSettings->value(String(configName + "/Images/NormalTypeSuffixes").c_str());
    MetalnessTypeSuffixes = configSettings->value(String(configName + "/Images/MetalnessTypeSuffixes").c_str());
    RoughnessTypeSuffixes = configSettings->value(String(configName + "/Images/RoughnessTypeSuffixes").c_str());
-   SmoothnessTypeSuffixes = configSettings->value(String(configName + "/Images/SmoothnessTypeSuffixes").c_str());
+   RoughnessTypeSuffixes = configSettings->value(String(configName + "/Images/RoughnessTypeSuffixes").c_str());
    AOTypeSuffixes = configSettings->value(String(configName + "/Images/AOTypeSuffixes").c_str());
    PBRTypeSuffixes = configSettings->value(String(configName + "/Images/PBRTypeSuffixes").c_str());
    TextureFilteringMode = configSettings->value(String(configName + "/Images/TextureFilteringMode").c_str());
@@ -362,7 +362,7 @@ void AssetImportConfig::CopyTo(AssetImportConfig* target) const
    target->NormalTypeSuffixes = NormalTypeSuffixes;
    target->MetalnessTypeSuffixes = MetalnessTypeSuffixes;
    target->RoughnessTypeSuffixes = RoughnessTypeSuffixes;
-   target->SmoothnessTypeSuffixes = SmoothnessTypeSuffixes;
+   target->RoughnessTypeSuffixes = RoughnessTypeSuffixes;
    target->AOTypeSuffixes = AOTypeSuffixes;
    target->PBRTypeSuffixes = PBRTypeSuffixes;
    target->TextureFilteringMode = TextureFilteringMode;
@@ -2815,7 +2815,7 @@ Torque::Path AssetImporter::importMaterialAsset(AssetImportObject* assetItem)
 
       if (hasRoughness)
       {
-         file->writeLine((U8*)"   invertSmoothness = true;");
+         file->writeLine((U8*)"   invertRoughness = true;");
          
       }
 
