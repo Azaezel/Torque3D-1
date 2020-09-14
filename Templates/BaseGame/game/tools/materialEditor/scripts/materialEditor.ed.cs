@@ -914,7 +914,7 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->toneMapDisplayBitmap.setBitmap( (%material).toneMap[%layer] );
    }
    MaterialEditorPropertiesWindow-->isSRGBCheckbox.setValue((%material).isSRGB[%layer]);
-   MaterialEditorPropertiesWindow-->invertSmoothnessCheckbox.setValue((%material).invertSmoothness[%layer]);
+   MaterialEditorPropertiesWindow-->invertRoughnessCheckbox.setValue((%material).invertRoughness[%layer]);
       
    if((%material).PBRConfigMap[%layer] $= "") 
    {
@@ -988,8 +988,8 @@ function MaterialEditorGui::guiSync( %this, %material )
    MaterialEditorPropertiesWindow-->colorTintSwatch.color = (%material).diffuseColor[%layer];
    MaterialEditorPropertiesWindow-->specularColorSwatch.color = (%material).specular[%layer];     
    
-   MaterialEditorPropertiesWindow-->SmoothnessTextEdit.setText((%material).Smoothness[%layer]);
-   MaterialEditorPropertiesWindow-->SmoothnessSlider.setValue((%material).Smoothness[%layer]);
+   MaterialEditorPropertiesWindow-->RoughnessTextEdit.setText((%material).Roughness[%layer]);
+   MaterialEditorPropertiesWindow-->RoughnessSlider.setValue((%material).Roughness[%layer]);
    MaterialEditorPropertiesWindow-->MetalnessTextEdit.setText((%material).Metalness[%layer]);
    MaterialEditorPropertiesWindow-->MetalnessSlider.setValue((%material).Metalness[%layer]);
    MaterialEditorPropertiesWindow-->glowMulTextEdit.setText((%material).glowMul[%layer]);
@@ -1065,7 +1065,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    
    MaterialEditorPropertiesWindow-->accuCheckbox.setValue((%material).accuEnabled[%layer]);
    
-   %this.getRoughChan((%material).SmoothnessChan[%layer]);
+   %this.getRoughChan((%material).RoughnessChan[%layer]);
    %this.getAOChan((%material).AOChan[%layer]);
    %this.getMetalChan((%material).metalChan[%layer]);
    %this.getGlowChan((%material).glowChan[%layer]);
@@ -2524,7 +2524,7 @@ function MaterialEditorGui::updateAccuCheckbox(%this, %value)
 // channel in selectors
 function MaterialEditorGui::setRoughChan(%this, %value)
 {
-   MaterialEditorGui.updateActiveMaterial("SmoothnessChan[" @ MaterialEditorGui.currentLayer @ "]", %value);   
+   MaterialEditorGui.updateActiveMaterial("RoughnessChan[" @ MaterialEditorGui.currentLayer @ "]", %value);   
    MaterialEditorGui.guiSync( materialEd_previewMaterial );
 }
 
@@ -2573,7 +2573,7 @@ function MaterialEditorGui::saveCompositeMap(%this)
     %metalMap = %material.metalMap[%layer];
     %glowMap = %material.glowMap[%layer];
     
-    %smooth = %material.SmoothnessChan[%layer];
+    %smooth = %material.RoughnessChan[%layer];
     %ao = %material.AOChan[%layer];
     %metal = %material.metalChan[%layer];
     %glow = %material.glowChan[%layer];

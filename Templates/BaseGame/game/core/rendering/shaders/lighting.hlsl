@@ -39,7 +39,7 @@ uniform float4 inLightColor[4];
 #endif
 
 uniform float4 ambient;
-uniform float smoothness;
+uniform float roughness;
 uniform float metalness;
 uniform float4 albedo;
 
@@ -114,7 +114,7 @@ inline Surface createSurface(float4 gbuffer0, TORQUE_SAMPLER2D(gbufferTex1), TOR
 	surface.N = mul(invView, float4(gbuffer0.xyz,0)).xyz;
 	surface.V = normalize(wsEyePos - surface.P);
 	surface.baseColor = gbuffer1;
-	surface.roughness = 1.0 - (gbuffer2.b*0.8+0.1999); //t3d uses smoothness, so we convert to roughness.
+	surface.roughness = gbuffer2.b*0.8+0.1999;
 	surface.roughness_brdf = surface.roughness * surface.roughness;
 	surface.metalness = gbuffer2.a;
    surface.ao = gbuffer2.g;
@@ -133,7 +133,7 @@ inline Surface createForwardSurface(float4 baseColor, float3 normal, float4 pbrP
    surface.N = normal;
    surface.V = normalize(wsEyePos - surface.P);
    surface.baseColor = baseColor;
-   surface.roughness = 1.0 - (pbrProperties.b*0.8+0.1999); //t3d uses smoothness, so we convert to roughness.
+   surface.roughness = pbrProperties.b*0.8+0.1999;
    surface.roughness_brdf = surface.roughness * surface.roughness;
    surface.metalness = pbrProperties.a;
    surface.ao = pbrProperties.g;

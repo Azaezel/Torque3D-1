@@ -38,7 +38,7 @@ uniform vec4 inLightColor[4];
 
 uniform vec4 ambient;
 #define ambientCameraFactor 0.3
-uniform float smoothness;
+uniform float roughness;
 uniform float metalness;
 uniform vec4 albedo;
 
@@ -110,7 +110,7 @@ Surface createSurface(vec4 normDepth, sampler2D colorBuffer, sampler2D matInfoBu
    surface.V = normalize(wsEyePos - surface.P);
    surface.baseColor = gbuffer1;
    const float minRoughness=1e-4;
-   surface.roughness = 1.0 - (gbuffer2.b*0.8+0.1999); //t3d uses smoothness, so we convert to roughness.
+   surface.roughness = gbuffer2.b*0.8+0.1999;
    surface.roughness_brdf = surface.roughness * surface.roughness;
    surface.metalness = gbuffer2.a;
    surface.ao = gbuffer2.g;
@@ -129,7 +129,7 @@ Surface createForwardSurface(vec4 baseColor, vec3 normal, vec4 pbrProperties, in
    surface.V = normalize(wsEyePos - surface.P);
    surface.baseColor = baseColor;
    const float minRoughness=1e-4;
-   surface.roughness = 1.0 - (pbrProperties.b*0.8+0.1999); //t3d uses smoothness, so we convert to roughness.
+   surface.roughness = pbrProperties.b*0.8+0.1999;
    surface.roughness_brdf = surface.roughness * surface.roughness;
    surface.metalness = pbrProperties.a;
    surface.ao = pbrProperties.g;
