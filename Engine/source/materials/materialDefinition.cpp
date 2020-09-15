@@ -121,7 +121,7 @@ Material::Material()
       mDiffuse[i].set( 1.0f, 1.0f, 1.0f, 1.0f );
       mDiffuseMapSRGB[i] = true;
 
-      mRoughness[i] = 0.0f;
+      mRoughness[i] = 1.0f;
       mMetalness[i] = 0.0f;
 
 	   mIsSRGb[i] = true;
