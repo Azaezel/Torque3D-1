@@ -449,7 +449,7 @@ function TerrainMaterialDlg::setActiveMaterial( %this, %mat )
       %this-->macroDistanceCtrl.setText( %mat.macroDistance );      
       
       %this-->isSRGB.setValue( %mat.isSRGB );
-      %this-->invertSmoothness.setValue( %mat.invertSmoothness );
+      %this-->invertRoughness.setValue( %mat.invertRoughness );
             
       %this.activateMaterialCtrls( true );      
    }
@@ -510,7 +510,7 @@ function TerrainMaterialDlg::saveDirtyMaterial( %this, %mat )
    %macroDistance = %this-->macroDistanceCtrl.getText();   
    
    %isSRGB = %this-->isSRGB.getValue(); 
-   %invertSmoothness = %this-->invertSmoothness.getValue(); 
+   %invertRoughness = %this-->invertRoughness.getValue(); 
    
    // If no properties of this materials have changed,
    // return.
@@ -531,7 +531,7 @@ function TerrainMaterialDlg::saveDirtyMaterial( %this, %mat )
          %mat.macroDistance == %macroDistance &&         
          %mat.parallaxScale == %parallaxScale &&         
          %mat.isSRGB == %isSRGB &&         
-         %mat.invertSmoothness == %invertSmoothness)               
+         %mat.invertRoughness == %invertRoughness)               
       return;
       
    // Make sure the material name is unique.
@@ -568,7 +568,7 @@ function TerrainMaterialDlg::saveDirtyMaterial( %this, %mat )
    %mat.useSideProjection = %useSideProjection;
    %mat.parallaxScale = %parallaxScale;
    %mat.isSRGB = %isSRGB;
-   %mat.invertSmoothness = %invertSmoothness;
+   %mat.invertRoughness = %invertRoughness;
    
    // Mark the material as dirty and needing saving.
    
@@ -620,7 +620,7 @@ function TerrainMaterialDlg::snapshotMaterials( %this )
          useSideProjection = %mat.useSideProjection;
          parallaxScale = %mat.parallaxScale;
          isSRGB = %mat.isSRGB;
-         invertSmoothness = %mat.invertSmoothness;
+         invertRoughness = %mat.invertRoughness;
       };
    }
 }
@@ -657,7 +657,7 @@ function TerrainMaterialDlg::restoreMaterials( %this )
       %mat.useSideProjection = %obj.useSideProjection;
       %mat.parallaxScale = %obj.parallaxScale;
       %mat.isSRGB = %obj.isSRGB;
-      %mat.invertSmoothness = %obj.invertSmoothness;
+      %mat.invertRoughness = %obj.invertRoughness;
    }
 }
 
