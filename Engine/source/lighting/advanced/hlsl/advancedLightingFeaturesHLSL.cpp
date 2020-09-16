@@ -399,7 +399,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       Parent::processPix( componentList, fd );
       return;
    }
-   else if (!fd.features[MFT_PBRConfigMap] )
+   else if (!fd.features[MFT_OrmMap] )
    {
       Var *bumpSample = (Var *)LangElement::find( "bumpSample" );
       if( bumpSample == NULL )
@@ -432,7 +432,7 @@ ShaderFeature::Resources DeferredBumpFeatHLSL::getResources( const MaterialFeatu
       return Parent::getResources( fd );
 
    Resources res; 
-   if(!fd.features[MFT_PBRConfigMap])
+   if(!fd.features[MFT_OrmMap])
    {
       res.numTex = 1;
       res.numTexReg = 1;
@@ -475,7 +475,7 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
          passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_DetailNormalMap );
       }
    }
-   else if (  !fd.features[MFT_Parallax] && !fd.features[MFT_PBRConfigMap] &&
+   else if (  !fd.features[MFT_Parallax] && !fd.features[MFT_OrmMap] &&
          ( fd.features[MFT_DeferredConditioner]) )
    {
       passData.mTexType[ texIndex ] = Material::Bump;

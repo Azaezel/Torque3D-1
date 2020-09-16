@@ -1259,22 +1259,22 @@ void TerrainCompositeMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
 		texOp = new GenOp("tex2D(@, @.xy)", compositeMap, inDet);
 
 	// search for material var
-	Var * pbrConfig;
+	Var * ormConfig;
 	OutputTarget targ = RenderTarget1;
 	if (fd.features[MFT_isDeferred])
 	{
 		targ = RenderTarget2;
 	}
-   pbrConfig = (Var*)LangElement::find(getOutputTargetVarName(targ));
+   ormConfig = (Var*)LangElement::find(getOutputTargetVarName(targ));
 
 	MultiLine * meta = new MultiLine;
-	if (!pbrConfig)
+	if (!ormConfig)
 	{
 		// create color var
-      pbrConfig = new Var;
-      pbrConfig->setType("fragout");
-      pbrConfig->setName(getOutputTargetVarName(targ));
-      pbrConfig->setStructName("OUT");
+      ormConfig = new Var;
+      ormConfig->setType("fragout");
+      ormConfig->setName(getOutputTargetVarName(targ));
+      ormConfig->setStructName("OUT");
 	}
 
 	Var *detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", compositeIndex));
@@ -1287,17 +1287,17 @@ void TerrainCompositeMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
 	if (priorComp)
 	{
 		meta->addStatement(new GenOp("   @ = @.rgb*@;\r\n", new DecOp(matinfoCol), texOp, detailBlend));
-		meta->addStatement(new GenOp("   @.bga += @;\r\n", pbrConfig, matinfoCol));
+		meta->addStatement(new GenOp("   @.bga += @;\r\n", ormConfig, matinfoCol));
 	}
 	else
 	{
 		meta->addStatement(new GenOp("   @ = lerp(vec3(1.0,1.0,0.0),@.rgb,@);\r\n", new DecOp(matinfoCol), texOp, detailBlend));
-		meta->addStatement(new GenOp("   @ = vec4(0.0,@);\r\n", pbrConfig, matinfoCol));
+		meta->addStatement(new GenOp("   @ = vec4(0.0,@);\r\n", ormConfig, matinfoCol));
 	}
 
    if (fd.features[MFT_InvertRoughness])
    {
-      meta->addStatement(new GenOp("   @.b = 1.0-@.b;\r\n", pbrConfig, pbrConfig));
+      meta->addStatement(new GenOp("   @.b = 1.0-@.b;\r\n", ormConfig, ormConfig));
    }
 
 	output = meta;

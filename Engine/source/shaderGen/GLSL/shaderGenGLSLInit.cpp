@@ -99,8 +99,8 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
 
    // Deferred Shading
    FEATUREMGR->registerFeature( MFT_isDeferred, new NamedFeatureGLSL( "Deferred Material" ) );
-   FEATUREMGR->registerFeature( MFT_PBRConfigMap, new PBRConfigMapGLSL );
-   FEATUREMGR->registerFeature( MFT_PBRConfigVars, new PBRConfigVarsGLSL );
+   FEATUREMGR->registerFeature( MFT_OrmMap, new DeferredOrmMapGLSL );
+   FEATUREMGR->registerFeature( MFT_ORMConfigVars, new ORMConfigVarsGLSL );
    FEATUREMGR->registerFeature( MFT_MatInfoFlags, new MatInfoFlagsGLSL );
    FEATUREMGR->registerFeature( MFT_GlowMap, new GlowMapGLSL);
    FEATUREMGR->registerFeature( MFT_isBackground, new NamedFeatureGLSL("Background Object"));

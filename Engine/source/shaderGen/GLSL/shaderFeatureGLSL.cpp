@@ -841,8 +841,8 @@ Var* ShaderFeatureGLSL::getSurface(Vector<ShaderComponent*>& componentList, Mult
 
    Var* diffuseColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
 
-   Var* pbrConfig = (Var*)LangElement::find("PBRConfig");
-   if (!pbrConfig)
+   Var* ormConfig = (Var*)LangElement::find("ORMConfig");
+   if (!ormConfig)
    {
       Var* metalness = (Var*)LangElement::find("metalness");
       if (!metalness)
@@ -860,9 +860,9 @@ Var* ShaderFeatureGLSL::getSurface(Vector<ShaderComponent*>& componentList, Mult
          roughness->constSortPos = cspPotentialPrimitive;
       }
 
-      pbrConfig = new Var("PBRConfig", "vec4");
-      LangElement* colorDecl = new DecOp(pbrConfig);
-      meta->addStatement(new GenOp("   @ = vec4(0.0,1.0,@,@);\r\n", colorDecl, roughness, metalness)); //reconstruct pbrConfig, no ao darkening
+      ormConfig = new Var("ORMConfig", "vec4");
+      LangElement* colorDecl = new DecOp(ormConfig);
+      meta->addStatement(new GenOp("   @ = vec4(0.0,1.0,@,@);\r\n", colorDecl, roughness, metalness)); //reconstruct ormConfig, no ao darkening
    }
 
    Var* wsNormal = (Var*)LangElement::find("wsNormal");
@@ -899,7 +899,7 @@ Var* ShaderFeatureGLSL::getSurface(Vector<ShaderComponent*>& componentList, Mult
    if (!surface)
    {
       surface = new Var("surface", "Surface");
-      meta->addStatement(new GenOp("  @ = createForwardSurface(@,@,@,@,@,@);\r\n\n", new DecOp(surface), diffuseColor, normal, pbrConfig,
+      meta->addStatement(new GenOp("  @ = createForwardSurface(@,@,@,@,@,@);\r\n\n", new DecOp(surface), diffuseColor, normal, ormConfig,
          wsPosition, wsEyePos, wsView));
    }
 

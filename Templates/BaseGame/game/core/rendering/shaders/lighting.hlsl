@@ -75,7 +75,7 @@ struct Surface
 	float4 baseColor;		// base color [0 -> 1] (rgba)
 	float metalness;		// metalness [0:dielectric -> 1:metal]
 	float roughness;		// roughness: [0:smooth -> 1:rough] (linear)
-	float roughness_brdf; // roughness remapped from linear to BRDF
+	float linearRoughness; // roughness remapped from linear to BRDF
    float depth;         // depth: [0:near -> 1:far] (linear)
    float ao;            // ambient occlusion [0 -> 1]
    float matFlag;       // material flag - use getFlag to retreive 
@@ -91,16 +91,14 @@ struct Surface
 	{
 		NdotV = abs(dot(N, V)) + 1e-5f; // avoid artifact
 
-		albedo = baseColor.rgb * (1.0 - metalness);
-		f0 = lerp(0.04.xxx, baseColor.rgb, metalness);
+		albedo = baseColor.rgb * (1.0f - metalness);
+		f0 = lerp(0.04f, baseColor.rgb, metalness);
 
 		R = -reflect(V, N);
-		f90 = saturate(50.0 * dot(f0, 0.33));
+		f90 = saturate(50.0f * dot(f0, 0.33f));
 		F = F_Schlick(f0, f90, NdotV);
 	}
 };
-
-
 
 inline Surface createSurface(float4 gbuffer0, TORQUE_SAMPLER2D(gbufferTex1), TORQUE_SAMPLER2D(gbufferTex2), in float2 uv, in float3 wsEyePos, in float3 wsEyeRay, in float4x4 invView)
 {
@@ -114,8 +112,8 @@ inline Surface createSurface(float4 gbuffer0, TORQUE_SAMPLER2D(gbufferTex1), TOR
 	surface.N = mul(invView, float4(gbuffer0.xyz,0)).xyz;
 	surface.V = normalize(wsEyePos - surface.P);
 	surface.baseColor = gbuffer1;
-	surface.roughness = gbuffer2.b*0.8+0.1999;
-	surface.roughness_brdf = surface.roughness * surface.roughness;
+	surface.roughness = clamp(gbuffer2.b, 0.04f, 1.0f);
+	surface.linearRoughness = surface.roughness * surface.roughness;
 	surface.metalness = gbuffer2.a;
    surface.ao = gbuffer2.g;
    surface.matFlag = gbuffer2.r;
@@ -133,8 +131,8 @@ inline Surface createForwardSurface(float4 baseColor, float3 normal, float4 pbrP
    surface.N = normal;
    surface.V = normalize(wsEyePos - surface.P);
    surface.baseColor = baseColor;
-   surface.roughness = pbrProperties.b*0.8+0.1999;
-   surface.roughness_brdf = surface.roughness * surface.roughness;
+   surface.roughness = clamp(pbrProperties.b, 0.04f, 1.0f);
+   surface.linearRoughness = surface.roughness * surface.roughness;
    surface.metalness = pbrProperties.a;
    surface.ao = pbrProperties.g;
    surface.matFlag = pbrProperties.r;
@@ -170,16 +168,15 @@ float3 BRDF_GetDebugSpecular(in Surface surface, in SurfaceToLight surfaceToLigh
 {
    //GGX specular
    float3 F = F_Schlick(surface.f0, surface.f90, surfaceToLight.HdotV);
-    float Vis = V_SmithGGXCorrelated(surface.NdotV, surfaceToLight.NdotL, surface.roughness);
-    float D = D_GGX(surfaceToLight.NdotH, surface.roughness);
-   float3 Fr = D * F * Vis;
-   return Fr*M_1OVER_PI_F;
+   float Vis = V_SmithGGXCorrelated(surface.NdotV, surfaceToLight.NdotL, surface.linearRoughness);
+   float D = D_GGX(surfaceToLight.NdotH, surface.linearRoughness);
+   float3 Fr = D * F * Vis * M_1OVER_PI_F;
+   return Fr;
 }
 
 float3 BRDF_GetDebugDiffuse(in Surface surface, in SurfaceToLight surfaceToLight)
 {
-   float3 Fd = surface.albedo.rgb;
-	return Fd*M_1OVER_PI_F;
+   return surface.albedo.rgb * M_1OVER_PI_F;
 }
 
 //attenuations functions from "moving frostbite to pbr paper"
@@ -210,15 +207,15 @@ float getDistanceAtt( float3 unormalizedLightVector , float invSqrAttRadius )
 float3 evaluateStandardBRDF(Surface surface, SurfaceToLight surfaceToLight)
 {
    //lambert diffuse
-   float3 Fd = surface.albedo.rgb;
+   float3 Fd = surface.albedo.rgb * M_1OVER_PI_F;
     
    //GGX specular
    float3 F = F_Schlick(surface.f0, surface.f90, surfaceToLight.HdotV);
-    float Vis = V_SmithGGXCorrelated(surface.NdotV, surfaceToLight.NdotL, surface.roughness);
-    float D = D_GGX(surfaceToLight.NdotH, surface.roughness);
-   float3 Fr = D * F * Vis;
+   float Vis = V_SmithGGXCorrelated(surface.NdotV, surfaceToLight.NdotL, surface.linearRoughness);
+   float D = D_GGX(surfaceToLight.NdotH, surface.linearRoughness);
+   float3 Fr = D * F * Vis * M_1OVER_PI_F;
 
-   return (Fd + Fr) * M_1OVER_PI_F;
+   return Fd + Fr;
 }
 
 float3 getDirectionalLight(Surface surface, SurfaceToLight surfaceToLight, float3 lightColor, float lightIntensity, float shadow)

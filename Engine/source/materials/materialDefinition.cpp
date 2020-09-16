@@ -144,7 +144,7 @@ Material::Material()
       initMapSlot(ToneMap, i);
       initMapSlot(DetailMap, i);
       initMapSlot(NormalMap, i);
-      initMapSlot(PBRConfigMap, i);
+      initMapSlot(ORMConfigMap, i);
       initMapSlot(RoughMap, i);
       initMapSlot(AOMap, i);
       initMapSlot(MetalMap, i);
@@ -252,7 +252,7 @@ void Material::initPersistFields()
       scriptBindMapArraySlot(ToneMap, MAX_STAGES, Material);
       scriptBindMapArraySlot(DetailMap, MAX_STAGES, Material);
       scriptBindMapArraySlot(NormalMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(PBRConfigMap, MAX_STAGES, Material);
+      scriptBindMapArraySlot(ORMConfigMap, MAX_STAGES, Material);
       scriptBindMapArraySlot(RoughMap, MAX_STAGES, Material);
       scriptBindMapArraySlot(AOMap, MAX_STAGES, Material);
       scriptBindMapArraySlot(MetalMap, MAX_STAGES, Material);
@@ -269,10 +269,10 @@ void Material::initPersistFields()
          "Used to scale the strength of the detail normal map when blended with the base normal map." );
       
       addField("roughness", TypeF32, Offset(mRoughness, Material), MAX_STAGES,
-         "The degree of roughness when not using a PBRConfigMap." );
+         "The degree of roughness when not using a ORMConfigMap." );
 
 		addField("metalness", TypeF32, Offset(mMetalness, Material), MAX_STAGES,
-         "The degree of Metalness when not using a PBRConfigMap." );
+         "The degree of Metalness when not using a ORMConfigMap." );
 
       addField("glowMul", TypeF32, Offset(mGlowMul, Material), MAX_STAGES,
          "glow mask multiplier");
@@ -595,7 +595,7 @@ bool Material::onAdd()
       bindMapSlot(LightMap, i);
       bindMapSlot(ToneMap, i);
       bindMapSlot(DetailMap, i);
-      bindMapSlot(PBRConfigMap, i);
+      bindMapSlot(ORMConfigMap, i);
       bindMapSlot(RoughMap, i);
       bindMapSlot(AOMap, i);
       bindMapSlot(MetalMap, i);

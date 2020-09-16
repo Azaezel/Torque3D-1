@@ -2573,12 +2573,13 @@ function MaterialEditorGui::saveCompositeMap(%this)
     %metalMap = %material.metalMap[%layer];
     %glowMap = %material.glowMap[%layer];
     
-    %roughness = %material.RoughnessChan[%layer];
+    %smooth = %material.RoughnessChan[%layer];
     %ao = %material.AOChan[%layer];
     %metal = %material.metalChan[%layer];
+    %glow = %material.glowChan[%layer];
     
-    %channelKey = %roughness SPC %ao SPC %metal SPC 0;
+    %channelKey = %smooth SPC %ao SPC %metal SPC %glow;
     error("Storing: \"" @ %roughMap @"\" \""@  %aoMap @"\" \""@ %metalMap @"\" \""@ %channelKey @"\" \""@ %saveAs @"\"");
-    saveCompositeTexture(%roughMap,%aoMap,%metalMap,"",%channelKey, %saveAs);
+    saveCompositeTexture(%roughMap,%aoMap,%metalMap,%glowMap,%channelKey, %saveAs);
     %dlg.delete();
 }

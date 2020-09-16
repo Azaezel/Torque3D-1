@@ -59,7 +59,7 @@ void ShaderConstHandles::init( GFXShader *shader, Vector<CustomShaderFeatureData
    mDiffuseColorSC = shader->getShaderConstHandle("$diffuseMaterialColor");
    mTexMatSC = shader->getShaderConstHandle(ShaderGenVars::texMat);
    mToneMapTexSC = shader->getShaderConstHandle(ShaderGenVars::toneMap);
-   mPBRConfigSC = shader->getShaderConstHandle(ShaderGenVars::pbrConfig);
+   mORMConfigSC = shader->getShaderConstHandle(ShaderGenVars::ormConfig);
    mRoughnessSC = shader->getShaderConstHandle(ShaderGenVars::roughness);
    mMetalnessSC = shader->getShaderConstHandle(ShaderGenVars::metalness);
    mGlowMulSC = shader->getShaderConstHandle(ShaderGenVars::glowMul);
@@ -442,12 +442,12 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    }
 
    // Deferred Shading : PBR Config
-   if (mStages[stageNum].getTex(MFT_PBRConfigMap))
+   if (mStages[stageNum].getTex(MFT_OrmMap))
    {
-      fd.features.addFeature(MFT_PBRConfigMap);
+      fd.features.addFeature(MFT_OrmMap);
    }
    else
-      fd.features.addFeature(MFT_PBRConfigVars);
+      fd.features.addFeature(MFT_ORMConfigVars);
 
    // Deferred Shading : Material Info Flags
    fd.features.addFeature(MFT_MatInfoFlags);
@@ -463,7 +463,7 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
       fd.features.addFeature(MFT_SkyBox);
 
       fd.features.removeFeature(MFT_ReflectionProbes);
-      fd.features.removeFeature(MFT_PBRConfigVars);
+      fd.features.removeFeature(MFT_ORMConfigVars);
       fd.features.removeFeature(MFT_MatInfoFlags);
    }
 
