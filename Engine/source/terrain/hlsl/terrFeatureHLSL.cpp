@@ -1305,7 +1305,7 @@ void TerrainCompositeMapFeatHLSL::processPix(Vector<ShaderComponent*> &component
    if (priorComp)
    {
       meta->addStatement(new GenOp("   @ = @.rgb*@;\r\n", new DecOp(matinfoCol), texOp, detailBlend));
-      meta->addStatement(new GenOp("   @.bga += @;\r\n", ormConfig, matinfoCol));
+      meta->addStatement(new GenOp("   @.gba += @;\r\n", ormConfig, matinfoCol));
    }
    else
    {

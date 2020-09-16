@@ -93,15 +93,15 @@ void DeferredOrmMapHLSL::processPix( Vector<ShaderComponent*> &componentList, co
    if (!ao) ao = new Var("ao", "float");
 
 
-   meta->addStatement(new GenOp("   @.bga = @.rgb;\r\n", ormConfig, texOp));
+   meta->addStatement(new GenOp("   @.gba = @.rgb;\r\n", ormConfig, texOp));
 
+   meta->addStatement(new GenOp("   @ = @.g;\r\n", new DecOp(ao), ormConfig));
    meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(roughness), ormConfig));
    if (fd.features[MFT_InvertRoughness])
    {
       meta->addStatement(new GenOp("   @.b = 1.0-@.b;\r\n", ormConfig, ormConfig));
       meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", roughness, roughness));
    }
-   meta->addStatement(new GenOp("   @ = @.g;\r\n", new DecOp(ao), ormConfig));
    meta->addStatement(new GenOp("   @ = @.a;\r\n", new DecOp(metalness), ormConfig));
 
    output = meta;

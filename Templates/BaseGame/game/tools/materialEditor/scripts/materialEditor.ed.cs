@@ -590,9 +590,9 @@ function MaterialEditorGui::convertTextureFields(%this)
    
    for(%specI = 0; %specI < 4; %specI++)
    {
-      %PBRConfigMap = MaterialEditorGui.currentMaterial.PBRConfigMap[%specI];      
-      %PBRConfigMap = MaterialEditorGui.searchForTexture(MaterialEditorGui.currentMaterial, %PBRConfigMap);
-      MaterialEditorGui.currentMaterial.PBRConfigMap[%specI] = %PBRConfigMap;
+      %ORMConfigMap = MaterialEditorGui.currentMaterial.ORMConfigMap[%specI];      
+      %ORMConfigMap = MaterialEditorGui.searchForTexture(MaterialEditorGui.currentMaterial, %ORMConfigMap);
+      MaterialEditorGui.currentMaterial.ORMConfigMap[%specI] = %ORMConfigMap;
    }
    
    for(%roughI = 0; %roughI < 4; %roughI++)
@@ -916,15 +916,15 @@ function MaterialEditorGui::guiSync( %this, %material )
    MaterialEditorPropertiesWindow-->isSRGBCheckbox.setValue((%material).isSRGB[%layer]);
    MaterialEditorPropertiesWindow-->invertRoughnessCheckbox.setValue((%material).invertRoughness[%layer]);
       
-   if((%material).PBRConfigMap[%layer] $= "") 
+   if((%material).ORMConfigMap[%layer] $= "") 
    {
-      MaterialEditorPropertiesWindow-->PBRConfigMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->PBRConfigMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
+      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
    }
    else
    {
-      MaterialEditorPropertiesWindow-->PBRConfigMapNameText.setText( (%material).PBRConfigMap[%layer] );
-      MaterialEditorPropertiesWindow-->PBRConfigMapDisplayBitmap.setBitmap( (%material).PBRConfigMap[%layer] );
+      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( (%material).ORMConfigMap[%layer] );
+      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( (%material).ORMConfigMap[%layer] );
    }
    
    if((%material).roughMap[%layer] $= "") 
@@ -1276,7 +1276,7 @@ function MaterialEditorGui::updateDetailNormalStrength(%this,%newStrength)
    MaterialEditorGui.updateActiveMaterial("detailNormalMapStrength[" @ %layer @ "]", %detailStrength);
 }
 
-function MaterialEditorGui::updatePBRConfigMap(%this,%action)
+function MaterialEditorGui::updateORMConfigMap(%this,%action)
 {
    %layer = MaterialEditorGui.currentLayer;
    
@@ -1287,20 +1287,20 @@ function MaterialEditorGui::updatePBRConfigMap(%this,%action)
       {
          MaterialEditorGui.updateActiveMaterial("pixelSpecular[" @ MaterialEditorGui.currentLayer @ "]", 0);
          
-         MaterialEditorPropertiesWindow-->PBRConfigMapDisplayBitmap.setBitmap(%texture);
+         MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap(%texture);
       
-         %bitmap = MaterialEditorPropertiesWindow-->PBRConfigMapDisplayBitmap.bitmap;
+         %bitmap = MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.bitmap;
          %bitmap = strreplace(%bitmap,"tools/materialEditor/scripts/","");
-         MaterialEditorPropertiesWindow-->PBRConfigMapDisplayBitmap.setBitmap(%bitmap);
-         MaterialEditorPropertiesWindow-->PBRConfigMapNameText.setText(%bitmap);
-         MaterialEditorGui.updateActiveMaterial("PBRConfigMap[" @ %layer @ "]","\"" @ %bitmap @ "\"");
+         MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap(%bitmap);
+         MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText(%bitmap);
+         MaterialEditorGui.updateActiveMaterial("ORMConfigMap[" @ %layer @ "]","\"" @ %bitmap @ "\"");
       }
    }
    else
    {
-      MaterialEditorPropertiesWindow-->PBRConfigMapNameText.setText("None");
-      MaterialEditorPropertiesWindow-->PBRConfigMapDisplayBitmap.setBitmap("tools/materialEditor/gui/unknownImage");
-      MaterialEditorGui.updateActiveMaterial("PBRConfigMap[" @ %layer @ "]","");
+      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText("None");
+      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap("tools/materialEditor/gui/unknownImage");
+      MaterialEditorGui.updateActiveMaterial("ORMConfigMap[" @ %layer @ "]","");
    }
    
    MaterialEditorGui.guiSync( materialEd_previewMaterial );
@@ -2573,13 +2573,12 @@ function MaterialEditorGui::saveCompositeMap(%this)
     %metalMap = %material.metalMap[%layer];
     %glowMap = %material.glowMap[%layer];
     
-    %smooth = %material.RoughnessChan[%layer];
+    %roughness = %material.RoughnessChan[%layer];
     %ao = %material.AOChan[%layer];
     %metal = %material.metalChan[%layer];
-    %glow = %material.glowChan[%layer];
     
-    %channelKey = %smooth SPC %ao SPC %metal SPC %glow;
+    %channelKey = %roughness SPC %ao SPC %metal SPC 0;
     error("Storing: \"" @ %roughMap @"\" \""@  %aoMap @"\" \""@ %metalMap @"\" \""@ %channelKey @"\" \""@ %saveAs @"\"");
-    saveCompositeTexture(%roughMap,%aoMap,%metalMap,%glowMap,%channelKey, %saveAs);
+    saveCompositeTexture(%roughMap,%aoMap,%metalMap,"",%channelKey, %saveAs);
     %dlg.delete();
 }

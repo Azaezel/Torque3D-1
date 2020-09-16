@@ -497,11 +497,11 @@ void ProcessedMaterial::_setStageData()
          if (mMaterial->mRoughMapFilename[i].isNotEmpty() && mMaterial->mMetalMapFilename[i].isNotEmpty())
          {
             U32 inputKey[4];
-            inputKey[0] = mMaterial->mRoughnessChan[i];
-            inputKey[1] = mMaterial->mAOChan[i];
+            inputKey[0] = mMaterial->mAOChan[i];
+            inputKey[1] = mMaterial->mRoughnessChan[i];
             inputKey[2] = mMaterial->mMetalChan[i];
             inputKey[3] = 0;
-            mStages[i].setTex(MFT_OrmMap, _createCompositeTexture(mMaterial->mRoughMapFilename[i], mMaterial->mAOMapFilename[i],
+            mStages[i].setTex(MFT_OrmMap, _createCompositeTexture( mMaterial->mAOMapFilename[i], mMaterial->mRoughMapFilename[i],
                mMaterial->mMetalMapFilename[i], "",
                inputKey, profile));
             if (!mStages[i].getTex(MFT_OrmMap))
