@@ -30,45 +30,47 @@
 // Charles de Rousiers - Electronic Arts Frostbite
 // SIGGRAPH 2014
 
-float pow5(float x) {
-    float x2 = x * x;
-    return x2 * x2 * x;
+// BRDF from Frostbite presentation:
+// Moving Frostbite to Physically Based Rendering
+// S´ebastien Lagarde - Electronic Arts Frostbite
+// Charles de Rousiers - Electronic Arts Frostbite
+// SIGGRAPH 2014
+
+float3 F_Schlick(float3 f0, float f90, float u)
+{
+	return f0 + (f90 - f0) * pow(1.f - u, 5.f);
 }
 
-float3 F_Schlick(in float3 f0, in float f90, in float u)
+float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
 {
-	return f0 + (f90 - f0) * pow5(1.f - u);
+	float3 ret = float3(0.0, 0.0, 0.0);
+	float powTheta = pow(1.0 - cosTheta, 5.0);
+	float invRough = float(1.0 - roughness);
+
+	ret.x = F0.x + (max(invRough, F0.x) - F0.x) * powTheta;
+	ret.y = F0.y + (max(invRough, F0.y) - F0.y) * powTheta;
+	ret.z = F0.z + (max(invRough, F0.z) - F0.z) * powTheta;
+
+	return ret;
 }
 
-float3 F_Fresnel(float3 SpecularColor, float VoH)
+float V_SmithGGXCorrelated(float NdotL, float NdotV, float alphaRoughnessSq)
 {
-	float3 SpecularColorSqrt = sqrt(min(SpecularColor, float3(0.99, 0.99, 0.99)));
-	float3 n = (1 + SpecularColorSqrt) / (1 - SpecularColorSqrt);
-	float3 g = sqrt(n*n + VoH*VoH - 1);
-	return 0.5 * sqr((g - VoH) / (g + VoH)) * (1 + sqr(((g + VoH)*VoH - 1) / ((g - VoH)*VoH + 1)));
+	float GGXV = NdotL * sqrt(NdotV * NdotV * (1.0 - alphaRoughnessSq) + alphaRoughnessSq);
+	float GGXL = NdotV * sqrt(NdotL * NdotL * (1.0 - alphaRoughnessSq) + alphaRoughnessSq);
+
+	float GGX = GGXV + GGXL;
+	if (GGX > 0.0f)
+	{
+		return 0.5f / GGX;
+	}
+	return 0.f;
 }
 
-float V_SmithGGXCorrelated ( float NdotL , float NdotV , float alphaG2 )
+float D_GGX(float NdotH, float alphaRoughnessSq)
 {
-	// Original formulation of G_SmithGGX Correlated
-	// lambda_v = ( -1 + sqrt ( alphaG2 * (1 - NdotL2 ) / NdotL2 + 1)) * 0.5 f;
-	// lambda_l = ( -1 + sqrt ( alphaG2 * (1 - NdotV2 ) / NdotV2 + 1)) * 0.5 f;
-	// G_SmithGGXCorrelated = 1 / (1 + lambda_v + lambda_l );
-	// V_SmithGGXCorrelated = G_SmithGGXCorrelated / (4.0 f * NdotL * NdotV );
-
-	// This is the optimize version
-	// Caution : the " NdotL *" and " NdotV *" are explicitely inversed , this is not a mistake .
-	float Lambda_GGXV = NdotL * sqrt (( -NdotV * alphaG2 + NdotV ) * NdotV + alphaG2 );
-	float Lambda_GGXL = NdotV * sqrt (( -NdotL * alphaG2 + NdotL ) * NdotL + alphaG2 );
-
-	return 0.5f / ( Lambda_GGXV + Lambda_GGXL );
-}
-
-float D_GGX ( float NdotH , float m2 )
-{
-	// Divide by PI is apply later
-	float f = ( NdotH * m2 - NdotH ) * NdotH + 1;
-	return m2 / (f * f) ;
+	float f = (NdotH * alphaRoughnessSq - NdotH) * NdotH + 1;
+	return alphaRoughnessSq / (M_PI_F * f * f);
 }
 
 #endif

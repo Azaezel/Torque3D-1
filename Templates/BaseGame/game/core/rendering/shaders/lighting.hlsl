@@ -74,8 +74,9 @@ struct Surface
 	float3 V;				// world space view vector
 	float4 baseColor;		// base color [0 -> 1] (rgba)
 	float metalness;		// metalness [0:dielectric -> 1:metal]
-	float roughness;		// roughness: [0:smooth -> 1:rough] (linear)
-	float linearRoughness; // roughness remapped from linear to BRDF
+	float roughness;		// material roughness: [0:smooth -> 1:rough] 
+	float linearRoughness; // linear roughness (roughness^2)
+   float linearRoughnessSq; // (linearRoughness^2)
    float depth;         // depth: [0:near -> 1:far] (linear)
    float ao;            // ambient occlusion [0 -> 1]
    float matFlag;       // material flag - use getFlag to retreive 
@@ -90,6 +91,9 @@ struct Surface
 	inline void Update()
 	{
 		NdotV = abs(dot(N, V)) + 1e-5f; // avoid artifact
+   
+      linearRoughness = roughness * roughness;
+      linearRoughnessSq = linearRoughness * linearRoughness;
 
 		albedo = baseColor.rgb * (1.0f - metalness);
 		f0 = lerp(0.04f, baseColor.rgb, metalness);
@@ -112,8 +116,7 @@ inline Surface createSurface(float4 gbuffer0, TORQUE_SAMPLER2D(gbufferTex1), TOR
 	surface.N = mul(invView, float4(gbuffer0.xyz,0)).xyz;
 	surface.V = normalize(wsEyePos - surface.P);
 	surface.baseColor = gbuffer1;
-	surface.roughness = clamp(gbuffer2.b, 0.04f, 1.0f);
-	surface.linearRoughness = surface.roughness * surface.roughness;
+	surface.roughness = clamp(gbuffer2.b, 0.01f, 1.0f);
 	surface.metalness = gbuffer2.a;
    surface.ao = gbuffer2.g;
    surface.matFlag = gbuffer2.r;
@@ -131,8 +134,7 @@ inline Surface createForwardSurface(float4 baseColor, float3 normal, float4 pbrP
    surface.N = normal;
    surface.V = normalize(wsEyePos - surface.P);
    surface.baseColor = baseColor;
-   surface.roughness = clamp(pbrProperties.b, 0.04f, 1.0f);
-   surface.linearRoughness = surface.roughness * surface.roughness;
+   surface.roughness = clamp(pbrProperties.b, 0.01f, 1.0f);
    surface.metalness = pbrProperties.a;
    surface.ao = pbrProperties.g;
    surface.matFlag = pbrProperties.r;
@@ -144,7 +146,7 @@ inline Surface createForwardSurface(float4 baseColor, float3 normal, float4 pbrP
 struct SurfaceToLight
 {
 	float3 L;				// surface to light vector
-    float3 Lu;				// un-normalized surface to light vector
+   float3 Lu;				// un-normalized surface to light vector
 	float3 H;				// half-vector between view vector and light vector
 	float NdotL;			// cos(angle between N and L)
 	float HdotV;			// cos(angle between H and V) = HdotL = cos(angle between H and L)
@@ -168,8 +170,8 @@ float3 BRDF_GetDebugSpecular(in Surface surface, in SurfaceToLight surfaceToLigh
 {
    //GGX specular
    float3 F = F_Schlick(surface.f0, surface.f90, surfaceToLight.HdotV);
-   float Vis = V_SmithGGXCorrelated(surface.NdotV, surfaceToLight.NdotL, surface.linearRoughness);
-   float D = D_GGX(surfaceToLight.NdotH, surface.linearRoughness);
+   float Vis = V_SmithGGXCorrelated(surface.NdotV, surfaceToLight.NdotL, surface.linearRoughnessSq);
+   float D = D_GGX(surfaceToLight.NdotH, surface.linearRoughnessSq);
    float3 Fr = D * F * Vis * M_1OVER_PI_F;
    return Fr;
 }
@@ -211,9 +213,9 @@ float3 evaluateStandardBRDF(Surface surface, SurfaceToLight surfaceToLight)
     
    //GGX specular
    float3 F = F_Schlick(surface.f0, surface.f90, surfaceToLight.HdotV);
-   float Vis = V_SmithGGXCorrelated(surface.NdotV, surfaceToLight.NdotL, surface.linearRoughness);
-   float D = D_GGX(surfaceToLight.NdotH, surface.linearRoughness);
-   float3 Fr = D * F * Vis * M_1OVER_PI_F;
+   float Vis = V_SmithGGXCorrelated(surface.NdotV, surfaceToLight.NdotL, surface.linearRoughnessSq);
+   float D = D_GGX(surfaceToLight.NdotH, surface.linearRoughnessSq);
+   float3 Fr = D * F * Vis;
 
    return Fd + Fr;
 }
@@ -231,10 +233,14 @@ float3 getPunctualLight(Surface surface, SurfaceToLight surfaceToLight, float3 l
    return evaluateStandardBRDF(surface,surfaceToLight) * factor;
 }
 
-
 float computeSpecOcclusion( float NdotV , float AO , float roughness )
 {
    return saturate (pow( abs(NdotV + AO) , exp2 ( -16.0f * roughness - 1.0f )) - 1.0f + AO );
+}
+
+float roughnessToMipLevel(float roughness, float numMips)
+{	
+   return roughness * numMips;
 }
 
 float4 compute4Lights( Surface surface,
@@ -442,7 +448,7 @@ float4 computeForwardProbes(Surface surface,
    float3 specular = float3(0, 0, 0);
 
    // Radiance (Specular)
-   float lod = surface.roughness*cubeMips;
+   float lod = roughnessToMipLevel(surface.roughness, cubeMips);
 
    for (i = 0; i < numProbes; ++i)
    {
@@ -465,19 +471,25 @@ float4 computeForwardProbes(Surface surface,
    }
 
    //energy conservation
-   float3 kD = 1.0f - surface.F;
+   float3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
+   float3 kD = 1.0f - F;
    kD *= 1.0f - surface.metalness;
 
    float dfgNdotV = max( surface.NdotV , 0.0009765625f ); //0.5f/512.0f (512 is size of dfg/brdf lookup tex)
    float2 envBRDF = TORQUE_TEX2DLOD(BRDFTexture, float4(dfgNdotV, surface.roughness,0,0)).rg;
-   specular *= surface.F * envBRDF.x + surface.f90 * envBRDF.y;
+   specular *= F * envBRDF.x + surface.f90 * envBRDF.y;
    irradiance *= kD * surface.baseColor.rgb;
 
    //AO
    irradiance *= surface.ao;
    specular *= computeSpecOcclusion(surface.NdotV, surface.ao, surface.roughness);
 
-   return float4(irradiance + specular, 0);//alpha writes disabled
+   //http://marmosetco.tumblr.com/post/81245981087
+   float horizonOcclusion = 1.3;
+   float horizon = saturate( 1 + horizonOcclusion * dot(surface.R, surface.N));
+   horizon *= horizon;
+
+   return float4((irradiance + specular) * horizon, 0);//alpha writes disabled
 }
 
 float4 debugVizForwardProbes(Surface surface,
@@ -580,7 +592,7 @@ float4 debugVizForwardProbes(Surface surface,
    float3 specular = float3(0, 0, 0);
 
    // Radiance (Specular)
-   float lod = surface.roughness*cubeMips;
+   float lod = roughnessToMipLevel(surface.roughness, cubeMips);
 
    if(showSpec == 1)
    {
@@ -618,17 +630,23 @@ float4 debugVizForwardProbes(Surface surface,
    }
 
    //energy conservation
-   float3 kD = 1.0f - surface.F;
+   float3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
+   float3 kD = 1.0f - F;
    kD *= 1.0f - surface.metalness;
 
    float dfgNdotV = max( surface.NdotV , 0.0009765625f ); //0.5f/512.0f (512 is size of dfg/brdf lookup tex)
    float2 envBRDF = TORQUE_TEX2DLOD(BRDFTexture, float4(dfgNdotV, surface.roughness,0,0)).rg;
-   specular *= surface.F * envBRDF.x + surface.f90 * envBRDF.y;
+   specular *= F * envBRDF.x + surface.f90 * envBRDF.y;
    irradiance *= kD * surface.baseColor.rgb;
 
    //AO
    irradiance *= surface.ao;
    specular *= computeSpecOcclusion(surface.NdotV, surface.ao, surface.roughness);
 
-   return float4(irradiance + specular, 0);//alpha writes disabled
+   //http://marmosetco.tumblr.com/post/81245981087
+   float horizonOcclusion = 1.3;
+   float horizon = saturate( 1 + horizonOcclusion * dot(surface.R, surface.N));
+   horizon *= horizon;
+
+   return float4((irradiance + specular) * horizon, 0);//alpha writes disabled
 }

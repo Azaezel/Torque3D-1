@@ -461,7 +461,7 @@ void RenderProbeMgr::_setupStaticParameters()
       if (!curEntry.mIsEnabled)
          continue;
 
-      U32 mips = mRegisteredProbes[i].mPrefilterCubemap.getPointer()->getMipMapLevels()-2;
+      U32 mips = mRegisteredProbes[i].mPrefilterCubemap.getPointer()->getMipMapLevels();
       mMipCount = (mips != 0 && mips >= mMipCount) ? mips : 0;
 
       if (curEntry.mIsSkylight)
