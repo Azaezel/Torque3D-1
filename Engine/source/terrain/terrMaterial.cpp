@@ -103,7 +103,7 @@ void TerrainMaterial::initPersistFields()
    addField( "parallaxScale", TypeF32, Offset( mParallaxScale, TerrainMaterial ), "Used to scale the height from the normal map to give some self "
 	   "occlusion effect (aka parallax) to the terrain material" );
 
-   addField("ormMap", TypeStringFilename, Offset(mCompositeMap, TerrainMaterial), "Composite map for the PBR Configuration of the material");
+   addField("ORMConfigMap", TypeStringFilename, Offset(mCompositeMap, TerrainMaterial), "Composite map for the PBR Configuration of the material");
    addField("isSRGB", TypeBool, Offset(mIsSRGB, TerrainMaterial), "Is the PBR Config map's image in sRGB format?");
    addField("invertRoughness", TypeBool, Offset(mInvertRoughness, TerrainMaterial), "Should the roughness channel of the PBR Config map be inverted?");
 
