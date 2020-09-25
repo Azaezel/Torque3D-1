@@ -700,7 +700,7 @@ void ReflectionProbe::processBakedCubemap()
       mIrridianceMap->updateFaces();
    }
 
-   if (mIrridianceMap == nullptr || mIrridianceMap->mCubemap.isNull())
+   if (mIrridianceMap == nullptr || !mIrridianceMap->mCubemap->isInitialized())
    {
       Con::errorf("ReflectionProbe::processDynamicCubemap() - Unable to load baked irradiance map at %s", getIrradianceMapPath().c_str());
       return;
@@ -713,7 +713,7 @@ void ReflectionProbe::processBakedCubemap()
       mPrefilterMap->updateFaces();
    }
 
-   if (mPrefilterMap == nullptr || mPrefilterMap->mCubemap.isNull())
+   if (mPrefilterMap == nullptr || !mPrefilterMap->mCubemap->isInitialized())
    {
       Con::errorf("ReflectionProbe::processDynamicCubemap() - Unable to load baked prefilter map at %s", getPrefilterMapPath().c_str());
       return;
