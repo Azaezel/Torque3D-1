@@ -162,7 +162,7 @@ public:
    virtual String getName() { return "Terrain Additive"; }
 };
 
-class TerrainCompositeMapFeatGLSL : public TerrainFeatGLSL
+class TerrainORMMapFeatGLSL : public TerrainFeatGLSL
 {
 public:
 

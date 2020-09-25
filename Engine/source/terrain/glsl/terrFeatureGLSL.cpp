@@ -49,7 +49,7 @@ namespace
       FEATUREMGR->registerFeature( MFT_TerrainLightMap, new TerrainLightMapFeatGLSL );
       FEATUREMGR->registerFeature( MFT_TerrainSideProject, new NamedFeatureGLSL( "Terrain Side Projection" ) );
       FEATUREMGR->registerFeature( MFT_TerrainAdditive, new TerrainAdditiveFeatGLSL );
-      FEATUREMGR->registerFeature( MFT_TerrainCompositeMap, new TerrainCompositeMapFeatGLSL );
+      FEATUREMGR->registerFeature( MFT_TerrainORMMap, new TerrainORMMapFeatGLSL );
       FEATUREMGR->registerFeature( MFT_DeferredTerrainBlankInfoMap, new TerrainBlankInfoMapFeatGLSL );
    }
 
@@ -144,20 +144,20 @@ Var* TerrainFeatGLSL::_getNormalMapTex()
 
 Var* TerrainFeatGLSL::_getORMConfigMapTex()
 {
-	String name(String::ToString("compositeMap%d", getProcessIndex()));
-	Var *compositeMap = (Var*)LangElement::find(name);
+	String name(String::ToString("ormConfigMap%d", getProcessIndex()));
+	Var *ormConfigMap = (Var*)LangElement::find(name);
 
-	if (!compositeMap)
+	if (!ormConfigMap)
 	{
-		compositeMap = new Var;
-		compositeMap->setType("sampler2D");
-		compositeMap->setName(name);
-		compositeMap->uniform = true;
-		compositeMap->sampler = true;
-		compositeMap->constNum = Var::getTexUnitNum();
+		ormConfigMap = new Var;
+		ormConfigMap->setType("sampler2D");
+		ormConfigMap->setName(name);
+		ormConfigMap->uniform = true;
+		ormConfigMap->sampler = true;
+		ormConfigMap->constNum = Var::getTexUnitNum();
 	}
 
-	return compositeMap;
+	return ormConfigMap;
 }
 
 Var* TerrainFeatGLSL::_getDetailIdStrengthParallax()
@@ -1140,7 +1140,7 @@ void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentLis
 //.b = specular strength, a= spec power. 
 
 
-void TerrainCompositeMapFeatGLSL::processVert(Vector<ShaderComponent*> &componentList,
+void TerrainORMMapFeatGLSL::processVert(Vector<ShaderComponent*> &componentList,
 	const MaterialFeatureData &fd)
 {
 	const S32 detailIndex = getProcessIndex();
@@ -1230,12 +1230,12 @@ void TerrainCompositeMapFeatGLSL::processVert(Vector<ShaderComponent*> &componen
 	output = meta;
 }
 
-U32 TerrainCompositeMapFeatGLSL::getOutputTargets(const MaterialFeatureData &fd) const
+U32 TerrainORMMapFeatGLSL::getOutputTargets(const MaterialFeatureData &fd) const
 {
 	return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget2 : ShaderFeature::RenderTarget1;
 }
 
-void TerrainCompositeMapFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
+void TerrainORMMapFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
 	const MaterialFeatureData &fd)
 {
 	/// Get the texture coord.
@@ -1243,7 +1243,7 @@ void TerrainCompositeMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
 	Var *inTex = getVertTexCoord("texCoord");
 
 	const S32 compositeIndex = getProcessIndex();
-	Var *compositeMap = _getORMConfigMapTex();
+	Var *ormConfigMap = _getORMConfigMapTex();
 	// Sample the normal map.
 	//
 	// We take two normal samples and lerp between them for
@@ -1253,10 +1253,10 @@ void TerrainCompositeMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
 	if (fd.features.hasFeature(MFT_TerrainSideProject, compositeIndex))
 	{
 		texOp = new GenOp("lerp( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z )",
-			compositeMap, inDet, compositeMap, inDet, inTex);
+			ormConfigMap, inDet, ormConfigMap, inDet, inTex);
 	}
 	else
-		texOp = new GenOp("tex2D(@, @.xy)", compositeMap, inDet);
+		texOp = new GenOp("tex2D(@, @.xy)", ormConfigMap, inDet);
 
 	// search for material var
 	Var * ormConfig;
@@ -1303,7 +1303,7 @@ void TerrainCompositeMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
 	output = meta;
 }
 
-ShaderFeature::Resources TerrainCompositeMapFeatGLSL::getResources(const MaterialFeatureData &fd)
+ShaderFeature::Resources TerrainORMMapFeatGLSL::getResources(const MaterialFeatureData &fd)
 {
 	Resources res;
 	res.numTex = 1;

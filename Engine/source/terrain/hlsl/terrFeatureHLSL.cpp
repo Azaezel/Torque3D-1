@@ -49,7 +49,7 @@ namespace
       FEATUREMGR->registerFeature( MFT_TerrainLightMap, new TerrainLightMapFeatHLSL );
       FEATUREMGR->registerFeature( MFT_TerrainSideProject, new NamedFeatureHLSL( "Terrain Side Projection" ) );
       FEATUREMGR->registerFeature( MFT_TerrainAdditive, new TerrainAdditiveFeatHLSL );  
-      FEATUREMGR->registerFeature( MFT_TerrainCompositeMap, new TerrainCompositeMapFeatHLSL );
+      FEATUREMGR->registerFeature( MFT_TerrainORMMap, new TerrainORMMapFeatHLSL );
       FEATUREMGR->registerFeature( MFT_DeferredTerrainBlankInfoMap, new TerrainBlankInfoMapFeatHLSL );
    }
 };
@@ -143,20 +143,20 @@ Var* TerrainFeatHLSL::_getNormalMapTex()
 
 Var* TerrainFeatHLSL::_getORMConfigMapTex()
 {
-   String name(String::ToString("compositeMap%d", getProcessIndex()));
-   Var *compositeMap = (Var*)LangElement::find(name);
+   String name(String::ToString("ormConfigMap%d", getProcessIndex()));
+   Var *ormConfigMap = (Var*)LangElement::find(name);
 
-   if (!compositeMap)
+   if (!ormConfigMap)
    {
-      compositeMap = new Var;
-      compositeMap->setType("SamplerState");
-      compositeMap->setName(name);
-      compositeMap->uniform = true;
-      compositeMap->sampler = true;
-      compositeMap->constNum = Var::getTexUnitNum();
+      ormConfigMap = new Var;
+      ormConfigMap->setType("SamplerState");
+      ormConfigMap->setName(name);
+      ormConfigMap->uniform = true;
+      ormConfigMap->sampler = true;
+      ormConfigMap->constNum = Var::getTexUnitNum();
    }
 
-   return compositeMap;
+   return ormConfigMap;
 }
 
 Var* TerrainFeatHLSL::_getDetailIdStrengthParallax()
@@ -1148,7 +1148,7 @@ void TerrainAdditiveFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
 //standard matInfo map contains data of the form .r = bitflags, .g = (will contain AO), 
 //.b = specular strength, a= spec power. 
 
-void TerrainCompositeMapFeatHLSL::processVert(Vector<ShaderComponent*> &componentList,
+void TerrainORMMapFeatHLSL::processVert(Vector<ShaderComponent*> &componentList,
    const MaterialFeatureData &fd)
 {
    const S32 detailIndex = getProcessIndex();
@@ -1238,12 +1238,12 @@ void TerrainCompositeMapFeatHLSL::processVert(Vector<ShaderComponent*> &componen
    output = meta;
 }
 
-U32 TerrainCompositeMapFeatHLSL::getOutputTargets(const MaterialFeatureData &fd) const
+U32 TerrainORMMapFeatHLSL::getOutputTargets(const MaterialFeatureData &fd) const
 {
    return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget2 : ShaderFeature::DefaultTarget;
 }
 
-void TerrainCompositeMapFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
+void TerrainORMMapFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    const MaterialFeatureData &fd)
 {
    /// Get the texture coord.
@@ -1251,30 +1251,30 @@ void TerrainCompositeMapFeatHLSL::processPix(Vector<ShaderComponent*> &component
    Var *inTex = getVertTexCoord("texCoord");
 
    const S32 compositeIndex = getProcessIndex();
-   Var *compositeMap = _getORMConfigMapTex();
+   Var *ormConfigMap = _getORMConfigMapTex();
    // Sample the normal map.
    //
    // We take two normal samples and lerp between them for
    // side projection layers... else a single sample.
    LangElement *texOp;
-   String name(String::ToString("compositeMapTex%d", getProcessIndex()));
-   Var *compositeMapTex = (Var*)LangElement::find(name);
-   if (!compositeMapTex)
+   String name(String::ToString("ormConfigMapTex%d", getProcessIndex()));
+   Var *ormConfigMapTex = (Var*)LangElement::find(name);
+   if (!ormConfigMapTex)
    {
-      compositeMapTex = new Var;
-      compositeMapTex->setName(String::ToString("compositeMapTex%d", getProcessIndex()));
-      compositeMapTex->setType("Texture2D");
-      compositeMapTex->uniform = true;
-      compositeMapTex->texture = true;
-      compositeMapTex->constNum = compositeMap->constNum;
+      ormConfigMapTex = new Var;
+      ormConfigMapTex->setName(String::ToString("ormConfigMapTex%d", getProcessIndex()));
+      ormConfigMapTex->setType("Texture2D");
+      ormConfigMapTex->uniform = true;
+      ormConfigMapTex->texture = true;
+      ormConfigMapTex->constNum = ormConfigMap->constNum;
    }
    if (fd.features.hasFeature(MFT_TerrainSideProject, compositeIndex))
    {
       texOp = new GenOp("lerp( @.Sample( @, @.yz ), @.Sample( @, @.xz ), @.z )",
-         compositeMapTex, compositeMap, inDet, compositeMapTex, compositeMap, inDet, inTex);
+         ormConfigMapTex, ormConfigMap, inDet, ormConfigMapTex, ormConfigMap, inDet, inTex);
    }
    else
-      texOp = new GenOp("@.Sample(@, @.xy)", compositeMapTex, compositeMap, inDet);
+      texOp = new GenOp("@.Sample(@, @.xy)", ormConfigMapTex, ormConfigMap, inDet);
 
    // search for material var
    Var * ormConfig;
@@ -1321,7 +1321,7 @@ void TerrainCompositeMapFeatHLSL::processPix(Vector<ShaderComponent*> &component
    output = meta;
 }
 
-ShaderFeature::Resources TerrainCompositeMapFeatHLSL::getResources(const MaterialFeatureData &fd)
+ShaderFeature::Resources TerrainORMMapFeatHLSL::getResources(const MaterialFeatureData &fd)
 {
    Resources res;
    res.numTex = 1;
