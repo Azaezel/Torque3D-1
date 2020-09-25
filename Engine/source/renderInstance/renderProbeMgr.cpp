@@ -862,7 +862,7 @@ void RenderProbeMgr::bakeProbe(ReflectionProbe *probe, bool writeFiles)
 
    String path = Con::getVariable("$pref::ReflectionProbes::CurrentLevelPath", "levels/");
    U32 resolution = Con::getIntVariable("$pref::ReflectionProbes::BakeResolution", 64);
-   U32 prefilterMipLevels = mLog2(F32(resolution));
+   U32 prefilterMipLevels = mLog2(F32(resolution))+1;
    bool renderWithProbes = Con::getIntVariable("$pref::ReflectionProbes::RenderWithProbes", false);
 
    ReflectionProbe* clientProbe = nullptr;

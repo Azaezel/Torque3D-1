@@ -132,7 +132,7 @@ ReflectionProbe::ReflectionProbe() :
    mProbeInfo = nullptr;
 
    mPrefilterSize = 64;
-   mPrefilterMipLevels = mLog2(F32(mPrefilterSize));
+   mPrefilterMipLevels = mLog2(F32(mPrefilterSize))+1;
    mPrefilterMap = nullptr;
    mIrridianceMap = nullptr;
 
@@ -645,7 +645,7 @@ void ReflectionProbe::processDynamicCubemap()
    if (mCubeReflector.getCubemap())
    {
       U32 resolution = Con::getIntVariable("$pref::ReflectionProbes::BakeResolution", 64);
-      U32 prefilterMipLevels = mLog2(F32(resolution));
+      U32 prefilterMipLevels = mLog2(F32(resolution))+1;
 
       //Prep it with whatever resolution we've dictated for our bake
       mIrridianceMap->mCubemap->initDynamic(resolution, PROBEMGR->PROBE_FORMAT);
