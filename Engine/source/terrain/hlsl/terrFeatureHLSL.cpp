@@ -141,7 +141,7 @@ Var* TerrainFeatHLSL::_getNormalMapTex()
    return normalMap;
 }
 
-Var* TerrainFeatHLSL::_getCompositeMapTex()
+Var* TerrainFeatHLSL::_getORMConfigMapTex()
 {
    String name(String::ToString("compositeMap%d", getProcessIndex()));
    Var *compositeMap = (Var*)LangElement::find(name);
@@ -1251,7 +1251,7 @@ void TerrainCompositeMapFeatHLSL::processPix(Vector<ShaderComponent*> &component
    Var *inTex = getVertTexCoord("texCoord");
 
    const S32 compositeIndex = getProcessIndex();
-   Var *compositeMap = _getCompositeMapTex();
+   Var *compositeMap = _getORMConfigMapTex();
    // Sample the normal map.
    //
    // We take two normal samples and lerp between them for

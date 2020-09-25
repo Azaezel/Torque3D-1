@@ -84,28 +84,27 @@ void TerrainMaterial::initPersistFields()
    //addField( "diffuseMap", TypeStringFilename, Offset( mDiffuseMap, TerrainMaterial ), "Base texture for the material" );
    addField( "diffuseSize", TypeF32, Offset( mDiffuseSize, TerrainMaterial ), "Used to scale the diffuse map to the material square" );
 
-   addField( "normalMap", TypeStringFilename, Offset( mNormalMap, TerrainMaterial ), "Bump map for the material" );
-   
-   addField( "detailMap", TypeStringFilename, Offset( mDetailMap, TerrainMaterial ), "Detail map for the material" );
-   addField( "detailSize", TypeF32, Offset( mDetailSize, TerrainMaterial ), "Used to scale the detail map to the material square" );
-
-   addField( "detailStrength", TypeF32, Offset( mDetailStrength, TerrainMaterial ), "Exponentially sharpens or lightens the detail map rendering on the material" );
-   addField( "detailDistance", TypeF32, Offset( mDetailDistance, TerrainMaterial ), "Changes how far camera can see the detail map rendering on the material" );
-   addField( "useSideProjection", TypeBool, Offset( mSideProjection, TerrainMaterial ),"Makes that terrain material project along the sides of steep "
-	   "slopes instead of projected downwards");
-
-   //Macro maps additions
-   addField( "macroMap", TypeStringFilename, Offset( mMacroMap, TerrainMaterial ), "Macro map for the material" );
-   addField( "macroSize", TypeF32, Offset( mMacroSize, TerrainMaterial ), "Used to scale the Macro map to the material square" );
-   addField( "macroStrength", TypeF32, Offset( mMacroStrength, TerrainMaterial ), "Exponentially sharpens or lightens the Macro map rendering on the material" );
-   addField( "macroDistance", TypeF32, Offset( mMacroDistance, TerrainMaterial ), "Changes how far camera can see the Macro map rendering on the material" );
-
+   scriptBindMapSlot(NormalMap, TerrainMaterial);
    addField( "parallaxScale", TypeF32, Offset( mParallaxScale, TerrainMaterial ), "Used to scale the height from the normal map to give some self "
 	   "occlusion effect (aka parallax) to the terrain material" );
 
-   addField("ORMConfigMap", TypeStringFilename, Offset(mCompositeMap, TerrainMaterial), "Composite map for the PBR Configuration of the material");
+   scriptBindMapSlot(DetailMap, TerrainMaterial);
+   addField( "detailSize", TypeF32, Offset( mDetailSize, TerrainMaterial ), "Used to scale the detail map to the material square" );
+   addField( "detailStrength", TypeF32, Offset( mDetailStrength, TerrainMaterial ), "Exponentially sharpens or lightens the detail map rendering on the material" );
+   addField( "detailDistance", TypeF32, Offset( mDetailDistance, TerrainMaterial ), "Changes how far camera can see the detail map rendering on the material" );
+
+   addField( "useSideProjection", TypeBool, Offset( mSideProjection, TerrainMaterial ),"Makes that terrain material project along the sides of steep "
+	   "slopes instead of projected downwards");
+
+   scriptBindMapSlot(ORMConfigMap, TerrainMaterial);
    addField("isSRGB", TypeBool, Offset(mIsSRGB, TerrainMaterial), "Is the PBR Config map's image in sRGB format?");
    addField("invertRoughness", TypeBool, Offset(mInvertRoughness, TerrainMaterial), "Should the roughness channel of the PBR Config map be inverted?");
+
+   //Macro maps additions
+   scriptBindMapSlot(MacroMap, TerrainMaterial);
+   addField( "macroSize", TypeF32, Offset( mMacroSize, TerrainMaterial ), "Used to scale the Macro map to the material square" );
+   addField( "macroStrength", TypeF32, Offset( mMacroStrength, TerrainMaterial ), "Exponentially sharpens or lightens the Macro map rendering on the material" );
+   addField( "macroDistance", TypeF32, Offset( mMacroDistance, TerrainMaterial ), "Changes how far camera can see the Macro map rendering on the material" );
 
    Parent::initPersistFields();
 
@@ -175,9 +174,9 @@ TerrainMaterial* TerrainMaterial::findOrCreate( const char *nameOrPath )
       mat->setInternalName( "warning_material" );
       mat->mDiffuseMapFilename = GFXTextureManager::getWarningTexturePath();
       mat->mDiffuseSize = 500;
-      mat->mDetailMap = GFXTextureManager::getWarningTexturePath();
+      mat->mDetailMapFilename = GFXTextureManager::getWarningTexturePath();
       mat->mDetailSize = 5;
-	  mat->mMacroMap = GFXTextureManager::getWarningTexturePath();
+	  mat->mMacroMapFilename = GFXTextureManager::getWarningTexturePath();
 	  mat->mMacroSize = 200;
       mat->registerObject();
       

@@ -439,7 +439,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
             features.addFeature(MFT_isDeferred, featureIndex);
          features.addFeature( MFT_TerrainDetailMap, featureIndex );
 
-         if (!(mat->getCompositeMap().isEmpty()))
+         if (!(mat->getORMConfigMap().isEmpty()))
          {
             if (deferredMat)
                features.addFeature(MFT_isDeferred, featureIndex);
@@ -645,7 +645,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
         if (matInfo->mat->getIsSRGB())
            profile = &GFXStaticTextureSRGBProfile;
 
-		  matInfo->compositeTex.set(matInfo->mat->getCompositeMap(),
+		  matInfo->compositeTex.set(matInfo->mat->getORMConfigMap(),
 			  profile, "TerrainCellMaterial::_createPass() - CompositeMap");
 		  const S32 sampler = matInfo->compositeTexConst->getSamplerRegister();
 

@@ -46,7 +46,7 @@ public:
 
    Var* _getNormalMapTex();
 
-   Var* _getCompositeMapTex();
+   Var* _getORMConfigMapTex();
 
    static Var* _getUniformVar( const char *name, const char *type, ConstantSortPosition csp );
    
