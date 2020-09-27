@@ -128,9 +128,15 @@ typedef ImageAsset::ImageTypes ImageAssetType;
 DefineEnumType(ImageAssetType);
 
 #define assetText(x,suff) std::string(std::string(#x) + std::string(#suff)).c_str()
+
+#define initMapSlot(name) m##name##Filename = String::EmptyString; m##name##AssetId = StringTable->EmptyString(); m##name##Asset = NULL;
+#define bindMapSlot(name) if (m##name##AssetId != String::EmptyString) m##name##Asset = m##name##AssetId;
+
 #define scriptBindMapSlot(name, consoleClass, docs) addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), assetText(name, docs)); \
                                       addField(assetText(name,Asset), TypeImageAssetPtr, Offset(m##name##AssetId, consoleClass), assetText(name,asset reference.));
 
+#define initMapArraySlot(name,id) m##name##Filename[id] = String::EmptyString; m##name##AssetId[id] = StringTable->EmptyString(); m##name##Asset[id] = NULL;
+#define bindMapArraySlot(name,id) if (m##name##AssetId[id] != String::EmptyString) m##name##Asset[id] = m##name##AssetId[id];
 #define scriptBindMapArraySlot(name, arraySize, consoleClass, docs) addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), arraySize, assetText(name, docs)); \
                                       addField(assetText(name,Asset), TypeImageAssetPtr, Offset(m##name##AssetId, consoleClass), arraySize, assetText(name,asset reference.));
 

@@ -71,6 +71,11 @@ TerrainMaterial::TerrainMaterial()
       mIsSRGB(false),
       mInvertRoughness(false)
 {
+   initMapSlot(DiffuseMap);
+   initMapSlot(NormalMap);
+   initMapSlot(DetailMap);
+   initMapSlot(ORMConfigMap);
+   initMapSlot(MacroMap);
 }
 
 TerrainMaterial::~TerrainMaterial()
@@ -125,7 +130,14 @@ bool TerrainMaterial::onAdd()
       SimObject *object = set->findObjectByInternalName( mInternalName );
       if ( object )
          Con::warnf( "TerrainMaterial::onAdd() - Internal name collision; '%s' already exists!", mInternalName );
-   }
+   }  
+
+   //bind any assets we have
+   bindMapSlot(DiffuseMap);
+   bindMapSlot(NormalMap);
+   bindMapSlot(DetailMap);
+   bindMapSlot(ORMConfigMap);
+   bindMapSlot(MacroMap);
 
    set->addObject( this );
 
