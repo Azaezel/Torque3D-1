@@ -128,10 +128,10 @@ typedef ImageAsset::ImageTypes ImageAssetType;
 DefineEnumType(ImageAssetType);
 
 #define assetText(x,suff) std::string(std::string(#x) + std::string(#suff)).c_str()
-#define scriptBindMapSlot(name, consoleClass) addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), assetText(name,texture map.)); \
+#define scriptBindMapSlot(name, consoleClass, docs) addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), assetText(name, docs)); \
                                       addField(assetText(name,Asset), TypeImageAssetPtr, Offset(m##name##AssetId, consoleClass), assetText(name,asset reference.));
 
-#define scriptBindMapArraySlot(name, arraySize, consoleClass) addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), arraySize, assetText(name,texture map.)); \
+#define scriptBindMapArraySlot(name, arraySize, consoleClass, docs) addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), arraySize, assetText(name, docs)); \
                                       addField(assetText(name,Asset), TypeImageAssetPtr, Offset(m##name##AssetId, consoleClass), arraySize, assetText(name,asset reference.));
 
 #define DECLARE_TEXTUREMAP(name)      protected: \

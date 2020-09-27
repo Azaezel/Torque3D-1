@@ -79,16 +79,14 @@ TerrainMaterial::~TerrainMaterial()
 
 void TerrainMaterial::initPersistFields()
 {
-   scriptBindMapSlot(DiffuseMap, TerrainMaterial);
-
-   //addField( "diffuseMap", TypeStringFilename, Offset( mDiffuseMap, TerrainMaterial ), "Base texture for the material" );
+   scriptBindMapSlot(DiffuseMap, TerrainMaterial,"Base Albedo stretched over the whole map");
    addField( "diffuseSize", TypeF32, Offset( mDiffuseSize, TerrainMaterial ), "Used to scale the diffuse map to the material square" );
 
-   scriptBindMapSlot(NormalMap, TerrainMaterial);
+   scriptBindMapSlot(NormalMap, TerrainMaterial,"NormalMap");
    addField( "parallaxScale", TypeF32, Offset( mParallaxScale, TerrainMaterial ), "Used to scale the height from the normal map to give some self "
 	   "occlusion effect (aka parallax) to the terrain material" );
 
-   scriptBindMapSlot(DetailMap, TerrainMaterial);
+   scriptBindMapSlot(DetailMap, TerrainMaterial, "Raises and lowers the RGB result of the Base Albedo up close.");
    addField( "detailSize", TypeF32, Offset( mDetailSize, TerrainMaterial ), "Used to scale the detail map to the material square" );
    addField( "detailStrength", TypeF32, Offset( mDetailStrength, TerrainMaterial ), "Exponentially sharpens or lightens the detail map rendering on the material" );
    addField( "detailDistance", TypeF32, Offset( mDetailDistance, TerrainMaterial ), "Changes how far camera can see the detail map rendering on the material" );
@@ -96,12 +94,12 @@ void TerrainMaterial::initPersistFields()
    addField( "useSideProjection", TypeBool, Offset( mSideProjection, TerrainMaterial ),"Makes that terrain material project along the sides of steep "
 	   "slopes instead of projected downwards");
 
-   scriptBindMapSlot(ORMConfigMap, TerrainMaterial);
+   scriptBindMapSlot(ORMConfigMap, TerrainMaterial, "AO|Roughness|metalness map (uses DetailMap UV Coords)");
    addField("isSRGB", TypeBool, Offset(mIsSRGB, TerrainMaterial), "Is the PBR Config map's image in sRGB format?");
    addField("invertRoughness", TypeBool, Offset(mInvertRoughness, TerrainMaterial), "Should the roughness channel of the PBR Config map be inverted?");
 
    //Macro maps additions
-   scriptBindMapSlot(MacroMap, TerrainMaterial);
+   scriptBindMapSlot(MacroMap, TerrainMaterial, "Raises and lowers the RGB result of the Base Albedo at a distance.");
    addField( "macroSize", TypeF32, Offset( mMacroSize, TerrainMaterial ), "Used to scale the Macro map to the material square" );
    addField( "macroStrength", TypeF32, Offset( mMacroStrength, TerrainMaterial ), "Exponentially sharpens or lightens the Macro map rendering on the material" );
    addField( "macroDistance", TypeF32, Offset( mMacroDistance, TerrainMaterial ), "Changes how far camera can see the Macro map rendering on the material" );

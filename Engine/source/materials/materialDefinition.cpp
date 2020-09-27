@@ -246,18 +246,18 @@ void Material::initPersistFields()
          "This color is multiplied against the diffuse texture color.  If no diffuse texture "
          "is present this is the material color." );
 
-      scriptBindMapArraySlot(DiffuseMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(OverlayMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(LightMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(ToneMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(DetailMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(NormalMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(ORMConfigMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(RoughMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(AOMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(MetalMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(GlowMap, MAX_STAGES, Material);
-      scriptBindMapArraySlot(DetailNormalMap, MAX_STAGES, Material);
+      scriptBindMapArraySlot(DiffuseMap, MAX_STAGES, Material, "Albedo");
+      scriptBindMapArraySlot(OverlayMap, MAX_STAGES, Material, "Overlay");
+      scriptBindMapArraySlot(LightMap, MAX_STAGES, Material, "LightMap");
+      scriptBindMapArraySlot(ToneMap, MAX_STAGES, Material, "ToneMap");
+      scriptBindMapArraySlot(DetailMap, MAX_STAGES, Material, "DetailMap");
+      scriptBindMapArraySlot(NormalMap, MAX_STAGES, Material, "NormalMap");
+      scriptBindMapArraySlot(ORMConfigMap, MAX_STAGES, Material, "AO|Roughness|metalness map");
+      scriptBindMapArraySlot(RoughMap, MAX_STAGES, Material, "RoughMap (also needs MetalMap)");
+      scriptBindMapArraySlot(AOMap, MAX_STAGES, Material, "AOMap");
+      scriptBindMapArraySlot(MetalMap, MAX_STAGES, Material, "MetalMap (also needs RoughMap)");
+      scriptBindMapArraySlot(GlowMap, MAX_STAGES, Material, "GlowMap (needs Albedo)");
+      scriptBindMapArraySlot(DetailNormalMap, MAX_STAGES, Material, "DetailNormalMap");
 
       addField("diffuseMapSRGB", TypeBool, Offset(mDiffuseMapSRGB, Material), MAX_STAGES,
          "Enable sRGB for the diffuse color texture map.");
