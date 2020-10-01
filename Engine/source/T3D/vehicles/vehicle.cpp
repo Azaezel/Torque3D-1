@@ -165,7 +165,7 @@ VehicleData::VehicleData()
    massCenter.set(0,0,0);
    massBox.set(0,0,0);
 
-   drag = 0.7f;
+   drag = Point3F(0.7f,0.7f,0.7f);
    density = 4;
 
    jetForce = 500;

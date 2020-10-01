@@ -285,7 +285,7 @@ PlayerData::PlayerData()
 
    mass = 9.0f;         // from ShapeBase
    maxEnergy = 60.0f;   // from ShapeBase
-   drag = 0.3f;         // from ShapeBase
+   drag = Point3F(0.3f, 0.3f, 0.3f); // from ShapeBase
    density = 1.1f;      // from ShapeBase
 
    maxStepHeight = 1.0f;
@@ -1211,7 +1211,7 @@ void PlayerData::packData(BitStream* stream)
 
    stream->write(mass);
    stream->write(maxEnergy);
-   stream->write(drag);
+   mathWrite(*stream, drag);
    stream->write(density);
 
    stream->write(maxStepHeight);
@@ -1393,7 +1393,7 @@ void PlayerData::unpackData(BitStream* stream)
 
    stream->read(&mass);
    stream->read(&maxEnergy);
-   stream->read(&drag);
+   mathRead(*stream,&drag);
    stream->read(&density);
 
    stream->read(&maxStepHeight);
