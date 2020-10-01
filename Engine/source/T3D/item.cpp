@@ -50,8 +50,6 @@ const S32 sCollisionTimeout = 15;       // Timout value in ticks
 static F32 sMinWarpTicks = 0.5 ;        // Fraction of tick at which instant warp occures
 static S32 sMaxWarpTicks = 3;           // Max warp duration in ticks
 
-F32 Item::mGravity = -20.0f;
-
 const U32 sClientCollisionMask = (TerrainObjectType     |
                                   StaticShapeObjectType |
                                   VehicleObjectType     |  
@@ -717,7 +715,7 @@ void Item::updateWorkingCollisionSet(const U32 mask, const F32 dt)
 void Item::updateVelocity(const F32 dt)
 {
    // Acceleration due to gravity
-   mVelocity.z += (mGravity * mDataBlock->gravityMod) * dt;
+   mVelocity.z += (gGravity * mDataBlock->gravityMod) * dt;
    F32 len;
    if (mDataBlock->maxVelocity > 0 && (len = mVelocity.len()) > (mDataBlock->maxVelocity * 1.05)) {
       Point3F excess = mVelocity * (1.0 - (mDataBlock->maxVelocity / len ));
@@ -726,7 +724,7 @@ void Item::updateVelocity(const F32 dt)
    }
 
    // Container buoyancy & drag
-   mVelocity.z -= mBuoyancy * (mGravity * mDataBlock->gravityMod * mGravityMod) * dt;
+   mVelocity.z -= mBuoyancy * (gGravity * mDataBlock->gravityMod * mGravityMod) * dt;
    mVelocity   -= mVelocity * mDrag * dt;
 }
 

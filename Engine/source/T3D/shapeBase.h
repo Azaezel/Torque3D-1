@@ -86,6 +86,7 @@ class SFXProfile;
 
 typedef void* Light;
 
+const F32 gGravity = -20;
 
 //--------------------------------------------------------------------------
 
