@@ -3252,30 +3252,6 @@ void Player::updateMove(const Move* move)
       mVelocity.z -= mDataBlock->upResistFactor * TickSec * (mVelocity.z - mDataBlock->upResistSpeed);
    }
 
-   // Container buoyancy & drag
-/* Commented out until the buoyancy calculation can be reworked so that a container and
-** player with the same density will result in neutral buoyancy.
-   if (mBuoyancy != 0)
-   {     
-      // Applying buoyancy when standing still causing some jitters-
-      if (mBuoyancy > 1.0 || !mVelocity.isZero() || !runSurface)
-      {
-         // A little hackery to prevent oscillation
-         // based on http://reinot.blogspot.com/2005/11/oh-yes-they-float-georgie-they-all.html
-
-         F32 buoyancyForce = mBuoyancy * mNetGravity * TickSec;
-         F32 currHeight = getPosition().z;
-         const F32 C = 2.0f;
-         const F32 M = 0.1f;
-         
-         if ( currHeight + mVelocity.z * TickSec * C > mLiquidHeight )
-            buoyancyForce *= M;
-                  
-         mVelocity.z -= buoyancyForce;
-      }
-   }
-*/
-
    // Apply drag
    if ( mSwimming )
       mVelocity -= mVelocity * mDrag * TickSec * ( mVelocity.len() / mDataBlock->maxUnderwaterForwardSpeed );

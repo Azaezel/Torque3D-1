@@ -714,18 +714,17 @@ void Item::updateWorkingCollisionSet(const U32 mask, const F32 dt)
 
 void Item::updateVelocity(const F32 dt)
 {
+   // Container buoyancy & drag
    // Acceleration due to gravity
-   mVelocity.z += (gGravity * mDataBlock->gravityMod) * dt;
+   mVelocity.z += (mNetGravity * mDataBlock->gravityMod) * dt;
+   mVelocity   -= mVelocity * mDrag * dt;
+
    F32 len;
    if (mDataBlock->maxVelocity > 0 && (len = mVelocity.len()) > (mDataBlock->maxVelocity * 1.05)) {
       Point3F excess = mVelocity * (1.0 - (mDataBlock->maxVelocity / len ));
       excess *= 0.1f;
       mVelocity -= excess;
    }
-
-   // Container buoyancy & drag
-   mVelocity.z -= mBuoyancy * (mDataBlock->gravityMod * mNetGravity) * dt;
-   mVelocity   -= mVelocity * mDrag * dt;
 }
 
 

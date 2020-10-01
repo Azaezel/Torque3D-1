@@ -1798,7 +1798,7 @@ void ShapeBase::updateContainer()
    }
 
    mAppliedForce = info.appliedForce;
-   mNetGravity = info.gravityScale* gGravity;
+   mNetGravity = (1.0-mBuoyancy)*info.gravityScale* gGravity;
 
    //Con::printf( "WaterCoverage: %f", mWaterCoverage );
    //Con::printf( "Drag: %f", mDrag );

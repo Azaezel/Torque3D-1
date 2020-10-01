@@ -565,8 +565,6 @@ void FlyingVehicle::updateForces(F32 /*dt*/)
    // Add in force from physical zones...
    force += mAppliedForce;
 
-   // Container buoyancy & drag
-   force -= Point3F(0, 0, 1) * (mBuoyancy * mRigid.mass * mNetGravity);
    force -= mRigid.linVelocity * mDrag;
 
    //

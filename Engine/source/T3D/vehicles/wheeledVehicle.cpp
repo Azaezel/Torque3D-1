@@ -1092,7 +1092,7 @@ void WheeledVehicle::updateForces(F32 dt)
    mRigid.force += mAppliedForce;
 
    // Container drag & buoyancy
-   mRigid.force  += Point3F(0, 0, -mBuoyancy * mRigid.mass * mNetGravity);
+   mRigid.force  += Point3F(0, 0, mRigid.mass * mNetGravity);
    mRigid.force  -= mRigid.linVelocity * mDrag;
    mRigid.torque -= mRigid.angMomentum * mDrag;
 
@@ -1100,9 +1100,6 @@ void WheeledVehicle::updateForces(F32 dt)
    // longer at rest. Could test this a little more efficiently...
    if (mRigid.atRest && (mRigid.force.len() || mRigid.torque.len()))
       mRigid.atRest = false;
-
-   // Gravity
-   mRigid.force += Point3F(0, 0, mRigid.mass * mNetGravity);
 
    // Integrate and update velocity
    mRigid.linMomentum += mRigid.force * dt;

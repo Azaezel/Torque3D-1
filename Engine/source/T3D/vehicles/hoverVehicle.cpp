@@ -871,8 +871,6 @@ void HoverVehicle::updateForces(F32 /*dt*/)
    // Add in physical zone force
    force += mAppliedForce;
 
-   // Container buoyancy & drag
-   force  += Point3F(0, 0,-mBuoyancy * mRigid.mass * mNetGravity);
    force  -= mRigid.linVelocity * mDrag;
    torque -= mRigid.angMomentum * mDrag;
 
