@@ -1092,7 +1092,7 @@ void WheeledVehicle::updateForces(F32 dt)
    mRigid.force += mAppliedForce;
 
    // Container drag & buoyancy
-   mRigid.force  += Point3F(0, 0, -mBuoyancy * gGravity * mRigid.mass);
+   mRigid.force  += Point3F(0, 0, -mBuoyancy * mRigid.mass * gGravity * mGravityMod);
    mRigid.force  -= mRigid.linVelocity * mDrag;
    mRigid.torque -= mRigid.angMomentum * mDrag;
 
@@ -1102,7 +1102,7 @@ void WheeledVehicle::updateForces(F32 dt)
       mRigid.atRest = false;
 
    // Gravity
-   mRigid.force += Point3F(0, 0, gGravity * mRigid.mass);
+   mRigid.force += Point3F(0, 0, mRigid.mass * gGravity * mGravityMod);
 
    // Integrate and update velocity
    mRigid.linMomentum += mRigid.force * dt;

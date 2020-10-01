@@ -496,7 +496,7 @@ void FlyingVehicle::updateForces(F32 /*dt*/)
    currPosMat.getColumn(2,&zv);
    F32 speed = mRigid.linVelocity.len();
 
-   Point3F force  = Point3F(0, 0, gGravity * mRigid.mass * mGravityMod);
+   Point3F force  = Point3F(0, 0, mRigid.mass * gGravity * mGravityMod);
    Point3F torque = Point3F(0, 0, 0);
 
    // Drag at any speed
@@ -518,7 +518,7 @@ void FlyingVehicle::updateForces(F32 /*dt*/)
    }
 
    // Hovering Jet
-   F32 vf = -gGravity * mRigid.mass * mGravityMod;
+   F32 vf = mRigid.mass * -gGravity * mGravityMod;
    F32 h  = getHeight();
    if (h <= 1) {
       if (h > 0) {
@@ -566,7 +566,7 @@ void FlyingVehicle::updateForces(F32 /*dt*/)
    force += mAppliedForce;
 
    // Container buoyancy & drag
-   force -= Point3F(0, 0, 1) * (mBuoyancy * gGravity * mRigid.mass * mGravityMod);
+   force -= Point3F(0, 0, 1) * (mBuoyancy * mRigid.mass * gGravity * mGravityMod);
    force -= mRigid.linVelocity * mDrag;
 
    //
