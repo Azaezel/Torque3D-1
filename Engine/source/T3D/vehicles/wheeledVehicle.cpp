@@ -54,9 +54,6 @@ static U32 sClientCollisionMask =
       StaticShapeObjectType | VehicleObjectType | 
       VehicleBlockerObjectType;
 
-// Gravity constant
-static F32 sWheeledVehicleGravity = -20;
-
 // Misc. sound constants
 static F32 sMinSquealVolume = 0.05f;
 static F32 sIdleEngineVolume = 0.2f;
@@ -1095,7 +1092,7 @@ void WheeledVehicle::updateForces(F32 dt)
    mRigid.force += mAppliedForce;
 
    // Container drag & buoyancy
-   mRigid.force  += Point3F(0, 0, -mBuoyancy * sWheeledVehicleGravity * mRigid.mass);
+   mRigid.force  += Point3F(0, 0, -mBuoyancy * gGravity * mRigid.mass);
    mRigid.force  -= mRigid.linVelocity * mDrag;
    mRigid.torque -= mRigid.angMomentum * mDrag;
 
@@ -1105,7 +1102,7 @@ void WheeledVehicle::updateForces(F32 dt)
       mRigid.atRest = false;
 
    // Gravity
-   mRigid.force += Point3F(0, 0, sWheeledVehicleGravity * mRigid.mass);
+   mRigid.force += Point3F(0, 0, gGravity * mRigid.mass);
 
    // Integrate and update velocity
    mRigid.linMomentum += mRigid.force * dt;

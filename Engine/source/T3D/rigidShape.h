@@ -36,6 +36,7 @@ class ParticleEmitter;
 class ParticleEmitterData;
 class ClippedPolyList;
 
+const F32 gGravity = -20;
 
 class RigidShapeData : public ShapeBaseData
 {

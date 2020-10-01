@@ -66,7 +66,6 @@ static F32 sWorkingQueryBoxSizeMultiplier = 2.0f;  // How much larger should the
 // Client prediction
 const S32 sMaxWarpTicks = 3;           // Max warp duration in ticks
 const S32 sMaxPredictionTicks = 30;    // Number of ticks to predict
-const F32 sVehicleGravity = -20;
 
 // Physics and collision constants
 static F32 sRestTol = 0.5;             // % of gravity energy to be at rest
@@ -1234,7 +1233,7 @@ void Vehicle::updatePos(F32 dt)
       if (mCollisionList.getCount()) 
       {
          F32 k = mRigid.getKineticEnergy();
-         F32 G = sVehicleGravity * dt;
+         F32 G = gGravity * dt;
          F32 Kg = 0.5 * mRigid.mass * G * G;
          if (k < sRestTol * Kg && ++restCount > sRestCount)
             mRigid.setAtRest();

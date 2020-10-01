@@ -190,7 +190,6 @@ namespace {
    // Client prediction
    const S32 sMaxWarpTicks = 3;           // Max warp duration in ticks
    const S32 sMaxPredictionTicks = 30;    // Number of ticks to predict
-   const F32 sRigidShapeGravity = -20;
 
    // Physics and collision constants
    static F32 sRestTol = 0.5;             // % of gravity energy to be at rest
@@ -1056,7 +1055,7 @@ void RigidShape::updatePos(F32 dt)
       if (mCollisionList.getCount()) 
       {
          F32 k = mRigid.getKineticEnergy();
-         F32 G = sRigidShapeGravity * dt;
+         F32 G = gGravity * dt;
          F32 Kg = 0.5 * mRigid.mass * G * G;
          if (k < sRestTol * Kg && ++restCount > sRestCount)
             mRigid.setAtRest();
@@ -1148,7 +1147,7 @@ void RigidShape::updatePos(F32 dt)
 void RigidShape::updateForces(F32 /*dt*/)
 {
    if (mDisableMove) return;
-   Point3F gravForce(0, 0, sRigidShapeGravity * mRigid.mass * mGravityMod);
+   Point3F gravForce(0, 0, gGravity * mRigid.mass * mGravityMod);
 
    MatrixF currTransform;
    mRigid.getTransform(&currTransform);
@@ -1170,7 +1169,7 @@ void RigidShape::updateForces(F32 /*dt*/)
    force += mAppliedForce;
 
    // Container buoyancy & drag
-   force  += Point3F(0, 0,-mBuoyancy * sRigidShapeGravity * mRigid.mass * mGravityMod);
+   force  += Point3F(0, 0,-mBuoyancy * gGravity * mRigid.mass * mGravityMod);
    force  -= mRigid.linVelocity * mDrag;
    torque -= mRigid.angMomentum * mDrag;
 
