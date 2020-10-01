@@ -1055,7 +1055,7 @@ void RigidShape::updatePos(F32 dt)
       if (mCollisionList.getCount()) 
       {
          F32 k = mRigid.getKineticEnergy();
-         F32 G = gGravity * mGravityMod * dt;
+         F32 G = mNetGravity * dt;
          F32 Kg = 0.5 * mRigid.mass * G * G;
          if (k < sRestTol * Kg && ++restCount > sRestCount)
             mRigid.setAtRest();
@@ -1147,7 +1147,7 @@ void RigidShape::updatePos(F32 dt)
 void RigidShape::updateForces(F32 /*dt*/)
 {
    if (mDisableMove) return;
-   Point3F gravForce(0, 0, mRigid.mass * gGravity * mGravityMod);
+   Point3F gravForce(0, 0, mRigid.mass * mNetGravity);
 
    MatrixF currTransform;
    mRigid.getTransform(&currTransform);
@@ -1169,7 +1169,7 @@ void RigidShape::updateForces(F32 /*dt*/)
    force += mAppliedForce;
 
    // Container buoyancy & drag
-   force  += Point3F(0, 0,-mBuoyancy * mRigid.mass * gGravity * mGravityMod);
+   force  += Point3F(0, 0,-mBuoyancy * mRigid.mass * mNetGravity);
    force  -= mRigid.linVelocity * mDrag;
    torque -= mRigid.angMomentum * mDrag;
 

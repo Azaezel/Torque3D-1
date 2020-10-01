@@ -915,7 +915,7 @@ protected:
    F32 mWaterCoverage;              ///< Percent of this object covered by water
 
    Point3F mAppliedForce;
-   F32 mGravityMod;
+   F32 mNetGravity;
    /// @}
 
    F32 mDamageFlash;

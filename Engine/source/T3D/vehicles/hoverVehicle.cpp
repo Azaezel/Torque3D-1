@@ -673,7 +673,7 @@ void HoverVehicle::updateForces(F32 /*dt*/)
 {
    PROFILE_SCOPE( HoverVehicle_UpdateForces );
 
-   Point3F gravForce(0, 0, mRigid.mass * gGravity * mGravityMod);
+   Point3F gravForce(0, 0, mRigid.mass * mNetGravity);
 
    MatrixF currTransform;
    mRigid.getTransform(&currTransform);
@@ -872,7 +872,7 @@ void HoverVehicle::updateForces(F32 /*dt*/)
    force += mAppliedForce;
 
    // Container buoyancy & drag
-   force  += Point3F(0, 0,-mBuoyancy * mRigid.mass * gGravity * mGravityMod);
+   force  += Point3F(0, 0,-mBuoyancy * mRigid.mass * mNetGravity);
    force  -= mRigid.linVelocity * mDrag;
    torque -= mRigid.angMomentum * mDrag;
 

@@ -2888,7 +2888,7 @@ void Player::updateMove(const Move* move)
    speed_bias = speed_bias + (speed_bias_goal - speed_bias)*0.1f;
    moveSpeed *= speed_bias;
    // Acceleration due to gravity
-   VectorF acc(0.0f, 0.0f, gGravity * mGravityMod * TickSec);
+   VectorF acc(0.0f, 0.0f, mNetGravity* TickSec);
 
    // Determine ground contact normal. Only look for contacts if
    // we can move and aren't mounted.
@@ -3263,7 +3263,7 @@ void Player::updateMove(const Move* move)
          // A little hackery to prevent oscillation
          // based on http://reinot.blogspot.com/2005/11/oh-yes-they-float-georgie-they-all.html
 
-         F32 buoyancyForce = mBuoyancy * gGravity * mGravityMod * TickSec;
+         F32 buoyancyForce = mBuoyancy * mNetGravity * TickSec;
          F32 currHeight = getPosition().z;
          const F32 C = 2.0f;
          const F32 M = 0.1f;

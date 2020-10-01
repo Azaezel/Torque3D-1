@@ -724,7 +724,7 @@ void Item::updateVelocity(const F32 dt)
    }
 
    // Container buoyancy & drag
-   mVelocity.z -= mBuoyancy * (gGravity * mDataBlock->gravityMod * mGravityMod) * dt;
+   mVelocity.z -= mBuoyancy * (mDataBlock->gravityMod * mNetGravity) * dt;
    mVelocity   -= mVelocity * mDrag * dt;
 }
 
