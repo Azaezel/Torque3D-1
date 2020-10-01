@@ -784,7 +784,7 @@ void ShapeBaseData::packData(BitStream* stream)
    if(stream->writeFlag(mass != gShapeBaseDataProto.mass))
       stream->write(mass);
    if(stream->writeFlag(drag != gShapeBaseDataProto.drag))
-      mathRead(*stream, &drag);
+      mathWrite(*stream, drag);
    if(stream->writeFlag(density != gShapeBaseDataProto.density))
       stream->write(density);
    if(stream->writeFlag(maxEnergy != gShapeBaseDataProto.maxEnergy))
@@ -864,7 +864,7 @@ void ShapeBaseData::unpackData(BitStream* stream)
       mass = gShapeBaseDataProto.mass;
 
    if(stream->readFlag())
-      mathWrite(*stream, drag);
+      mathRead(*stream, &drag);
    else
       drag = gShapeBaseDataProto.drag;
 
