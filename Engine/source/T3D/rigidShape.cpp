@@ -1182,26 +1182,16 @@ void RigidShape::updatePos(F32 dt)
 
 //----------------------------------------------------------------------------
 
-void RigidShape::updateForces(F32 /*dt*/)
+void RigidShape::updateForces(F32 dt)
 {
    if (mDisableMove) return;
-   Point3F gravForce(0, 0, mRigid.mass * mNetGravity);
-
-   MatrixF currTransform;
-   mRigid.getTransform(&currTransform);
 
    Point3F torque(0, 0, 0);
-   Point3F force(0, 0, 0);
-
-   Point3F vel = mRigid.linVelocity;
-
-   // Gravity
-   force += gravForce;
+   Point3F force(0, 0, mRigid.mass * mNetGravity);
 
    // Apply drag
-   Point3F vDrag = mRigid.linVelocity;
-   vDrag.convolve(Point3F(1, 1, mDataBlock->vertFactor));
-   force -= vDrag * mDataBlock->dragForce;
+   Point3F vertDrag = mRigid.linVelocity*Point3F(1, 1, mDataBlock->vertFactor);
+   force -= vertDrag * mDataBlock->dragForce;
 
    // Add in physical zone force
    force += mAppliedForce;
@@ -1211,6 +1201,10 @@ void RigidShape::updateForces(F32 /*dt*/)
 
    mRigid.force  = force;
    mRigid.torque = torque;
+
+   // If we're still atRest, make sure we're not accumulating anything
+   if (mRigid.atRest)
+      mRigid.setAtRest();
 }
 
 

@@ -238,7 +238,7 @@ class RigidShape: public ShapeBase
 
    void _renderMassAndContacts( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
 
-   void updateForces(F32);
+   void updateForces(F32 dt);
 
 public:
    // Test code...
