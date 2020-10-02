@@ -267,7 +267,7 @@ ShapeBaseData::ShapeBaseData(const ShapeBaseData& other, bool temp_clone) : Game
 struct ShapeBaseDataProto
 {
    F32 mass;
-   Point3F drag;
+   F32 drag;
    F32 density;
    F32 maxEnergy;
    F32 cameraMaxDist;
@@ -280,7 +280,7 @@ struct ShapeBaseDataProto
    ShapeBaseDataProto()
    {
       mass = 1;
-      drag = Point3F(0.f,0.f, 0.f);
+      drag = 0;
       density = 1;
       maxEnergy = 0;
       cameraMaxDist = 0;
@@ -597,7 +597,7 @@ void ShapeBaseData::initPersistFields()
    addGroup( "Physics" );
    
       addProtectedField("mass", TypeF32, Offset(mass, ShapeBaseData), &_setMass, &defaultProtectedGetFn, "Shape mass.\nUsed in simulation of moving objects.\n"  );
-      addField( "drag", TypePoint3F, Offset(drag, ShapeBaseData),
+      addField( "drag", TypeF32, Offset(drag, ShapeBaseData),
          "Drag factor.\nReduces velocity of moving objects." );
       addField( "density", TypeF32, Offset(density, ShapeBaseData),
          "Shape density.\nUsed when computing buoyancy when in water.\n" );
@@ -784,7 +784,7 @@ void ShapeBaseData::packData(BitStream* stream)
    if(stream->writeFlag(mass != gShapeBaseDataProto.mass))
       stream->write(mass);
    if(stream->writeFlag(drag != gShapeBaseDataProto.drag))
-      mathWrite(*stream, drag);
+      stream->write(drag);
    if(stream->writeFlag(density != gShapeBaseDataProto.density))
       stream->write(density);
    if(stream->writeFlag(maxEnergy != gShapeBaseDataProto.maxEnergy))
@@ -864,7 +864,7 @@ void ShapeBaseData::unpackData(BitStream* stream)
       mass = gShapeBaseDataProto.mass;
 
    if(stream->readFlag())
-      mathRead(*stream, &drag);
+      stream->read(&drag);
    else
       drag = gShapeBaseDataProto.drag;
 
@@ -1791,9 +1791,8 @@ void ShapeBase::updateContainer()
       // ShapeBaseData drag is used for drag outside of water.
       // Combine these two components to calculate this ShapeBase object's 
       // current drag.
-      F32 resistance = (info.waterCoverage * info.waterViscosity) + (1.0f - info.waterCoverage);
-      mDrag = resistance * mDataBlock->drag;
-
+      mDrag = ( info.waterCoverage * info.waterViscosity ) + 
+              ( 1.0f - info.waterCoverage ) * mDataBlock->drag;
       mBuoyancy = (info.waterDensity / mDataBlock->density) * info.waterCoverage;
    }
 

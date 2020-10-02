@@ -234,7 +234,7 @@ RigidShapeData::RigidShapeData()
    massCenter.set(0,0,0);
    massBox.set(0,0,0);
 
-   drag = Point3F(0.7f, 0.7f, 0.7f);
+   drag = 0.7f;
    density = 4;
 
    for (S32 i = 0; i < Body::MaxSounds; i++)

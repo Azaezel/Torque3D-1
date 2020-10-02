@@ -561,7 +561,7 @@ public:
    /// @name Physical Properties
    /// @{
    F32 mass;
-   Point3F drag;
+   F32 drag;
    F32 density;
    F32 maxEnergy;
    F32 maxDamage;
@@ -908,7 +908,7 @@ protected:
    /// @see ShapeBase::updateContainer()
    /// @see ShapeBase::mContainer
    /// @{
-   Point3F mDrag;                       ///< Drag.
+   F32 mDrag;                       ///< Drag.
    F32 mBuoyancy;                   ///< Buoyancy factor.
    String mLiquidType;              ///< Type of liquid (if any) we are in.
    F32 mLiquidHeight;               ///< Height of liquid around us (from 0..1).

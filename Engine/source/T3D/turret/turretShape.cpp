@@ -101,7 +101,7 @@ TurretShapeData::TurretShapeData()
    maxVelocity = 25.0f;
 
    density = 2;
-   drag = Point3F(0.5f,0.5f,0.5f);
+   drag = 0.5;
 
    cameraOffset = 0;
 
