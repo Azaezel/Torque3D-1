@@ -899,8 +899,7 @@ void WheeledVehicle::updateForces(F32 dt)
    // Integrate forces, we'll do this ourselves here instead of
    // relying on the rigid class which does it during movement.
    Wheel* wend = &mWheel[mDataBlock->wheelCount];
-   mRigid.force.set(0, 0, 0);
-   mRigid.torque.set(0, 0, 0);
+   mRigid.clearForces();
 
    // Calculate vertical load for friction.  Divide up the spring
    // forces across all the wheels that are in contact with
@@ -1107,8 +1106,7 @@ void WheeledVehicle::updateForces(F32 dt)
    mRigid.updateVelocity();
 
    // Since we've already done all the work, just need to clear this out.
-   mRigid.force.set(0, 0, 0);
-   mRigid.torque.set(0, 0, 0);
+   mRigid.clearForces();
 
    // If we're still atRest, make sure we're not accumulating anything
    if (mRigid.atRest)
