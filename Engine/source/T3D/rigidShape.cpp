@@ -47,7 +47,8 @@
 #include "sfx/sfxSystem.h"
 #include "T3D/fx/particleEmitter.h"
 #include "console/engineAPI.h"
-
+#include "T3D/physics/physicsPlugin.h"
+#include "T3D/physics/physicsCollision.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(RigidShapeData);
 
@@ -187,6 +188,15 @@ IMPLEMENT_CALLBACK( RigidShape, onLeaveLiquid, void, ( const char* objId, const 
 
 namespace {
 
+   static U32 sWorkingQueryBoxStaleThreshold = 10;    // The maximum number of ticks that go by before
+                                                      // the mWorkingQueryBox is considered stale and
+                                                      // needs updating.  Set to -1 to disable.
+
+   static F32 sWorkingQueryBoxSizeMultiplier = 2.0f;  // How much larger should the mWorkingQueryBox be
+                                                      // made when updating the working collision list.
+                                                      // The larger this number the less often the working list
+                                                      // will be updated due to motion, but any non-static shape
+                                                      // that moves into the query box will not be noticed.
    // Client prediction
    const S32 sMaxWarpTicks = 3;           // Max warp duration in ticks
    const S32 sMaxPredictionTicks = 30;    // Number of ticks to predict
@@ -264,6 +274,7 @@ RigidShapeData::RigidShapeData()
    softSplashSoundVel = 1.0;
    medSplashSoundVel = 2.0;
    hardSplashSoundVel = 3.0;
+   enablePhysicsRep = true;
 
    dMemset(waterSound, 0, sizeof(waterSound));
 
@@ -389,6 +400,7 @@ void RigidShapeData::packData(BitStream* stream)
    stream->write(softSplashSoundVel);
    stream->write(medSplashSoundVel);
    stream->write(hardSplashSoundVel);
+   stream->write(enablePhysicsRep);
 
    // write the water sound profiles
    for( U32 i = 0; i < MaxSounds; ++ i )
@@ -447,6 +459,7 @@ void RigidShapeData::unpackData(BitStream* stream)
    stream->read(&softSplashSoundVel);
    stream->read(&medSplashSoundVel);
    stream->read(&hardSplashSoundVel);
+   stream->read(&enablePhysicsRep);
 
    // write the water sound profiles
    for( U32 i = 0; i < MaxSounds; ++ i )
@@ -476,6 +489,11 @@ void RigidShapeData::unpackData(BitStream* stream)
 
 void RigidShapeData::initPersistFields()
 {
+   addGroup("Physics");
+   addField("enablePhysicsRep", TypeBool, Offset(enablePhysicsRep, RigidShapeData),
+      "@brief Creates a representation of the object in the physics plugin.\n");
+   endGroup("Physics");
+
    addField("massCenter", TypePoint3F, Offset(massCenter, RigidShapeData), "Center of mass for rigid body.");
    addField("massBox", TypePoint3F, Offset(massBox, RigidShapeData), "Size of inertial box.");
    addField("bodyRestitution", TypeF32, Offset(body.restitution, RigidShapeData), "The percentage of kinetic energy kept by this object in a collision.");
@@ -591,6 +609,12 @@ RigidShape::RigidShape()
    restCount = 0;
 
    inLiquid = false;
+
+   mWorkingQueryBox.minExtents.set(-1e9f, -1e9f, -1e9f);
+   mWorkingQueryBox.maxExtents.set(-1e9f, -1e9f, -1e9f);
+   mWorkingQueryBoxCountDown = sWorkingQueryBoxStaleThreshold;
+
+   mPhysicsRep = NULL;
 }   
 
 RigidShape::~RigidShape()
@@ -617,6 +641,9 @@ bool RigidShape::onAdd()
 {
    if (!Parent::onAdd())
       return false;
+
+   mWorkingQueryBox.minExtents.set(-1e9f, -1e9f, -1e9f);
+   mWorkingQueryBox.maxExtents.set(-1e9f, -1e9f, -1e9f);
 
    // When loading from a mission script, the base SceneObject's transform
    // will have been set and needs to be transfered to the rigid body.
@@ -671,6 +698,7 @@ bool RigidShape::onAdd()
    mConvex.box.minExtents.convolve(mObjScale);
    mConvex.box.maxExtents.convolve(mObjScale);
    mConvex.findNodeTransform();
+   _createPhysics();
 
    addToScene();
 
@@ -721,14 +749,36 @@ void RigidShape::onRemove()
       }
    }
 
+   mWorkingQueryBox.minExtents.set(-1e9f, -1e9f, -1e9f);
+   mWorkingQueryBox.maxExtents.set(-1e9f, -1e9f, -1e9f);
    Parent::onRemove();
 }
 
+void RigidShape::_createPhysics()
+{
+   SAFE_DELETE(mPhysicsRep);
+
+   if (!PHYSICSMGR || !mDataBlock->enablePhysicsRep)
+      return;
+
+   TSShape* shape = mShapeInstance->getShape();
+   PhysicsCollision* colShape = NULL;
+   colShape = shape->buildColShape(false, getScale());
+
+   if (colShape)
+   {
+      PhysicsWorld* world = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
+      mPhysicsRep = PHYSICSMGR->createBody();
+      mPhysicsRep->init(colShape, 0, PhysicsBody::BF_KINEMATIC, this, world);
+      mPhysicsRep->setTransform(getTransform());
+   }
+}
 
 //----------------------------------------------------------------------------
-
 void RigidShape::processTick(const Move* move)
 {     
+   PROFILE_SCOPE(RigidShape_ProcessTick);
+
    Parent::processTick(move);
    if ( isMounted() )
       return;
@@ -775,6 +825,8 @@ void RigidShape::processTick(const Move* move)
 
       // Update the physics based on the integration rate
       S32 count = mDataBlock->integration;
+      --mWorkingQueryBoxCountDown;
+
       if (!mDisableMove)
          updateWorkingCollisionSet(getCollisionMask());
       for (U32 i = 0; i < count; i++)
@@ -789,6 +841,11 @@ void RigidShape::processTick(const Move* move)
       setPosition(mRigid.linPosition, mRigid.angPosition);
       setMaskBits(PositionMask);
       updateContainer();
+
+      //TODO: Only update when position has actually changed
+      //no need to check if mDataBlock->enablePhysicsRep is false as mPhysicsRep will be NULL if it is
+      if (mPhysicsRep)
+         mPhysicsRep->moveKinematicTo(getTransform());
    }
 }
 
@@ -1035,6 +1092,8 @@ void RigidShape::enableCollision()
 
 void RigidShape::updatePos(F32 dt)
 {
+   PROFILE_SCOPE( Vehicle_UpdatePos );
+
    Point3F origVelocity = mRigid.linVelocity;
 
    // Update internal forces acting on the body.
@@ -1366,17 +1425,53 @@ bool RigidShape::resolveDisplacement(Rigid& ns,CollisionState *state, F32 dt)
 
 void RigidShape::updateWorkingCollisionSet(const U32 mask)
 {
+   PROFILE_SCOPE( Vehicle_UpdateWorkingCollisionSet );
+
+   // First, we need to adjust our velocity for possible acceleration.  It is assumed
+   // that we will never accelerate more than 20 m/s for gravity, plus 30 m/s for
+   // jetting, and an equivalent 10 m/s for vehicle accel.  We also assume that our
+   // working list is updated on a Tick basis, which means we only expand our box by
+   // the possible movement in that tick, plus some extra for caching purposes
    Box3F convexBox = mConvex.getBoundingBox(getTransform(), getScale());
    F32 len = (mRigid.linVelocity.len() + 50) * TickSec;
    F32 l = (len * 1.1) + 0.1;  // fudge factor
    convexBox.minExtents -= Point3F(l, l, l);
    convexBox.maxExtents += Point3F(l, l, l);
 
-   disableCollision();
-   mConvex.updateWorkingList(convexBox, mask);
-   enableCollision();
-}
+   // Check to see if it is actually necessary to construct the new working list,
+   // or if we can use the cached version from the last query.  We use the x
+   // component of the min member of the mWorkingQueryBox, which is lame, but
+   // it works ok.
+   bool updateSet = false;
 
+   // Check containment
+   if ((sWorkingQueryBoxStaleThreshold == -1 || mWorkingQueryBoxCountDown > 0) && mWorkingQueryBox.minExtents.x != -1e9f)
+   {
+      if (mWorkingQueryBox.isContained(convexBox) == false)
+         // Needed region is outside the cached region.  Update it.
+         updateSet = true;
+   }
+   else
+   {
+      // Must update
+      updateSet = true;
+   }
+
+   // Actually perform the query, if necessary
+   if (updateSet == true)
+   {
+      mWorkingQueryBoxCountDown = sWorkingQueryBoxStaleThreshold;
+
+      const Point3F  lPoint( sWorkingQueryBoxSizeMultiplier * l );
+      mWorkingQueryBox = convexBox;
+      mWorkingQueryBox.minExtents -= lPoint;
+      mWorkingQueryBox.maxExtents += lPoint;
+
+      disableCollision();
+      mConvex.updateWorkingList(mWorkingQueryBox, mask);
+      enableCollision();
+   }
+}
 
 //----------------------------------------------------------------------------
 /** Check collisions with trigger and items
@@ -1569,6 +1664,25 @@ void RigidShape::unpackUpdate(NetConnection *con, BitStream *stream)
 
 
 //----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
+
+void RigidShape::consoleInit()
+{
+   Con::addVariable("$rigidPhysics::workingQueryBoxStaleThreshold", TypeS32, &sWorkingQueryBoxStaleThreshold,
+      "@brief The maximum number of ticks that go by before the mWorkingQueryBox is considered stale and needs updating.\n\n"
+      "Other factors can cause the collision working query box to become invalidated, such as the rigid body moving far "
+      "enough outside of this cached box.  The smaller this number, the more times the working list of triangles that are "
+      "considered for collision is refreshed.  This has the greatest impact with colliding with high triangle count meshes.\n\n"
+      "@note Set to -1 to disable any time-based forced check.\n\n"
+      "@ingroup GameObjects\n");
+
+   Con::addVariable("$rigidPhysics::workingQueryBoxSizeMultiplier", TypeF32, &sWorkingQueryBoxSizeMultiplier,
+      "@brief How much larger the mWorkingQueryBox should be made when updating the working collision list.\n\n"
+      "The larger this number the less often the working list will be updated due to motion, but any non-static shape that "
+      "moves into the query box will not be noticed.\n\n"
+      "@ingroup GameObjects\n");
+}
 
 void RigidShape::initPersistFields()
 {

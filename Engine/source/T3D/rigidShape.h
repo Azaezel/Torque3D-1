@@ -31,6 +31,9 @@
 #ifndef _BOXCONVEX_H_
 #include "collision/boxConvex.h"
 #endif
+#ifndef _T3D_PHYSICS_PHYSICSBODY_H_
+#include "T3D/physics/physicsBody.h"
+#endif
 
 class ParticleEmitter;
 class ParticleEmitterData;
@@ -111,6 +114,8 @@ class RigidShapeData : public ShapeBaseData
    F32 splashFreqMod;
    F32 splashVelEpsilon;
 
+   bool enablePhysicsRep;
+
 
    F32 dragForce;
    F32 vertFactor;
@@ -176,6 +181,8 @@ class RigidShape: public ShapeBase
       Point3F cameraRotVec;
    };
 
+   PhysicsBody* mPhysicsRep;
+
    StateDelta mDelta;
    S32 mPredictionCount;            ///< Number of ticks to predict
    bool inLiquid;
@@ -194,6 +201,9 @@ class RigidShape: public ShapeBase
    SimObjectPtr<ParticleEmitter> mSplashEmitterList[RigidShapeData::VC_NUM_SPLASH_EMITTERS];
 
    GFXStateBlockRef  mSolidSB;
+
+   Box3F         mWorkingQueryBox;
+   S32           mWorkingQueryBoxCountDown;
 
    //
    bool onNewDataBlock( GameBaseData *dptr, bool reload );
@@ -237,11 +247,13 @@ public:
    RigidShape();
    ~RigidShape();
 
+   static void consoleInit();
    static void initPersistFields();
    void processTick(const Move *move);
    bool onAdd();
    void onRemove();
-   
+   void _createPhysics();
+
    /// Interpolates between move ticks @see processTick
    /// @param   dt   Change in time between the last call and this call to the function
    void interpolateTick(F32 dt);
