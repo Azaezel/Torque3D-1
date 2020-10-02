@@ -719,6 +719,9 @@ void Item::updateVelocity(const F32 dt)
    mVelocity.z += (mNetGravity * mDataBlock->gravityMod) * dt;
    mVelocity   -= mVelocity * mDrag * dt;
 
+   // Add in physical zone force
+   mVelocity += mAppliedForce;
+
    F32 len;
    if (mDataBlock->maxVelocity > 0 && (len = mVelocity.len()) > (mDataBlock->maxVelocity * 1.05)) {
       Point3F excess = mVelocity * (1.0 - (mDataBlock->maxVelocity / len ));
