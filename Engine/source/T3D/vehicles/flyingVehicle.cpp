@@ -483,6 +483,7 @@ void FlyingVehicle::updateForces(F32 /*dt*/)
 {
    PROFILE_SCOPE( FlyingVehicle_UpdateForces );
 
+   if (mDisableMove) return;
    MatrixF currPosMat;
    mRigid.getTransform(&currPosMat);
    mRigid.atRest = false;

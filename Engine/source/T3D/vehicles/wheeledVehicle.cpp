@@ -854,6 +854,7 @@ void WheeledVehicle::updateForces(F32 dt)
 
    extendWheels();
 
+   if (mDisableMove) return;
    F32 aMomentum = mMass / mDataBlock->wheelCount;
 
    // Get the current matrix and extact vectors
