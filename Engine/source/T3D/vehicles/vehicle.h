@@ -205,13 +205,8 @@ class Vehicle : public RigidShape
    virtual bool onNewDataBlock( GameBaseData *dptr, bool reload );
    void updatePos(F32 dt);
    bool updateCollision(F32 dt);
-   bool findContacts(Rigid& ns,CollisionList& cList);
    void checkTriggers();
    static void findCallback(SceneObject* obj,void * key);
-
-   void setPosition(const Point3F& pos,const QuatF& rot);
-   void setRenderPosition(const Point3F& pos,const QuatF& rot);
-   void setTransform(const MatrixF& mat);
 
 //   virtual bool collideBody(const MatrixF& mat,Collision* info) = 0;
    virtual void updateMove(const Move* move);
@@ -252,21 +247,9 @@ public:
    bool onAdd();
    void onRemove();
 
-   void _createPhysics();
-
    /// Interpolates between move ticks @see processTick
    /// @param   dt   Change in time between the last call and this call to the function
-   void interpolateTick(F32 dt);
    void advanceTime(F32 dt);
-
-   /// Disables collisions for this vehicle and all mounted objects
-   void disableCollision();
-
-   /// Enables collisions for this vehicle and all mounted objects
-   void enableCollision();
-
-   /// Returns the velocity of the vehicle
-   Point3F getVelocity() const;
 
    void setEnergyLevel(F32 energy);
 
@@ -274,17 +257,6 @@ public:
 
    ///@name Rigid body methods
    ///@{
-
-   /// This method will get the velocity of the object, taking into account
-   /// angular velocity.
-   /// @param   r   Point on the object you want the velocity of, relative to Center of Mass
-   /// @param   vel   Velocity (out)
-   void getVelocity(const Point3F& r, Point3F* vel);
-
-   /// Applies an impulse force
-   /// @param   r   Point on the object to apply impulse to, r is relative to Center of Mass
-   /// @param   impulse   Impulse vector to apply.
-   void applyImpulse(const Point3F &r, const Point3F &impulse);
 
    void getCameraParameters(F32 *min, F32* max, Point3F* offset, MatrixF* rot);
    void getCameraTransform(F32* pos, MatrixF* mat);

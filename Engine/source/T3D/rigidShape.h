@@ -212,7 +212,6 @@ class RigidShape: public ShapeBase
    bool resolveCollision(Rigid& ns,CollisionList& cList);
    bool resolveContacts(Rigid& ns,CollisionList& cList,F32 dt);
    bool resolveDisplacement(Rigid& ns,CollisionState *state,F32 dt);
-   bool findContacts(Rigid& ns,CollisionList& cList);
    void checkTriggers();
    static void findCallback(SceneObject* obj,void * key);
 

@@ -700,30 +700,6 @@ U32 Vehicle::getCollisionMask()
    return 0;
 }
 
-Point3F Vehicle::getVelocity() const
-{
-   return mRigid.linVelocity;
-}
-
-void Vehicle::_createPhysics()
-{
-   SAFE_DELETE(mPhysicsRep);
-
-   if (!PHYSICSMGR || !mDataBlock->enablePhysicsRep)
-      return;
-
-   TSShape *shape = mShapeInstance->getShape();
-   PhysicsCollision *colShape = NULL;
-   colShape = shape->buildColShape(false, getScale());
-
-   if (colShape)
-   {
-      PhysicsWorld *world = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
-      mPhysicsRep = PHYSICSMGR->createBody();
-      mPhysicsRep->init(colShape, 0, PhysicsBody::BF_KINEMATIC, this, world);
-      mPhysicsRep->setTransform(getTransform());
-   }
-}
 //----------------------------------------------------------------------------
 
 bool Vehicle::onAdd()
@@ -908,26 +884,6 @@ void Vehicle::processTick(const Move* move)
    }
 }
 
-void Vehicle::interpolateTick(F32 dt)
-{
-   PROFILE_SCOPE( Vehicle_InterpolateTick );
-
-   Parent::interpolateTick(dt);
-   if ( isMounted() )
-      return;
-
-   if(dt == 0.0f)
-      setRenderPosition(mDelta.pos, mDelta.rot[1]);
-   else
-   {
-      QuatF rot;
-      rot.interpolate(mDelta.rot[1], mDelta.rot[0], dt);
-      Point3F pos = mDelta.pos + mDelta.posVec * dt;
-      setRenderPosition(pos,rot);
-   }
-   mDelta.dt = dt;
-}
-
 void Vehicle::advanceTime(F32 dt)
 {
    PROFILE_SCOPE( Vehicle_AdvanceTime );
@@ -1079,22 +1035,6 @@ void Vehicle::getCameraTransform(F32* pos, MatrixF* mat)
    mat->mul( gCamFXMgr.getTrans() );
 }
 
-
-//----------------------------------------------------------------------------
-
-void Vehicle::getVelocity(const Point3F& r, Point3F* v)
-{
-   mRigid.getVelocity(r, v);
-}
-
-void Vehicle::applyImpulse(const Point3F &pos, const Point3F &impulse)
-{
-   Point3F r;
-   mRigid.getOriginVector(pos,&r);
-   mRigid.applyImpulse(r, impulse);
-}
-
-
 //----------------------------------------------------------------------------
 
 void Vehicle::updateMove(const Move* move)
@@ -1159,51 +1099,6 @@ void Vehicle::updateMove(const Move* move)
    else
       mJetting = false;
 }
-
-
-//----------------------------------------------------------------------------
-
-void Vehicle::setPosition(const Point3F& pos,const QuatF& rot)
-{
-   MatrixF mat;
-   rot.setMatrix(&mat);
-   mat.setColumn(3,pos);
-   Parent::setTransform(mat);
-}
-
-void Vehicle::setRenderPosition(const Point3F& pos, const QuatF& rot)
-{
-   MatrixF mat;
-   rot.setMatrix(&mat);
-   mat.setColumn(3,pos);
-   Parent::setRenderTransform(mat);
-}
-
-void Vehicle::setTransform(const MatrixF& newMat)
-{
-   mRigid.setTransform(newMat);
-   Parent::setTransform(newMat);
-   mRigid.atRest = false;
-   mContacts.clear();
-}
-
-
-//-----------------------------------------------------------------------------
-
-void Vehicle::disableCollision()
-{
-   Parent::disableCollision();
-   for (SceneObject* ptr = getMountList(); ptr; ptr = ptr->getMountLink())
-      ptr->disableCollision();
-}
-
-void Vehicle::enableCollision()
-{
-   Parent::enableCollision();
-   for (SceneObject* ptr = getMountList(); ptr; ptr = ptr->getMountLink())
-      ptr->enableCollision();
-}
-
 
 //----------------------------------------------------------------------------
 /** Update the physics
