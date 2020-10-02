@@ -131,9 +131,6 @@ struct VehicleData : public RigidShapeData
    virtual void unpackData(BitStream* stream);
 
    DECLARE_CONOBJECT(VehicleData);
-
-   DECLARE_CALLBACK( void, onEnterLiquid, ( Vehicle* obj, F32 coverage, const char* type ) );
-   DECLARE_CALLBACK( void, onLeaveLiquid, ( Vehicle* obj, const char* type ) );
 };
 
 
@@ -145,67 +142,22 @@ class Vehicle : public RigidShape
    typedef RigidShape Parent;
 
   protected:
-   enum CollisionFaceFlags {
-      BodyCollision =  0x1,
-      WheelCollision = 0x2,
-   };
 
-   struct StateDelta {
-      Move move;                    ///< Last move from server
-      F32 dt;                       ///< Last interpolation time
-      // Interpolation data
-      Point3F pos;
-      Point3F posVec;
-      QuatF rot[2];
-      // Warp data
-      S32 warpTicks;                ///< Number of ticks to warp
-      S32 warpCount;                ///< Current pos in warp
-      Point3F warpOffset;
-      QuatF warpRot[2];
-      //
-      Point3F cameraOffset;
-      Point3F cameraVec;
-      Point3F cameraRot;
-      Point3F cameraRotVec;
-   };
-
-   PhysicsBody *mPhysicsRep;
-
-   StateDelta mDelta;
-   S32 mPredictionCount;            ///< Number of ticks to predict
    VehicleData* mDataBlock;
-   bool inLiquid;
    SFXSource* mWakeSound;
-
-   Point3F mCameraOffset; ///< 3rd person camera
 
    // Control
    Point2F mSteering;
    F32 mThrottle;
    bool mJetting;
 
-   // Rigid Body
-   bool mDisableMove;
-
    GFXStateBlockRef  mSolidSB;
 
-   Box3F         mWorkingQueryBox;
-   S32           mWorkingQueryBoxCountDown;
-
-   CollisionList mCollisionList;
-   CollisionList mContacts;
-   ShapeBaseConvex mConvex;
-   S32 restCount;
-
-   SimObjectPtr<ParticleEmitter> mDustEmitterList[VehicleData::VC_NUM_DUST_EMITTERS];
    SimObjectPtr<ParticleEmitter> mDamageEmitterList[VehicleData::VC_NUM_DAMAGE_EMITTERS];
-   SimObjectPtr<ParticleEmitter> mSplashEmitterList[VehicleData::VC_NUM_SPLASH_EMITTERS];
 
    //
    virtual bool onNewDataBlock( GameBaseData *dptr, bool reload );
    void updatePos(F32 dt);
-   bool updateCollision(F32 dt);
-   void checkTriggers();
    static void findCallback(SceneObject* obj,void * key);
 
 //   virtual bool collideBody(const MatrixF& mat,Collision* info) = 0;
@@ -220,11 +172,9 @@ class Vehicle : public RigidShape
    void updateLiftoffDust( F32 dt );
    void updateDamageSmoke( F32 dt );
 
-   void updateWorkingCollisionSet(const U32 mask);
    virtual U32 getCollisionMask();
 
    void updateFroth( F32 dt );
-   bool collidingWithWater( Point3F &waterHeight );
 
    /// ObjectRenderInst delegate hooked up in prepBatchRender 
    /// if GameBase::gShowBoundingBox is true.
@@ -250,8 +200,6 @@ public:
    /// Interpolates between move ticks @see processTick
    /// @param   dt   Change in time between the last call and this call to the function
    void advanceTime(F32 dt);
-
-   void setEnergyLevel(F32 energy);
 
    void prepBatchRender( SceneRenderState *state, S32 mountedImageIndex );
 

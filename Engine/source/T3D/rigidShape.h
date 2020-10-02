@@ -136,6 +136,9 @@ class RigidShapeData : public ShapeBaseData
 
    DECLARE_CONOBJECT(RigidShapeData);
 
+   DECLARE_CALLBACK(void, onEnterLiquid, (RigidShape* obj, F32 coverage, const char* type));
+   DECLARE_CALLBACK(void, onLeaveLiquid, (RigidShape* obj, const char* type));
+
 };
 
 
@@ -301,8 +304,6 @@ public:
    void unpackUpdate(NetConnection *conn,           BitStream *stream);
 
    DECLARE_CONOBJECT(RigidShape);
-   DECLARE_CALLBACK( void, onEnterLiquid, ( const char* objId, F32 waterCoverage, const char* liquidType ));
-   DECLARE_CALLBACK( void, onLeaveLiquid, ( const char* objId, const char* liquidType ));
 };
 
 

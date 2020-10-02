@@ -153,36 +153,16 @@ ConsoleDocClass( RigidShape,
    "@ingroup Physics\n"
 );
 
+IMPLEMENT_CALLBACK(RigidShapeData, onEnterLiquid, void, (RigidShape* obj, F32 coverage, const char* type), (obj, coverage, type),
+   "Called when the vehicle enters liquid.\n"
+   "@param obj the Vehicle object\n"
+   "@param coverage percentage of the vehicle's bounding box covered by the liquid\n"
+   "@param type type of liquid the vehicle has entered\n");
 
-IMPLEMENT_CALLBACK( RigidShape, onEnterLiquid, void, ( const char* objId, F32 waterCoverage, const char* liquidType ),
-													 ( objId, waterCoverage, liquidType ),
-   "@brief Called whenever this RigidShape object enters liquid.\n\n"
-   "@param objId The ID of the rigidShape object.\n"
-   "@param waterCoverage Amount of water coverage the RigidShape has.\n"
-   "@param liquidType Type of liquid that was entered.\n\n"
-   "@tsexample\n"
-   "// The RigidShape object falls in a body of liquid, causing the callback to occur.\n"
-   "RigidShape::onEnterLiquid(%this,%objId,%waterCoverage,%liquidType)\n"
-   "	{\n"
-   "		// Code to run whenever this callback occurs.\n"
-   "	}\n"
-   "@endtsexample\n\n"
-   "@see ShapeBase\n\n"
-);
-
-IMPLEMENT_CALLBACK( RigidShape, onLeaveLiquid, void, ( const char* objId, const char* liquidType ),( objId, liquidType ),
-   "@brief Called whenever the RigidShape object exits liquid.\n\n"
-   "@param objId The ID of the RigidShape object.\n"
-   "@param liquidType Type if liquid that was exited.\n\n"
-   "@tsexample\n"
-   "// The RigidShape object exits in a body of liquid, causing the callback to occur.\n"
-   "RigidShape::onLeaveLiquid(%this,%objId,%liquidType)\n"
-   "	{\n"
-   "		// Code to run whenever this callback occurs.\n"
-   "	}\n"
-   "@endtsexample\n\n"
-   "@see ShapeBase\n\n"
-);
+IMPLEMENT_CALLBACK(RigidShapeData, onLeaveLiquid, void, (RigidShape* obj, const char* type), (obj, type),
+   "Called when the vehicle leaves liquid.\n"
+   "@param obj the Vehicle object\n"
+   "@param type type of liquid the vehicle has left\n");
 
 //----------------------------------------------------------------------------
 
@@ -1092,7 +1072,7 @@ void RigidShape::enableCollision()
 
 void RigidShape::updatePos(F32 dt)
 {
-   PROFILE_SCOPE( Vehicle_UpdatePos );
+   PROFILE_SCOPE(Vehicle_UpdatePos);
 
    Point3F origVelocity = mRigid.linVelocity;
 
@@ -1102,16 +1082,16 @@ void RigidShape::updatePos(F32 dt)
 
    // Update collision information based on our current pos.
    bool collided = false;
-   if (!mRigid.atRest && !mDisableMove) 
+   if (!mRigid.atRest && !mDisableMove)
    {
       collided = updateCollision(dt);
 
-      // Now that all the forces have been processed, lets       
+      // Now that all the forces have been processed, lets
       // see if we're at rest.  Basically, if the kinetic energy of
-      // the shape is less than some percentage of the energy added
+      // the rigid body is less than some percentage of the energy added
       // by gravity for a short period, we're considered at rest.
       // This should really be part of the rigid class...
-      if (mCollisionList.getCount()) 
+      if (mCollisionList.getCount())
       {
          F32 k = mRigid.getKineticEnergy();
          F32 G = mNetGravity * dt;
@@ -1128,7 +1108,7 @@ void RigidShape::updatePos(F32 dt)
       mRigid.integrate(dt);
 
    // Deal with client and server scripting, sounds, etc.
-   if (isServerObject()) 
+   if (isServerObject())
    {
 
       // Check triggers and other objects that we normally don't
@@ -1141,7 +1121,7 @@ void RigidShape::updatePos(F32 dt)
       notifyCollision();
 
       // Server side impact script callback
-      if (collided) 
+      if (collided)
       {
          VectorF collVec = mRigid.linVelocity - origVelocity;
          F32 collSpeed = collVec.len();
@@ -1149,15 +1129,15 @@ void RigidShape::updatePos(F32 dt)
             onImpact(collVec);
       }
 
-      // Water script callbacks      
-      if (!inLiquid && mWaterCoverage != 0.0f) 
+      // Water script callbacks
+      if (!inLiquid && mWaterCoverage != 0.0f)
       {
-         onEnterLiquid_callback(getIdString(), mWaterCoverage, mLiquidType.c_str() );
+         mDataBlock->onEnterLiquid_callback(this, mWaterCoverage, mLiquidType.c_str());
          inLiquid = true;
       }
-      else if (inLiquid && mWaterCoverage == 0.0f) 
+      else if (inLiquid && mWaterCoverage == 0.0f)
       {
-		 onLeaveLiquid_callback(getIdString(), mLiquidType.c_str() );
+         mDataBlock->onLeaveLiquid_callback(this, mLiquidType.c_str());
          inLiquid = false;
       }
 
@@ -1181,7 +1161,7 @@ void RigidShape::updatePos(F32 dt)
       // Water volume sounds
       F32 vSpeed = getVelocity().len();
       if (!inLiquid && mWaterCoverage >= 0.8f) {
-         if (vSpeed >= mDataBlock->hardSplashSoundVel) 
+         if (vSpeed >= mDataBlock->hardSplashSoundVel)
             SFX->playOnce(mDataBlock->waterSound[RigidShapeData::ImpactHard], &getTransform());
          else
             if (vSpeed >= mDataBlock->medSplashSoundVel)
@@ -1190,16 +1170,15 @@ void RigidShape::updatePos(F32 dt)
                if (vSpeed >= mDataBlock->softSplashSoundVel)
                   SFX->playOnce(mDataBlock->waterSound[RigidShapeData::ImpactSoft], &getTransform());
          inLiquid = true;
-      }   
+      }
       else
-         if(inLiquid && mWaterCoverage < 0.8f) {
+         if (inLiquid && mWaterCoverage < 0.8f) {
             if (vSpeed >= mDataBlock->exitSplashSoundVel)
                SFX->playOnce(mDataBlock->waterSound[RigidShapeData::ExitWater], &getTransform());
             inLiquid = false;
          }
    }
 }
-
 
 //----------------------------------------------------------------------------
 
