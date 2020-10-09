@@ -491,7 +491,7 @@ vec4 computeForwardProbes(Surface surface,
 vec4 debugVizForwardProbes(Surface surface,
     float cubeMips, int numProbes, mat4 worldToObjArray[MAX_FORWARD_PROBES], vec4 probeConfigData[MAX_FORWARD_PROBES], 
     vec4 inProbePosArray[MAX_FORWARD_PROBES], vec4 refBoxMinArray[MAX_FORWARD_PROBES], vec4 refBoxMaxArray[MAX_FORWARD_PROBES], vec4 inRefPosArray[MAX_FORWARD_PROBES],
-    float skylightCubemapIdx, sampler2D(BRDFTexture), 
+    float skylightCubemapIdx, sampler2D BRDFTexture, 
 	 samplerCubeArray irradianceCubemapAR, samplerCubeArray specularCubemapAR, int showAtten, int showContrib, int showSpec, int showDiff)
 {
    int i = 0;
