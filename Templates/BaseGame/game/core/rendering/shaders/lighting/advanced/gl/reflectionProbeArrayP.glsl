@@ -191,8 +191,8 @@ void main()
 
    if (skylightCubemapIdx != -1 && alpha > 0.001)
    {
-      irradiance = lerp(irradiance,textureLod(irradianceCubemapAR, surface.R, skylightCubemapIdx, 0).xyz,alpha);
-      specular = lerp(specular,textureLod(specularCubemapAR, surface.R, skylightCubemapIdx, lod).xyz,alpha);
+      irradiance = lerp(irradiance,textureLod(irradianceCubemapAR, vec4(surface.R, skylightCubemapIdx), 0).xyz,alpha);
+      specular = lerp(specular,textureLod(specularCubemapAR, vec4(surface.R, skylightCubemapIdx), lod).xyz,alpha);
    }
 
 #if DEBUGVIZ_SPECCUBEMAP == 1 && DEBUGVIZ_DIFFCUBEMAP == 0
