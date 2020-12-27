@@ -138,6 +138,8 @@ public:
    void saveCompositeTexture(const Torque::Path &pathR, const Torque::Path &pathG, const Torque::Path &pathB, const Torque::Path &pathA, U32 inputKey[4],
       const Torque::Path &saveAs,GFXTextureProfile *profile);
 
+   void saveRescaledTexture(const Torque::Path& pathIn, const Torque::Path& pathOut, U32 dimensions);
+
    virtual GFXTextureObject *createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
       const String &resourceName,
       GFXTextureProfile *profile,

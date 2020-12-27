@@ -1165,6 +1165,45 @@ DefineEngineFunction(saveCompositeTexture, void, (const char* pathR, const char*
    GFX->getTextureManager()->saveCompositeTexture(pathR, pathG, pathB, pathA, inputKey, saveAs, &GFXTexturePersistentProfile);
 }
 
+void GFXTextureManager::saveRescaledTexture(const Torque::Path& pathIn, const Torque::Path& pathOut, U32 dimensions)
+{
+   GBitmap* inBitmap = loadUncompressedTexture(pathIn, &GFXTexturePersistentProfile);
+
+   if (inBitmap == NULL)
+   {
+      Con::warnf("unable to load texture: %s", pathIn.getFullPath());
+      return;
+   }
+
+   GFXTexHandle outTex;
+   outTex.set(dimensions, dimensions, GFXFormatR8G8B8A8, &GFXTexturePersistentProfile, "");
+   GFXLockedRect* rect = outTex.lock();
+
+   for (U32 x = 0; x < dimensions; x++)
+   {
+      for (U32 y = 0; y < dimensions; y++)
+      {
+         ColorI texelColor = inBitmap->sampleTexel(x / dimensions, y / dimensions, true).toColorI();
+
+         U32 targetIndex = (y * rect->pitch) + (x * 4);
+         rect->bits[targetIndex] = texelColor.red;
+         rect->bits[targetIndex + 1] = texelColor.green;
+         rect->bits[targetIndex + 2] = texelColor.blue;
+         rect->bits[targetIndex + 3] = texelColor.alpha;
+      }
+
+   }
+   outTex.unlock();
+
+   outTex->dumpToDisk("png", pathOut.getFullPath());
+}
+
+DefineEngineFunction(saveRescaledTexture, void, (const char* pathIn, const char* pathOut, S32 dimensions),
+   ("", "", 0), "pathIn, pathOut, dimensions")
+{
+   GFX->getTextureManager()->saveRescaledTexture(pathIn, pathOut, (U32)dimensions);
+}
+
 GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
    const String &resourceName, GFXTextureProfile *profile, bool deleteBmp)
 {
