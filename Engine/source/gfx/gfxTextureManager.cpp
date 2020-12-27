@@ -1183,12 +1183,12 @@ void GFXTextureManager::saveRescaledTexture(const Torque::Path& pathIn, const To
    {
       for (F32 y = 0; y < dimensions; y++)
       {
-         ColorI texelColor = inBitmap->sampleTexel(x / dimensions, y / dimensions, true).toColorI();
+         ColorI texelColor = inBitmap->sampleTexel(x / dimensions, y / dimensions, true).toColorI(true);
 
          U32 targetIndex = (y * rect->pitch) + (x * 4);
-         rect->bits[targetIndex] = texelColor.red;
+         rect->bits[targetIndex] = texelColor.blue;
          rect->bits[targetIndex + 1] = texelColor.green;
-         rect->bits[targetIndex + 2] = texelColor.blue;
+         rect->bits[targetIndex + 2] = texelColor.red;
          rect->bits[targetIndex + 3] = texelColor.alpha;
       }
 
