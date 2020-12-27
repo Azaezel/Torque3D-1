@@ -1179,9 +1179,9 @@ void GFXTextureManager::saveRescaledTexture(const Torque::Path& pathIn, const To
    outTex.set(dimensions, dimensions, GFXFormatR8G8B8A8, &GFXTexturePersistentProfile, "");
    GFXLockedRect* rect = outTex.lock();
 
-   for (U32 x = 0; x < dimensions; x++)
+   for (F32 x = 0; x < dimensions; x++)
    {
-      for (U32 y = 0; y < dimensions; y++)
+      for (F32 y = 0; y < dimensions; y++)
       {
          ColorI texelColor = inBitmap->sampleTexel(x / dimensions, y / dimensions, true).toColorI();
 
