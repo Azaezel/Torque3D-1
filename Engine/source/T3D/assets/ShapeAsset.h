@@ -94,6 +94,9 @@ public:
    };
 
    static const String mErrCodeStrings[ShapeAssetErrCode::Extended - Parent::Extended + 1];
+
+   static U32 getAssetErrCode(AssetPtr<ShapeAsset> shapeAsset) { if (shapeAsset) return shapeAsset->mLoadedState; else return 0; }
+
    static String getAssetErrstrn(U32 errCode)
    {
       if (errCode < Parent::Extended) return Parent::getAssetErrstrn(errCode);
@@ -116,7 +119,6 @@ public:
    DECLARE_CONOBJECT(ShapeAsset);
 
    bool loadShape();
-   U32 mLoadedState;
 
    TSShape* getShape() { return mShape; }
 
@@ -217,6 +219,7 @@ public:
                                       addProtectedField(assetText(name, Asset), TypeShapeAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, assetText(name, asset reference.));
 
 #define DECLARE_SHAPEASSET(className,name)\
+                                      Resource<TSShape>m##name;\
                                       StringTableEntry m##name##Name;\
                                       StringTableEntry m##name##AssetId;\
                                       AssetPtr<ShapeAsset>  m##name##Asset;\
@@ -268,16 +271,14 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
       return true;\
    }\
    return false;\
-}\
-void className::pack##name##Asset(BitStream *stream)\
-{\
+}
+#define PACK_SHAPE_ASSET(name) {\
    if (stream->writeFlag(m##name##Asset.notNull()))\
       stream->writeString(m##name##Asset.getAssetId());\
    else\
       stream->writeString(m##name##Name);\
-}\
-void className::unpack##name##Asset(BitStream *stream)\
-{\
+}
+#define UNPACK_SHAPE_ASSET(name) {\
    if (stream->readFlag())\
    {\
       m##name##AssetId = stream->readSTString();\
@@ -287,6 +288,35 @@ void className::unpack##name##Asset(BitStream *stream)\
    else\
       m##name##Name = stream->readSTString();\
 }
+#define VALIDATE_SHAPEASSET_REF(name){\
+   if (server && persistMgr && m##name##Name != StringTable->EmptyString() && m####name##AssetId == StringTable->EmptyString())\
+   {\
+      persistMgr->setDirty(this);\
+   }\
+   if (m##name##Name != StringTable->EmptyString())\
+   {\
+      m##name##AssetId = ShapeAsset::getAssetIdByFilename(m##name##Name);\
+   }\
+}
 
+#define ASSIGN_SHAPEASSET(name){\
+   U32 assetState = ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
+   if (assetState != ShapeAsset::Failed )\
+   {\
+      if (assetState == ShapeAsset::Ok)\
+      {\
+         m##name##Name = StringTable->EmptyString();\
+      }\
+      else Con::warnf("Warning: %s::preload-%s", mClassName, ShapeAsset::getAssetErrstrn(assetState).c_str());\
+      m##name = m##name##Asset->getShapeResource();\
+   }\
+   if (bool(m##name) == false)\
+   {\
+      errorStr = String::ToString("%s: Couldn't load shape \"%s\"", mClassName, m##name##Name);\
+      return false;\
+   }\
+   if (!server && !m##name->preloadMaterialList(m##name.getPath()) && NetConnection::filesWereDownloaded())\
+   shapeError = true;\
+}
 #endif
 

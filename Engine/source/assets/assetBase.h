@@ -66,6 +66,7 @@ protected:
    bool                    mAssetInitialized;
    AssetDefinition*        mpAssetDefinition;
    U32                     mAcquireReferenceCount;
+   U32                     mLoadedState;
 
 public:
    enum AssetErrCode

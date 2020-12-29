@@ -191,8 +191,8 @@ ShapeBaseImageData::ShapeBaseImageData()
    lightRadius = 10.f;
    lightBrightness = 1.0f;
 
-   shapeName = "core/rendering/shapes/noshape.dts";
-   shapeNameFP = "";
+   initShapeAsset(Shape);
+   initShapeAsset(ShapeFP);
    imageAnimPrefix = "";
    imageAnimPrefixFP = "";
    fireState = -1;
@@ -437,11 +437,11 @@ bool ShapeBaseImageData::preload(bool server, String &errorStr)
       StringTableEntry name;
       if (i == FirstPersonImageShape)
       {
-         if ((useEyeOffset || useEyeNode) && shapeNameFP && shapeNameFP[0])
+         if ((useEyeOffset || useEyeNode) && mShapeFPName && mShapeFPName[0])
          {
             // Make use of the first person shape
             useFirstPersonShape = true;
-            name = shapeNameFP;
+            name = mShapeFPName;
          }
          else
          {
@@ -451,7 +451,7 @@ bool ShapeBaseImageData::preload(bool server, String &errorStr)
       }
       else
       {
-         name = shapeName;
+         name = mShapeName;
       }
 
       if (name && name[0]) {
@@ -590,10 +590,10 @@ void ShapeBaseImageData::initPersistFields()
    addField( "emap", TypeBool, Offset(emap, ShapeBaseImageData),
       "@brief Whether to enable environment mapping on this Image.\n\n" );
 
-   addField( "shapeFile", TypeShapeFilename, Offset(shapeName, ShapeBaseImageData),
+   addField( "shapeFile", TypeShapeFilename, Offset(mShapeName, ShapeBaseImageData),
       "@brief The DTS or DAE model to use for this Image.\n\n" );
 
-   addField( "shapeFileFP", TypeShapeFilename, Offset(shapeNameFP, ShapeBaseImageData),
+   addField( "shapeFileFP", TypeShapeFilename, Offset(mShapeFPName, ShapeBaseImageData),
       "@brief The DTS or DAE model to use for this Image when in first person.\n\n"
       "This is an optional parameter that also requires either eyeOffset or useEyeNode "
       "to be set.  If none of these conditions is met then shapeFile will be used "
@@ -987,8 +987,8 @@ void ShapeBaseImageData::packData(BitStream* stream)
       }
    }
 
-   stream->writeString(shapeName);        // shape 0 for normal use
-   stream->writeString(shapeNameFP);      // shape 1 for first person use (optional)
+   PACK_SHAPE_ASSET(Shape);        // shape 0 for normal use
+   PACK_SHAPE_ASSET(ShapeFP);      // shape 1 for first person use (optional)
 
    stream->writeString(imageAnimPrefix);
    stream->writeString(imageAnimPrefixFP);
@@ -1169,8 +1169,8 @@ void ShapeBaseImageData::unpackData(BitStream* stream)
       }
    }
 
-   shapeName = stream->readSTString();       // shape 0 for normal use
-   shapeNameFP = stream->readSTString();     // shape 1 for first person use (optional)
+   UNPACK_SHAPE_ASSET(Shape);        // shape 0 for normal use
+   UNPACK_SHAPE_ASSET(ShapeFP);      // shape 1 for first person use (optional)
 
    imageAnimPrefix = stream->readSTString();
    imageAnimPrefixFP = stream->readSTString();
