@@ -575,6 +575,9 @@ void ShapeBaseData::initPersistFields()
          "%Debris to generate when this shape is blown up." );
       addField( "renderWhenDestroyed", TypeBool, Offset(renderWhenDestroyed, ShapeBaseData),
          "Whether to render the shape when it is in the \"Destroyed\" damage state." );
+
+      addField("debrisAsset", TypeShapeAssetId, Offset(mDebrisShapeAssetId, ShapeBaseData),
+         "The source shape asset.");
       addField( "debrisShapeName", TypeShapeFilename, Offset(mDebrisShapeName, ShapeBaseData),
          "The DTS or DAE model to use for auto-generated breakups. @note may not be functional." );
 

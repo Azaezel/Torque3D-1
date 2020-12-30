@@ -590,9 +590,13 @@ void ShapeBaseImageData::initPersistFields()
    addField( "emap", TypeBool, Offset(emap, ShapeBaseImageData),
       "@brief Whether to enable environment mapping on this Image.\n\n" );
 
+   addField("shapeAsset", TypeShapeAssetId, Offset(mShapeAssetId, ShapeBaseImageData),
+      "The source shape asset.");
    addField( "shapeFile", TypeShapeFilename, Offset(mShapeName, ShapeBaseImageData),
       "@brief The DTS or DAE model to use for this Image.\n\n" );
 
+   addField("shapeFPAsset", TypeShapeAssetId, Offset(mShapeFPAssetId, ShapeBaseImageData),
+      "The source shape asset.");
    addField( "shapeFileFP", TypeShapeFilename, Offset(mShapeFPName, ShapeBaseImageData),
       "@brief The DTS or DAE model to use for this Image when in first person.\n\n"
       "This is an optional parameter that also requires either eyeOffset or useEyeNode "
