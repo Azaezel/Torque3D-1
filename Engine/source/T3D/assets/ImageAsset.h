@@ -42,6 +42,10 @@
 #include "assets/assetPtr.h"
 #endif 
 
+#ifndef _NETCONNECTION_H_
+#include "sim/netConnection.h"
+#endif
+
 #include "gfx/bitmap/gBitmap.h"
 #include "gfx/gfxTextureHandle.h"
 
@@ -96,7 +100,7 @@ public:
    /// Declare Console Object.
    DECLARE_CONOBJECT(ImageAsset);
 
-   void                    setImageFileName(const char* pScriptFile);
+   void                    setImageFileName(StringTableEntry pScriptFile);
    inline StringTableEntry getImageFileName(void) const { return mImageFileName; };
 
    inline StringTableEntry getImagePath(void) const { return mImagePath; };
@@ -106,10 +110,10 @@ public:
    const GBitmap& getImage();
    GFXTexHandle getTexture(GFXTextureProfile* requestedProfile);
 
-   const char* getImageInfo();
+   StringTableEntry getImageInfo();
 
-   static const char* getImageTypeNameFromType(ImageTypes type);
-   static ImageTypes getImageTypeFromName(const char* name);
+   static StringTableEntry getImageTypeNameFromType(ImageTypes type);
+   static ImageTypes getImageTypeFromName(StringTableEntry name);
 
    void setImageType(ImageTypes type) { mImageType = type; }
 
@@ -121,8 +125,8 @@ protected:
    virtual void            initializeAsset(void);
    virtual void            onAssetRefresh(void);
 
-   static bool setImageFileName(void* obj, const char* index, const char* data) { static_cast<ImageAsset*>(obj)->setImageFileName(data); return false; }
-   static const char* getImageFileName(void* obj, const char* data) { return static_cast<ImageAsset*>(obj)->getImageFileName(); }
+   static bool setImageFileName(void* obj, StringTableEntry index, StringTableEntry data) { static_cast<ImageAsset*>(obj)->setImageFileName(data); return false; }
+   static StringTableEntry getImageFileName(void* obj, StringTableEntry data) { return static_cast<ImageAsset*>(obj)->getImageFileName(); }
 
    void loadImage();
 };
@@ -168,11 +172,12 @@ public:
    StringTableEntry m##name##AssetId;\
    AssetPtr<ImageAsset>  m##name##Asset;\
 public: \
-   const String& get##name() const { return m##name##Filename; }\
+   const StringTableEntry get##name() const { return (m##name##Asset && m##name##Asset->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset->getImagePath() : m##name##Filename; }\
+   const StringTableEntry get##name##File() const { return m##name##Filename; }\
    void set##name(FileName _in) { m##name##Filename = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in) { m##name##Asset = _in; }\
-static bool _set##name##Filename(void* obj, const char* index, const char* data)\
+static bool _set##name##Filename(void* obj, StringTableEntry index, StringTableEntry data)\
 {\
    className* object = static_cast<className*>(obj);\
    \
@@ -205,7 +210,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
    return true;\
 }\
 \
-static bool _set##name##Asset(void* obj, const char* index, const char* data)\
+static bool _set##name##Asset(void* obj, StringTableEntry index, StringTableEntry data)\
 {\
    className* object = static_cast<className*>(obj);\
    object->m##name##AssetId = StringTable->insert(data);\
@@ -227,7 +232,7 @@ public: \
    void set##name(FileName _in) { m##name##Filename = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in) { m##name##Asset = _in; }\
-static bool _set##name##Filename(void* obj, const char* index, const char* data)\
+static bool _set##name##Filename(void* obj, StringTableEntry index, StringTableEntry data)\
 {\
    className* object = static_cast<className*>(obj);\
    \
@@ -261,7 +266,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
    return true;\
 }\
 \
-static bool _set##name##Asset(void* obj, const char* index, const char* data)\
+static bool _set##name##Asset(void* obj, StringTableEntry index, StringTableEntry data)\
 {\
    className* object = static_cast<className*>(obj);\
    object->m##name##AssetId = StringTable->insert(data);\
@@ -369,7 +374,7 @@ public: \
    void set##name(FileName _in,const U32& id) { m##name##Filename[id] = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset(const U32& id) const { return m##name##Asset[id]; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& id) { m##name##Asset[id] = _in; }\
-static bool _set##name##Filename(void* obj, const char* index, const char* data)\
+static bool _set##name##Filename(void* obj, StringTableEntry index, StringTableEntry data)\
 {\
    if (!index) return false;\
    U32 idx = dAtoi(index);\
@@ -407,7 +412,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
    return true;\
 }\
 \
-static bool _set##name##Asset(void* obj, const char* index, const char* data)\
+static bool _set##name##Asset(void* obj, StringTableEntry index, StringTableEntry data)\
 {\
    className* object = static_cast<className*>(obj);\
    if (!index) return false;\
@@ -435,7 +440,7 @@ public: \
    void set##name(FileName _in,const U32& id) { m##name##Filename[id] = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset(const U32& id) const { return m##name##Asset[id]; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& id) { m##name##Asset[id] = _in; }\
-static bool _set##name##Filename(void* obj, const char* index, const char* data)\
+static bool _set##name##Filename(void* obj, StringTableEntry index, StringTableEntry data)\
 {\
    if (!index) return false;\
    U32 idx = dAtoi(index);\
@@ -474,7 +479,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
    return true;\
 }\
 \
-static bool _set##name##Asset(void* obj, const char* index, const char* data)\
+static bool _set##name##Asset(void* obj, StringTableEntry index, StringTableEntry data)\
 {\
    className* object = static_cast<className*>(obj);\
    if (!index) return false;\

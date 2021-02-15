@@ -144,61 +144,8 @@ bool TerrainMaterial::onAdd()
          Con::warnf( "TerrainMaterial::onAdd() - Internal name collision; '%s' already exists!", mInternalName );
    }  
 
-   //bind any assets we have
-   if (mDiffuseMapFilename != String::EmptyString)
-   {
-      PersistenceManager* persistMgr;
-      if (!Sim::findObject("ServerAssetValidator", persistMgr))
-         Con::errorf("ServerAssetValidator not found!");
-
-      if (persistMgr && mDiffuseMapFilename != String::EmptyString && mDiffuseMapAssetId == StringTable->EmptyString())
-      {
-         persistMgr->setDirty(this);
-      }
-      if (mDiffuseMapFilename != String::EmptyString)
-      {
-         //check for pure local paths, some legacy materials have these
-         Torque::Path imagePath = mDiffuseMapFilename;
-         if (imagePath.getPath() == String::EmptyString)
-         {
-            String subPath = Torque::Path(getFilename()).getPath();
-            imagePath.setPath(subPath);
-         }
-
-         if (imagePath.getExtension() == String::EmptyString)
-         {
-            String fullPath = imagePath.getFullPath();
-
-            if (Platform::isFile(imagePath.getFullPath() + ".png"))
-               imagePath.setExtension("png");
-            else if (Platform::isFile(imagePath.getFullPath() + ".dds"))
-               imagePath.setExtension("dds");
-            else if (Platform::isFile(imagePath.getFullPath() + ".jpg"))
-               imagePath.setExtension("jpg");
-         }
-
-         mDiffuseMapAssetId = ImageAsset::getAssetIdByFilename(imagePath.getFullPath());
-      }
-   }
-
-
-   if (mDiffuseMapAssetId != StringTable->EmptyString())
-   {
-      S32 assetState = ImageAsset::getAssetById(mDiffuseMapAssetId, &mDiffuseMapAsset);
-      if (assetState != ImageAsset::Failed)
-      {
-         if (assetState == ImageAsset::Ok)
-         {
-            //mDiffuseMapFilename = StringTable->EmptyString();
-         }
-         else Con::warnf("Warning: %s::preload-%s", mClassName, ImageAsset::getAssetErrstrn(assetState).c_str());
-
-         inspectPostApply();
-      }
-      //mDiffuseMapAsset[i] = mDiffuseMapAssetId[i];
-   }
-   //AUTOCONVERT_IMAGEASSET(DiffuseMap);
-   //LOAD_IMAGEASSET(DiffuseMap);
+   AUTOCONVERT_IMAGEASSET(DiffuseMap);
+   LOAD_IMAGEASSET(DiffuseMap);
 
    AUTOCONVERT_IMAGEASSET(NormalMap);
    LOAD_IMAGEASSET(NormalMap);
