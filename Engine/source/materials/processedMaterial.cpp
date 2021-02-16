@@ -402,7 +402,17 @@ void ProcessedMaterial::_setStageData()
    for (i = 0; i < Material::MAX_STAGES; i++)
    {
       // DiffuseMap
-      if (mMaterial->mDiffuseMapFilename[i].isNotEmpty())
+      if (mMaterial->mDiffuseMapAsset[i] && !mMaterial->mDiffuseMapAsset[i].isNull())
+      {
+         mStages[i].setTex(MFT_DiffuseMap, mMaterial->mDiffuseMapAsset[i]->getTexture(&GFXStaticTextureSRGBProfile));
+         if (!mStages[i].getTex(MFT_DiffuseMap))
+         {
+            // Load a debug texture to make it clear to the user 
+            // that the texture for this stage was missing.
+            mStages[i].setTex(MFT_DiffuseMap, _createTexture(GFXTextureManager::getMissingTexturePath().c_str(), &GFXStaticTextureSRGBProfile));
+         }
+      }
+      else if (mMaterial->mDiffuseMapFilename[i].isNotEmpty())
       {
          mStages[i].setTex(MFT_DiffuseMap, _createTexture(mMaterial->mDiffuseMapFilename[i], &GFXStaticTextureSRGBProfile));
          if (!mStages[i].getTex(MFT_DiffuseMap))
@@ -412,16 +422,6 @@ void ProcessedMaterial::_setStageData()
             if (!mMaterial->mDiffuseMapFilename[i].startsWith("#"))
                mMaterial->logError("Failed to load diffuse map %s for stage %i", _getTexturePath(mMaterial->mDiffuseMapFilename[i]).c_str(), i);
 
-            // Load a debug texture to make it clear to the user 
-            // that the texture for this stage was missing.
-            mStages[i].setTex(MFT_DiffuseMap, _createTexture(GFXTextureManager::getMissingTexturePath().c_str(), &GFXStaticTextureSRGBProfile));
-         }
-      }
-      else if (mMaterial->mDiffuseMapAsset[i] && !mMaterial->mDiffuseMapAsset[i].isNull())
-      {
-         mStages[i].setTex(MFT_DiffuseMap, mMaterial->mDiffuseMapAsset[i]->getImage(GFXStaticTextureSRGBProfile));
-         if (!mStages[i].getTex(MFT_DiffuseMap))
-         {
             // Load a debug texture to make it clear to the user 
             // that the texture for this stage was missing.
             mStages[i].setTex(MFT_DiffuseMap, _createTexture(GFXTextureManager::getMissingTexturePath().c_str(), &GFXStaticTextureSRGBProfile));

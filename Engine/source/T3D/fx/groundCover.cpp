@@ -991,7 +991,7 @@ void GroundCover::_initialize( U32 cellCount, U32 cellPlacementCount )
          if (!mat->mDiffuseMapFilename[0].isEmpty())
             tex = GFXTexHandle(mat->mDiffuseMapFilename[0], &GFXStaticTextureSRGBProfile, "GroundCover texture aspect ratio check");
          else if (!mat->mDiffuseMapAsset[0].isNull())
-            tex = mat->mDiffuseMapAsset[0]->getImage(GFXStaticTextureSRGBProfile);
+            tex = mat->mDiffuseMapAsset[0]->getTexture(&GFXStaticTextureSRGBProfile);
 
          if(tex.isValid())
          {
