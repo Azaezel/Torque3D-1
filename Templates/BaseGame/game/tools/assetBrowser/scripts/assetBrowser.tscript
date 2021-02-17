@@ -256,7 +256,7 @@ function AssetBrowser::selectAsset( %this, %asset )
       %this.changeAsset();
    }
    
-   EWInspectorWindow.refresh();
+   Inspector.refresh();
    
    AssetBrowser.hideDialog();
 }
