@@ -84,7 +84,7 @@ ConsoleSetType(TypeImageAssetPtr)
    Con::warnf("(TypeImageAssetPtr) - Cannot set multiple args to a single asset.");
 }
 
-ConsoleType(assetIdString, TypeImageAssetId, String, ASSET_ID_FIELD_PREFIX)
+ConsoleType(assetIdString, TypeImageAssetId, const char*, ASSET_ID_FIELD_PREFIX)
 
 ConsoleGetType(TypeImageAssetId)
 {
@@ -100,11 +100,7 @@ ConsoleSetType(TypeImageAssetId)
       // Yes, so fetch field value.
       const char* pFieldValue = argv[0];
 
-      // Fetch asset Id.
-      StringTableEntry* assetId = (StringTableEntry*)(dptr);
-
-      // Update asset value.
-      *assetId = StringTable->insert(pFieldValue);
+      *((const char**)dptr) = StringTable->insert(argv[0]);
 
       return;
    }

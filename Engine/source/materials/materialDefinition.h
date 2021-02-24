@@ -206,77 +206,11 @@ public:
    //-----------------------------------------------------------------------
    DECLARE_IMAGEASSET_ARRAY(Material, DiffuseMap, MAX_STAGES);
 
-   /*public:
-      FileName mDiffuseMapFilename[MAX_STAGES];
-      StringTableEntry mDiffuseMapAssetId[MAX_STAGES];
-      AssetPtr<ImageAsset>  mDiffuseMapAsset[MAX_STAGES];
-   public:
-      const String& getDiffuseMap(const U32& id) const { return mDiffuseMapFilename[id]; }
-      void setDiffuseMap(FileName _in,const U32& id) { mDiffuseMapFilename[id] = _in; }
-      const AssetPtr<ImageAsset> & getDiffuseMapAsset(const U32& id) const { return mDiffuseMapAsset[id]; }
-      void setDiffuseMapAsset(AssetPtr<ImageAsset>_in, const U32& id) { mDiffuseMapAsset[id] = _in; }
-      static bool _setDiffuseMapFilename(void* obj, const char* index, const char* data)
-      {
-         if (!index) return false;
-         U32 idx = dAtoi(index);
-         if (idx >= MAX_STAGES)
-            return false;
-
-         Material* object = static_cast<Material*>(obj);
-
-         StringTableEntry assetId = ImageAsset::getAssetIdByFilename(StringTable->insert(data));
-         if (assetId != StringTable->EmptyString())
-         {
-            if (object->_setDiffuseMapAsset(obj, index, assetId))
-            {
-               if (assetId == StringTable->insert("Core_Rendering:missingTexture"))
-               {
-                  object->mDiffuseMapFilename[idx] = data;
-                  object->mDiffuseMapAssetId[idx] = StringTable->EmptyString();
-
-                  return true;
-               }
-               else
-               {
-                  object->mDiffuseMapAssetId[idx] = assetId;
-                  object->mDiffuseMapFilename[idx] = StringTable->EmptyString();
-
-                  return false;
-               }
-            }
-         }
-         else
-         {
-            object->mDiffuseMapAsset[idx] = StringTable->EmptyString();
-         }
-
-         return true;
-      }
-
-      static bool _setDiffuseMapAsset(void* obj, const char* index, const char* data)
-      {
-         Material* object = static_cast<Material*>(obj);
-         if (!index) return false;
-         U32 idx = dAtoi(index);
-         if (idx >= MAX_STAGES)
-            return false;
-         object->mDiffuseMapAssetId[idx] = StringTable->insert(data);
-         if (ImageAsset::getAssetById(object->mDiffuseMapAssetId[idx], &object->mDiffuseMapAsset[idx]))
-         {
-            if (object->mDiffuseMapAsset[idx].getAssetId() != StringTable->insert("Core_Rendering:missingTexture"))
-            {
-               object->mDiffuseMapFilename[idx] = StringTable->EmptyString();
-            }
-            return true;
-         }
-         return true;
-      }*/
-
    bool     mDiffuseMapSRGB[MAX_STAGES];   // SRGB diffuse
    DECLARE_IMAGEASSET_ARRAY(Material, OverlayMap, MAX_STAGES);
-   DECLARE_IMAGEASSET_ARRAY(Material, LightMap, MAX_STAGES);;
+   DECLARE_IMAGEASSET_ARRAY(Material, LightMap, MAX_STAGES);
    DECLARE_IMAGEASSET_ARRAY(Material, ToneMap, MAX_STAGES);
-   DECLARE_IMAGEASSET_ARRAY(Material, DetailMap, MAX_STAGES);;
+   DECLARE_IMAGEASSET_ARRAY(Material, DetailMap, MAX_STAGES);
    DECLARE_IMAGEASSET_ARRAY(Material, NormalMap, MAX_STAGES);
    DECLARE_IMAGEASSET_ARRAY(Material, ORMConfigMap, MAX_STAGES);
    bool     mIsSRGb[MAX_STAGES];
