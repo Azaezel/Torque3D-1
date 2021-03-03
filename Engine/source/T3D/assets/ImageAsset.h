@@ -298,8 +298,8 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
 if (m##name##Filename != String::EmptyString)\
 {\
    PersistenceManager* persistMgr;\
-   if (!Sim::findObject("ServerAssetValidator", persistMgr))\
-      Con::errorf("ServerAssetValidator not found!");\
+   if (!Sim::findObject("ImageAssetValidator", persistMgr))\
+      Con::errorf("ImageAssetValidator not found!");\
    \
    if (persistMgr && m##name##Filename != String::EmptyString && m####name##AssetId == StringTable->EmptyString())\
    {\
@@ -511,8 +511,8 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
 if (m##name##Filename[id] != String::EmptyString)\
 {\
    PersistenceManager* persistMgr;\
-   if (!Sim::findObject("ServerAssetValidator", persistMgr))\
-      Con::errorf("ServerAssetValidator not found!");\
+   if (!Sim::findObject("ImageAssetValidator", persistMgr))\
+      Con::errorf("ImageAssetValidator not found!");\
    \
    if (persistMgr && m##name##Filename[id] != String::EmptyString && m####name##AssetId[id] == StringTable->EmptyString())\
    {\

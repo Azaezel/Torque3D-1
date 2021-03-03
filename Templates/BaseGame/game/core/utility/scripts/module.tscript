@@ -81,11 +81,13 @@ function loadModuleMaterials(%moduleGroup)
       {
          exec( %file );
       }
-   }   
+   }
    
+   new PersistenceManager( ImageAssetValidator );   
    //Next, frontload materials and terrainMaterials
    loadAssetsByType(MaterialAsset);
    loadAssetsByType(TerrainMaterialAsset);
+   ServerAssetValidator.saveDirty();
 }
 
 function loadAssetsByType(%assetType)
