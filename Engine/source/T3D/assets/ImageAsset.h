@@ -115,7 +115,7 @@ public:
 
    static bool getAssetByFilename(StringTableEntry fileName, AssetPtr<ImageAsset>* imageAsset);
    static StringTableEntry getAssetIdByFilename(StringTableEntry fileName);
-   static bool getAssetById(StringTableEntry assetId, AssetPtr<ImageAsset>* imageAsset);
+   static U32 getAssetById(StringTableEntry assetId, AssetPtr<ImageAsset>* imageAsset);
 
 protected:
    virtual void            initializeAsset(void);
@@ -125,6 +125,7 @@ protected:
    static StringTableEntry getImageFileName(void* obj, StringTableEntry data) { return static_cast<ImageAsset*>(obj)->getImageFileName(); }
 
    void loadImage();
+   U32 mLoadedState;
 };
 
 DefineConsoleType(TypeImageAssetPtr, ImageAsset)
@@ -331,10 +332,11 @@ if (m##name##Filename != String::EmptyString)\
 if (m##name##AssetId != StringTable->EmptyString())\
 {\
    S32 assetState = ImageAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
-   if (assetState != ImageAsset::Failed )\
+   if (assetState == ImageAsset::Ok )\
    {\
       inspectPostApply();\
    }\
+   else Con::warnf("Warning: %s::LOAD_IMAGEASSET(%s)-%s", mClassName, m##name##AssetId, ImageAsset::getAssetErrstrn(assetState).c_str());\
 }
 
 #define PACK_IMAGEASSET(netconn, name)\
@@ -405,7 +407,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
 static bool _set##name##Asset(void* obj, const char* index, const char* data)\
 {\
    className* object = static_cast<className*>(obj);\
-   if (!index) return true;\
+   if (!index) return false;\
    U32 idx = dAtoi(index);\
    if (idx >= max)\
       return false;\
@@ -432,7 +434,7 @@ public: \
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& id) { m##name##Asset[id] = _in; }\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
-   if (!index) return true;\
+   if (!index) return false;\
    U32 idx = dAtoi(index);\
    if (idx >= max)\
       return false;\
@@ -472,7 +474,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
 static bool _set##name##Asset(void* obj, const char* index, const char* data)\
 {\
    className* object = static_cast<className*>(obj);\
-   if (!index) return true;\
+   if (!index) return false;\
    U32 idx = dAtoi(index);\
    if (idx >= max)\
       return false;\
@@ -543,16 +545,12 @@ if (m##name##Filename[id] != String::EmptyString)\
 if (m##name##AssetId[id] != StringTable->EmptyString())\
 {\
    S32 assetState = ImageAsset::getAssetById(m##name##AssetId[id], &m##name##Asset[id]);\
-   if (assetState != ImageAsset::Failed )\
+   if (assetState == ImageAsset::Ok)\
    {\
-      if (assetState == ImageAsset::Ok)\
-      {\
-         m##name##Filename[id] = StringTable->EmptyString();\
-      }\
-      else Con::warnf("Warning: %s::preload-%s", mClassName, ImageAsset::getAssetErrstrn(assetState).c_str());\
-      \
+      m##name##Filename[id] = StringTable->EmptyString();\
       inspectPostApply();\
    }\
+   else Con::warnf("Warning: %s::LOAD_IMAGEASSET_ARRAY(%s)-%s", getName(), m##name##AssetId[id], ImageAsset::getAssetErrstrn(assetState).c_str());\
 }
 
 #define PACK_IMAGEASSET_ARRAY(netconn, name, id)\

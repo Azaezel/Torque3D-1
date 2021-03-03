@@ -135,6 +135,7 @@ ImplementEnumType(ImageAssetType,
    {
       mImageFileName = StringTable->EmptyString();
       mImagePath = StringTable->EmptyString();
+      mLoadedState = AssetErrCode::NotLoaded;
    }
 
    //-----------------------------------------------------------------------------
@@ -248,22 +249,30 @@ ImplementEnumType(ImageAssetType,
       return imageAssetId;
    }
 
-   bool ImageAsset::getAssetById(StringTableEntry assetId, AssetPtr<ImageAsset>* imageAsset)
+   U32 ImageAsset::getAssetById(StringTableEntry assetId, AssetPtr<ImageAsset>* imageAsset)
    {
       (*imageAsset) = assetId;
 
-      if (!imageAsset->isNull())
-         return true;
+      if ((*imageAsset))
+         return (*imageAsset)->mLoadedState;
 
-      //Didn't work, so have us fall back to a placeholder asset
-      StringTableEntry noImageId = StringTable->insert("Core_Rendering:missingTexture");
-      imageAsset->setAssetId(noImageId);
+      if (imageAsset->notNull())
+      {
+         //Didn't work, so have us fall back to a placeholder asset
+         StringTableEntry noImageId = StringTable->insert("Core_Rendering:missingTexture");
+         imageAsset->setAssetId(noImageId);
 
-      if (!imageAsset->isNull())
-         return true;
+         //handle fallback not being loaded itself
+         if ((*imageAsset)->mLoadedState == BadFileReference)
+            return AssetErrCode::BadFileReference;
 
-      return false;
+         (*imageAsset)->mLoadedState = AssetErrCode::UsingFallback;
+         return AssetErrCode::UsingFallback;
+      }
+
+      return AssetErrCode::Failed;
    }
+
    //------------------------------------------------------------------------------
    void ImageAsset::copyTo(SimObject* object)
    {
@@ -281,6 +290,7 @@ ImplementEnumType(ImageAssetType,
          if (!Platform::isFile(mImagePath))
          {
             Con::errorf("ImageAsset::initializeAsset: Attempted to load file %s but it was not valid!", mImageFileName);
+            mLoadedState = BadFileReference;
             return;
          }
 
@@ -297,6 +307,7 @@ ImplementEnumType(ImageAssetType,
             return;
          }
       }
+      mLoadedState = BadFileReference;
 
       mIsValidImage = false;
    }
@@ -333,15 +344,21 @@ ImplementEnumType(ImageAssetType,
    {
       if (mResourceMap.contains(requestedProfile))
       {
+         mLoadedState = Ok;
          return mResourceMap.find(requestedProfile)->value;
       }
       else
       {
          //If we don't have an existing map case to the requested format, we'll just create it and insert it in
          GFXTexHandle newTex = TEXMGR->createTexture(mImagePath, requestedProfile);
-         mResourceMap.insert(requestedProfile, newTex);
-
-         return newTex;
+         if (newTex)
+         {
+            mResourceMap.insert(requestedProfile, newTex);
+            mLoadedState = Ok;
+            return newTex;
+         }
+         else
+            mLoadedState = BadFileReference;
       }
 
       //if (mTexture.isValid())
