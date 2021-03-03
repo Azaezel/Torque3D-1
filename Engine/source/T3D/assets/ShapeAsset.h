@@ -108,7 +108,7 @@ public:
    static void initPersistFields();
    virtual void copyTo(SimObject* object);
 
-   virtual void setDataField(StringTableEntry slotName, const char *array, const char *value);
+   virtual void setDataField(StringTableEntry slotName, StringTableEntry array, StringTableEntry value);
 
    virtual void initializeAsset();
 
@@ -172,7 +172,7 @@ public:
 protected:
    virtual void            onAssetRefresh(void);
 
-   static bool setShapeFile(void *obj, const char *index, const char *data) { static_cast<ShapeAsset*>(obj)->setShapeFile(data); return false; }
+   static bool setShapeFile(void *obj, StringTableEntry index, StringTableEntry data) { static_cast<ShapeAsset*>(obj)->setShapeFile(data); return false; }
    static const char* getShapeFile(void* obj, const char* data) { return static_cast<ShapeAsset*>(obj)->getShapeFile(); }
 
    static bool setShapeConstructorFile(void* obj, const char* index, const char* data) { static_cast<ShapeAsset*>(obj)->setShapeConstructorFile(data); return false; }
