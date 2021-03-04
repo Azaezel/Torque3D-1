@@ -1337,17 +1337,6 @@ function MaterialEditorGui::updateTextureMap( %this, %type, %action )
    if( %action )
    {
       AssetBrowser.showDialog("ImageAsset", %this@".doUpdateTextureMap");
-      /*%texture = MaterialEditorGui.openFile("texture");
-      if( %texture !$= "" )
-      {
-         %bitmapCtrl.setBitmap(%texture);
-      
-         %bitmap = %bitmapCtrl.bitmap;
-         %bitmap = strreplace(%bitmap,"tools/materialEditor/scripts/","");
-         %bitmapCtrl.setBitmap(%bitmap);
-         %textCtrl.setText(%bitmap);
-         MaterialEditorGui.updateActiveMaterial(%type @ "Map[" @ %layer @ "]","\"" @ %bitmap @ "\"");	
-      }*/
    }
    else
    {
@@ -1414,11 +1403,8 @@ function MaterialEditorGui::updateORMConfigMap(%this,%action)
    {
       %texture = MaterialEditorGui.openFile("texture");
       if( %texture !$= "" )
-      {
-         MaterialEditorGui.updateActiveMaterial("pixelSpecular[" @ MaterialEditorGui.currentLayer @ "]", 0);
-         
-         MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap(%texture);
-      
+      {         
+         MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap(%texture);      
          %bitmap = MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.bitmap;
          %bitmap = strreplace(%bitmap,"tools/materialEditor/scripts/","");
          MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap(%bitmap);
@@ -1727,12 +1713,6 @@ function MaterialEditorGui::updateColorMultiply(%this,%color)
 {
    %propName = "diffuseColor[" @ MaterialEditorGui.currentLayer @ "]";
    %this.syncGuiColor(MaterialEditorPropertiesWindow-->colorTintSwatch, %propName, %color);
-}
-
-function MaterialEditorGui::updateSpecularCheckbox(%this,%value)
-{
-   MaterialEditorGui.updateActiveMaterial("pixelSpecular[" @ MaterialEditorGui.currentLayer @ "]", %value);   
-   MaterialEditorGui.guiSync( materialEd_previewMaterial );
 }
 
 function MaterialEditorGui::updateSpecular(%this, %color)
