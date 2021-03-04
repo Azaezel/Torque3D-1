@@ -545,24 +545,38 @@ ImplementBitfieldType(MaterialAnimType,
             if (slash != String::NPos)
                mPath = scriptFile.substr(0, slash + 1);
 
-            //bind any assets we have
+            //convert any non-assets we have
             for (U32 i = 0; i < MAX_STAGES; i++)
             {
                AUTOCONVERT_IMAGEASSET_ARRAY(DiffuseMap, i);
-               LOAD_IMAGEASSET_ARRAY(DiffuseMap, i);
-
-               //bindMapArraySlot(DiffuseMap, i);
-               /*bindMapArraySlot(OverlayMap, i);
-               bindMapArraySlot(LightMap, i);
-               bindMapArraySlot(ToneMap, i);
-               bindMapArraySlot(DetailMap, i);
-               bindMapArraySlot(ORMConfigMap, i);
-               bindMapArraySlot(RoughMap, i);
-               bindMapArraySlot(AOMap, i);
-               bindMapArraySlot(MetalMap, i);
-               bindMapArraySlot(GlowMap, i);
-               bindMapArraySlot(DetailNormalMap, i);*/
+               AUTOCONVERT_IMAGEASSET_ARRAY(OverlayMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(LightMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(ToneMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(DetailMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(ORMConfigMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(AOMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(RoughMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(MetalMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(GlowMap, i);
+               AUTOCONVERT_IMAGEASSET_ARRAY(DetailNormalMap, i);
             }
+
+            //bind any assets we have
+            for (U32 i = 0; i < MAX_STAGES; i++)
+            {
+               LOAD_IMAGEASSET_ARRAY(DiffuseMap, i);
+               LOAD_IMAGEASSET_ARRAY(OverlayMap, i);
+               LOAD_IMAGEASSET_ARRAY(LightMap, i);
+               LOAD_IMAGEASSET_ARRAY(ToneMap, i);
+               LOAD_IMAGEASSET_ARRAY(DetailMap, i);
+               LOAD_IMAGEASSET_ARRAY(ORMConfigMap, i);
+               LOAD_IMAGEASSET_ARRAY(AOMap, i);
+               LOAD_IMAGEASSET_ARRAY(RoughMap, i);
+               LOAD_IMAGEASSET_ARRAY(MetalMap, i);
+               LOAD_IMAGEASSET_ARRAY(GlowMap, i);
+               LOAD_IMAGEASSET_ARRAY(DetailNormalMap, i);
+            }
+            inspectPostApply();
 
             _mapMaterial();
 

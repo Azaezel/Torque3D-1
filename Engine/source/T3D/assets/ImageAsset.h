@@ -334,7 +334,7 @@ if (m##name##AssetId != StringTable->EmptyString())\
    S32 assetState = ImageAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
    if (assetState == ImageAsset::Ok )\
    {\
-      inspectPostApply();\
+      m##name##Filename = StringTable->EmptyString();\
    }\
    else Con::warnf("Warning: %s::LOAD_IMAGEASSET(%s)-%s", mClassName, m##name##AssetId, ImageAsset::getAssetErrstrn(assetState).c_str());\
 }
@@ -548,7 +548,6 @@ if (m##name##AssetId[id] != StringTable->EmptyString())\
    if (assetState == ImageAsset::Ok)\
    {\
       m##name##Filename[id] = StringTable->EmptyString();\
-      inspectPostApply();\
    }\
    else Con::warnf("Warning: %s::LOAD_IMAGEASSET_ARRAY(%s)-%s", getName(), m##name##AssetId[id], ImageAsset::getAssetErrstrn(assetState).c_str());\
 }
