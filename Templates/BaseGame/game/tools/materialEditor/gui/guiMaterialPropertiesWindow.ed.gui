@@ -821,7 +821,7 @@
                            MinExtent = "8 2";
                            canSave = "1";
                            Visible = "1";
-                           Command = "MaterialEditorGui.updateORMConfigMap(1);";
+                           Command = "MaterialEditorGui.updateTextureMap(\"ORMConfig\",1);";
                            tooltipprofile = "ToolsGuiDefaultProfile";
                            ToolTip = "Change the packed spec map for this layer. \n Roughness (R), Ambient Occlusion (G), and Metalness(B))";
                            hovertime = "1000";
@@ -861,7 +861,7 @@
                            position = "134 34";
                            Extent = "40 16";
                            buttonType = "PushButton";
-                           command="MaterialEditorGui.updateORMConfigMap(1);";
+                           Command = "MaterialEditorGui.updateTextureMap(\"ORMConfig\",1);";
                         };
                         new GuiBitmapButtonCtrl() {
                            canSaveDynamicFields = "0";
@@ -875,7 +875,7 @@
                            MinExtent = "8 2";
                            canSave = "1";
                            Visible = "1";
-                           Command = "MaterialEditorGui.updateORMConfigMap(0);";
+                           Command = "MaterialEditorGui.updateTextureMap(\"ORMConfig\",0);";
                            hovertime = "1000";
                            groupNum = "-1";
                            buttonType = "PushButton";
