@@ -848,20 +848,11 @@ function MaterialEditorGui::guiSync( %this, %material )
    //layer specific controls are located here
    %layer = MaterialEditorGui.currentLayer;
    
-   if((%material).diffuseMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).diffuseMapAsset[%layer])) 
+   //Diffuse
+   if((%material).getDiffuseMap(%layer) !$= "") 
    {
-      %assetId = (%material).diffuseMapAsset[%layer];
-      MaterialEditorPropertiesWindow-->diffuseMapNameText.setText( %assetId );
-      
-      %assetDef = AssetDatabase.acquireAsset(%assetId);
-      %imagePath = %assetDef.getImagePath() ;
-      
-      MaterialEditorPropertiesWindow-->diffuseMapDisplayBitmap.setBitmap( %imagePath );
-   }
-   else if((%material).diffuseMap[%layer] !$= "") 
-   {
-      MaterialEditorPropertiesWindow-->diffuseMapNameText.setText( (%material).diffuseMap[%layer] );      
-      MaterialEditorPropertiesWindow-->diffuseMapDisplayBitmap.setBitmap( (%material).diffuseMap[%layer] );
+      MaterialEditorPropertiesWindow-->diffuseMapNameText.setText( (%material).getDiffuseMap(%layer) );      
+      MaterialEditorPropertiesWindow-->diffuseMapDisplayBitmap.setBitmap( (%material).getDiffuseMap(%layer) );
    }
    else
    {
@@ -870,37 +861,101 @@ function MaterialEditorGui::guiSync( %this, %material )
    }
    
    //Normal
-   if((%material).normalMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).normalMapAsset[%layer])) 
+   if((%material).getNormalMap(%layer) !$= "") 
    {
-      %assetId = (%material).normalMapAsset[%layer];
-      MaterialEditorPropertiesWindow-->normalMapNameText.setText( %assetId );
-      
-      %assetDef = AssetDatabase.acquireAsset(%assetId);
-      %imagePath = %assetDef.getImagePath() ;
-      
-      MaterialEditorPropertiesWindow-->normalMapDisplayBitmap.setBitmap( %imagePath );
-   }
-   else if((%material).normalMap[%layer] !$= "") 
-   {
-      MaterialEditorPropertiesWindow-->normalMapNameText.setText( (%material).normalMap[%layer] );      
-      MaterialEditorPropertiesWindow-->normalMapDisplayBitmap.setBitmap( (%material).normalMap[%layer] );
+      MaterialEditorPropertiesWindow-->normalMapNameText.setText( (%material).getNormalMap(%layer) );      
+      MaterialEditorPropertiesWindow-->normalMapDisplayBitmap.setBitmap( (%material).getNormalMap(%layer) );
    }
    else
    {
       MaterialEditorPropertiesWindow-->normalMapNameText.setText( "None" );
       MaterialEditorPropertiesWindow-->normalMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
- 
-   /*if((%material).normalMap[%layer] $= "") 
+   }   
+    
+   //ORM Config
+   if((%material).getORMConfigMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->normalMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->normalMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
+      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( (%material).getORMConfigMap(%layer) );      
+      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( (%material).getORMConfigMap(%layer) );
+      //hide unused
+      MaterialEditorPropertiesWindow-->RoughnessTextEdit.setVisible(false);
+      MaterialEditorPropertiesWindow-->RoughnessSlider.setVisible(false);
+      MaterialEditorPropertiesWindow-->MetalnessTextEdit.setVisible(false);
+      MaterialEditorPropertiesWindow-->MetalnessSlider.setVisible(false);
+      
+      MaterialEditorPropertiesWindow-->isSRGBCheckbox.setValue((%material).isSRGB[%layer]);
+      MaterialEditorPropertiesWindow-->invertRoughnessCheckbox.setValue((%material).invertRoughness[%layer]);
+      //show used
+      MaterialEditorPropertiesWindow-->isSRGBCheckbox.setVisible(true);
+      MaterialEditorPropertiesWindow-->invertRoughnessCheckbox.setVisible(true);
+
    }
    else
    {
-      MaterialEditorPropertiesWindow-->normalMapNameText.setText( (%material).normalMap[%layer] );
-      MaterialEditorPropertiesWindow-->normalMapDisplayBitmap.setBitmap( (%material).normalMap[%layer] );
-   }*/
+      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
+      
+      MaterialEditorPropertiesWindow-->RoughnessTextEdit.setText((%material).Roughness[%layer]);
+      MaterialEditorPropertiesWindow-->RoughnessSlider.setValue((%material).Roughness[%layer]);
+      MaterialEditorPropertiesWindow-->MetalnessTextEdit.setText((%material).Metalness[%layer]);
+      MaterialEditorPropertiesWindow-->MetalnessSlider.setValue((%material).Metalness[%layer]);   
+      //show used   
+      MaterialEditorPropertiesWindow-->RoughnessTextEdit.setVisible(true);
+      MaterialEditorPropertiesWindow-->RoughnessSlider.setVisible(true);
+      MaterialEditorPropertiesWindow-->MetalnessTextEdit.setVisible(true);
+      MaterialEditorPropertiesWindow-->MetalnessSlider.setVisible(true);
+      
+      //hide unused
+      MaterialEditorPropertiesWindow-->isSRGBCheckbox.setVisible(false);
+      MaterialEditorPropertiesWindow-->invertRoughnessCheckbox.setVisible(false);
+   }
+   
+   //AOMap
+   if((%material).getAOMap(%layer) !$= "") 
+   {
+      MaterialEditorPropertiesWindow-->aoMapNameText.setText( (%material).getAOMap(%layer) );      
+      MaterialEditorPropertiesWindow-->aoMapDisplayBitmap.setBitmap( (%material).getAOMap(%layer) );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->aoMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->aoMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
+   }   
+   //RoughMap
+   if((%material).getRoughMap(%layer) !$= "") 
+   {
+      MaterialEditorPropertiesWindow-->roughMapNameText.setText( (%material).getRoughMap(%layer) );      
+      MaterialEditorPropertiesWindow-->roughMapDisplayBitmap.setBitmap( (%material).getRoughMap(%layer) );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->roughMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->roughMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
+   }
+   
+   //MetalMap
+   if((%material).getMetalMap(%layer) !$= "") 
+   {
+      MaterialEditorPropertiesWindow-->metalMapNameText.setText( (%material).getMetalMap(%layer) );      
+      MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( (%material).getMetalMap(%layer) );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->metalMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
+   }   
+   
+   //GlowMap
+   if((%material).getGlowMap(%layer) !$= "") 
+   {
+      MaterialEditorPropertiesWindow-->glowMapNameText.setText( (%material).getGlowMap(%layer) );      
+      MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( (%material).getGlowMap(%layer) );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->glowMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
+   }   
    
    //Overlay
    if((%material).overlayMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).overlayMapAsset[%layer])) 
@@ -924,17 +979,6 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->overlayMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
    }
    
-   /*if((%material).overlayMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->overlayMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->overlayMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->overlayMapNameText.setText( (%material).overlayMap[%layer] );
-      MaterialEditorPropertiesWindow-->overlayMapDisplayBitmap.setBitmap( (%material).overlayMap[%layer] );
-   }*/
-   
    //Detail
    if((%material).detailMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).detailMapAsset[%layer])) 
    {
@@ -956,18 +1000,7 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->detailMapNameText.setText( "None" );
       MaterialEditorPropertiesWindow-->detailMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
    }
-   
-   /*if((%material).detailMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->detailMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->detailMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->detailMapNameText.setText( (%material).detailMap[%layer] );
-      MaterialEditorPropertiesWindow-->detailMapDisplayBitmap.setBitmap( (%material).detailMap[%layer] );
-   }*/
-   
+      
    //Detail Normal
    if((%material).detailNormalMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).detailNormalMapAsset[%layer])) 
    {
@@ -989,18 +1022,7 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->detailNormalMapNameText.setText( "None" );
       MaterialEditorPropertiesWindow-->detailNormalMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
    }
-   
-   /*if((%material).detailNormalMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->detailNormalMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->detailNormalMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->detailNormalMapNameText.setText( (%material).detailNormalMap[%layer] );
-      MaterialEditorPropertiesWindow-->detailNormalMapDisplayBitmap.setBitmap( (%material).detailNormalMap[%layer] );
-   }*/
-   
+      
    //Light
    if((%material).lightMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).lightMapAsset[%layer])) 
    {
@@ -1022,18 +1044,7 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->lightMapNameText.setText( "None" );
       MaterialEditorPropertiesWindow-->lightMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
    }
-   
-   /*if((%material).lightMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->lightMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->lightMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->lightMapNameText.setText( (%material).lightMap[%layer] );
-      MaterialEditorPropertiesWindow-->lightMapDisplayBitmap.setBitmap( (%material).lightMap[%layer] );
-   }*/
-   
+      
    //Tone
    if((%material).toneMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).toneMapAsset[%layer])) 
    {
@@ -1056,184 +1067,7 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->toneMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
    }
    
-   /*if((%material).toneMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->toneMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->toneMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->toneMapNameText.setText( (%material).toneMap[%layer] );
-      MaterialEditorPropertiesWindow-->toneMapDisplayBitmap.setBitmap( (%material).toneMap[%layer] );
-   }*/
-   MaterialEditorPropertiesWindow-->isSRGBCheckbox.setValue((%material).isSRGB[%layer]);
-   MaterialEditorPropertiesWindow-->invertRoughnessCheckbox.setValue((%material).invertRoughness[%layer]);
       
-   //ORM Config
-   if((%material).ORMConfigMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).ORMConfigMapAsset[%layer])) 
-   {
-      %assetId = (%material).ORMConfigMapAsset[%layer];
-      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( %assetId );
-      
-      %assetDef = AssetDatabase.acquireAsset(%assetId);
-      %imagePath = %assetDef.getImagePath() ;
-      
-      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( %imagePath );
-   }
-   else if((%material).ORMConfigMap[%layer] !$= "") 
-   {
-      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( (%material).ORMConfigMap[%layer] );      
-      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( (%material).ORMConfigMap[%layer] );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   
-   /*if((%material).ORMConfigMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( (%material).ORMConfigMap[%layer] );
-      MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( (%material).ORMConfigMap[%layer] );
-   }*/
-   
-   //Roughness
-   if((%material).roughMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).roughMapAsset[%layer])) 
-   {
-      %assetId = (%material).roughMapAsset[%layer];
-      MaterialEditorPropertiesWindow-->roughMapNameText.setText( %assetId );
-      
-      %assetDef = AssetDatabase.acquireAsset(%assetId);
-      %imagePath = %assetDef.getImagePath() ;
-      
-      MaterialEditorPropertiesWindow-->roughMapDisplayBitmap.setBitmap( %imagePath );
-   }
-   else if((%material).roughMap[%layer] !$= "") 
-   {
-      MaterialEditorPropertiesWindow-->roughMapNameText.setText( (%material).roughMap[%layer] );      
-      MaterialEditorPropertiesWindow-->roughMapDisplayBitmap.setBitmap( (%material).roughMap[%layer] );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->roughMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->roughMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   
-   /*if((%material).roughMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->roughMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->roughMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->roughMapNameText.setText( (%material).roughMap[%layer] );
-      MaterialEditorPropertiesWindow-->roughMapDisplayBitmap.setBitmap( (%material).roughMap[%layer] );
-   }*/
-   
-   //AO
-   if((%material).aoMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).aoMapAsset[%layer])) 
-   {
-      %assetId = (%material).aoMapAsset[%layer];
-      MaterialEditorPropertiesWindow-->aoMapNameText.setText( %assetId );
-      
-      %assetDef = AssetDatabase.acquireAsset(%assetId);
-      %imagePath = %assetDef.getImagePath() ;
-      
-      MaterialEditorPropertiesWindow-->aoMapDisplayBitmap.setBitmap( %imagePath );
-   }
-   else if((%material).aoMap[%layer] !$= "") 
-   {
-      MaterialEditorPropertiesWindow-->aoMapNameText.setText( (%material).aoMap[%layer] );      
-      MaterialEditorPropertiesWindow-->aoMapDisplayBitmap.setBitmap( (%material).aoMap[%layer] );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->aoMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->aoMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   
-   /*if((%material).aoMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->aoMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->aoMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->aoMapNameText.setText( (%material).aoMap[%layer] );
-      MaterialEditorPropertiesWindow-->aoMapDisplayBitmap.setBitmap( (%material).aoMap[%layer] );
-   }*/
-   
-   //Metalness
-   if((%material).metalMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).metalMapAsset[%layer])) 
-   {
-      %assetId = (%material).metalMapAsset[%layer];
-      MaterialEditorPropertiesWindow-->metalMapNameText.setText( %assetId );
-      
-      %assetDef = AssetDatabase.acquireAsset(%assetId);
-      %imagePath = %assetDef.getImagePath() ;
-      
-      MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( %imagePath );
-   }
-   else if((%material).metalMap[%layer] !$= "") 
-   {
-      MaterialEditorPropertiesWindow-->metalMapNameText.setText( (%material).metalMap[%layer] );      
-      MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( (%material).metalMap[%layer] );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->metalMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   
-   /*if((%material).metalMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->metalMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->metalMapNameText.setText( (%material).metalMap[%layer] );
-      MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( (%material).metalMap[%layer] );
-   }*/
-   
-   //Glow
-   if((%material).glowMapAsset[%layer] !$= "" && AssetDatabase.isDeclaredAsset((%material).glowMapAsset[%layer])) 
-   {
-      %assetId = (%material).glowMapAsset[%layer];
-      MaterialEditorPropertiesWindow-->glowMapNameText.setText( %assetId );
-      
-      %assetDef = AssetDatabase.acquireAsset(%assetId);
-      %imagePath = %assetDef.getImagePath() ;
-      
-      MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( %imagePath );
-   }
-   else if((%material).glowMap[%layer] !$= "") 
-   {
-      MaterialEditorPropertiesWindow-->glowMapNameText.setText( (%material).glowMap[%layer] );      
-      MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( (%material).glowMap[%layer] );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->glowMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( "tools/materialEditor/gui/unknownImage" );
-   }
-   
-   /*if((%material).glowMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->glowMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->glowMapNameText.setText( (%material).glowMap[%layer] );
-      MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( (%material).glowMap[%layer] );
-   }*/
-   
    MaterialEditorPropertiesWindow-->accuScaleTextEdit.setText((%material).accuScale[%layer]);
    MaterialEditorPropertiesWindow-->accuScaleTextEdit.setText((%material).accuScale[%layer]);
    MaterialEditorPropertiesWindow-->accuDirectionTextEdit.setText((%material).accuDirection[%layer]);
@@ -1251,10 +1085,6 @@ function MaterialEditorGui::guiSync( %this, %material )
    MaterialEditorPropertiesWindow-->colorTintSwatch.color = (%material).diffuseColor[%layer];
    MaterialEditorPropertiesWindow-->specularColorSwatch.color = (%material).specular[%layer];     
    
-   MaterialEditorPropertiesWindow-->RoughnessTextEdit.setText((%material).Roughness[%layer]);
-   MaterialEditorPropertiesWindow-->RoughnessSlider.setValue((%material).Roughness[%layer]);
-   MaterialEditorPropertiesWindow-->MetalnessTextEdit.setText((%material).Metalness[%layer]);
-   MaterialEditorPropertiesWindow-->MetalnessSlider.setValue((%material).Metalness[%layer]);
    MaterialEditorPropertiesWindow-->glowMulTextEdit.setText((%material).glowMul[%layer]);
    MaterialEditorPropertiesWindow-->glowMulSlider.setValue((%material).glowMul[%layer]);
    MaterialEditorPropertiesWindow-->glowCheckbox.setValue((%material).glow[%layer]);
