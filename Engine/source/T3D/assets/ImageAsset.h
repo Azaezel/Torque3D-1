@@ -225,7 +225,7 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    StringTableEntry m##name##AssetId;\
    AssetPtr<ImageAsset>  m##name##Asset;\
 public: \
-   const String& get##name() const { return m##name##Filename; }\
+   const StringTableEntry get##name() const { return (m##name##Asset && m##name##Asset->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset->getImagePath() : StringTable->insert(m##name##Filename.c_str()); }\
    void set##name(FileName _in) { m##name##Filename = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in) { m##name##Asset = _in; }\
@@ -362,7 +362,8 @@ if (m##name##AssetId != StringTable->EmptyString())\
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ImageAsset>  m##name##Asset[max];\
 public: \
-   const String& get##name(const U32& id) const { return m##name##Filename[id]; }\
+   const StringTableEntry get##name(const U32& id) const \
+      { return (m##name##Asset[id] && m##name##Asset[id]->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset[id]->getImagePath() : StringTable->insert(m##name##Filename[id].c_str()); }\
    void set##name(FileName _in,const U32& id) { m##name##Filename[id] = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset(const U32& id) const { return m##name##Asset[id]; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& id) { m##name##Asset[id] = _in; }\
@@ -428,7 +429,8 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ImageAsset>  m##name##Asset[max];\
 public: \
-   const String& get##name(const U32& id) const { return m##name##Filename[id]; }\
+   const StringTableEntry get##name(const U32& id) const \
+      { return (m##name##Asset[id] && m##name##Asset[id]->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset[id]->getImagePath() : StringTable->insert(m##name##Filename[id].c_str()); }\
    void set##name(FileName _in,const U32& id) { m##name##Filename[id] = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset(const U32& id) const { return m##name##Asset[id]; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& id) { m##name##Asset[id] = _in; }\
