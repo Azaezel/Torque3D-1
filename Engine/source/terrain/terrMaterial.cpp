@@ -215,3 +215,15 @@ TerrainMaterial* TerrainMaterial::findOrCreate( const char *nameOrPath )
 
    return mat;
 }
+
+//declare general get<entry>, get<entry>Asset and set<entry> methods
+//signatures are:
+//using DiffuseMap as an example
+//material.getDiffuseMap(); //returns the raw file referenced
+//material.getDiffuseMapAsset(); //returns the asset id
+//material.setDiffuseMap(%texture); //tries to set the asset and failing that attempts a flat file reference
+DEF_IMAGEASSET_BINDS(TerrainMaterial, DiffuseMap);
+DEF_IMAGEASSET_BINDS(TerrainMaterial, NormalMap);
+DEF_IMAGEASSET_BINDS(TerrainMaterial, DetailMap);
+DEF_IMAGEASSET_BINDS(TerrainMaterial, ORMConfigMap);
+DEF_IMAGEASSET_BINDS(TerrainMaterial, MacroMap);

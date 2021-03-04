@@ -219,7 +219,6 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    }\
    return true;\
 }
-
 #define DECLARE_NET_IMAGEASSET(className, name, bitmask) public: \
    FileName m##name##Filename; \
    StringTableEntry m##name##AssetId;\
@@ -276,6 +275,30 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
       return true;\
    }\
    return true;\
+}
+
+#define DEF_IMAGEASSET_BINDS(className,name)\
+DefineEngineMethod(className, get##name, String, (), , "get name")\
+{\
+   return object->get##name(); \
+}\
+DefineEngineMethod(className, get##name##Asset, String, (), , assetText(name, asset reference))\
+{\
+   return object->m##name##AssetId; \
+}\
+DefineEngineMethod(className, set##name, String, (String map), , assetText(name,assignment. first tries asset then flat file.))\
+{\
+   AssetPtr<ImageAsset> imgAsset;\
+   U32 assetState = ImageAsset::getAssetById(map, &imgAsset);\
+   if (ImageAsset::Ok != assetState)\
+   {\
+      object->set##name##Asset(imgAsset);\
+   }\
+   else\
+   {\
+      object->set##name(map);\
+   }\
+   return ImageAsset::getAssetErrstrn(assetState).c_str();\
 }
 
 #define INIT_IMAGEASSET(name) \
@@ -362,11 +385,11 @@ if (m##name##AssetId != StringTable->EmptyString())\
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ImageAsset>  m##name##Asset[max];\
 public: \
-   const StringTableEntry get##name(const U32& id) const \
-      { return (m##name##Asset[id] && m##name##Asset[id]->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset[id]->getImagePath() : StringTable->insert(m##name##Filename[id].c_str()); }\
-   void set##name(FileName _in,const U32& id) { m##name##Filename[id] = _in; }\
-   const AssetPtr<ImageAsset> & get##name##Asset(const U32& id) const { return m##name##Asset[id]; }\
-   void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& id) { m##name##Asset[id] = _in; }\
+   const StringTableEntry get##name(const U32& layer) const \
+      { return (m##name##Asset[layer] && m##name##Asset[layer]->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset[layer]->getImagePath() : StringTable->insert(m##name##Filename[layer].c_str()); }\
+   void set##name(FileName _in,const U32& layer) { m##name##Filename[layer] = _in; }\
+   const AssetPtr<ImageAsset> & get##name##Asset(const U32& layer) const { return m##name##Asset[layer]; }\
+   void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& layer) { m##name##Asset[layer] = _in; }\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
    if (!index) return true;\
@@ -429,11 +452,11 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ImageAsset>  m##name##Asset[max];\
 public: \
-   const StringTableEntry get##name(const U32& id) const \
-      { return (m##name##Asset[id] && m##name##Asset[id]->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset[id]->getImagePath() : StringTable->insert(m##name##Filename[id].c_str()); }\
-   void set##name(FileName _in,const U32& id) { m##name##Filename[id] = _in; }\
-   const AssetPtr<ImageAsset> & get##name##Asset(const U32& id) const { return m##name##Asset[id]; }\
-   void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& id) { m##name##Asset[id] = _in; }\
+   const StringTableEntry get##name(const U32& layer) const \
+      { return (m##name##Asset[layer] && m##name##Asset[layer]->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset[layer]->getImagePath() : StringTable->insert(m##name##Filename[layer].c_str()); }\
+   void set##name(FileName _in,const U32& layer) { m##name##Filename[layer] = _in; }\
+   const AssetPtr<ImageAsset> & get##name##Asset(const U32& layer) const { return m##name##Asset[layer]; }\
+   void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& layer) { m##name##Asset[layer] = _in; }\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
    if (!index) return true;\
@@ -493,10 +516,10 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    return true;\
 }
 
-#define INIT_IMAGEASSET_ARRAY(name,id) \
-   m##name##Filename[id] = String::EmptyString; \
-   m##name##AssetId[id] = StringTable->EmptyString(); \
-   m##name##Asset[id] = NULL;
+#define INIT_IMAGEASSET_ARRAY(name,layer) \
+   m##name##Filename[layer] = String::EmptyString; \
+   m##name##AssetId[layer] = StringTable->EmptyString(); \
+   m##name##Asset[layer] = NULL;
 
 #define INITPERSISTFIELD_IMAGEASSET_ARRAY(name, arraySize, consoleClass, docs) \
    addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), arraySize, assetText(name, docs)); \
@@ -504,25 +527,25 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    /*addProtectedField(assetText(name, File), TypeImageFilename, Offset(m##name##Filename, consoleClass), consoleClass::_set##name##Filename,  & defaultProtectedGetFn, arraySize, assetText(name, docs)); \
    addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, arraySize, assetText(name, asset reference.));*/
 
-#define CLONE_IMAGEASSET_ARRAY(name, id) \
-   m##name##Filename[id] = other.m##name##Filename;\
-   m##name##AssetId[id] = other.m##name##AssetId;\
-   m##name##Asset[id] = other.m##name##Asset;
+#define CLONE_IMAGEASSET_ARRAY(name, layer) \
+   m##name##Filename[layer] = other.m##name##Filename;\
+   m##name##AssetId[layer] = other.m##name##AssetId;\
+   m##name##Asset[layer] = other.m##name##Asset;
 
-#define AUTOCONVERT_IMAGEASSET_ARRAY(name, id)\
-if (m##name##Filename[id] != String::EmptyString)\
+#define AUTOCONVERT_IMAGEASSET_ARRAY(name, layer)\
+if (m##name##Filename[layer] != String::EmptyString)\
 {\
    PersistenceManager* persistMgr;\
    if (!Sim::findObject("ImageAssetValidator", persistMgr))\
       Con::errorf("ImageAssetValidator not found!");\
    \
-   if (persistMgr && m##name##Filename[id] != String::EmptyString && m####name##AssetId[id] == StringTable->EmptyString())\
+   if (persistMgr && m##name##Filename[layer] != String::EmptyString && m####name##AssetId[layer] == StringTable->EmptyString())\
    {\
       persistMgr->setDirty(this);\
    }\
-   if (m##name##Filename[id] != String::EmptyString)\
+   if (m##name##Filename[layer] != String::EmptyString)\
    {\
-      Torque::Path imagePath = m##name##Filename[id];\
+      Torque::Path imagePath = m##name##Filename[layer];\
       if (imagePath.getPath() == String::EmptyString)\
       {\
          String subPath = Torque::Path(getFilename()).getPath();\
@@ -539,37 +562,60 @@ if (m##name##Filename[id] != String::EmptyString)\
             imagePath.setExtension("jpg");\
       }\
       \
-      m##name##AssetId[id] = ImageAsset::getAssetIdByFilename(imagePath.getFullPath());\
+      m##name##AssetId[layer] = ImageAsset::getAssetIdByFilename(imagePath.getFullPath());\
    }\
 }
 
-#define LOAD_IMAGEASSET_ARRAY(name, id)\
-if (m##name##AssetId[id] != StringTable->EmptyString())\
+#define LOAD_IMAGEASSET_ARRAY(name, layer)\
+if (m##name##AssetId[layer] != StringTable->EmptyString())\
 {\
-   S32 assetState = ImageAsset::getAssetById(m##name##AssetId[id], &m##name##Asset[id]);\
+   S32 assetState = ImageAsset::getAssetById(m##name##AssetId[layer], &m##name##Asset[layer]);\
    if (assetState == ImageAsset::Ok)\
    {\
-      m##name##Filename[id] = StringTable->EmptyString();\
+      m##name##Filename[layer] = StringTable->EmptyString();\
    }\
-   else Con::warnf("Warning: %s::LOAD_IMAGEASSET_ARRAY(%s)-%s", getName(), m##name##AssetId[id], ImageAsset::getAssetErrstrn(assetState).c_str());\
+   else Con::warnf("Warning: %s::LOAD_IMAGEASSET_ARRAY(%s)-%s", getName(), m##name##AssetId[layer], ImageAsset::getAssetErrstrn(assetState).c_str());\
 }
 
-#define PACK_IMAGEASSET_ARRAY(netconn, name, id)\
-   if (stream->writeFlag(m##name##Asset[id].notNull()))\
+#define PACK_IMAGEASSET_ARRAY(netconn, name, layer)\
+   if (stream->writeFlag(m##name##Asset[layer].notNull()))\
    {\
-      NetStringHandle assetIdStr = m##name##Asset[id].getAssetId();\
+      NetStringHandle assetIdStr = m##name##Asset[layer].getAssetId();\
       netconn->packNetStringHandleU(stream, assetIdStr);\
    }\
    else\
-      stream->writeString(m##name##Filename[id]);
+      stream->writeString(m##name##Filename[layer]);
 
-#define UNPACK_IMAGEASSET_ARRAY(netconn, name, id)\
+#define UNPACK_IMAGEASSET_ARRAY(netconn, name, layer)\
    if (stream->readFlag())\
    {\
-     m##name##AssetId[id] = StringTable->insert(netconn->unpackNetStringHandleU(stream).getString());\
+     m##name##AssetId[layer] = StringTable->insert(netconn->unpackNetStringHandleU(stream).getString());\
    }\
    else\
-      m##name##Filename[id] = stream->readSTString();
+      m##name##Filename[layer] = stream->readSTString();
 
+#define DEF_IMAGEASSET_ARRAY_BINDS(className,name)\
+DefineEngineMethod(className, get##name, String, (U32 layer), , assetText(name, raw file reference))\
+{\
+   return object->get##name(layer); \
+}\
+DefineEngineMethod(className, get##name##Asset, String, (U32 layer), , assetText(name, asset reference))\
+{\
+   return object->m##name##AssetId[layer]; \
+}\
+DefineEngineMethod(className, set##name, String, (String map, U32 layer), , assetText(name,assignment. first tries asset then flat file.))\
+{\
+   AssetPtr<ImageAsset> imgAsset;\
+   U32 assetState = ImageAsset::getAssetById(map, &imgAsset);\
+   if (ImageAsset::Ok != assetState)\
+   {\
+      object->set##name##Asset(imgAsset, layer);\
+   }\
+   else\
+   {\
+      object->set##name(map, layer);\
+   }\
+   return ImageAsset::getAssetErrstrn(assetState).c_str();\
+}
 #endif
 

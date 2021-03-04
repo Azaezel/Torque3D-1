@@ -792,3 +792,21 @@ ImplementBitfieldType(MaterialAnimType,
             }
             return true;
          }
+         //declare general get<entry>, get<entry>Asset and set<entry> methods
+         //signatures are:
+         //using DiffuseMap as an example
+         //material.getDiffuseMap(%layer); //returns the raw file referenced
+         //material.getDiffuseMapAsset(%layer); //returns the asset id
+         //material.setDiffuseMap(%texture, %layer); //tries to set the asset and failing that attempts a flat file reference
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, DiffuseMap)
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, OverlayMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, LightMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, ToneMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, DetailMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, NormalMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, ORMConfigMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, RoughMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, AOMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, MetalMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, GlowMap);
+         DEF_IMAGEASSET_ARRAY_BINDS(Material, DetailNormalMap);
