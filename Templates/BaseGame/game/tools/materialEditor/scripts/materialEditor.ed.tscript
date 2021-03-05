@@ -1373,6 +1373,10 @@ function MaterialEditorGui::doUpdateTextureMap( %this, %assetId )
          %textCtrl.setText(%assetId);
          MaterialEditorGui.updateActiveMaterial(%type @ "Map[" @ %layer @ "]","\"\"");
          MaterialEditorGui.updateActiveMaterial(%type @ "MapAsset[" @ %layer @ "]","\"" @ %assetId @ "\"");	
+         
+         %stryng = "MaterialEditorGui.currentMaterial.set"@ %type @"Map(\""@ %texture @"\","@ %layer @");";
+         eval(%stryng);
+         
       }
    }
    

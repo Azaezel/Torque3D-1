@@ -607,7 +607,7 @@ DefineEngineMethod(className, set##name, String, (String map, U32 layer), , asse
 {\
    AssetPtr<ImageAsset> imgAsset;\
    U32 assetState = ImageAsset::getAssetById(map, &imgAsset);\
-   if (ImageAsset::Ok != assetState)\
+   if (ImageAsset::Ok == assetState)\
    {\
       object->set##name##Asset(imgAsset, layer);\
    }\
