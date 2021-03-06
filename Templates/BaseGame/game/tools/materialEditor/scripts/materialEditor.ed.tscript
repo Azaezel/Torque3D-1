@@ -2492,10 +2492,9 @@ function MaterialEditorGui::saveCompositeMap(%this)
     %material = %this.currentMaterial;
     %layer = %this.currentLayer;
    
-    %roughMap = %material.roughMap[%layer];
-    %aoMap = %material.aoMap[%layer];
-    %metalMap = %material.metalMap[%layer];
-    %glowMap = %material.glowMap[%layer];
+    %roughMap = %material.getRoughMap(%layer);
+    %aoMap = %material.getAOMap(%layer);
+    %metalMap = %material.getMetalMap(%layer);
     
     %roughness = %material.RoughnessChan[%layer];
     %ao = %material.AOChan[%layer];
