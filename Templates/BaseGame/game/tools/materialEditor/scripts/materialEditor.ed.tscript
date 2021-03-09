@@ -753,7 +753,6 @@ function MaterialEditorGui::copyMaterials( %this, %copyFrom, %copyTo)
    %mapTo = %copyTo.mapTo;
    %copyTo.assignFieldsFrom( %copyFrom );
    %copyTo.mapTo = %mapTo;
-
 }
 
 function MaterialEditorGui::guiSync( %this, %material )
@@ -1317,10 +1316,6 @@ function MaterialEditorGui::doUpdateTextureMap( %this, %assetId )
          %textCtrl.setText(%assetId);
          MaterialEditorGui.updateActiveMaterial(%type @ "Map[" @ %layer @ "]","\"\"");
          MaterialEditorGui.updateActiveMaterial(%type @ "MapAsset[" @ %layer @ "]","\"" @ %assetId @ "\"");	
-         
-         %stryng = "MaterialEditorGui.currentMaterial.set"@ %type @"Map(\""@ %texture @"\","@ %layer @");";
-         eval(%stryng);
-         
       }
    }
    
