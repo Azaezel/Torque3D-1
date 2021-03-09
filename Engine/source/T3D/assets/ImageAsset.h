@@ -392,7 +392,7 @@ public: \
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& layer) { m##name##Asset[layer] = _in; }\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
-   if (!index) return true;\
+   if (!index) return false;\
    U32 idx = dAtoi(index);\
    if (idx >= max)\
       return false;\
@@ -431,7 +431,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
 static bool _set##name##Asset(void* obj, const char* index, const char* data)\
 {\
    className* object = static_cast<className*>(obj);\
-   if (!index) return true;\
+   if (!index) return false;\
    U32 idx = dAtoi(index);\
    if (idx >= max)\
       return false;\
@@ -459,7 +459,7 @@ public: \
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& layer) { m##name##Asset[layer] = _in; }\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
-   if (!index) return true;\
+   if (!index) return false;\
    U32 idx = dAtoi(index);\
    if (idx >= max)\
       return false;\
@@ -499,7 +499,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
 static bool _set##name##Asset(void* obj, const char* index, const char* data)\
 {\
    className* object = static_cast<className*>(obj);\
-   if (!index) return true;\
+   if (!index) return false;\
    U32 idx = dAtoi(index);\
    if (idx >= max)\
       return false;\

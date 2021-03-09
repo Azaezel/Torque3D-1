@@ -919,8 +919,19 @@ void SimObject::assignFieldsFrom(SimObject *parent)
             dMemset( bufferSecure, 0, 2048 );
             dMemcpy( bufferSecure, szBuffer, dStrlen( szBuffer ) );
 
-            if((*f->setDataFn)( this, NULL, bufferSecure ) )
-               Con::setData(f->type, (void *) (((const char *)this) + f->offset), j, 1, &fieldVal, f->table);
+            if ((*f->setDataFn)(this, NULL, bufferSecure))
+            {
+               Con::setData(f->type, (void*)(((const char*)this) + f->offset), j, 1, &fieldVal, f->table);
+            }
+            else
+            {
+               //could be a special case where we actually need to respect the index
+               FrameTemp<char> arrayBuffer(8);
+               dSprintf(arrayBuffer, 8, "%i", j);
+
+               if ((*f->setDataFn)(this, arrayBuffer, bufferSecure))
+                  Con::setData(f->type, (void*)(((const char*)this) + f->offset), j, 1, &fieldVal, f->table);
+            }
 
             if (f->networkMask != 0)
             {
