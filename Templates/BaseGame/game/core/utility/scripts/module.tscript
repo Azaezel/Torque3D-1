@@ -47,6 +47,7 @@ function callOnModules(%functionName, %moduleGroup, %var0, %var1, %var2, %var3, 
 
 function loadModuleMaterials(%moduleGroup)
 {
+   new PersistenceManager( ImageAssetValidator );
    //Get our modules so we can exec any specific client-side loading/handling
    %modulesList = ModuleDatabase.findModules(false);
    for(%i=0; %i < getWordCount(%modulesList); %i++)
@@ -82,8 +83,7 @@ function loadModuleMaterials(%moduleGroup)
          exec( %file );
       }
    }
-   
-   new PersistenceManager( ImageAssetValidator );   
+      
    //Next, frontload materials and terrainMaterials
    loadAssetsByType(MaterialAsset);
    loadAssetsByType(TerrainMaterialAsset);
