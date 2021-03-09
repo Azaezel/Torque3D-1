@@ -315,7 +315,6 @@ ImplementEnumType(ImageAssetType,
    void ImageAsset::initializeAsset()
    {
       mImagePath = expandAssetFilePath(mImageFileName);
-      Con::errorf(">%s\n>>%s", mImageFileName, mImagePath);
       loadImage();
    }
 
