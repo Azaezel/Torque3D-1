@@ -1133,11 +1133,6 @@ function MaterialEditorGui::getMetalChan(%this, %channel)
 	%guiElement = metalChanBtn @ %channel;
 	%guiElement.setStateOn(true);
 }
-function MaterialEditorGui::getGlowChan(%this, %channel)
-{
-	%guiElement = glowChanBtn @ %channel;
-	%guiElement.setStateOn(true);
-}
 //=======================================
 // Material Update Functionality
 
