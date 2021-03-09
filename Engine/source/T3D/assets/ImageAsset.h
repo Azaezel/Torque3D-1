@@ -169,11 +169,19 @@ public:
    StringTableEntry m##name##AssetId;\
    AssetPtr<ImageAsset>  m##name##Asset;\
 public: \
-   const StringTableEntry get##name() const { return (m##name##Asset && m##name##Asset->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset->getImagePath() : StringTable->insert(m##name##Filename.c_str()); }\
    const StringTableEntry get##name##File() const { return StringTable->insert(m##name##Filename.c_str()); }\
    void set##name(FileName _in) { m##name##Filename = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in) { m##name##Asset = _in; }\
+const StringTableEntry get##name() const\
+{\
+   if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
+      return  Platform::makeRelativePathName(m##name##Asset->getImagePath(), Platform::getMainDotCsDir());\
+   else if (m##name##Filename.isNotEmpty())\
+      return StringTable->insert(Platform::makeRelativePathName(m##name##Filename.c_str(), Platform::getMainDotCsDir()));\
+   else\
+      return StringTable->EmptyString();\
+}\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
    className* object = static_cast<className*>(obj);\
@@ -224,10 +232,18 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    StringTableEntry m##name##AssetId;\
    AssetPtr<ImageAsset>  m##name##Asset;\
 public: \
-   const StringTableEntry get##name() const { return (m##name##Asset && m##name##Asset->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset->getImagePath() : StringTable->insert(m##name##Filename.c_str()); }\
    void set##name(FileName _in) { m##name##Filename = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in) { m##name##Asset = _in; }\
+const StringTableEntry get##name() const\
+{\
+   if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
+      return  Platform::makeRelativePathName(m##name##Asset->getImagePath(), Platform::getMainDotCsDir());\
+   else if (m##name##Filename.isNotEmpty())\
+      return StringTable->insert(Platform::makeRelativePathName(m##name##Filename.c_str(), Platform::getMainDotCsDir()));\
+   else\
+      return StringTable->EmptyString();\
+}\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
    className* object = static_cast<className*>(obj);\
@@ -385,11 +401,18 @@ if (m##name##AssetId != StringTable->EmptyString())\
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ImageAsset>  m##name##Asset[max];\
 public: \
-   const StringTableEntry get##name(const U32& layer) const \
-      { return (m##name##Asset[layer] && m##name##Asset[layer]->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset[layer]->getImagePath() : StringTable->insert(m##name##Filename[layer].c_str()); }\
    void set##name(FileName _in,const U32& layer) { m##name##Filename[layer] = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset(const U32& layer) const { return m##name##Asset[layer]; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& layer) { m##name##Asset[layer] = _in; }\
+const StringTableEntry get##name(U32 layer) const\
+{\
+   if (m##name##Asset[layer] && (m##name##Asset[layer]->getImageFileName() != StringTable->EmptyString()))\
+      return  Platform::makeRelativePathName(m##name##Asset[layer]->getImagePath(), Platform::getMainDotCsDir());\
+   else if (m##name##Filename[layer].isNotEmpty())\
+      return StringTable->insert(Platform::makeRelativePathName(m##name##Filename[layer].c_str(), Platform::getMainDotCsDir()));\
+   else\
+      return StringTable->EmptyString();\
+}\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
    if (!index) return false;\
@@ -452,11 +475,18 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ImageAsset>  m##name##Asset[max];\
 public: \
-   const StringTableEntry get##name(const U32& layer) const \
-      { return (m##name##Asset[layer] && m##name##Asset[layer]->getImageFileName() != StringTable->EmptyString()) ? m##name##Asset[layer]->getImagePath() : StringTable->insert(m##name##Filename[layer].c_str()); }\
    void set##name(FileName _in,const U32& layer) { m##name##Filename[layer] = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset(const U32& layer) const { return m##name##Asset[layer]; }\
    void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& layer) { m##name##Asset[layer] = _in; }\
+const StringTableEntry get##name(U32 layer) const\
+{\
+   if (m##name##Asset[layer] && (m##name##Asset[layer]->getImageFileName() != StringTable->EmptyString()))\
+      return  Platform::makeRelativePathName(m##name##Asset[layer]->getImagePath(), Platform::getMainDotCsDir());\
+   else if (m##name##Filename[layer].isNotEmpty())\
+      return StringTable->insert(Platform::makeRelativePathName(m##name##Filename[layer].c_str(), Platform::getMainDotCsDir()));\
+   else\
+      return StringTable->EmptyString();\
+}\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
    if (!index) return false;\

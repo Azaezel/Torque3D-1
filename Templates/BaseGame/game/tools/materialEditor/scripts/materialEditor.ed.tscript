@@ -795,15 +795,6 @@ function MaterialEditorGui::guiSync( %this, %material )
    MaterialEditorPropertiesWindow-->castShadows.setValue((%material).castShadows);
    MaterialEditorPropertiesWindow-->castDynamicShadows.setValue((%material).castDynamicShadows);
    MaterialEditorPropertiesWindow-->translucentCheckbox.setValue((%material).translucent);
-   /*
-   
-   MaterialEditorPropertiesWindow-->blendingTypePopUp.add(preMul,1);
-   MaterialEditorPropertiesWindow-->blendingTypePopUp.add(LerpAlpha,2);
-   MaterialEditorPropertiesWindow-->blendingTypePopUp.add(Mul,3);
-   MaterialEditorPropertiesWindow-->blendingTypePopUp.add(Add,4);
-   MaterialEditorPropertiesWindow-->blendingTypePopUp.add(AddAlpha,5);
-   MaterialEditorPropertiesWindow-->blendingTypePopUp.add(Sub,6);
-   */
    switch$((%material).translucentBlendOp)
    {
         case "None": %selectedNum = 0;
@@ -850,7 +841,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //Diffuse
    if((%material).getDiffuseMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->diffuseMapNameText.setText( (%material).getDiffuseMap(%layer) );      
+      MaterialEditorPropertiesWindow-->diffuseMapNameText.setText( (%material).getDiffuseMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->diffuseMapDisplayBitmap.setBitmap( (%material).getDiffuseMap(%layer) );
    }
    else
@@ -862,7 +853,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //Normal
    if((%material).getNormalMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->normalMapNameText.setText( (%material).getNormalMap(%layer) );      
+      MaterialEditorPropertiesWindow-->normalMapNameText.setText( (%material).getNormalMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->normalMapDisplayBitmap.setBitmap( (%material).getNormalMap(%layer) );
    }
    else
@@ -874,7 +865,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //ORM Config
    if((%material).getORMConfigMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( (%material).getORMConfigMap(%layer) );      
+      MaterialEditorPropertiesWindow-->ORMConfigMapNameText.setText( (%material).getORMConfigMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->ORMConfigMapDisplayBitmap.setBitmap( (%material).getORMConfigMap(%layer) );
       //hide unused
       MaterialEditorPropertiesWindow-->RoughnessTextEdit.setVisible(false);
@@ -912,7 +903,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //AOMap
    if((%material).getAOMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->aoMapNameText.setText( (%material).getAOMap(%layer) );      
+      MaterialEditorPropertiesWindow-->aoMapNameText.setText( (%material).getAOMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->aoMapDisplayBitmap.setBitmap( (%material).getAOMap(%layer) );
    }
    else
@@ -923,7 +914,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //RoughMap
    if((%material).getRoughMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->roughMapNameText.setText( (%material).getRoughMap(%layer) );      
+      MaterialEditorPropertiesWindow-->roughMapNameText.setText( (%material).getRoughMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->roughMapDisplayBitmap.setBitmap( (%material).getRoughMap(%layer) );
    }
    else
@@ -935,7 +926,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //MetalMap
    if((%material).getMetalMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->metalMapNameText.setText( (%material).getMetalMap(%layer) );      
+      MaterialEditorPropertiesWindow-->metalMapNameText.setText( (%material).getMetalMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( (%material).getMetalMap(%layer) );
    }
    else
@@ -947,7 +938,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //GlowMap
    if((%material).getGlowMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->glowMapNameText.setText( (%material).getGlowMap(%layer) );      
+      MaterialEditorPropertiesWindow-->glowMapNameText.setText( (%material).getGlowMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->glowMapDisplayBitmap.setBitmap( (%material).getGlowMap(%layer) );
    }
    else
@@ -959,7 +950,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //Overlay
    if((%material).getOverlayMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->overlayMapNameText.setText( (%material).getOverlayMap(%layer) );      
+      MaterialEditorPropertiesWindow-->overlayMapNameText.setText( (%material).getOverlayMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->overlayMapDisplayBitmap.setBitmap( (%material).getOverlayMap(%layer) );
    }
    else
@@ -971,7 +962,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //Detail
    if((%material).getDetailMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->detailMapNameText.setText( (%material).getDetailMap(%layer) );      
+      MaterialEditorPropertiesWindow-->detailMapNameText.setText( (%material).getDetailMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->detailMapDisplayBitmap.setBitmap( (%material).getDetailMap(%layer) );
    }
    else
@@ -983,7 +974,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //Detail Normal
    if((%material).getDetailNormalMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->detailNormalMapNameText.setText( (%material).getDetailNormalMap(%layer) );      
+      MaterialEditorPropertiesWindow-->detailNormalMapNameText.setText( (%material).getDetailNormalMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->detailNormalMapDisplayBitmap.setBitmap( (%material).getDetailNormalMap(%layer) );
    }
    else
@@ -995,7 +986,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //Light
    if((%material).getLightMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->lightMapNameText.setText( (%material).getLightMap(%layer) );      
+      MaterialEditorPropertiesWindow-->lightMapNameText.setText( (%material).getLightMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->lightMapDisplayBitmap.setBitmap( (%material).getLightMap(%layer) );
    }
    else
@@ -1007,7 +998,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    //Tone
    if((%material).getToneMap(%layer) !$= "") 
    {
-      MaterialEditorPropertiesWindow-->toneMapNameText.setText( (%material).getToneMap(%layer) );      
+      MaterialEditorPropertiesWindow-->toneMapNameText.setText( (%material).getToneMapAsset(%layer) );      
       MaterialEditorPropertiesWindow-->toneMapDisplayBitmap.setBitmap( (%material).getToneMap(%layer) );
    }
    else
