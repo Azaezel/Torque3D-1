@@ -1279,6 +1279,7 @@ function MaterialEditorGui::updateTextureMap( %this, %type, %action )
       MaterialEditorGui.updateActiveMaterial(%type @ "Map[" @ %layer @ "]","");
       MaterialEditorGui.updateActiveMaterial(%type @ "MapAsset[" @ %layer @ "]","");
    }
+   MaterialEditorGui.guiSync( materialEd_previewMaterial );
 }
 
 function MaterialEditorGui::doUpdateTextureMap( %this, %assetId )
@@ -1311,6 +1312,7 @@ function MaterialEditorGui::doUpdateTextureMap( %this, %assetId )
    }
    
    %this.updatingTextureType = "";
+   MaterialEditorGui.guiSync( materialEd_previewMaterial );
 }
 
 function MaterialEditorGui::updateDetailScale(%this,%newScale)
