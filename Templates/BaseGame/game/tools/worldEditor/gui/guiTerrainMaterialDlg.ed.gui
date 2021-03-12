@@ -33,7 +33,7 @@
       anchorLeft = "0";
       anchorRight = "0";
       position = "315 127";
-      extent = "394 514";
+      extent = "394 529";
       minExtent = "358 452";
       horizSizing = "center";
       vertSizing = "center";
@@ -149,7 +149,7 @@
          anchorLeft = "1";
          anchorRight = "0";
          position = "202 26";
-         extent = "185 445";
+         extent = "185 460";
          minExtent = "8 2";
          horizSizing = "left";
          vertSizing = "height";
@@ -165,7 +165,7 @@
 
          new GuiBitmapCtrl() {
             bitmap = "core/gui/images/separator-v";
-            color = "White";
+            color = "255 255 255 255";
             wrap = "0";
             position = "1 0";
             extent = "183 2";
@@ -297,7 +297,7 @@
                canSave = "1";
                canSaveDynamicFields = "0";
             };
-            new GuiBitmapCtrl() {
+            new GuiBitmapCtrl(terrainMatEdTexBaseMap) {
                bitmap = "tools/materialEditor/gui/unknownImage";
                color = "255 255 255 255";
                wrap = "0";
@@ -312,7 +312,7 @@
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
-               internalName = "baseTexCtrl";
+               internalName = "texBaseMap";
                canSave = "1";
                canSaveDynamicFields = "0";
             };
@@ -334,7 +334,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeBase();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"BaseMap\");";
                tooltipProfile = "ToolsGuiDefaultProfile";
                tooltip = "Change the Active Diffuse Map for this layer";
                hovertime = "1000";
@@ -401,7 +401,7 @@
                profile = "ToolsGuiButtonProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeBase();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"BaseMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -426,7 +426,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg-->baseTexCtrl.setBitmap(\"tools/materialEditor/gui/unknownImage\");TerrainMaterialDlg-->baseTexCtrl.asset = \"\";";
+               command = "TerrainMaterialDlg.clearTextureMap(\"BaseMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -524,7 +524,7 @@
             canSave = "1";
             canSaveDynamicFields = "0";
 
-            new GuiBitmapCtrl() {
+            new GuiBitmapCtrl(terrainMatEdTexNormalMap) {
                bitmap = "tools/materialEditor/gui/unknownImage";
                color = "255 255 255 255";
                wrap = "0";
@@ -539,7 +539,7 @@
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
-               internalName = "normTexCtrl";
+               internalName = "texNormalMap";
                canSave = "1";
                canSaveDynamicFields = "0";
             };
@@ -584,7 +584,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeNormal();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"NormalMap\");";
                tooltipProfile = "ToolsGuiDefaultProfile";
                tooltip = "Change the active Normal Map for this layer.";
                hovertime = "1000";
@@ -628,7 +628,7 @@
                profile = "ToolsGuiButtonProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeNormal();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"NormalMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -653,7 +653,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg-->normTexCtrl.setBitmap(\"tools/materialEditor/gui/unknownImage\");TerrainMaterialDlg-->normTexCtrl.asset = \"\";";
+               command = "TerrainMaterialDlg.clearTextureMap(\"NormalMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -788,10 +788,10 @@
                canSaveDynamicFields = "0";
             };
             new GuiSliderCtrl(TerrainMaterialDlgBlendHeightContrastSlider) {
-               range = "0.0 5.0";
+               range = "0 5";
                ticks = "0";
                snap = "0";
-               value = "1.0";
+               value = "1";
                useFillBar = "0";
                fillBarColor = "255 255 255 255";
                renderTicks = "1";
@@ -902,7 +902,7 @@
             canSave = "1";
             canSaveDynamicFields = "0";
 
-            new GuiBitmapCtrl() {
+            new GuiBitmapCtrl(terrainMatEdTexORMConfigMap) {
                bitmap = "tools/materialEditor/gui/unknownImage";
                color = "255 255 255 255";
                wrap = "0";
@@ -917,7 +917,7 @@
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
-               internalName = "ormConfigTexCtrl";
+               internalName = "texORMConfigMap";
                canSave = "1";
                canSaveDynamicFields = "0";
             };
@@ -962,7 +962,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeormConfig();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"ORMConfigMap\");";
                tooltipProfile = "ToolsGuiDefaultProfile";
                tooltip = "Change the active ORM Config Map for this layer.";
                hovertime = "1000";
@@ -1006,7 +1006,7 @@
                profile = "ToolsGuiButtonProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeormConfig();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"ORMConfigMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -1031,7 +1031,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg-->ormConfigTexCtrl.setBitmap(\"tools/materialEditor/gui/unknownImage\");TerrainMaterialDlg-->ormConfigTexCtrl.asset = \"\";";
+               command = "TerrainMaterialDlg.clearTextureMap(\"ORMConfigMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -1054,7 +1054,7 @@
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
-               internalName = "isSRGb";
+               internalName = "isSRGB";
                canSave = "1";
                canSaveDynamicFields = "0";
             };
@@ -1118,7 +1118,7 @@
             canSave = "1";
             canSaveDynamicFields = "0";
 
-            new GuiBitmapCtrl() {
+            new GuiBitmapCtrl(terrainMatEdTexDetailMap) {
                bitmap = "tools/materialEditor/gui/unknownImage";
                color = "255 255 255 255";
                wrap = "0";
@@ -1133,7 +1133,7 @@
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
-               internalName = "detailTexCtrl";
+               internalName = "texDetailMap";
                canSave = "1";
                canSaveDynamicFields = "0";
             };
@@ -1155,7 +1155,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeDetail();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"DetailMap\");";
                tooltipProfile = "ToolsGuiDefaultProfile";
                tooltip = "Change the active Detail Map for this layer.";
                hovertime = "1000";
@@ -1222,7 +1222,7 @@
                profile = "ToolsGuiButtonProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeDetail();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"DetailMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -1247,7 +1247,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg-->detailTexCtrl.setBitmap(\"tools/materialEditor/gui/unknownImage\");TerrainMaterialDlg-->detailTexCtrl.asset = \"\";";
+               command = "TerrainMaterialDlg.clearTextureMap(\"DetailMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -1407,182 +1407,6 @@
                canSave = "1";
                canSaveDynamicFields = "0";
             };
-            new GuiContainer() {
-               margin = "0 0 0 0";
-               padding = "0 0 0 0";
-               anchorTop = "1";
-               anchorBottom = "0";
-               anchorLeft = "1";
-               anchorRight = "0";
-               position = "6 216";
-               extent = "174 53";
-               minExtent = "8 2";
-               horizSizing = "width";
-               vertSizing = "bottom";
-               profile = "ToolsGuiDefaultProfile";
-               visible = "1";
-               active = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               isContainer = "1";
-               canSave = "1";
-               canSaveDynamicFields = "0";
-
-               new GuiBitmapCtrl() {
-                  bitmap = "tools/materialEditor/gui/unknownImage";
-                  color = "255 255 255 255";
-                  wrap = "0";
-                  position = "1 1";
-                  extent = "47 47";
-                  minExtent = "8 2";
-                  horizSizing = "right";
-                  vertSizing = "bottom";
-                  profile = "ToolsGuiDefaultProfile";
-                  visible = "1";
-                  active = "1";
-                  tooltipProfile = "ToolsGuiToolTipProfile";
-                  hovertime = "1000";
-                  isContainer = "0";
-                  internalName = "compositeTexCtrl";
-                  canSave = "1";
-                  canSaveDynamicFields = "0";
-               };
-               new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/materialEditor/gui/cubemapBtnBorder";
-                  bitmapMode = "Stretched";
-                  autoFitExtents = "0";
-                  useModifiers = "0";
-                  useStates = "1";
-                  masked = "0";
-                  groupNum = "-1";
-                  buttonType = "PushButton";
-                  useMouseEvents = "0";
-                  position = "1 1";
-                  extent = "48 48";
-                  minExtent = "8 2";
-                  horizSizing = "right";
-                  vertSizing = "bottom";
-                  profile = "ToolsGuiDefaultProfile";
-                  visible = "1";
-                  active = "1";
-                  command = "TerrainMaterialDlg.changecomposite();";
-                  tooltipProfile = "ToolsGuiDefaultProfile";
-                  tooltip = "Change the active composite Map for this layer.";
-                  hovertime = "1000";
-                  isContainer = "0";
-                  canSave = "1";
-                  canSaveDynamicFields = "0";
-               };
-               new GuiTextCtrl() {
-                  text = "Composite";
-                  maxLength = "1024";
-                  margin = "0 0 0 0";
-                  padding = "0 0 0 0";
-                  anchorTop = "1";
-                  anchorBottom = "0";
-                  anchorLeft = "1";
-                  anchorRight = "0";
-                  position = "56 -3";
-                  extent = "61 18";
-                  minExtent = "8 2";
-                  horizSizing = "right";
-                  vertSizing = "bottom";
-                  profile = "EditorTextProfile";
-                  visible = "1";
-                  active = "1";
-                  tooltipProfile = "ToolsGuiToolTipProfile";
-                  hovertime = "1000";
-                  isContainer = "0";
-                  canSave = "1";
-                  canSaveDynamicFields = "0";
-               };
-               new GuiTextCtrl() {
-                  text = "None";
-                  maxLength = "1024";
-                  margin = "0 0 0 0";
-                  padding = "0 0 0 0";
-                  anchorTop = "1";
-                  anchorBottom = "0";
-                  anchorLeft = "1";
-                  anchorRight = "0";
-                  position = "56 17";
-                  extent = "79 17";
-                  minExtent = "8 2";
-                  horizSizing = "width";
-                  vertSizing = "bottom";
-                  profile = "ToolsGuiTextProfile";
-                  visible = "1";
-                  active = "1";
-                  tooltipProfile = "ToolsGuiToolTipProfile";
-                  hovertime = "1000";
-                  isContainer = "0";
-                  canSave = "1";
-                  canSaveDynamicFields = "0";
-               };
-               new GuiButtonCtrl() {
-                  text = "Edit";
-                  groupNum = "-1";
-                  buttonType = "PushButton";
-                  useMouseEvents = "0";
-                  position = "111 0";
-                  extent = "40 16";
-                  minExtent = "8 2";
-                  horizSizing = "left";
-                  vertSizing = "bottom";
-                  profile = "ToolsGuiButtonProfile";
-                  visible = "1";
-                  active = "1";
-                  command = "TerrainMaterialDlg.changecomposite();";
-                  tooltipProfile = "ToolsGuiToolTipProfile";
-                  hovertime = "1000";
-                  isContainer = "0";
-                  canSave = "1";
-                  canSaveDynamicFields = "0";
-               };
-               new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/delete";
-                  bitmapMode = "Stretched";
-                  autoFitExtents = "0";
-                  useModifiers = "0";
-                  useStates = "1";
-                  masked = "0";
-                  groupNum = "-1";
-                  buttonType = "PushButton";
-                  useMouseEvents = "0";
-                  position = "154 0";
-                  extent = "16 16";
-                  minExtent = "8 2";
-                  horizSizing = "left";
-                  vertSizing = "bottom";
-                  profile = "ToolsGuiDefaultProfile";
-                  visible = "1";
-                  active = "1";
-                  command = "TerrainMaterialDlg-->compositeTexCtrl.setBitmap(\"tools/materialEditor/gui/unknownImage\");TerrainMaterialDlg-->compositeTexCtrl.asset = \"\";";
-                  tooltipProfile = "ToolsGuiToolTipProfile";
-                  hovertime = "1000";
-                  isContainer = "0";
-                  canSave = "1";
-                  canSaveDynamicFields = "0";
-               };
-               new GuiBitmapCtrl() {
-                  bitmap = "tools/gui/images/separator-v";
-                  color = "255 255 255 255";
-                  wrap = "0";
-                  position = "4 51";
-                  extent = "148 2";
-                  minExtent = "8 2";
-                  horizSizing = "width";
-                  vertSizing = "bottom";
-                  profile = "ToolsGuiDefaultProfile";
-                  visible = "1";
-                  active = "1";
-                  tooltipProfile = "ToolsGuiToolTipProfile";
-                  hovertime = "1000";
-                  isContainer = "0";
-                  canSave = "1";
-                  canSaveDynamicFields = "0";
-               };
-            };
          };
          new GuiBitmapCtrl() {
             bitmap = "tools/gui/images/separator-v";
@@ -1623,7 +1447,7 @@
             canSave = "1";
             canSaveDynamicFields = "0";
 
-            new GuiBitmapCtrl() {
+            new GuiBitmapCtrl(terrainMatEdTexMacroMap) {
                bitmap = "tools/materialEditor/gui/unknownImage";
                color = "255 255 255 255";
                wrap = "0";
@@ -1638,7 +1462,7 @@
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
-               internalName = "macroTexCtrl";
+               internalName = "texMacroMap";
                canSave = "1";
                canSaveDynamicFields = "0";
             };
@@ -1660,7 +1484,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeMacro();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"MacroMap\");";
                tooltipProfile = "ToolsGuiDefaultProfile";
                tooltip = "Change the active Macro Map for this layer.";
                hovertime = "1000";
@@ -1727,7 +1551,7 @@
                profile = "ToolsGuiButtonProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg.changeMacro();";
+               command = "TerrainMaterialDlg.updateTextureMap(\"MacroMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -1752,7 +1576,7 @@
                profile = "ToolsGuiDefaultProfile";
                visible = "1";
                active = "1";
-               command = "TerrainMaterialDlg-->macroTexCtrl.setBitmap(\"tools/materialEditor/gui/unknownImage\");TerrainMaterialDlg-->macroTexCtrl.asset = \"\";";
+               command = "TerrainMaterialDlg.clearTextureMap(\"MacroMap\");";
                tooltipProfile = "ToolsGuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";
@@ -1916,7 +1740,7 @@
       };
       new GuiControl() {
          position = "6 42";
-         extent = "189 455";
+         extent = "189 470";
          minExtent = "8 2";
          horizSizing = "width";
          vertSizing = "height";
@@ -1945,7 +1769,7 @@
             anchorLeft = "1";
             anchorRight = "0";
             position = "0 0";
-            extent = "189 436";
+            extent = "189 451";
             minExtent = "8 2";
             horizSizing = "width";
             vertSizing = "height";
@@ -1981,7 +1805,7 @@
                canRenameObjects = "1";
                renameInternal = "0";
                position = "1 1";
-               extent = "136 798";
+               extent = "157 189";
                minExtent = "8 2";
                horizSizing = "right";
                vertSizing = "bottom";
@@ -2003,7 +1827,7 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         position = "202 476";
+         position = "202 491";
          extent = "98 22";
          minExtent = "8 2";
          horizSizing = "left";
@@ -2023,7 +1847,7 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         position = "307 476";
+         position = "307 491";
          extent = "80 22";
          minExtent = "8 2";
          horizSizing = "left";
@@ -2043,7 +1867,7 @@
          color = "255 255 255 255";
          wrap = "0";
          position = "199 23";
-         extent = "190 349";
+         extent = "190 364";
          minExtent = "8 2";
          horizSizing = "left";
          vertSizing = "height";
@@ -2067,7 +1891,7 @@
             anchorBottom = "0";
             anchorLeft = "1";
             anchorRight = "0";
-            position = "0 132";
+            position = "0 150";
             extent = "190 64";
             minExtent = "8 2";
             horizSizing = "width";

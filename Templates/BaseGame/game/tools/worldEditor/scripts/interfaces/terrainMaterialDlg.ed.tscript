@@ -218,7 +218,6 @@ function TerrainMaterialDlg::setMaterialName( %this, %newName )
 }
 
 //-----------------------------------------------------------------------------
-
 function TerrainMaterialDlg::changeBase( %this )
 {   
    %ctrl = %this-->baseTexCtrl;
@@ -226,19 +225,7 @@ function TerrainMaterialDlg::changeBase( %this )
    if( getSubStr( %file, 0 , 6 ) $= "tools/" )
       %file = "";
       
-   AssetBrowser.showDialog("ImageAsset", %this@".changeDiffuseMapAsset", "", "");
-      
-   /*%file = TerrainMaterialDlg._selectTextureFileDialog( %file );      
-   if( %file $= "" )
-   {
-      if( %ctrl.bitmap !$= "" )
-         %file = %ctrl.bitmap;
-      else
-         %file = "tools/materialEditor/gui/unknownImage";
-   }
-   
-   %file = makeRelativePath( %file, getMainDotCsDir() );
-   %ctrl.setBitmap( %file );  */
+   AssetBrowser.showDialog("ImageAsset", %this@".changeDiffuseMapAsset", "", "");      
 }
 
 function TerrainMaterialDlg::changeDiffuseMapAsset(%this)
@@ -257,91 +244,7 @@ function TerrainMaterialDlg::changeDiffuseMapAsset(%this)
    
    %this-->baseTexCtrl.setBitmap( %image );  
 }
-
 //-----------------------------------------------------------------------------
-
-function TerrainMaterialDlg::changeDetail( %this )
-{
-   %ctrl = %this-->detailTexCtrl;
-   %file = %ctrl.bitmap;
-   if( getSubStr( %file, 0 , 6 ) $= "tools/" )
-      %file = "";
-      
-   AssetBrowser.showDialog("ImageAsset", %this@".changeDetailMapAsset", "", "");
-
-   /*%file = TerrainMaterialDlg._selectTextureFileDialog( %file );  
-   if( %file $= "" )
-   {
-      if( %ctrl.bitmap !$= "" )
-         %file = %ctrl.bitmap;
-      else
-         %file = "tools/materialEditor/gui/unknownImage";
-   }
-   
-   %file = makeRelativePath( %file, getMainDotCsDir() );
-   %ctrl.setBitmap( %file );*/  
-}
-
-function TerrainMaterialDlg::changeDetailMapAsset(%this)
-{
-   %imgAsset = AssetBrowser.selectedAsset;
-   if(%imgAsset !$= "")
-   {
-      %this-->detailTexCtrl.asset = %imgAsset;
-      %assetDef = AssetDatabase.acquireAsset(%imgAsset);
-      %image = %assetDef.getImagePath();
-   }
-   else
-   {
-      %image = "tools/materialEditor/gui/unknownImage";
-   }
-   
-   %this-->detailTexCtrl.setBitmap( %image );  
-}
-
-//----------------------------------------------------------------------------
-
-function TerrainMaterialDlg::changeMacro( %this )
-{
-   %ctrl = %this-->macroTexCtrl;
-   %file = %ctrl.bitmap;
-   if( getSubStr( %file, 0 , 6 ) $= "tools/" )
-      %file = "";
-      
-   AssetBrowser.showDialog("ImageAsset", %this@".changeMacroMapAsset", "", "");
-
-   /*%file = TerrainMaterialDlg._selectTextureFileDialog( %file );  
-   if( %file $= "" )
-   {
-      if( %ctrl.bitmap !$= "" )
-         %file = %ctrl.bitmap;
-      else
-         %file = "tools/materialEditor/gui/unknownImage";
-   }
-   
-   %file = makeRelativePath( %file, getMainDotCsDir() );
-   %ctrl.setBitmap( %file );  */
-}
-
-function TerrainMaterialDlg::changeMacroMapAsset(%this)
-{
-   %imgAsset = AssetBrowser.selectedAsset;
-   if(%imgAsset !$= "")
-   {
-      %this-->macroTexCtrl.asset = %imgAsset;
-      %assetDef = AssetDatabase.acquireAsset(%imgAsset);
-      %image = %assetDef.getImagePath();
-   }
-   else
-   {
-      %image = "tools/materialEditor/gui/unknownImage";
-   }
-   
-   %this-->macroTexCtrl.setBitmap( %image );  
-}
-
-//-----------------------------------------------------------------------------
-
 function TerrainMaterialDlg::changeNormal( %this )
 {   
    %ctrl = %this-->normTexCtrl;
@@ -349,19 +252,7 @@ function TerrainMaterialDlg::changeNormal( %this )
    if( getSubStr( %file, 0 , 6 ) $= "tools/" )
       %file = "";
       
-   AssetBrowser.showDialog("ImageAsset", %this@".changeNormalMapAsset", "", "");
-
-   /*%file = TerrainMaterialDlg._selectTextureFileDialog( %file );  
-   if( %file $= "" )
-   {
-      if( %ctrl.bitmap !$= "" )
-         %file = %ctrl.bitmap;
-      else
-         %file = "tools/materialEditor/gui/unknownImage";
-   }
-
-   %file = makeRelativePath( %file, getMainDotCsDir() );
-   %ctrl.setBitmap( %file );  */ 
+   AssetBrowser.showDialog("ImageAsset", %this@".changeNormalMapAsset", "", "");      
 }
 
 function TerrainMaterialDlg::changeNormalMapAsset(%this)
@@ -380,7 +271,6 @@ function TerrainMaterialDlg::changeNormalMapAsset(%this)
    
    %this-->normTexCtrl.setBitmap( %image );  
 }
-
 //-----------------------------------------------------------------------------
 function TerrainMaterialDlg::changeormConfig( %this )
 {   
@@ -390,18 +280,6 @@ function TerrainMaterialDlg::changeormConfig( %this )
       %file = "";
       
    AssetBrowser.showDialog("ImageAsset", %this@".changeORMConfigMapAsset", "", "");
-
-   /*%file = TerrainMaterialDlg._selectTextureFileDialog( %file );  
-   if( %file $= "" )
-   {
-      if( %ctrl.bitmap !$= "" )
-         %file = %ctrl.bitmap;
-      else
-         %file = "tools/materialEditor/gui/unknownImage";
-   }
-
-   %file = makeRelativePath( %file, getMainDotCsDir() );
-   %ctrl.setBitmap( %file );   */
 }
 
 function TerrainMaterialDlg::changeORMConfigMapAsset(%this)
@@ -419,6 +297,60 @@ function TerrainMaterialDlg::changeORMConfigMapAsset(%this)
    }
    
    %this-->ormConfigTexCtrl.setBitmap( %image );  
+}
+//-----------------------------------------------------------------------------
+function TerrainMaterialDlg::changeDetail( %this )
+{   
+   %ctrl = %this-->detailTexCtrl;
+   %file = %ctrl.bitmap;
+   if( getSubStr( %file, 0 , 6 ) $= "tools/" )
+      %file = "";
+      
+   AssetBrowser.showDialog("ImageAsset", %this@".changeDetailMapAsset", "", "");
+}
+
+function TerrainMaterialDlg::changeDetailMapAsset(%this)
+{
+   %imgAsset = AssetBrowser.selectedAsset;
+   if(%imgAsset !$= "")
+   {
+      %this-->DetailTexCtrl.asset = %imgAsset;
+      %assetDef = AssetDatabase.acquireAsset(%imgAsset);
+      %image = %assetDef.getImagePath();
+   }
+   else
+   {
+      %image = "tools/materialEditor/gui/unknownImage";
+   }
+   
+   %this-->detailTexCtrl.setBitmap( %image );  
+}
+//-----------------------------------------------------------------------------
+function TerrainMaterialDlg::changeMacro( %this )
+{   
+   %ctrl = %this-->macroTexCtrl;
+   %file = %ctrl.bitmap;
+   if( getSubStr( %file, 0 , 6 ) $= "tools/" )
+      %file = "";
+      
+   AssetBrowser.showDialog("ImageAsset", %this@".changeMacroMapAsset", "", "");
+}
+
+function TerrainMaterialDlg::changeMacroMapAsset(%this)
+{
+   %imgAsset = AssetBrowser.selectedAsset;
+   if(%imgAsset !$= "")
+   {
+      %this-->macroTexCtrl.asset = %imgAsset;
+      %assetDef = AssetDatabase.acquireAsset(%imgAsset);
+      %image = %assetDef.getImagePath();
+   }
+   else
+   {
+      %image = "tools/materialEditor/gui/unknownImage";
+   }
+   
+   %this-->macroTexCtrl.setBitmap( %image );  
 }
 
 //-----------------------------------------------------------------------------
@@ -507,70 +439,45 @@ function TerrainMaterialDlg::setActiveMaterial( %this, %mat )
       
       %this-->matNameCtrl.setText( %mat.internalName );
       
-      if(%mat.diffuseMapAsset !$= "")
+      if(%mat.getDiffuseMap() !$= "")
       {
-         %imgAsset = AssetDatabase.acquireAsset(%mat.diffuseMapAsset);
-         %this-->baseTexCtrl.setBitmap(%imgAsset.getImagePath());
-      }
-      else if(%mat.diffuseMap $= "")
-      {
-          %this-->baseTexCtrl.setBitmap( %mat.diffuseMap ); 
+         %this-->baseTexCtrl.setBitmap(%mat.getDiffuseMap());
       }
       else
       {
          %this-->baseTexCtrl.setBitmap( "tools/materialEditor/gui/unknownImage" );
       }
 
-      if(%mat.ormConfigMapAsset !$= "")
+      if(%mat.getormConfigMap() !$= "")
       {
-         %imgAsset = AssetDatabase.acquireAsset(%mat.ormConfigMapAsset);
-         %this-->ormConfigTexCtrl.setBitmap(%imgAsset.getImagePath());
-      }
-      else if(%mat.ormConfigMap $= "")
-      {
-          %this-->ormConfigTexCtrl.setBitmap( %mat.ormConfigMap ); 
+         %this-->ormConfigTexCtrl.setBitmap(%mat.getormConfigMap());
       }
       else
       {
          %this-->ormConfigTexCtrl.setBitmap( "tools/materialEditor/gui/unknownImage" );
-      }
-      
-      if(%mat.detailMapAsset !$= "")
+      }      
+
+      if(%mat.getdetailMap() !$= "")
       {
-         %imgAsset = AssetDatabase.acquireAsset(%mat.detailMapAsset);
-         %this-->detailTexCtrl.setBitmap(%imgAsset.getImagePath());
-      }
-      else if(%mat.detailMap $= "")
-      {
-          %this-->detailTexCtrl.setBitmap( %mat.detailMap ); 
+         %this-->detailTexCtrl.setBitmap(%mat.getdetailMap());
       }
       else
       {
          %this-->detailTexCtrl.setBitmap( "tools/materialEditor/gui/unknownImage" );
       }
       
-      if(%mat.macroMapAsset !$= "")
+      if(%mat.getmacroMap() !$= "")
       {
-         %imgAsset = AssetDatabase.acquireAsset(%mat.macroMapAsset);
-         %this-->macroTexCtrl.setBitmap(%imgAsset.getImagePath());
-      }
-      else if(%mat.macroMap $= "")
-      {
-          %this-->macroTexCtrl.setBitmap( %mat.macroMap ); 
+         %this-->macroTexCtrl.setBitmap(%mat.getmacroMap());
       }
       else
       {
          %this-->macroTexCtrl.setBitmap( "tools/materialEditor/gui/unknownImage" );
       }
       
-      if(%mat.normalMapAsset !$= "")
+      if(%mat.getnormalMap() !$= "")
       {
-         %imgAsset = AssetDatabase.acquireAsset(%mat.normalMapAsset);
-         %this-->normTexCtrl.setBitmap(%imgAsset.getImagePath());
-      }
-      else if(%mat.normalMap $= "")
-      {
-          %this-->normTexCtrl.setBitmap( %mat.normalMap ); 
+         %this-->normTexCtrl.setBitmap(%mat.getnormalMap());
       }
       else
       {
