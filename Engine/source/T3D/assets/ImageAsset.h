@@ -47,6 +47,8 @@
 
 #include "gui/editor/guiInspectorTypes.h"
 
+#include <string>
+
 //-----------------------------------------------------------------------------
 class ImageAsset : public AssetBase
 {
