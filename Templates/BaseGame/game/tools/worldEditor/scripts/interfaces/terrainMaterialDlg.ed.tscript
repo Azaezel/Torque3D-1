@@ -220,8 +220,9 @@ function TerrainMaterialDlg::setMaterialName( %this, %newName )
 //-----------------------------------------------------------------------------
 function TerrainMaterialDlg::clearTextureMap(%this, %mapName)
 {
-   %mapName.setBitmap("tools/materialEditor/gui/unknownImage");
-   %mapName.asset = "";
+   %targetMap = "terrainMatEdTex" @ %mapName;
+   %targetMap.setBitmap("tools/materialEditor/gui/unknownImage");
+   %targetMap.asset = "";
 }
 
 function TerrainMaterialDlg::updateTextureMap(%this, %mapName)
@@ -414,50 +415,70 @@ function TerrainMaterialDlg::saveDirtyMaterial( %this, %mat )
    
    %newName = %this-->matNameCtrl.getText(); 
    
-   if(%this-->baseTexCtrl.asset !$= "")
+   //---
+   if(%this-->texBaseMap.asset !$= "")
    {
-      %newDiffuseAsset = %this-->baseTexCtrl.asset;
+      %newDiffuseAsset = %this-->texBaseMap.asset;
    }
-   else if (%this-->baseTexCtrl.bitmap !$= "tools/materialEditor/gui/unknownImage")
+   else if (%this-->texBaseMap.bitmap !$= "tools/materialEditor/gui/unknownImage")
    {
-      %newDiffuse = %this-->baseTexCtrl.bitmap;
+      %newDiffuse = %this-->texBaseMap.bitmap;
    }
    else
    {
       %newDiffuse = "";
    }
    
-   if (%this-->normTexCtrl.bitmap $= "tools/materialEditor/gui/unknownImage"){
-      %newNormal = "";
-   }else{
-      %newNormal = %this-->normTexCtrl.bitmap;  
+   //---
+   if(%this-->texNormalMap.asset !$= "")
+   {
+      %newNormalAsset = %this-->texNormalMap.asset;
    }
-   if (%this-->ormConfigTexCtrl.bitmap $= "tools/materialEditor/gui/unknownImage"){
-      %newormConfig = "";
-   }else{
-      %newormConfig = %this-->ormConfigTexCtrl.bitmap;  
+   else if (%this-->texNormalMap.bitmap !$= "tools/materialEditor/gui/unknownImage")
+   {
+      %newNormal = %this-->texNormalMap.bitmap;
+   }
+   else
+   {
+      %newNormal = "";
    }
    
-   if(%this-->detailTexCtrl.asset !$= "")
+   //---
+   if(%this-->texORMConfigMap.asset !$= "")
    {
-      %newDetailAsset = %this-->detailTexCtrl.asset;
+      %newormConfigAsset = %this-->texORMConfigMap.asset;
    }
-   else if (%this-->detailTexCtrl.bitmap !$= "tools/materialEditor/gui/unknownImage")
+   else if (%this-->texORMConfigMap.bitmap !$= "tools/materialEditor/gui/unknownImage")
    {
-      %newDetail = %this-->detailTexCtrl.bitmap;
+      %newormConfig = %this-->texORMConfigMap.bitmap;
+   }
+   else
+   {
+      %newormConfig = "";
+   }
+   
+   //---
+   if(%this-->texDetailMap.asset !$= "")
+   {
+      %newDetailAsset = %this-->texDetailMap.asset;
+   }
+   else if (%this-->texDetailMap.bitmap !$= "tools/materialEditor/gui/unknownImage")
+   {
+      %newDetail = %this-->texDetailMap.bitmap;
    }
    else
    {
       %newDetail = "";
    }
    
-   if(%this-->macroTexCtrl.asset !$= "")
+   //---
+   if(%this-->texMacroMap.asset !$= "")
    {
-      %newMacroAsset = %this-->macroTexCtrl.asset;
+      %newMacroAsset = %this-->texMacroMap.asset;
    }
-   else if (%this-->macroTexCtrl.bitmap !$= "tools/materialEditor/gui/unknownImage")
+   else if (%this-->texMacroMap.bitmap !$= "tools/materialEditor/gui/unknownImage")
    {
-      %newMacro = %this-->macroTexCtrl.bitmap;
+      %newMacro = %this-->texMacroMap.bitmap;
    }
    else
    {
