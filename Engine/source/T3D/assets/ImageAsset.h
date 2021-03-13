@@ -118,6 +118,7 @@ public:
    static bool getAssetByFilename(StringTableEntry fileName, AssetPtr<ImageAsset>* imageAsset);
    static StringTableEntry getAssetIdByFilename(StringTableEntry fileName);
    static U32 getAssetById(StringTableEntry assetId, AssetPtr<ImageAsset>* imageAsset);
+   static U32 getAssetById(String assetId, AssetPtr<ImageAsset>* imageAsset) { return getAssetById(assetId.c_str(), imageAsset); };
 
 protected:
    virtual void            initializeAsset(void);
@@ -172,9 +173,9 @@ public:
    AssetPtr<ImageAsset>  m##name##Asset;\
 public: \
    const StringTableEntry get##name##File() const { return StringTable->insert(m##name##Filename.c_str()); }\
-   void set##name(FileName _in) { m##name##Filename = _in; }\
+   void set##name(const FileName &_in) { m##name##Filename = _in;}\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
-   void set##name##Asset(AssetPtr<ImageAsset>_in) { m##name##Asset = _in; }\
+   void set##name##Asset(const AssetPtr<ImageAsset> &_in) { m##name##Asset = _in;}\
 const StringTableEntry get##name() const\
 {\
    if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
@@ -234,9 +235,9 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    StringTableEntry m##name##AssetId;\
    AssetPtr<ImageAsset>  m##name##Asset;\
 public: \
-   void set##name(FileName _in) { m##name##Filename = _in; }\
+   void set##name(const FileName &_in) { m##name##Filename = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
-   void set##name##Asset(AssetPtr<ImageAsset>_in) { m##name##Asset = _in; }\
+   void set##name##Asset(const AssetPtr<ImageAsset> &_in) { m##name##Asset = _in; }\
 const StringTableEntry get##name() const\
 {\
    if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
@@ -308,7 +309,7 @@ DefineEngineMethod(className, set##name, String, (String map), , assetText(name,
 {\
    AssetPtr<ImageAsset> imgAsset;\
    U32 assetState = ImageAsset::getAssetById(map, &imgAsset);\
-   if (ImageAsset::Ok != assetState)\
+   if (ImageAsset::Ok == assetState)\
    {\
       object->set##name##Asset(imgAsset);\
    }\
@@ -403,9 +404,9 @@ if (m##name##AssetId != StringTable->EmptyString())\
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ImageAsset>  m##name##Asset[max];\
 public: \
-   void set##name(FileName _in,const U32& layer) { m##name##Filename[layer] = _in; }\
+   void set##name(const FileName &_in,const U32& layer) { m##name##Filename[layer] = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset(const U32& layer) const { return m##name##Asset[layer]; }\
-   void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& layer) { m##name##Asset[layer] = _in; }\
+   void set##name##Asset(const AssetPtr<ImageAsset> &_in, const U32& layer) { m##name##Asset[layer] = _in; }\
 const StringTableEntry get##name(U32 layer) const\
 {\
    if (m##name##Asset[layer] && (m##name##Asset[layer]->getImageFileName() != StringTable->EmptyString()))\
@@ -477,9 +478,9 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ImageAsset>  m##name##Asset[max];\
 public: \
-   void set##name(FileName _in,const U32& layer) { m##name##Filename[layer] = _in; }\
+   void set##name(const FileName &_in,const U32& layer) { m##name##Filename[layer] = _in; }\
    const AssetPtr<ImageAsset> & get##name##Asset(const U32& layer) const { return m##name##Asset[layer]; }\
-   void set##name##Asset(AssetPtr<ImageAsset>_in, const U32& layer) { m##name##Asset[layer] = _in; }\
+   void set##name##Asset(const AssetPtr<ImageAsset> &_in, const U32& layer) { m##name##Asset[layer] = _in; }\
 const StringTableEntry get##name(U32 layer) const\
 {\
    if (m##name##Asset[layer] && (m##name##Asset[layer]->getImageFileName() != StringTable->EmptyString()))\
