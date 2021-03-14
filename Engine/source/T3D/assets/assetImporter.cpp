@@ -2911,11 +2911,12 @@ Torque::Path AssetImporter::importShapeAsset(AssetImportObject* assetItem)
    StringTableEntry assetName = StringTable->insert(assetItem->assetName.c_str());
 
    String shapeFileName = assetItem->filePath.getFileName() + "." + assetItem->filePath.getExtension();
+   String constructorFileName = assetItem->filePath.getFileName() + "." TORQUE_SCRIPT_EXTENSION;
    String assetPath = targetPath + "/" + shapeFileName;
-   String constructorPath = targetPath + "/" + assetItem->filePath.getFileName() + "." TORQUE_SCRIPT_EXTENSION;
+   String constructorPath = targetPath + "/" + constructorFileName;
    String tamlPath = targetPath + "/" + assetName + ".asset.taml";
    String originalPath = assetItem->filePath.getFullPath().c_str();
-   String originalConstructorPath = assetItem->filePath.getPath() + "/" + assetItem->filePath.getFileName() + "." TORQUE_SCRIPT_EXTENSION;
+   String originalConstructorPath = assetItem->filePath.getPath() + "/" + constructorFileName;
 
    char qualifiedFromFile[2048];
    char qualifiedToFile[2048];
@@ -2930,6 +2931,7 @@ Torque::Path AssetImporter::importShapeAsset(AssetImportObject* assetItem)
 
    newAsset->setAssetName(assetName);
    newAsset->setShapeFile(shapeFileName.c_str());
+   newAsset->setShapeConstructorFile(constructorFileName.c_str());
 
    AssetImportConfig* cachedConfig = new AssetImportConfig();;
    cachedConfig->registerObject();
