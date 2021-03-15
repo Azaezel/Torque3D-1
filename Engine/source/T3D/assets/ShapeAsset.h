@@ -125,7 +125,8 @@ public:
    Resource<TSShape> getShapeResource() { return mShape; }
 
    void SplitSequencePathAndName(String& srcPath, String& srcName);
-   StringTableEntry getShapeFilename() { return mFilePath; }
+   StringTableEntry getShapeFileName() { return mFileName; }
+   StringTableEntry getShapePath() { return mFilePath; }
    
    U32 getShapeFilenameHash() { return _StringTable::hashString(mFilePath); }
 
@@ -213,44 +214,45 @@ public:
 };
 #endif
 
-#define assetText(x,suff) std::string(std::string(#x) + std::string(#suff)).c_str()
-
-#define initShapeAsset(name) m##name##Name = StringTable->EmptyString(); m##name##AssetId = StringTable->EmptyString(); m##name##Asset = NULL;
-#define cloneShapeAsset(name) m##name##Name = other.m##name##Name; m##name##AssetId = other.m##name##AssetId; m##name##Asset = other.m##name##Asset;
-#define bindShapeAsset(name) if (m##name##AssetId != StringTable->EmptyString()) m##name##Asset = m##name##AssetId;
-
-#define scriptBindShapeAsset(name, consoleClass, docs) addProtectedField(assetText(name, File), TypeShapeFilename, Offset(m##name##Name, consoleClass), consoleClass::_set##name##Filename,  & defaultProtectedGetFn, assetText(name, docs)); \
-                                      addProtectedField(assetText(name, Asset), TypeShapeAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, assetText(name, asset reference.));
-
-#define DECLARE_SHAPEASSET(className,name)\
-                                      Resource<TSShape>m##name;\
-                                      StringTableEntry m##name##Name;\
-                                      StringTableEntry m##name##AssetId;\
-                                      AssetPtr<ShapeAsset>  m##name##Asset;\
-                                      const StringTableEntry& get##name() const { return m##name##Name; }\
-                                      void set##name(FileName _in) { m##name##Name = _in; }\
-                                      const AssetPtr<ShapeAsset> & get##name##Asset() const { return m##name##Asset; }\
-                                      void set##name##Asset(AssetPtr<ShapeAsset>_in) { m##name##Asset = _in; }\
+#define DECLARE_SHAPEASSET(className, name) public: \
+   Resource<TSShape>m##name;\
+   StringTableEntry m##name##Filename; \
+   StringTableEntry m##name##AssetId;\
+   AssetPtr<ShapeAsset>  m##name##Asset;\
+public: \
+   const StringTableEntry get##name##File() const { return StringTable->insert(m##name##Filename); }\
+   void set##name(const FileName &_in) { m##name##Filename = StringTable->insert(_in.c_str());}\
+   const AssetPtr<ShapeAsset> & get##name##Asset() const { return m##name##Asset; }\
+   void set##name##Asset(const AssetPtr<ShapeAsset> &_in) { m##name##Asset = _in;}\
+const StringTableEntry get##name() const\
+{\
+   if (m##name##Asset && (m##name##Asset->getShapeFileName() != StringTable->EmptyString()))\
+      return  Platform::makeRelativePathName(m##name##Asset->getShapePath(), Platform::getMainDotCsDir());\
+   else if (m##name##Filename != StringTable->EmptyString())\
+      return StringTable->insert(Platform::makeRelativePathName(m##name##Filename, Platform::getMainDotCsDir()));\
+   else\
+      return StringTable->EmptyString();\
+}\
 static bool _set##name##Filename(void* obj, const char* index, const char* data)\
 {\
-   className* shape = static_cast<className*>(obj);\
+   className* object = static_cast<className*>(obj);\
    \
    StringTableEntry assetId = ShapeAsset::getAssetIdByFilename(StringTable->insert(data));\
    if (assetId != StringTable->EmptyString())\
    {\
-      if (shape->_set##name##Asset(obj, index, assetId))\
+      if (object->_set##name##Asset(obj, index, assetId))\
       {\
          if (assetId == StringTable->insert("Core_Rendering:noShape"))\
          {\
-            shape->m##name##Name = data;\
-            shape->m##name##AssetId = StringTable->EmptyString();\
+            object->m##name##Filename = StringTable->insert(data);\
+            object->m##name##AssetId = StringTable->EmptyString();\
             \
             return true;\
          }\
          else\
          {\
-            shape->m##name##AssetId = assetId;\
-            shape->m##name##Name = StringTable->EmptyString();\
+            object->m##name##AssetId = assetId;\
+            object->m##name##Filename = StringTable->EmptyString();\
             \
             return false;\
          }\
@@ -258,7 +260,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
    }\
    else\
    {\
-      shape->m##name##Asset = StringTable->EmptyString();\
+      object->m##name##Asset = StringTable->EmptyString();\
    }\
    \
    return true;\
@@ -266,61 +268,186 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
 \
 static bool _set##name##Asset(void* obj, const char* index, const char* data)\
 {\
-   className* shape = static_cast<className*>(obj);\
-   shape->m##name##AssetId = StringTable->insert(data);\
-   if (ShapeAsset::getAssetById(shape->m##name##AssetId, &shape->m##name##Asset))\
+   className* object = static_cast<className*>(obj);\
+   object->m##name##AssetId = StringTable->insert(data);\
+   if (ShapeAsset::getAssetById(object->m##name##AssetId, &object->m##name##Asset))\
    {\
-      if (shape->m##name##Asset.getAssetId() != StringTable->insert("Core_Rendering:noShape"))\
-         shape->m##name##Name = StringTable->EmptyString();\
+      if (object->m##name##Asset.getAssetId() != StringTable->insert("Core_Rendering:noShape"))\
+         object->m##name##Filename = StringTable->EmptyString();\
       return true;\
    }\
-   return false;\
+   return true;\
 }
-#define PACK_SHAPE_ASSET(name) {\
-   if (stream->writeFlag(m##name##Asset.notNull()))\
-      stream->writeString(m##name##Asset.getAssetId());\
+#define DECLARE_NET_SHAPEASSET(className, name, bitmask) public: \
+   StringTableEntry m##name##Filename; \
+   StringTableEntry m##name##AssetId;\
+   AssetPtr<ShapeAsset>  m##name##Asset;\
+public: \
+   void set##name(const FileName &_in) { m##name##Filename = StringTable->insert(_in.c_str()); }\
+   const AssetPtr<ShapeAsset> & get##name##Asset() const { return m##name##Asset; }\
+   void set##name##Asset(const AssetPtr<ShapeAsset> &_in) { m##name##Asset = _in; }\
+const StringTableEntry get##name() const\
+{\
+   if (m##name##Asset && (m##name##Asset->getShapeFileName() != StringTable->EmptyString()))\
+      return  Platform::makeRelativePathName(m##name##Asset->getShapePath(), Platform::getMainDotCsDir());\
+   else if (m##name##Filename != StringTable->EmptyString())\
+      return StringTable->insert(Platform::makeRelativePathName(m##name##Filename, Platform::getMainDotCsDir()));\
    else\
-      stream->writeString(m##name##Name);\
-}
-#define UNPACK_SHAPE_ASSET(name) {\
-   if (stream->readFlag())\
+      return StringTable->EmptyString();\
+}\
+static bool _set##name##Filename(void* obj, const char* index, const char* data)\
+{\
+   className* object = static_cast<className*>(obj);\
+   \
+   StringTableEntry assetId = ShapeAsset::getAssetIdByFilename(StringTable->insert(data));\
+   if (assetId != StringTable->EmptyString())\
    {\
-      m##name##AssetId = stream->readSTString();\
-      ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
-      m##name##Name = m##name##Asset->getShapeFilename(); \
+      if (object->_set##name##Asset(obj, index, assetId))\
+      {\
+         object->setMaskBits(bitmask);\
+         if (assetId == StringTable->insert("Core_Rendering:noShape"))\
+         {\
+            object->m##name##Filename = StringTable->insert(data);\
+            object->m##name##AssetId = StringTable->EmptyString();\
+            \
+            return true;\
+         }\
+         else\
+         {\
+            object->m##name##AssetId = assetId;\
+            object->m##name##Filename = StringTable->EmptyString();\
+            \
+            return false;\
+         }\
+      }\
    }\
    else\
-      m##name##Name = stream->readSTString();\
+   {\
+      object->m##name##Asset = StringTable->EmptyString();\
+   }\
+   \
+   return true;\
+}\
+\
+static bool _set##name##Asset(void* obj, const char* index, const char* data)\
+{\
+   className* object = static_cast<className*>(obj);\
+   object->m##name##AssetId = StringTable->insert(data);\
+   if (ShapeAsset::getAssetById(object->m##name##AssetId, &object->m##name##Asset))\
+   {\
+      if (object->m##name##Asset.getAssetId() != StringTable->insert("Core_Rendering:noShape"))\
+         object->m##name##Filename = StringTable->EmptyString();\
+\
+      object->setMaskBits(bitmask); \
+      return true;\
+   }\
+   return true;\
 }
-#define VALIDATE_SHAPEASSET_REF(name){\
-   if (server && persistMgr && m##name##Name != StringTable->EmptyString() && m####name##AssetId == StringTable->EmptyString())\
+
+#define DEF_SHAPEASSET_BINDS(className,name)\
+DefineEngineMethod(className, get##name, String, (), , "get name")\
+{\
+   return object->get##name(); \
+}\
+DefineEngineMethod(className, get##name##Asset, String, (), , assetText(name, asset reference))\
+{\
+   return object->m##name##AssetId; \
+}\
+DefineEngineMethod(className, set##name, String, (String map), , assetText(name,assignment. first tries asset then flat file.))\
+{\
+   AssetPtr<ShapeAsset> shpAsset;\
+   U32 assetState = ShapeAsset::getAssetById(map, &shpAsset);\
+   if (ShapeAsset::Ok == assetState)\
+   {\
+      object->set##name##Asset(shpAsset);\
+   }\
+   else\
+   {\
+      object->set##name(map);\
+   }\
+   return ShapeAsset::getAssetErrstrn(assetState).c_str();\
+}
+
+#define INIT_SHAPEASSET(name) \
+   m##name##Filename = String::EmptyString; \
+   m##name##AssetId = StringTable->EmptyString(); \
+   m##name##Asset = NULL;
+
+#define INITPERSISTFIELD_SHAPEASSET(name, consoleClass, docs) \
+   addField(assetText(name, File), TypeShapeFilename, Offset(m##name##Filename, consoleClass), assetText(name, docs)); \
+   addProtectedField(assetText(name, Asset), TypeShapeAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, assetText(name, asset reference.));
+
+#define CLONE_SHAPEASSET(name) \
+   m##name##Filename = other.m##name##Filename;\
+   m##name##AssetId = other.m##name##AssetId;\
+   m##name##Asset = other.m##name##Asset;
+
+#define AUTOCONVERT_SHAPEASSET(name)\
+if (m##name##Filename != StringTable->EmptyString())\
+{\
+   PersistenceManager* persistMgr;\
+   if (!Sim::findObject("ShapeAssetValidator", persistMgr))\
+      Con::errorf("ShapeAssetValidator not found!");\
+   \
+   if (persistMgr && m##name##Filename != StringTable->EmptyString() && m####name##AssetId == StringTable->EmptyString())\
    {\
       persistMgr->setDirty(this);\
    }\
-   if (m##name##Name != StringTable->EmptyString())\
+   if (m##name##Filename != StringTable->EmptyString())\
    {\
-      m##name##AssetId = ShapeAsset::getAssetIdByFilename(m##name##Name);\
-   }\
-}
-
-#define ASSIGN_SHAPEASSET(name){\
-   U32 assetState = ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
-   if (assetState != ShapeAsset::Failed )\
-   {\
-      if (assetState == ShapeAsset::Ok)\
+      Torque::Path shapePath = m##name##Filename;\
+      if (shapePath.getPath() == String::EmptyString)\
       {\
-         m##name##Name = StringTable->EmptyString();\
+         String subPath = Torque::Path(getFilename()).getPath();\
+         shapePath.setPath(subPath);\
       }\
-      else Con::warnf("Warning: %s::preload-%s", mClassName, ShapeAsset::getAssetErrstrn(assetState).c_str());\
-      m##name = m##name##Asset->getShapeResource();\
+      \
+      m##name##AssetId = ShapeAsset::getAssetIdByFilename(shapePath.getFullPath());\
    }\
-   if (bool(m##name) == false)\
-   {\
-      errorStr = String::ToString("%s: Couldn't load shape \"%s\"", mClassName, m##name##Name);\
-      return false;\
-   }\
-   if (!server && !m##name->preloadMaterialList(m##name.getPath()) && NetConnection::filesWereDownloaded())\
-   shapeError = true;\
 }
-#endif
 
+#define LOAD_SHAPEASSET(name)\
+if (m##name##AssetId != StringTable->EmptyString())\
+{\
+   S32 assetState = ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
+   if (assetState == ShapeAsset::Ok )\
+   {\
+      m##name##Filename = StringTable->EmptyString();\
+   }\
+   else Con::warnf("Warning: %s::LOAD_SHAPEASSET(%s)-%s", mClassName, m##name##AssetId, ShapeAsset::getAssetErrstrn(assetState).c_str());\
+}
+
+#define PACKDATA_SHAPEASSET(name)\
+   if (stream->writeFlag(m##name##Asset.notNull()))\
+   {\
+      stream->writeString(m##name##Asset.getAssetId());\
+   }\
+   else\
+      stream->writeString(m##name##Filename);
+
+#define UNPACKDATA_SHAPEASSET(name)\
+   if (stream->readFlag())\
+   {\
+      m##name##AssetId = stream->readSTString();\
+   }\
+   else\
+      m##name##Filename = stream->readSTString();
+
+#define PACK_SHAPEASSET(netconn, name)\
+   if (stream->writeFlag(m##name##Asset.notNull()))\
+   {\
+      NetStringHandle assetIdStr = m##name##Asset.getAssetId();\
+      netconn->packNetStringHandleU(stream, assetIdStr);\
+   }\
+   else\
+      stream->writeString(m##name##Filename);
+
+#define UNPACK_SHAPEASSET(netconn, name)\
+   if (stream->readFlag())\
+   {\
+      m##name##AssetId = StringTable->insert(netconn->unpackNetStringHandleU(stream).getString());\
+   }\
+   else\
+      m##name##Filename = stream->readSTString();
+
+#endif
