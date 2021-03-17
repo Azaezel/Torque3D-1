@@ -168,5 +168,9 @@ private:
    void                    setOwned(AssetManager* pAssetManager, AssetDefinition* pAssetDefinition);
 };
 
+//helper macro for stitching string and non string values togeather sans quotes
+#define assetText(x,suff) std::string(std::string(#x) + std::string(#suff)).c_str()
+#define assetDoc(x,suff) std::string(std::string("@brief") + std::string(#x) + std::string(#suff)).c_str()
+
 #endif // _ASSET_BASE_H_
 

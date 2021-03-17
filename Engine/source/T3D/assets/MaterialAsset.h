@@ -124,8 +124,6 @@ public:
    static void consoleInit();
 };
 
-#define assetText(x,suff) std::string(std::string(#x) + std::string(#suff)).c_str()
-
 #define initMaterialAsset(name) m##name##Name = ""; m##name##AssetId = StringTable->EmptyString(); m##name##Asset = NULL;
 #define bindMaterialAsset(name) if (m##name##AssetId != StringTable->EmptyString()) m##name##Asset = m##name##AssetId;
 

@@ -160,8 +160,6 @@ public:
    static void consoleInit();
 };
 
-#define assetText(x,suff) std::string(std::string(#x) + std::string(#suff)).c_str()
-
 //Singular assets
 /// <Summary>
 /// Declares an image asset
@@ -326,8 +324,8 @@ DefineEngineMethod(className, set##name, String, (String map), , assetText(name,
    m##name##Asset = NULL;
 
 #define INITPERSISTFIELD_IMAGEASSET(name, consoleClass, docs) \
-   addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), assetText(name, docs)); \
-   addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, assetText(name, asset reference.));
+   addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), assetDoc(name, docs)); \
+   addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, assetDoc(name, asset docs.));
    /*addProtectedField(assetText(name, File), TypeImageFilename, Offset(m##name##Filename, consoleClass), consoleClass::_set##name##Filename,  & defaultProtectedGetFn, assetText(name, docs)); \
    addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, assetText(name, asset reference.));*/
 
@@ -555,8 +553,8 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    m##name##Asset[layer] = NULL;
 
 #define INITPERSISTFIELD_IMAGEASSET_ARRAY(name, arraySize, consoleClass, docs) \
-   addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), arraySize, assetText(name, docs)); \
-   addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, arraySize, assetText(name, asset reference.));
+   addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), arraySize, assetDoc(name, docs)); \
+   addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, arraySize, assetDoc(name, asset docs.));
    /*addProtectedField(assetText(name, File), TypeImageFilename, Offset(m##name##Filename, consoleClass), consoleClass::_set##name##Filename,  & defaultProtectedGetFn, arraySize, assetText(name, docs)); \
    addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, arraySize, assetText(name, asset reference.));*/
 

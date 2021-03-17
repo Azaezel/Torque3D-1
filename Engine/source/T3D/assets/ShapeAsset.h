@@ -214,12 +214,11 @@ public:
 };
 #endif
 
-#define DECLARE_SHAPEASSET(className, name) public: \
+#define DECLARE_SHAPEASSET(className,name)\
    Resource<TSShape>m##name;\
    StringTableEntry m##name##Filename; \
    StringTableEntry m##name##AssetId;\
    AssetPtr<ShapeAsset>  m##name##Asset;\
-public: \
    const StringTableEntry get##name##File() const { return StringTable->insert(m##name##Filename); }\
    void set##name(const FileName &_in) { m##name##Filename = StringTable->insert(_in.c_str());}\
    const AssetPtr<ShapeAsset> & get##name##Asset() const { return m##name##Asset; }\
