@@ -373,8 +373,73 @@ struct ShapeBaseImageData: public GameBaseData {
    F32 scriptAnimTransitionTime;    ///< The amount of time to transition between the previous sequence and new sequence
                                     ///< when the script prefix has changed.
 
-   StringTableEntry  shapeName;     ///< Name of shape to render.
-   StringTableEntry  shapeNameFP;   ///< Name of shape to render in first person (optional).
+   //DECLARE_SHAPEASSET(ShapeBaseImageData, Shape);     ///< Name of shape to render.
+public: 
+   Resource<TSShape>mShape; 
+   StringTableEntry mShapeFilename; 
+   StringTableEntry mShapeAssetId;
+   AssetPtr<ShapeAsset>  mShapeAsset;
+public: 
+   const StringTableEntry getShapeFile() const { return StringTable->insert(mShapeFilename); }
+   void setShape(const FileName &_in) { mShapeFilename = StringTable->insert(_in.c_str());}
+   const AssetPtr<ShapeAsset> & getShapeAsset() const { return mShapeAsset; }
+   void setShapeAsset(const AssetPtr<ShapeAsset> &_in) { mShapeAsset = _in;}
+const StringTableEntry getShape() const
+{
+   if (mShapeAsset && (mShapeAsset->getShapeFileName() != StringTable->EmptyString()))
+      return  Platform::makeRelativePathName(mShapeAsset->getShapePath(), Platform::getMainDotCsDir());
+   else if (mShapeFilename != StringTable->EmptyString())
+      return StringTable->insert(Platform::makeRelativePathName(mShapeFilename, Platform::getMainDotCsDir()));
+   else
+      return StringTable->EmptyString();
+}
+static bool _setShapeFilename(void* obj, const char* index, const char* data)
+{
+   ShapeBaseImageData* object = static_cast<ShapeBaseImageData*>(obj);
+   
+   StringTableEntry assetId = ShapeAsset::getAssetIdByFilename(StringTable->insert(data));
+   if (assetId != StringTable->EmptyString())
+   {
+      if (object->_setShapeAsset(obj, index, assetId))
+      {
+         if (assetId == StringTable->insert("Core_Rendering:noShape"))
+         {
+            object->mShapeFilename = StringTable->insert(data);
+            object->mShapeAssetId = StringTable->EmptyString();
+            
+            return true;
+         }
+         else
+         {
+            object->mShapeAssetId = assetId;
+            object->mShapeFilename = StringTable->EmptyString();
+            
+            return false;
+         }
+      }
+   }
+   else
+   {
+      object->mShapeAsset = StringTable->EmptyString();
+   }
+   
+   return true;
+}
+
+static bool _setShapeAsset(void* obj, const char* index, const char* data)
+{
+   ShapeBaseImageData* object = static_cast<ShapeBaseImageData*>(obj);
+   object->mShapeAssetId = StringTable->insert(data);
+   if (ShapeAsset::getAssetById(object->mShapeAssetId, &object->mShapeAsset))
+   {
+      if (object->mShapeAsset.getAssetId() != StringTable->insert("Core_Rendering:noShape"))
+         object->mShapeFilename = StringTable->EmptyString();
+      return true;
+   }
+   return true;
+}
+
+   DECLARE_SHAPEASSET(ShapeBaseImageData, ShapeFP);   ///< Name of shape to render in first person (optional).
 
    StringTableEntry  imageAnimPrefix;     ///< Passed along to the mounting shape to modify
                                           ///  animation sequences played in 3rd person. [optional]
@@ -552,8 +617,7 @@ public:
    /// @{
    DebrisData *      debris;
    S32               debrisID;
-   StringTableEntry  debrisShapeName;
-   Resource<TSShape> debrisShape;
+   DECLARE_SHAPEASSET(ShapeBaseData, DebrisShape);
 
    ExplosionData*    explosion;
    S32               explosionID;
@@ -598,8 +662,6 @@ public:
 
    /// @name Data initialized on preload
    /// @{
-
-   Resource<TSShape> mShape;         ///< Shape handle
    U32 mCRC;
    bool computeCRC;
 

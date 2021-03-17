@@ -27,6 +27,7 @@
 #include "gui/core/guiControl.h"
 #endif
 
+#include "T3D/assets/ImageAsset.h"
 /// Renders a bitmap.
 class GuiBitmapCtrl : public GuiControl
 {
@@ -38,7 +39,7 @@ class GuiBitmapCtrl : public GuiControl
    
       /// Name of the bitmap file.  If this is 'texhandle' the bitmap is not loaded
       /// from a file but rather set explicitly on the control.
-      String mBitmapName;
+      DECLARE_IMAGEASSET(GuiBitmapCtrl, Bitmap);
       
       /// Loaded texture.
       GFXTexHandle mTextureObject;

@@ -154,7 +154,7 @@ void ShapeAsset::initPersistFields()
       &setShapeConstructorFile, &getShapeConstructorFile, "Path to the shape file we want to render");
 }
 
-void ShapeAsset::setDataField(StringTableEntry slotName, const char *array, const char *value)
+void ShapeAsset::setDataField(StringTableEntry slotName, StringTableEntry array, StringTableEntry value)
 {
    Parent::setDataField(slotName, array, value);
 

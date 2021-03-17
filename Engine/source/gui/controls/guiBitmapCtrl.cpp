@@ -56,11 +56,11 @@ ConsoleDocClass( GuiBitmapCtrl,
 );
 
 GuiBitmapCtrl::GuiBitmapCtrl(void)
- : mBitmapName(),
-   mStartPoint( 0, 0 ),
+ : mStartPoint( 0, 0 ),
    mColor(ColorI::WHITE),
    mWrap( false )
-{	
+{
+   INIT_IMAGEASSET(Bitmap);
 }
 
 bool GuiBitmapCtrl::setBitmapName( void *object, const char *index, const char *data )
@@ -78,10 +78,8 @@ bool GuiBitmapCtrl::setBitmapName( void *object, const char *index, const char *
 void GuiBitmapCtrl::initPersistFields()
 {
    addGroup( "Bitmap" );
-   
-      addProtectedField( "bitmap", TypeImageFilename, Offset( mBitmapName, GuiBitmapCtrl ),
-         &setBitmapName, &defaultProtectedGetFn,
-         "The bitmap file to display in the control.");
+
+   INITPERSISTFIELD_IMAGEASSET(Bitmap, GuiBitmapCtrl, "The bitmap file to display in the control");
       addField("color", TypeColorI, Offset(mColor, GuiBitmapCtrl),"color mul");
       addField( "wrap",   TypeBool,     Offset( mWrap, GuiBitmapCtrl ),
          "If true, the bitmap is tiled inside the control rather than stretched to fit." );
@@ -96,13 +94,13 @@ bool GuiBitmapCtrl::onWake()
    if (! Parent::onWake())
       return false;
    setActive(true);
-   setBitmap(mBitmapName);
+   setBitmap(getBitmap());
    return true;
 }
 
 void GuiBitmapCtrl::onSleep()
 {
-   if ( !mBitmapName.equal("texhandle", String::NoCase) )
+   if ( !mBitmapFilename.equal("texhandle", String::NoCase) )
       mTextureObject = NULL;
 
    Parent::onSleep();
@@ -123,14 +121,14 @@ void GuiBitmapCtrl::inspectPostApply()
 
 void GuiBitmapCtrl::setBitmap( const char *name, bool resize )
 {
-   mBitmapName = name;
+   mBitmapFilename = name;
    if ( !isAwake() )
       return;
 
-   if ( mBitmapName.isNotEmpty() )
+   if ( mBitmapFilename.isNotEmpty() )
 	{
-      if ( !mBitmapName.equal("texhandle", String::NoCase) )
-		   mTextureObject.set( mBitmapName, &GFXDefaultGUIProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__) );
+      if ( !mBitmapFilename.equal("texhandle", String::NoCase) )
+		   mTextureObject.set( mBitmapFilename, &GFXDefaultGUIProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__) );
 
       // Resize the control to fit the bitmap
       if ( mTextureObject && resize )
@@ -158,7 +156,7 @@ void GuiBitmapCtrl::setBitmapHandle(GFXTexHandle handle, bool resize)
 {
    mTextureObject = handle;
 
-   mBitmapName = String("texhandle");
+   mBitmapFilename = String("texhandle");
 
    // Resize the control to fit the bitmap
    if (resize) 

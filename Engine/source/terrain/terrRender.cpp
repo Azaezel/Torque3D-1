@@ -96,7 +96,7 @@ void TerrainBlock::_updateMaterials()
    {
       TerrainMaterial *mat = mFile->mMaterials[i];
 
-      if (mat->getDiffuseMap().isNotEmpty())
+      if (mat->getDiffuseMap() != StringTable->EmptyString())
       {
          mBaseTextures[i].set(mat->getDiffuseMap(), &GFXStaticTextureSRGBProfile,
             "TerrainBlock::_updateMaterials() - DiffuseMap");
@@ -105,11 +105,11 @@ void TerrainBlock::_updateMaterials()
          mBaseTextures[ i ] = GFXTexHandle();
 
       // Find the maximum detail distance.
-      if (  mat->getDetailMap().isNotEmpty() &&
+      if (  mat->getDetailMap() != StringTable->EmptyString() &&
             mat->getDetailDistance() > mMaxDetailDistance )
          mMaxDetailDistance = mat->getDetailDistance();
 
-      if (  mat->getMacroMap().isNotEmpty() &&
+      if (  mat->getMacroMap() != StringTable->EmptyString() &&
             mat->getMacroDistance() > mMaxDetailDistance )
          mMaxDetailDistance = mat->getMacroDistance();
    }
@@ -130,13 +130,13 @@ void TerrainBlock::_updateMaterials()
       if (mat->getIsSRGB())
          profile = &GFXStaticTextureSRGBProfile;
 
-      if (mat->getDetailMap().isNotEmpty())
+      if (mat->getDetailMap() != StringTable->EmptyString())
          detailTexArray[i] = TEXMGR->createTexture(mat->getDetailMap(), profile);
-      if (mat->getMacroMap().isNotEmpty())
+      if (mat->getMacroMap() != StringTable->EmptyString())
          macroTexArray[i] = TEXMGR->createTexture(mat->getMacroMap(), profile);
-      if (mat->getNormalMap().isNotEmpty())
+      if (mat->getNormalMap() != StringTable->EmptyString())
          normalTexArray[i] = TEXMGR->createTexture(mat->getNormalMap(), profile);
-      if (mat->getORMConfigMap().isNotEmpty())
+      if (mat->getORMConfigMap() != StringTable->EmptyString())
          ormTexArray[i] = TEXMGR->createTexture(mat->getORMConfigMap(), profile);
    }
 

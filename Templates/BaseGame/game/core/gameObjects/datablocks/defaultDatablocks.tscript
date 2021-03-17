@@ -127,19 +127,22 @@ datablock RibbonData(TexturedRibbon)
 datablock MissionMarkerData(WayPointMarker)
 {
    category = "Misc";
-   shapeFile = "core/gameObjects/shapes/octahedron.dts";
+   ShapeAsset = "FPSGameplay:octahedron";
+   cameraMaxDist = "0.75";
 };
 
 datablock MissionMarkerData(SpawnSphereMarker)
 {
    category = "Misc";
-   shapeFile = "core/gameObjects/shapes/octahedron.dts";
+   ShapeAsset = "FPSGameplay:octahedron";
+   cameraMaxDist = "0.75";
 };
 
 datablock MissionMarkerData(CameraBookmarkMarker)
 {
    category = "Misc";
-   shapeFile = "core/gameObjects/shapes/camera.dts";
+   ShapeAsset = "FPSGameplay:Camera";
+   cameraMaxDist = "0.099034";
 };
 
 datablock CameraData(Observer)
