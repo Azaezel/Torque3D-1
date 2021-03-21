@@ -310,6 +310,12 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
    bool shapeError = false;
    if (!Sim::findObject("ServerAssetValidator", persistMgr)) Con::errorf("ServerAssetValidator not found!");
 
+
+   AUTOCONVERT_SHAPEASSET(DebrisShape);
+   LOAD_SHAPEASSET(ShapeBaseData,DebrisShape);
+   AUTOCONVERT_SHAPEASSET(Shape);
+   LOAD_SHAPEASSET(ShapeBaseData, Shape);
+
    // Resolve objects transmitted from server
    if (!server) {
 
@@ -340,9 +346,6 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
             "ShapeBaseData::preload: invalid debris data");
       }
 
-      AUTOCONVERT_SHAPEASSET(DebrisShape);
-      LOAD_SHAPEASSET(DebrisShape);
-
       if (!mDebrisShapeAsset.isNull())
          mDebrisShape = mDebrisShapeAsset->getShapeResource();
       else
@@ -354,9 +357,6 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
          delete pDummy;
       }
    }
-
-   AUTOCONVERT_SHAPEASSET(Shape);
-   LOAD_SHAPEASSET(Shape);
 
    if (!mShapeAsset.isNull())
       mShape = mShapeAsset->getShapeResource();

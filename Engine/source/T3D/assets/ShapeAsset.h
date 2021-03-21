@@ -277,7 +277,8 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    }\
    return true;\
 }
-#define DECLARE_NET_SHAPEASSET(className, name, bitmask) public: \
+#define DECLARE_NET_SHAPEASSET(className, name, bitmask)\
+   Resource<TSShape> m##name; \
    StringTableEntry m##name##Filename; \
    StringTableEntry m##name##AssetId;\
    AssetPtr<ShapeAsset>  m##name##Asset;\
@@ -368,6 +369,7 @@ DefineEngineMethod(className, set##name, String, (String map), , assetText(name,
 }
 
 #define INIT_SHAPEASSET(name) \
+   m##name = NULL;\
    m##name##Filename = String::EmptyString; \
    m##name##AssetId = StringTable->EmptyString(); \
    m##name##Asset = NULL;
@@ -379,15 +381,12 @@ DefineEngineMethod(className, set##name, String, (String map), , assetText(name,
 #define CLONE_SHAPEASSET(name) \
    m##name##Filename = other.m##name##Filename;\
    m##name##AssetId = other.m##name##AssetId;\
-   m##name##Asset = other.m##name##Asset;
+   m##name##Asset = other.m##name##Asset;\
+   m##name = other.m##name;\
 
 #define AUTOCONVERT_SHAPEASSET(name)\
 if (m##name##Filename != StringTable->EmptyString())\
 {\
-   PersistenceManager* persistMgr;\
-   if (!Sim::findObject("ShapeAssetValidator", persistMgr))\
-      Con::errorf("ShapeAssetValidator not found!");\
-   \
    if (persistMgr && m##name##Filename != StringTable->EmptyString() && m####name##AssetId == StringTable->EmptyString())\
    {\
       persistMgr->setDirty(this);\
@@ -405,15 +404,24 @@ if (m##name##Filename != StringTable->EmptyString())\
    }\
 }
 
-#define LOAD_SHAPEASSET(name)\
-if (m##name##AssetId != StringTable->EmptyString())\
-{\
-   S32 assetState = ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
-   if (assetState == ShapeAsset::Ok )\
+#define LOAD_SHAPEASSET(className,name){\
+   U32 assetState = ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
+   if (assetState != ShapeAsset::Failed )\
    {\
-      m##name##Filename = StringTable->EmptyString();\
+      if (assetState == ShapeAsset::Ok)\
+      {\
+         m##name##Filename = StringTable->EmptyString();\
+      }\
+      else Con::warnf("Warning: %s::preload-%s", assetText(className-,getName()), ShapeAsset::getAssetErrstrn(assetState).c_str());\
+      m##name = m##name##Asset->getShapeResource();\
    }\
-   else Con::warnf("Warning: %s::LOAD_SHAPEASSET(%s)-%s", mClassName, m##name##AssetId, ShapeAsset::getAssetErrstrn(assetState).c_str());\
+   if (bool(m##name) == NULL)\
+   {\
+      errorStr = String::ToString("%s: Couldn't load shape \"%s\"", assetText(className,""), get##name());\
+      return false;\
+   }\
+   if (!server && !m##name->preloadMaterialList(m##name.getPath()) && NetConnection::filesWereDownloaded())\
+   shapeError = true;\
 }
 
 #define PACKDATA_SHAPEASSET(name)\

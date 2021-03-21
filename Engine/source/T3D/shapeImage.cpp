@@ -403,12 +403,6 @@ bool ShapeBaseImageData::onAdd()
          reloadState = i;
    }
 
-   AUTOCONVERT_SHAPEASSET(ShapeFP);
-   LOAD_SHAPEASSET(ShapeFP);
-
-   AUTOCONVERT_SHAPEASSET(Shape);
-   LOAD_SHAPEASSET(Shape);
-
    // Always preload images, this is needed to avoid problems with
    // resolving sequences before transmission to a client.
    return true;
@@ -418,6 +412,10 @@ bool ShapeBaseImageData::preload(bool server, String &errorStr)
 {
    if (!Parent::preload(server, errorStr))
       return false;
+
+   PersistenceManager* persistMgr;
+   bool shapeError = false;
+   if (!Sim::findObject("ServerAssetValidator", persistMgr)) Con::errorf("ServerAssetValidator not found!");
 
    // Resolve objects transmitted from server
    if (!server) {
@@ -440,6 +438,10 @@ bool ShapeBaseImageData::preload(bool server, String &errorStr)
    useEyeOffset = !eyeOffset.isIdentity();
 
    // Go through each of the shapes
+   AUTOCONVERT_SHAPEASSET(Shape);
+   LOAD_SHAPEASSET(ShapeBaseImageData,Shape);
+   AUTOCONVERT_SHAPEASSET(ShapeFP);
+   LOAD_SHAPEASSET(ShapeBaseImageData,ShapeFP);
    for (U32 i=0; i<MaxShapes; ++i)
    {
       // Shape 0: Standard image shape
@@ -614,6 +616,7 @@ void ShapeBaseImageData::initPersistFields()
       "reloading, etc.  This is typical of many FPS games."
       "@see eyeOffset\n"
       "@see useEyeNode\n")
+   addField("shapeFileFP", TypeShapeFilename, Offset(mShapeFPFilename, ShapeBaseImageData), "deprecated alias for ShapeFPFile/Asset");
 
    addField( "imageAnimPrefix", TypeCaseString, Offset(imageAnimPrefix, ShapeBaseImageData),
       "@brief Passed along to the mounting shape to modify animation sequences played in third person. [optional]\n\n" );

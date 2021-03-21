@@ -149,6 +149,7 @@ public:
 
    virtual GuiControl* constructEditControl();
    virtual bool updateRects();
+   bool renderTooltip(const Point2I& hoverPos, const Point2I& cursorPos, const char* tipText = NULL);
 };
 
 class GuiInspectorTypeImageAssetId : public GuiInspectorTypeImageAssetPtr
@@ -166,6 +167,7 @@ public:
 /// This establishes the assetId, asset and legacy filepath fields, along with supplemental getter and setter functions
 /// </Summary>
 #define DECLARE_IMAGEASSET(className, name) public: \
+   GFXTexHandle m##name;\
    FileName m##name##Filename; \
    StringTableEntry m##name##AssetId;\
    AssetPtr<ImageAsset>  m##name##Asset;\
@@ -197,13 +199,16 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
             object->m##name##Filename = data;\
             object->m##name##AssetId = StringTable->EmptyString();\
             \
+            String nameString = String::String(object->get##name());\
+            if (nameString.isNotEmpty() && !nameString.equal("texhandle", String::NoCase))\
+               object->m##name.set(nameString, &GFXDefaultGUIProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
             return true;\
          }\
          else\
          {\
             object->m##name##AssetId = assetId;\
             object->m##name##Filename = StringTable->EmptyString();\
-            \
+            object->m##name = NULL;\
             return false;\
          }\
       }\
@@ -211,6 +216,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
    else\
    {\
       object->m##name##Asset = StringTable->EmptyString();\
+      object->m##name = NULL;\
    }\
    \
    return true;\
@@ -224,8 +230,12 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    {\
       if (object->m##name##Asset.getAssetId() != StringTable->insert("Core_Rendering:missingTexture"))\
          object->m##name##Filename = StringTable->EmptyString();\
+      String nameString = String::String(object->get##name());\
+      if (nameString.isNotEmpty() && !nameString.equal("texhandle", String::NoCase))\
+         object->m##name.set(nameString, &GFXDefaultGUIProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
       return true;\
    }\
+   object->m##name = NULL;\
    return true;\
 }
 #define DECLARE_NET_IMAGEASSET(className, name, bitmask) public: \
@@ -324,10 +334,8 @@ DefineEngineMethod(className, set##name, String, (String map), , assetText(name,
    m##name##Asset = NULL;
 
 #define INITPERSISTFIELD_IMAGEASSET(name, consoleClass, docs) \
-   addField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), assetDoc(name, docs)); \
-   addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, assetDoc(name, asset docs.));
-   /*addProtectedField(assetText(name, File), TypeImageFilename, Offset(m##name##Filename, consoleClass), consoleClass::_set##name##Filename,  & defaultProtectedGetFn, assetText(name, docs)); \
-   addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, & defaultProtectedGetFn, assetText(name, asset reference.));*/
+   addProtectedField(#name, TypeImageFilename, Offset(m##name##Filename, consoleClass), _set##name##Filename,&defaultProtectedGetFn,assetDoc(name, docs)); \
+   addProtectedField(assetText(name, Asset), TypeImageAssetId, Offset(m##name##AssetId, consoleClass), consoleClass::_set##name##Asset, &defaultProtectedGetFn, assetDoc(name, asset docs.));
 
 #define CLONE_IMAGEASSET(name) \
    m##name##Filename = other.m##name##Filename;\

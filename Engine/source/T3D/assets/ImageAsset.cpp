@@ -46,6 +46,7 @@
 #include "platform/profiler.h"
 
 #include "T3D/assets/assetImporter.h"
+#include "gfx/gfxDrawUtil.h"
 
 //-----------------------------------------------------------------------------
 
@@ -467,6 +468,8 @@ ImplementEnumType(ImageAssetType,
       if (retCtrl == NULL)
          return retCtrl;
 
+      retCtrl->getRenderTooltipDelegate().bind(this, &GuiInspectorTypeImageAssetPtr::renderTooltip);
+
       // Change filespec
       char szBuffer[512];
       dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"ImageAsset\", \"AssetBrowser.changeAsset\", %s, %s);",
@@ -521,6 +524,66 @@ ImplementEnumType(ImageAssetType,
       }
 
       return resized;
+   }
+
+   bool GuiInspectorTypeImageAssetPtr::renderTooltip(const Point2I& hoverPos, const Point2I& cursorPos, const char* tipText)
+   {
+      if (!mAwake)
+         return false;
+
+      GuiCanvas* root = getRoot();
+      if (!root)
+         return false;
+
+      AssetPtr<ImageAsset> imgAsset;
+      U32 assetState = ImageAsset::getAssetById(getData(), &imgAsset);
+      if (imgAsset == NULL || assetState == ImageAsset::Failed)
+         return false;
+
+      StringTableEntry filename = imgAsset->getImagePath();
+      if (!filename || !filename[0])
+         return false;
+
+      GFXTexHandle texture(filename, &GFXStaticTextureSRGBProfile, avar("%s() - tooltip texture (line %d)", __FUNCTION__, __LINE__));
+      if (texture.isNull())
+         return false;
+
+      // Render image at a reasonable screen size while 
+      // keeping its aspect ratio...
+      Point2I screensize = getRoot()->getWindowSize();
+      Point2I offset = hoverPos;
+      Point2I tipBounds;
+
+      U32 texWidth = texture.getWidth();
+      U32 texHeight = texture.getHeight();
+      F32 aspect = (F32)texHeight / (F32)texWidth;
+
+      const F32 newWidth = 150.0f;
+      F32 newHeight = aspect * newWidth;
+
+      // Offset below cursor image
+      offset.y += 20; // TODO: Attempt to fix?: root->getCursorExtent().y;
+      tipBounds.x = newWidth;
+      tipBounds.y = newHeight;
+
+      // Make sure all of the tooltip will be rendered width the app window,
+      // 5 is given as a buffer against the edge
+      if (screensize.x < offset.x + tipBounds.x + 5)
+         offset.x = screensize.x - tipBounds.x - 5;
+      if (screensize.y < offset.y + tipBounds.y + 5)
+         offset.y = hoverPos.y - tipBounds.y - 5;
+
+      RectI oldClip = GFX->getClipRect();
+      RectI rect(offset, tipBounds);
+      GFX->setClipRect(rect);
+
+      GFXDrawUtil* drawer = GFX->getDrawUtil();
+      drawer->clearBitmapModulation();
+      GFX->getDrawUtil()->drawBitmapStretch(texture, rect);
+
+      GFX->setClipRect(oldClip);
+
+      return true;
    }
 
    IMPLEMENT_CONOBJECT(GuiInspectorTypeImageAssetId);

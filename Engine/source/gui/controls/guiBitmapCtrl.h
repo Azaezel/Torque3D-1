@@ -40,10 +40,7 @@ class GuiBitmapCtrl : public GuiControl
       /// Name of the bitmap file.  If this is 'texhandle' the bitmap is not loaded
       /// from a file but rather set explicitly on the control.
       DECLARE_IMAGEASSET(GuiBitmapCtrl, Bitmap);
-      
-      /// Loaded texture.
-      GFXTexHandle mTextureObject;
-      
+            
       Point2I mStartPoint;
       ColorI   mColor;
       
