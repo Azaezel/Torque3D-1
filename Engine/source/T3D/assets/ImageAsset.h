@@ -166,16 +166,24 @@ public:
 /// Declares an image asset
 /// This establishes the assetId, asset and legacy filepath fields, along with supplemental getter and setter functions
 /// </Summary>
-#define DECLARE_IMAGEASSET(className, name) public: \
-   GFXTexHandle m##name;\
-   FileName m##name##Filename; \
-   StringTableEntry m##name##AssetId;\
-   AssetPtr<ImageAsset>  m##name##Asset;\
+#define DECLARE_IMAGEASSET(className, name, profile) public: \
+   GFXTexHandle m##name = NULL;\
+   FileName m##name##Filename = String::EmptyString; \
+   StringTableEntry m##name##AssetId = StringTable->EmptyString();;\
+   AssetPtr<ImageAsset>  m##name##Asset = NULL;\
+   GFXTextureProfile * m##name##Profile = &profile;\
 public: \
    const StringTableEntry get##name##File() const { return StringTable->insert(m##name##Filename.c_str()); }\
-   void set##name(const FileName &_in) { m##name##Filename = _in;}\
+   void set##name##File(const FileName &_in) { m##name##Filename = _in;}\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(const AssetPtr<ImageAsset> &_in) { m##name##Asset = _in;}\
+void set##name(const FileName &_in)\
+{\
+   AssetPtr<ImageAsset> imgAsset;\
+   U32 assetState = ImageAsset::getAssetById(_in, &imgAsset);\
+   if (ImageAsset::Ok == assetState) set##name##Asset(imgAsset);\
+   else set##name##File(_in);\
+}\
 const StringTableEntry get##name() const\
 {\
    if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
@@ -201,7 +209,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
             \
             String nameString = String::String(object->get##name());\
             if (nameString.isNotEmpty() && !nameString.equal("texhandle", String::NoCase))\
-               object->m##name.set(nameString, &GFXDefaultGUIProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
+               object->m##name.set(nameString, object->m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
             return true;\
          }\
          else\
@@ -232,7 +240,7 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
          object->m##name##Filename = StringTable->EmptyString();\
       String nameString = String::String(object->get##name());\
       if (nameString.isNotEmpty() && !nameString.equal("texhandle", String::NoCase))\
-         object->m##name.set(nameString, &GFXDefaultGUIProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
+         object->m##name.set(nameString, object->m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
       return true;\
    }\
    object->m##name = NULL;\
