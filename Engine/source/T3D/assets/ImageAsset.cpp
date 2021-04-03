@@ -52,14 +52,14 @@
 
 IMPLEMENT_CONOBJECT(ImageAsset);
 
-ConsoleType(ImageAssetPtr, TypeImageAssetPtr, String, ASSET_ID_FIELD_PREFIX)
+ConsoleType(ImageAssetPtr, TypeImageAssetPtr, const char*, ASSET_ID_FIELD_PREFIX)
 
 //-----------------------------------------------------------------------------
 
 ConsoleGetType(TypeImageAssetPtr)
 {
    // Fetch asset Id.
-   return *((StringTableEntry*)dptr);
+   return *((const char**)(dptr));
 }
 
 //-----------------------------------------------------------------------------
@@ -72,11 +72,7 @@ ConsoleSetType(TypeImageAssetPtr)
       // Yes, so fetch field value.
       const char* pFieldValue = argv[0];
 
-      // Fetch asset Id.
-      StringTableEntry* assetId = (StringTableEntry*)(dptr);
-
-      // Update asset value.
-      *assetId = StringTable->insert(pFieldValue);
+      *((const char**)dptr) = StringTable->insert(argv[0]);
 
       return;
    }
@@ -211,6 +207,9 @@ ImplementEnumType(ImageAssetType,
 
    StringTableEntry ImageAsset::getAssetIdByFilename(StringTableEntry fileName)
    {
+      if (fileName == StringTable->EmptyString())
+         return StringTable->EmptyString();
+
       StringTableEntry imageAssetId = StringTable->EmptyString();
 
       AssetQuery query;
@@ -232,6 +231,10 @@ ImplementEnumType(ImageAssetType,
 
          StringTableEntry resultingAssetId = autoAssetImporter->autoImportFile(fileName);
 
+#if TORQUE_DEBUG
+         autoAssetImporter->dumpActivityLog();
+#endif
+
          if (resultingAssetId != StringTable->EmptyString())
          {
             imageAssetId = resultingAssetId;
@@ -239,7 +242,7 @@ ImplementEnumType(ImageAssetType,
          }
 
          //Didn't work, so have us fall back to a placeholder asset
-         imageAssetId = StringTable->insert("Core_Rendering:missingTexture");
+         imageAssetId = StringTable->insert("Core_Rendering:noTexture");
       }
       else
       {
@@ -260,7 +263,7 @@ ImplementEnumType(ImageAssetType,
       if (imageAsset->notNull())
       {
          //Didn't work, so have us fall back to a placeholder asset
-         StringTableEntry noImageId = StringTable->insert("Core_Rendering:missingTexture");
+         StringTableEntry noImageId = StringTable->insert("Core_Rendering:noTexture");
          imageAsset->setAssetId(noImageId);
 
          //handle fallback not being loaded itself

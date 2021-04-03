@@ -2371,7 +2371,8 @@ StringTableEntry AssetImporter::autoImportFile(Torque::Path filePath)
 
    if (targetModuleDef == nullptr)
    {
-      //log it
+      dSprintf(importLogBuffer, sizeof(importLogBuffer), "Unable to import file %s because could not find a valid module based on it's path", filePath.getFullPath().c_str());
+      activityLog.push_back(importLogBuffer);
       return StringTable->EmptyString();
    }
    else

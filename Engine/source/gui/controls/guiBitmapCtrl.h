@@ -70,7 +70,7 @@ class GuiBitmapCtrl : public GuiControl
 
       DECLARE_CONOBJECT( GuiBitmapCtrl );
       DECLARE_CATEGORY( "Gui Images" );
-      DECLARE_DESCRIPTION( "A control that displays a single, static image from a file.\n"
+      DECLARE_DESCRIPTION( "A control that displays a single, static image from a file.n"
                            "The bitmap can either be tiled or stretched inside the control." );
 };
 

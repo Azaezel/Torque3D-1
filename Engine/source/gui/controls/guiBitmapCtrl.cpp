@@ -94,6 +94,7 @@ bool GuiBitmapCtrl::onWake()
    if (! Parent::onWake())
       return false;
    setActive(true);
+
    setBitmap(getBitmap());
    return true;
 }
@@ -121,24 +122,16 @@ void GuiBitmapCtrl::inspectPostApply()
 
 void GuiBitmapCtrl::setBitmap( const char *name, bool resize )
 {
-   mBitmapFilename = name;
    if ( !isAwake() )
       return;
 
-   if ( mBitmapFilename.isNotEmpty() )
-	{
-      if ( !mBitmapFilename.equal("texhandle", String::NoCase) )
-		   mBitmap.set( mBitmapFilename, &GFXDefaultGUIProfile, avar("%s() - mBitmap (line %d)", __FUNCTION__, __LINE__) );
+   _setBitmap(StringTable->insert(name));
 
-      // Resize the control to fit the bitmap
-      if ( mBitmap && resize )
-      {
-         setExtent( mBitmap->getWidth(), mBitmap->getHeight() );
-         updateSizing();
-      }
+   if (mBitmap && resize)
+   {
+      setExtent(mBitmap->getWidth(), mBitmap->getHeight());
+      updateSizing();
    }
-   else
-      mBitmap = NULL;
 
    setUpdate();
 }

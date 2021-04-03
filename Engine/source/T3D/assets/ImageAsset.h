@@ -177,81 +177,96 @@ public: \
    void set##name##File(const FileName &_in) { m##name##Filename = _in;}\
    const AssetPtr<ImageAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(const AssetPtr<ImageAsset> &_in) { m##name##Asset = _in;}\
-void set##name(const FileName &_in)\
-{\
-   AssetPtr<ImageAsset> imgAsset;\
-   U32 assetState = ImageAsset::getAssetById(_in, &imgAsset);\
-   if (ImageAsset::Ok == assetState)\
+   \
+   bool _set##name(StringTableEntry _in)\
    {\
-      set##name##Asset(imgAsset);\
-      m##name##Filename = StringTable->EmptyString();\
-   }\
-   else set##name##File(_in);\
-   String nameString = String::String(get##name());\
-   if (nameString.isNotEmpty() && !nameString.equal("texhandle", String::NoCase))\
-      m##name.set(nameString, m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
-}\
-const StringTableEntry get##name() const\
-{\
-   if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
-      return  Platform::makeRelativePathName(m##name##Asset->getImagePath(), Platform::getMainDotCsDir());\
-   else if (m##name##Filename.isNotEmpty())\
-      return StringTable->insert(Platform::makeRelativePathName(m##name##Filename.c_str(), Platform::getMainDotCsDir()));\
-   else\
-      return StringTable->EmptyString();\
-}\
-static bool _set##name##Filename(void* obj, const char* index, const char* data)\
-{\
-   bool ret = false;\
-   className* object = static_cast<className*>(obj);\
-   StringTableEntry assetId = ImageAsset::getAssetIdByFilename(StringTable->insert(data));\
-   if (assetId != StringTable->EmptyString())\
-   {\
-      if (object->_set##name##Asset(obj, index, assetId))\
+      if (_in == StringTable->EmptyString())\
       {\
-         if (assetId == StringTable->insert("Core_Rendering:missingTexture"))\
+         m##name##Filename = String::EmptyString;\
+         m##name##AssetId = StringTable->EmptyString();\
+         m##name##Asset = NULL;\
+         m##name.free();\
+         m##name = NULL;\
+         return true;\
+      }\
+      \
+      if (AssetDatabase.isDeclaredAsset(_in))\
+      {\
+         m##name##AssetId = _in;\
+         \
+         U32 assetState = ImageAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
+         \
+         if (ImageAsset::Ok == assetState)\
          {\
-            object->m##name##Filename = data;\
-            object->m##name##AssetId = StringTable->EmptyString();\
-            \
-            String nameString = String::String(object->get##name());\
-            if (nameString.isNotEmpty() && !nameString.equal("texhandle", String::NoCase))\
-               object->m##name.set(nameString, object->m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
-            ret = true;\
+            m##name##Filename = StringTable->EmptyString();\
          }\
          else\
          {\
-            object->m##name##AssetId = assetId;\
-            object->m##name##Filename = StringTable->EmptyString();\
-            object->m##name = NULL;\
-            ret = false;\
+            m##name##Filename = _in;\
+            m##name##Asset = NULL;\
          }\
       }\
-   }\
-   else\
-   {\
-      object->m##name##Asset = StringTable->EmptyString();\
-      object->m##name = NULL;\
+      else\
+      {\
+         StringTableEntry assetId = ImageAsset::getAssetIdByFilename(_in);\
+         if (assetId != StringTable->EmptyString())\
+         {\
+            m##name##AssetId = assetId;\
+            m##name##Asset = assetId;\
+            \
+            if (assetId != StringTable->insert("Core_Rendering:noTexture"))\
+               m##name##Filename = StringTable->EmptyString();\
+         }\
+         else\
+         {\
+            m##name##Filename = _in;\
+            m##name##AssetId = StringTable->EmptyString();\
+            m##name##Asset = NULL;\
+         }\
+      }\
+      \
+      if (!m##name##Asset.isNull())\
+      {\
+         m##name = m##name##Asset->getTexture(m##name##Profile);\
+         return true;\
+      }\
+      else if (m##name##Filename.isNotEmpty())\
+      {\
+         if (!m##name##Filename.equal("texhandle", String::NoCase))\
+            m##name.set(m##name##Filename, m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
+         return false;\
+      }\
+      \
+      return false;\
    }\
    \
-   ret = true;\
-   object->set##name(FileName(data));\
-   return ret;\
-}\
-\
-static bool _set##name##Asset(void* obj, const char* index, const char* data)\
-{\
-   bool ret=false;\
-   className* object = static_cast<className*>(obj);\
-   object->m##name##AssetId = StringTable->insert(data);\
-   U32 assetState = ImageAsset::getAssetById(object->m##name##AssetId, &object->m##name##Asset);\
-   if (ImageAsset::Ok == assetState)\
+   const StringTableEntry get##name() const\
    {\
-      ret = true;\
+      if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
+         return  Platform::makeRelativePathName(m##name##Asset->getImagePath(), Platform::getMainDotCsDir());\
+      else if (m##name##Filename.isNotEmpty())\
+         return StringTable->insert(Platform::makeRelativePathName(m##name##Filename.c_str(), Platform::getMainDotCsDir()));\
+      else\
+         return StringTable->EmptyString();\
    }\
-   object->set##name(FileName(data));\
-   return ret;\
-}
+   static bool _set##name##Filename(void* obj, const char* index, const char* data)\
+   {\
+      bool ret = false;\
+      className* object = static_cast<className*>(obj);\
+      ret = object->_set##name(StringTable->insert(data));\
+   \
+      return ret;\
+   }\
+   \
+   static bool _set##name##Asset(void* obj, const char* index, const char* data)\
+   {\
+      bool ret = false;\
+      className* object = static_cast<className*>(obj);\
+      ret = object->_set##name(StringTable->insert(data));\
+      \
+      return ret;\
+   }
+
 #define DECLARE_NET_IMAGEASSET(className, name, bitmask) public: \
    FileName m##name##Filename; \
    StringTableEntry m##name##AssetId;\
@@ -279,7 +294,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
       if (object->_set##name##Asset(obj, index, assetId))\
       {\
          object->setMaskBits(bitmask);\
-         if (assetId == StringTable->insert("Core_Rendering:missingTexture"))\
+         if (assetId == StringTable->insert("Core_Rendering:noTexture"))\
          {\
             object->m##name##Filename = data;\
             object->m##name##AssetId = StringTable->EmptyString();\
@@ -309,7 +324,7 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    object->m##name##AssetId = StringTable->insert(data);\
    if (ImageAsset::getAssetById(object->m##name##AssetId, &object->m##name##Asset))\
    {\
-      if (object->m##name##Asset.getAssetId() != StringTable->insert("Core_Rendering:missingTexture"))\
+      if (object->m##name##Asset.getAssetId() != StringTable->insert("Core_Rendering:noTexture"))\
          object->m##name##Filename = StringTable->EmptyString();\
 \
       object->setMaskBits(bitmask); \
@@ -319,27 +334,17 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
 }
 
 #define DEF_IMAGEASSET_BINDS(className,name)\
-DefineEngineMethod(className, get##name, String, (), , "get name")\
+DefineEngineMethod(className, get##name, const char*, (), , "get name")\
 {\
    return object->get##name(); \
 }\
-DefineEngineMethod(className, get##name##Asset, String, (), , assetText(name, asset reference))\
+DefineEngineMethod(className, get##name##Asset, const char*, (), , assetText(name, asset reference))\
 {\
    return object->m##name##AssetId; \
 }\
-DefineEngineMethod(className, set##name, String, (String map), , assetText(name,assignment. first tries asset then flat file.))\
+DefineEngineMethod(className, set##name, bool, (const char* map), , assetText(name,assignment. first tries asset then flat file.))\
 {\
-   AssetPtr<ImageAsset> imgAsset;\
-   U32 assetState = ImageAsset::getAssetById(map, &imgAsset);\
-   if (ImageAsset::Ok == assetState)\
-   {\
-      object->set##name##Asset(imgAsset);\
-   }\
-   else\
-   {\
-      object->set##name(map);\
-   }\
-   return ImageAsset::getAssetErrstrn(assetState).c_str();\
+    return object->_set##name(StringTable->insert(map));\
 }
 
 #define INIT_IMAGEASSET(name) \
@@ -450,7 +455,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
    {\
       if (object->_set##name##Asset(obj, index, assetId))\
       {\
-         if (assetId == StringTable->insert("Core_Rendering:missingTexture"))\
+         if (assetId == StringTable->insert("Core_Rendering:noTexture"))\
          {\
             object->m##name##Filename[idx] = data;\
             object->m##name##AssetId[idx] = StringTable->EmptyString();\
@@ -484,7 +489,7 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    object->m##name##AssetId[idx] = StringTable->insert(data);\
    if (ImageAsset::getAssetById(object->m##name##AssetId[idx], &object->m##name##Asset[idx]))\
    {\
-      if (object->m##name##Asset[idx].getAssetId() != StringTable->insert("Core_Rendering:missingTexture"))\
+      if (object->m##name##Asset[idx].getAssetId() != StringTable->insert("Core_Rendering:noTexture"))\
       {\
          object->m##name##Filename[idx] = StringTable->EmptyString();\
       }\
@@ -525,7 +530,7 @@ static bool _set##name##Filename(void* obj, const char* index, const char* data)
       if (object->_set##name##Asset(obj, index, assetId))\
       {\
          object->setMaskBits(bitmask);\
-         if (assetId == StringTable->insert("Core_Rendering:missingTexture"))\
+         if (assetId == StringTable->insert("Core_Rendering:noTexture"))\
          {\
             object->m##name##Filename[idx] = data;\
             object->m##name##AssetId[idx] = StringTable->EmptyString();\
@@ -559,7 +564,7 @@ static bool _set##name##Asset(void* obj, const char* index, const char* data)\
    object->m##name##AssetId[idx] = StringTable->insert(data);\
    if (ImageAsset::getAssetById(object->m##name##AssetId[idx], &object->m##name##Asset[idx]))\
    {\
-      if (object->m##name##Asset[idx].getAssetId() != StringTable->insert("Core_Rendering:missingTexture"))\
+      if (object->m##name##Asset[idx].getAssetId() != StringTable->insert("Core_Rendering:noTexture"))\
       {\
          object->m##name##Filename[idx] = StringTable->EmptyString();\
       }\

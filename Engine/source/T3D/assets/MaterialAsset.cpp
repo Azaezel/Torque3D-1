@@ -89,7 +89,7 @@ ConsoleSetType(TypeMaterialAssetPtr)
 }
 
 
-ConsoleType(assetIdString, TypeMaterialAssetId, String, ASSET_ID_FIELD_PREFIX)
+ConsoleType(assetIdString, TypeMaterialAssetId, const char*, ASSET_ID_FIELD_PREFIX)
 
 ConsoleGetType(TypeMaterialAssetId)
 {
