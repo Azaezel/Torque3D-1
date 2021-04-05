@@ -128,7 +128,6 @@ protected:
    static StringTableEntry getImageFileName(void* obj, StringTableEntry data) { return static_cast<ImageAsset*>(obj)->getImageFileName(); }
 
    void loadImage();
-   U32 mLoadedState;
 };
 
 DefineConsoleType(TypeImageAssetPtr, ImageAsset)
@@ -208,13 +207,11 @@ public: \
       }\
       else\
       {\
-         StringTableEntry assetId = ImageAsset::getAssetIdByFilename(_in);\
-         if (assetId != StringTable->EmptyString())\
+         if (ImageAsset::getAssetByFilename(_in, &m##name##Asset))\
          {\
-            m##name##AssetId = assetId;\
-            m##name##Asset = assetId;\
+            m##name##AssetId = m##name##Asset.getAssetId();\
             \
-            if (assetId != StringTable->insert("Core_Rendering:noTexture"))\
+            if (ImageAsset::Ok == m##name##Asset->getStatus())\
                m##name##Filename = StringTable->EmptyString();\
          }\
          else\
@@ -224,19 +221,11 @@ public: \
             m##name##Asset = NULL;\
          }\
       }\
-      \
-      if (!m##name##Asset.isNull())\
+      if (get##name() != StringTable->EmptyString() && !m##name##Filename.equal("texhandle", String::NoCase))\
       {\
-         m##name = m##name##Asset->getTexture(m##name##Profile);\
+         m##name.set(get##name(), m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
          return true;\
       }\
-      else if (m##name##Filename.isNotEmpty())\
-      {\
-         if (!m##name##Filename.equal("texhandle", String::NoCase))\
-            m##name.set(m##name##Filename, m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
-         return false;\
-      }\
-      \
       return false;\
    }\
    \
@@ -254,7 +243,6 @@ public: \
       bool ret = false;\
       className* object = static_cast<className*>(obj);\
       ret = object->_set##name(StringTable->insert(data));\
-   \
       return ret;\
    }\
    \
@@ -263,7 +251,6 @@ public: \
       bool ret = false;\
       className* object = static_cast<className*>(obj);\
       ret = object->_set##name(StringTable->insert(data));\
-      \
       return ret;\
    }
 

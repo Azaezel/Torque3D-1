@@ -88,7 +88,7 @@ public:
       if (errCode > AssetErrCode::Extended) return "undefined error";
       return mErrCodeStrings[errCode];
    };
-
+   U32 getStatus() { return mLoadedState; };
    AssetBase();
    virtual ~AssetBase();
 
