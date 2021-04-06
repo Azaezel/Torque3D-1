@@ -256,7 +256,10 @@ function AssetBrowser::selectAsset( %this, %asset )
       %this.changeAsset();
    }
    
-   Inspector.refresh();
+   if(Inspector.isAwake())
+      Inspector.refresh();
+   else if(GuiEditorInspectFields.isAwake())
+      GuiEditorInspectFields.refresh();
    
    AssetBrowser.hideDialog();
 }
@@ -1086,7 +1089,8 @@ function AssetBrowser::changeAsset(%this)
    eval(%cmd);
    
    //Flag us as dirty for editing purposes
-   EWorldEditor.setSceneAsDirty();
+   if(EWorldEditor.isAwake())
+      EWorldEditor.setSceneAsDirty();
 }
 
 function AssetBrowser::reImportAsset(%this)
