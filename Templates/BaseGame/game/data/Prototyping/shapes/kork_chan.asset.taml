@@ -4,5 +4,5 @@
     AssetName="kork_chan"
     scriptFile="@assetFile=kork_chan.tscript"
     materialDefinitionName="kork_chan"
-    imageMap0="@Asset=Prototyping:kork_chan_ALBEDO"
+    imageMap0="@asset=Prototyping:kork_chan_ALBEDO"
     originalFilePath="D:/Gamedev/T3DMIT/Resources/Prototyping/Shapes" />

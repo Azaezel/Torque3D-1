@@ -152,12 +152,12 @@ void MaterialAsset::initializeAsset()
    // Call parent.
    Parent::initializeAsset();
 
-   compileShader();
-
    mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
 
    if (Platform::isFile(mScriptPath))
       Con::executeFile(mScriptPath, false, false);
+
+   loadMaterial();
 }
 
 void MaterialAsset::onAssetRefresh()
@@ -167,17 +167,7 @@ void MaterialAsset::onAssetRefresh()
    if (Platform::isFile(mScriptPath))
       Con::executeFile(mScriptPath, false, false);
 
-   if (mMatDefinitionName != StringTable->EmptyString())
-   {
-      Material* matDef;
-      if (!Sim::findObject(mMatDefinitionName, matDef))
-      {
-         Con::errorf("MaterialAsset: Unable to find the Material %s", mMatDefinitionName);
-         return;
-      }
-
-      matDef->reload();
-   }
+   loadMaterial();
 }
 
 void MaterialAsset::setScriptFile(const char* pScriptFile)
@@ -197,19 +187,32 @@ void MaterialAsset::setScriptFile(const char* pScriptFile)
 
 //------------------------------------------------------------------------------
 
-void MaterialAsset::compileShader()
+void MaterialAsset::loadMaterial()
 {
+   if (mMaterialDefinition)
+      SAFE_DELETE(mMaterialDefinition);
+
+   if (mMatDefinitionName != StringTable->EmptyString())
+   {
+      Material* matDef;
+      if (!Sim::findObject(mMatDefinitionName, matDef))
+      {
+         Con::errorf("MaterialAsset: Unable to find the Material %s", mMatDefinitionName);
+         return;
+      }
+
+      mMaterialDefinition = matDef;
+
+      mMaterialDefinition->reload();
+   }
 }
+
+//------------------------------------------------------------------------------
 
 void MaterialAsset::copyTo(SimObject* object)
 {
    // Call to parent.
    Parent::copyTo(object);
-}
-
-DefineEngineMethod(MaterialAsset, compileShader, void, (), , "Compiles the material's generated shader, if any. Not yet implemented\n")
-{
-   object->compileShader();
 }
 
 //------------------------------------------------------------------------------
@@ -262,16 +265,16 @@ StringTableEntry MaterialAsset::getAssetIdByMaterialName(StringTableEntry matNam
 
          autoAssetImporter->resetImportSession(true);
 
-         String originalMaterialDefFile = Torque::Path(baseMatDef->getFilename()).getPath();
+         String originalMaterialDefPath = Torque::Path(baseMatDef->getFilename()).getPath();
 
-         autoAssetImporter->setTargetPath(originalMaterialDefFile);
+         autoAssetImporter->setTargetPath(originalMaterialDefPath);
 
          autoAssetImporter->resetImportConfig();
 
-         AssetImportObject* assetObj = autoAssetImporter->addImportingAsset("MaterialAsset", originalMaterialDefFile, nullptr, matName);
+         AssetImportObject* assetObj = autoAssetImporter->addImportingAsset("MaterialAsset", originalMaterialDefPath, nullptr, matName);
 
          //Find out if the filepath has an associated module to it. If we're importing in-place, it needs to be within a module's directory
-         ModuleDefinition* targetModuleDef = AssetImporter::getModuleFromPath(originalMaterialDefFile);
+         ModuleDefinition* targetModuleDef = AssetImporter::getModuleFromPath(originalMaterialDefPath);
 
          if (targetModuleDef == nullptr)
          {

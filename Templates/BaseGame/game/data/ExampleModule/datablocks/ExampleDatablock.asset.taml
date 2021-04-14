@@ -3,5 +3,5 @@
     canSaveDynamicFields="true"
     AssetName="ExampleDatablock"
     scriptFile="@assetFile=ExampleDatablock.cs"
-    dependency0="@Asset=UI:guiSounds"
+    dependency0="@asset=UI:guiSounds"
     VersionId="1" />

@@ -4,5 +4,5 @@
     AssetName="WallOrange"
     scriptFile="@assetFile=WallOrange.tscript"
     materialDefinitionName="WallOrange"
-    imageMap0="@Asset=Prototyping:WallOrange_ALBEDO"
+    imageMap0="@asset=Prototyping:WallOrange_ALBEDO"
     originalFilePath="D:/Gamedev/art/Blockout/WallOrange.png" />

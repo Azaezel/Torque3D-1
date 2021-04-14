@@ -3,5 +3,5 @@
     canSaveDynamicFields="true"
     AssetName="kork_chanShape"
     fileName="@assetFile=kork_chanShape.fbx"
-    materialSlot0="@Asset=Prototyping:kork_chan"
+    materialSlot0="@asset=Prototyping:kork_chan"
     originalFilePath="D:/Gamedev/T3DMIT/Resources/Prototyping/Shapes/kork_chanShape.fbx" />

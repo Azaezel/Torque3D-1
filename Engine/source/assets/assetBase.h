@@ -125,6 +125,7 @@ public:
    void                    refreshAsset(void);
 
    S32 getAssetDependencyFieldCount(const char* pFieldName);
+   StringTableEntry getAssetDependencyField(const char* pFieldName, S32 index = 0);
    void clearAssetDependencyFields(const char* pFieldName);
    void addAssetDependencyField(const char* pFieldName, const char* pAssetId);
 

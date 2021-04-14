@@ -4,5 +4,5 @@
     AssetName="FloorGray"
     scriptFile="@assetFile=FloorGray.tscript"
     materialDefinitionName="FloorGray"
-    imageMap0="@Asset=Prototyping:FloorGray_ALBEDO"
+    imageMap0="@asset=Prototyping:FloorGray_ALBEDO"
     originalFilePath="D:/Gamedev/art/Blockout/FloorGray.png" />

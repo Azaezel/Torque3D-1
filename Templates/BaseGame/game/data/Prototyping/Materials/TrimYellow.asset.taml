@@ -4,5 +4,5 @@
     AssetName="TrimYellow"
     scriptFile="@assetFile=TrimYellow.tscript"
     materialDefinitionName="TrimYellow"
-    imageMap0="@Asset=Prototyping:TrimYellow_ALBEDO"
+    imageMap0="@asset=Prototyping:TrimYellow_ALBEDO"
     originalFilePath="D:/Gamedev/art/Blockout/TrimYellow.png" />

@@ -67,10 +67,8 @@ class RenderMeshExample : public SceneObject
    //--------------------------------------------------------------------------
    // Rendering variables
    //--------------------------------------------------------------------------
-   DECLARE_NET_MATERIALASSET(RenderMeshExample, Material, UpdateMask);
-
-   // The actual Material instance
-   BaseMatInstance*  mMaterialInst;
+   DECLARE_MATERIALASSET(RenderMeshExample, Material);
+   DECLARE_MATERIALASSET_NET_SETGET(RenderMeshExample, Material, UpdateMask);
 
    // Define our vertex format here so we don't have to
    // change it in multiple spots later

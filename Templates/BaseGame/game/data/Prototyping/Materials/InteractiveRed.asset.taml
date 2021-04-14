@@ -4,5 +4,5 @@
     AssetName="InteractiveRed"
     scriptFile="@assetFile=InteractiveRed.tscript"
     materialDefinitionName="InteractiveRed"
-    imageMap0="@Asset=Prototyping:InteractiveRed_ALBEDO"
+    imageMap0="@asset=Prototyping:InteractiveRed_ALBEDO"
     originalFilePath="D:/Gamedev/art/Blockout/InteractiveRed.png" />

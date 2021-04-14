@@ -34,9 +34,19 @@ function AssetBrowser::createLevelAsset(%this)
       NavmeshFile = %assetName @ ".nav";
       LevelName = AssetBrowser.newAssetSettings.levelName;
       AssetDescription = AssetBrowser.newAssetSettings.description;
-      PreviewImage = AssetBrowser.newAssetSettings.levelPreviewImage;
    };
-   
+
+   %previewImageAsset = new ImageAsset()
+   {
+      assetName = %assetName @ "PreviewImage";
+      versionId = 1;
+      ImageFile = AssetBrowser.newAssetSettings.levelPreviewImage;
+   };
+
+   TamlWrite(%previewImageAsset, %tamlpath);
+
+   %asset.addAssetDependencyField("previewImageAsset", previewImageAsset);
+
    TamlWrite(%asset, %tamlpath);
    
    //Special-case where if we're doing a save-as action, it'll base on the current scene.

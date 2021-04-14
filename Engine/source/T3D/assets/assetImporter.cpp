@@ -2692,7 +2692,7 @@ Torque::Path AssetImporter::importMaterialAsset(AssetImportObject* assetItem)
       dSprintf(dependencyFieldName, 64, "imageMap%i", dependencySlotId);
 
       char dependencyFieldDef[512];
-      dSprintf(dependencyFieldDef, 512, "@Asset=%s:%s", targetModuleId.c_str(), childItem->assetName.c_str());
+      dSprintf(dependencyFieldDef, 512, "%s=%s:%s", ASSET_ID_SIGNATURE, targetModuleId.c_str(), childItem->assetName.c_str());
 
       newAsset->setDataField(StringTable->insert(dependencyFieldName), nullptr, dependencyFieldDef);
 
@@ -2966,7 +2966,7 @@ Torque::Path AssetImporter::importShapeAsset(AssetImportObject* assetItem)
          dSprintf(dependencyFieldName, 64, "materialSlot%i", dependencySlotId);
 
          char dependencyFieldDef[512];
-         dSprintf(dependencyFieldDef, 512, "@Asset=%s:%s", targetModuleId.c_str(), childItem->assetName.c_str());
+         dSprintf(dependencyFieldDef, 512, "%s=%s:%s", ASSET_ID_SIGNATURE, targetModuleId.c_str(), childItem->assetName.c_str());
   
          newAsset->setDataField(StringTable->insert(dependencyFieldName), nullptr, dependencyFieldDef);
 
@@ -2978,7 +2978,7 @@ Torque::Path AssetImporter::importShapeAsset(AssetImportObject* assetItem)
          dSprintf(dependencyFieldName, 64, "animationSequence%i", dependencySlotId);
 
          char dependencyFieldDef[512];
-         dSprintf(dependencyFieldDef, 512, "@Asset=%s:%s", targetModuleId.c_str(), childItem->assetName.c_str());
+         dSprintf(dependencyFieldDef, 512, "%s=%s:%s", ASSET_ID_SIGNATURE, targetModuleId.c_str(), childItem->assetName.c_str());
 
          newAsset->setDataField(StringTable->insert(dependencyFieldName), nullptr, dependencyFieldDef);
 

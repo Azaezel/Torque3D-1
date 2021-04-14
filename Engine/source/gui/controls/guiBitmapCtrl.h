@@ -39,7 +39,92 @@ class GuiBitmapCtrl : public GuiControl
    
       /// Name of the bitmap file.  If this is 'texhandle' the bitmap is not loaded
       /// from a file but rather set explicitly on the control.
-      DECLARE_IMAGEASSET(GuiBitmapCtrl, Bitmap, GFXDefaultGUIProfile);
+      //DECLARE_IMAGEASSET(GuiBitmapCtrl, Bitmap, GFXDefaultGUIProfile);
+public: 
+   GFXTexHandle mBitmap = NULL; 
+   FileName mBitmapFilename = String::EmptyString; 
+   StringTableEntry mBitmapAssetId = StringTable->EmptyString();
+   AssetPtr<ImageAsset>  mBitmapAsset = NULL;
+   GFXTextureProfile * mBitmapProfile = &GFXDefaultGUIProfile;
+public: \
+   const StringTableEntry getBitmapFile() const { return StringTable->insert(mBitmapFilename.c_str()); }
+   void setBitmapFile(const FileName &_in) { mBitmapFilename = _in;}
+   const AssetPtr<ImageAsset> & getBitmapAsset() const { return mBitmapAsset; }
+   void setBitmapAsset(const AssetPtr<ImageAsset> &_in) { mBitmapAsset = _in;}
+   
+   bool _setBitmap(StringTableEntry _in)
+   {
+      if (_in == StringTable->EmptyString())
+      {
+         mBitmapFilename = String::EmptyString;
+         mBitmapAssetId = StringTable->EmptyString();
+         mBitmapAsset = NULL;
+         mBitmap.free();
+         mBitmap = NULL;
+         return true;
+      }
+      
+      if (AssetDatabase.isDeclaredAsset(_in))
+      {
+         mBitmapAssetId = _in;
+         
+         U32 assetState = ImageAsset::getAssetById(mBitmapAssetId, &mBitmapAsset);
+         
+         if (ImageAsset::Ok == assetState)
+         {
+            mBitmapFilename = StringTable->EmptyString();
+         }
+         else
+         {
+            mBitmapFilename = _in;
+            mBitmapAsset = NULL;
+         }
+      }
+      else
+      {
+         Torque::Path imagePath = _in;
+         if (imagePath.getExtension() == String::EmptyString)
+         {
+            if (Platform::isFile(imagePath.getFullPath() + ".png"))
+               imagePath.setExtension("png");
+            else if (Platform::isFile(imagePath.getFullPath() + ".dds"))
+               imagePath.setExtension("dds");
+            else if (Platform::isFile(imagePath.getFullPath() + ".jpg"))
+               imagePath.setExtension("jpg");
+         }
+         if (ImageAsset::getAssetByFilename(StringTable->insert(imagePath.getFullPath()), &mBitmapAsset))
+         {
+            mBitmapAssetId = mBitmapAsset.getAssetId();
+            
+            if (ImageAsset::Ok == mBitmapAsset->getStatus())
+               mBitmapFilename = StringTable->EmptyString();
+         }
+         else
+         {
+            mBitmapFilename = _in;
+            mBitmapAssetId = StringTable->EmptyString();
+            mBitmapAsset = NULL;
+         }
+      }
+      if (getBitmap() != StringTable->EmptyString() && !mBitmapFilename.equal("texhandle", String::NoCase))
+      {
+         mBitmap.set(getBitmap(), mBitmapProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));
+         return true;
+      }
+      return false;
+   }
+   
+   const StringTableEntry getBitmap() const
+   {
+      if (mBitmapAsset && (mBitmapAsset->getImageFileName() != StringTable->EmptyString()))
+         return  Platform::makeRelativePathName(mBitmapAsset->getImagePath(), Platform::getMainDotCsDir());
+      else if (mBitmapFilename.isNotEmpty())
+         return StringTable->insert(Platform::makeRelativePathName(mBitmapFilename.c_str(), Platform::getMainDotCsDir()));
+      else\
+         return StringTable->EmptyString();
+   }
+
+      DECLARE_IMAGEASSET_SETGET(GuiBitmapCtrl, Bitmap);
             
       Point2I mStartPoint;
       ColorI   mColor;

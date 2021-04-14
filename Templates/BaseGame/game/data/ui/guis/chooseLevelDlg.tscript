@@ -156,11 +156,11 @@ function LevelList::onChange(%this)
    $selectedLevelAsset = %levelAsset.getAssetId();
    
    // Find the preview image
-   %levelPreview = %levelAsset.getPreviewImagePath();
+   %levelPreview = %levelAsset.getPreviewImageAsset();
    
    // Test against all of the different image formats
    // This should probably be moved into an engine function
-   if (isFile(%levelPreview))
+   if (AssetDatabase.isDeclaredAsset(%levelPreview))
       ChooseLevelWindow->CurrentPreview.setBitmap(%levelPreview);
    else
       ChooseLevelWindow->CurrentPreview.setBitmap("data/ui/images/no-preview");

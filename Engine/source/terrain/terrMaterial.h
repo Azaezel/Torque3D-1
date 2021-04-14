@@ -43,6 +43,7 @@ protected:
    //AssetPtr<ImageAsset> mDiffuseAsset;
 
    DECLARE_IMAGEASSET(TerrainMaterial, DiffuseMap, GFXStaticTextureSRGBProfile);
+   DECLARE_IMAGEASSET_SETGET(TerrainMaterial, DiffuseMap);
 
    /// The size of the diffuse base map in meters 
    /// used to generate its texture coordinates.
@@ -50,9 +51,11 @@ protected:
 
    ///
    DECLARE_IMAGEASSET(TerrainMaterial, NormalMap, GFXNormalMapProfile);
+   DECLARE_IMAGEASSET_SETGET(TerrainMaterial, NormalMap);
 
    ///
    DECLARE_IMAGEASSET(TerrainMaterial, DetailMap, GFXStaticTextureProfile);
+   DECLARE_IMAGEASSET_SETGET(TerrainMaterial, DetailMap);
    
    /// The size of the detail map in meters used
    /// to generate the texture coordinates for the
@@ -67,6 +70,7 @@ protected:
 
    ///
    DECLARE_IMAGEASSET(TerrainMaterial, ORMConfigMap, GFXStaticTextureProfile);
+   DECLARE_IMAGEASSET_SETGET(TerrainMaterial, ORMConfigMap);
 
    bool mIsSRGB;
    bool mInvertRoughness;
@@ -78,6 +82,7 @@ protected:
    bool mSideProjection;
 
    DECLARE_IMAGEASSET(TerrainMaterial, MacroMap, GFXStaticTextureProfile);
+   DECLARE_IMAGEASSET_SETGET(TerrainMaterial, MacroMap);
    F32 mMacroSize;
    F32 mMacroStrength;
    F32 mMacroDistance;

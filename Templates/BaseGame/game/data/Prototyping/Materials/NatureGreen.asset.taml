@@ -4,5 +4,5 @@
     AssetName="NatureGreen"
     scriptFile="@assetFile=NatureGreen.tscript"
     materialDefinitionName="NatureGreen"
-    imageMap0="@Asset=Prototyping:NatureGreen_ALBEDO"
+    imageMap0="@asset=Prototyping:NatureGreen_ALBEDO"
     originalFilePath="D:/Gamedev/art/Blockout/NatureGreen.png" />
