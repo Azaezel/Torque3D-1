@@ -358,6 +358,7 @@ if (m##name##AssetId != StringTable->EmptyString())\
    if (stream->readFlag())\
    {\
       m##name##AssetId = StringTable->insert(netconn->unpackNetStringHandleU(stream).getString());\
+      _set##name(m##name##AssetId);\
    }\
    else\
       m##name##Name = stream->readSTString();
