@@ -191,6 +191,10 @@ public:
 
             if (!mMaterialInst)
                Con::errorf("classname::_initMaterial - no Material called '%s'", mMaterialAsset->getMaterialDefinitionName());
+
+            FeatureSet features = MATMGR->getDefaultFeatures();
+
+            mMaterialInst->init(features, getGFXVertexFormat<VertexType>());
          }
 
          return true;
