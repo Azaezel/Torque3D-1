@@ -87,7 +87,7 @@ function loadModuleMaterials(%moduleGroup)
    //Next, frontload materials and terrainMaterials
    loadAssetsByType(MaterialAsset);
    loadAssetsByType(TerrainMaterialAsset);
-   ServerAssetValidator.saveDirty();
+   ImageAssetValidator.saveDirty();
 }
 
 function loadAssetsByType(%assetType)
