@@ -137,6 +137,19 @@ ImplementEnumType(ImageAssetType,
 
    ImageAsset::~ImageAsset()
    {
+      SAFE_DELETE(mBitmap);
+
+      if (mImageFileName == StringTable->insert("FloorGray.png"))
+      {
+         bool sdfgsdfgdsf = true;
+         bool sdfgdsfg = true;
+      }
+
+      /*for (ResourceMapping::iterator itr = mResourceMap.begin();  itr != mResourceMap.end(); ++itr)
+      {
+         (itr)->value.free();
+         (itr)->value = nullptr;
+      }*/
    }
 
    //-----------------------------------------------------------------------------
@@ -296,18 +309,22 @@ ImplementEnumType(ImageAssetType,
             return;
          }
 
-         GFXTexHandle texture = getTexture(&GFXStaticTextureSRGBProfile);
+         mLoadedState = Ok;
+         mIsValidImage = true;
+         return;
+
+         //GFXTexHandle texture = getTexture(&GFXStaticTextureSRGBProfile);
 
          //mTexture.set(mImagePath, &GFXStaticTextureSRGBProfile, avar("%s() - mImage (line %d)", __FUNCTION__, __LINE__));
 
-         if (texture.isValid())
+         /*if (texture.isValid())
          {
             mIsValidImage = true;
 
             //mBitmap = texture.getBitmap();
 
             return;
-         }
+         }*/
       }
       mLoadedState = BadFileReference;
 
@@ -343,6 +360,12 @@ ImplementEnumType(ImageAssetType,
 
    GFXTexHandle ImageAsset::getTexture(GFXTextureProfile* requestedProfile)
    {
+      if (mImageFileName == StringTable->insert("FloorGray.png"))
+      {
+         bool sdfgsdfgdsf = true;
+         bool sdfgdsfg = true;
+      }
+
       if (mResourceMap.contains(requestedProfile))
       {
          mLoadedState = Ok;

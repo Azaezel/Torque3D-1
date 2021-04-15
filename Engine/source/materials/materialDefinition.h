@@ -204,7 +204,106 @@ public:
    //-----------------------------------------------------------------------
    // Data
    //-----------------------------------------------------------------------
-   DECLARE_IMAGEASSET_ARRAY(Material, DiffuseMap, GFXStaticTextureSRGBProfile, MAX_STAGES);
+   //DECLARE_IMAGEASSET_ARRAY(Material, DiffuseMap, GFXStaticTextureSRGBProfile, MAX_STAGES);
+public: \
+   static const U32 smDiffuseMapCount = MAX_STAGES; \
+   GFXTexHandle mDiffuseMap[MAX_STAGES] = { NULL };\
+   FileName mDiffuseMapFilename[MAX_STAGES] = { String::EmptyString }; \
+   StringTableEntry mDiffuseMapAssetId[MAX_STAGES] = { StringTable->EmptyString() };\
+   AssetPtr<ImageAsset>  mDiffuseMapAsset[MAX_STAGES] = { NULL };\
+   GFXTextureProfile * mDiffuseMapProfile = &GFXStaticTextureSRGBProfile;\
+public: \
+   const StringTableEntry getDiffuseMapFile(const U32& index) const { return StringTable->insert(mDiffuseMapFilename[index].c_str()); }\
+   void setDiffuseMapFile(const FileName &_in, const U32& index) { mDiffuseMapFilename[index] = _in;}\
+   const AssetPtr<ImageAsset> & getDiffuseMapAsset(const U32& index) const { return mDiffuseMapAsset[index]; }\
+   void setDiffuseMapAsset(const AssetPtr<ImageAsset> &_in, const U32& index) { mDiffuseMapAsset[index] = _in;}\
+   \
+   bool _setDiffuseMap(StringTableEntry _in, const U32& index)\
+   {\
+      if (_in == StringTable->insert("Prototyping:FloorGray_ALBEDO") || _in == StringTable->insert("FloorGray"))
+      {
+         bool adfgadfgdfg = true;
+         bool sghsfgh = true;
+      }
+
+      if(index >= smDiffuseMapCount || index < 0)\
+         return false;\
+      if (_in == StringTable->EmptyString())\
+      {\
+         mDiffuseMapFilename[index] = String::EmptyString;\
+         mDiffuseMapAssetId[index] = StringTable->EmptyString();\
+         mDiffuseMapAsset[index] = NULL;\
+         mDiffuseMap[index].free();\
+         mDiffuseMap[index] = NULL;\
+         return true;\
+      }\
+      \
+      if (AssetDatabase.isDeclaredAsset(_in))\
+      {\
+         mDiffuseMapAssetId[index] = _in;\
+         \
+         U32 assetState = ImageAsset::getAssetById(mDiffuseMapAssetId[index], &mDiffuseMapAsset[index]);\
+         \
+         if (ImageAsset::Ok == assetState)\
+         {\
+            mDiffuseMapFilename[index] = StringTable->EmptyString();\
+         }\
+         else\
+         {\
+            mDiffuseMapFilename[index] = _in;\
+            mDiffuseMapAsset[index] = NULL;\
+         }\
+      }\
+      else\
+      {\
+         Torque::Path imagePath = _in;\
+         if (imagePath.getExtension() == String::EmptyString)\
+         {\
+            if (Platform::isFile(imagePath.getFullPath() + ".png"))\
+               imagePath.setExtension("png");\
+            else if (Platform::isFile(imagePath.getFullPath() + ".dds"))\
+               imagePath.setExtension("dds");\
+            else if (Platform::isFile(imagePath.getFullPath() + ".jpg"))\
+               imagePath.setExtension("jpg");\
+         }\
+         if (ImageAsset::getAssetByFilename(imagePath.getFullPath(), &mDiffuseMapAsset[index]))\
+         {\
+            mDiffuseMapAssetId[index] = mDiffuseMapAsset[index].getAssetId();\
+            \
+            if (ImageAsset::Ok == mDiffuseMapAsset[index]->getStatus())\
+               mDiffuseMapFilename[index] = StringTable->EmptyString();\
+         }\
+         else\
+         {\
+            mDiffuseMapFilename[index] = _in;\
+            mDiffuseMapAssetId[index] = StringTable->EmptyString();\
+            mDiffuseMapAsset[index] = NULL;\
+         }\
+      }\
+      if (getDiffuseMap(index) != StringTable->EmptyString() && !mDiffuseMapFilename[index].equal("texhandle", String::NoCase))\
+      {\
+         mDiffuseMap[index].set(getDiffuseMap(index), mDiffuseMapProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
+         return true;\
+      }\
+      return false;\
+   }\
+   \
+   const StringTableEntry getDiffuseMap(const U32& index) const\
+   {\
+      if (mDiffuseMapAsset[index] && (mDiffuseMapAsset[index]->getImageFileName() != StringTable->EmptyString()))\
+         return  Platform::makeRelativePathName(mDiffuseMapAsset[index]->getImagePath(), Platform::getMainDotCsDir());\
+      else if (mDiffuseMapFilename[index].isNotEmpty())\
+         return StringTable->insert(Platform::makeRelativePathName(mDiffuseMapFilename[index].c_str(), Platform::getMainDotCsDir()));\
+      else\
+         return StringTable->EmptyString();\
+   }\
+   GFXTexHandle getDiffuseMapResource(const U32& index) \
+   {\
+      if(index >= smDiffuseMapCount || index < 0)\
+         return nullptr;\
+      return mDiffuseMap[index];\
+   }
+
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, DiffuseMap);
 
    bool     mDiffuseMapSRGB[MAX_STAGES];   // SRGB diffuse

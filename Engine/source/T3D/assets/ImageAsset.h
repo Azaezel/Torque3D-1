@@ -172,7 +172,7 @@ public:
    FileName m##name##Filename = String::EmptyString; \
    StringTableEntry m##name##AssetId = StringTable->EmptyString();\
    AssetPtr<ImageAsset>  m##name##Asset = NULL;\
-   GFXTextureProfile * m##name##Profile = &profile;\
+   GFXTextureProfile* m##name##Profile = &profile;\
 public: \
    const StringTableEntry get##name##File() const { return StringTable->insert(m##name##Filename.c_str()); }\
    void set##name##File(const FileName &_in) { m##name##Filename = _in;}\
@@ -249,6 +249,10 @@ public: \
          return StringTable->insert(Platform::makeRelativePathName(m##name##Filename.c_str(), Platform::getMainDotCsDir()));\
       else\
          return StringTable->EmptyString();\
+   }\
+   GFXTexHandle get##name##Resource() \
+   {\
+      return m##name;\
    }
 
 #define DECLARE_IMAGEASSET_SETGET(className, name)\
@@ -469,6 +473,12 @@ public: \
          return StringTable->insert(Platform::makeRelativePathName(m##name##Filename[index].c_str(), Platform::getMainDotCsDir()));\
       else\
          return StringTable->EmptyString();\
+   }\
+   GFXTexHandle get##name##Resource(const U32& index) \
+   {\
+      if(index >= sm##name##Count || index < 0)\
+         return nullptr;\
+      return m##name[index];\
    }
 
 #define DECLARE_IMAGEASSET_ARRAY_SETGET(className, name)\

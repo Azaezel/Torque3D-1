@@ -398,13 +398,20 @@ void ProcessedMaterial::_setStageData()
 
    U32 i;
 
+   if (mMaterial->getName() == StringTable->insert("FloorGray"))
+   {
+      bool adfgadfg = true;
+   }
+
    // Load up all the textures for every possible stage
    for (i = 0; i < Material::MAX_STAGES; i++)
    {
       // DiffuseMap
       if (mMaterial->mDiffuseMapAsset[i] && !mMaterial->mDiffuseMapAsset[i].isNull())
       {
-         mStages[i].setTex(MFT_DiffuseMap, mMaterial->mDiffuseMapAsset[i]->getTexture(&GFXStaticTextureSRGBProfile));
+         //mStages[i].setTex(MFT_DiffuseMap, mMaterial->mDiffuseMapAsset[i]->getTexture(&GFXStaticTextureSRGBProfile));
+         //mStages[i].setTex(MFT_DiffuseMap, mMaterial->getDiffuseMapResource(i));
+         mStages[i].setTex(MFT_DiffuseMap, _createTexture(mMaterial->mDiffuseMapAsset[i]->getImagePath(), &GFXStaticTextureSRGBProfile));
          if (!mStages[i].getTex(MFT_DiffuseMap))
          {
             // Load a debug texture to make it clear to the user 

@@ -167,7 +167,7 @@ public: \
          \
          if (MaterialAsset::Ok == assetState)\
          {\
-            m##name##Name = StringTable->EmptyString();\
+            m##name##Name = String::EmptyString;\
          }\
          else\
          {\
@@ -184,7 +184,7 @@ public: \
             {\
                if (m##name##Asset.getAssetId() != StringTable->insert("Core_Rendering:noMaterial"))\
                {\
-                  m##name##Name = StringTable->EmptyString();\
+                  m##name##Name = String::EmptyString;\
                }\
                else\
                {\

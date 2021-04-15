@@ -122,6 +122,12 @@ public:
 
    bool _setMaterial(StringTableEntry _in)
    {
+      if (_in == StringTable->insert("Prototyping:FloorGray_ALBEDO") || _in == StringTable->insert("FloorGray"))
+      {
+         bool adfgadfgdfg = true;
+         bool sghsfgh = true;
+      }
+
       if (_in == StringTable->EmptyString())
       {
          mMaterialName = String::EmptyString;
@@ -140,7 +146,7 @@ public:
 
          if (MaterialAsset::Ok == assetState)
          {
-            mMaterialName = StringTable->EmptyString();
+            mMaterialName = String::EmptyString;
          }
          else
          {
@@ -158,7 +164,7 @@ public:
             {
                if (mMaterialAsset.getAssetId() != StringTable->insert("Core_Rendering:noMaterial"))
                {
-                  mMaterialName = StringTable->EmptyString();
+                  mMaterialName = String::EmptyString;
                }
                else
                {
