@@ -409,9 +409,8 @@ void ProcessedMaterial::_setStageData()
       // DiffuseMap
       if (mMaterial->mDiffuseMapAsset[i] && !mMaterial->mDiffuseMapAsset[i].isNull())
       {
-         //mStages[i].setTex(MFT_DiffuseMap, mMaterial->mDiffuseMapAsset[i]->getTexture(&GFXStaticTextureSRGBProfile));
-         //mStages[i].setTex(MFT_DiffuseMap, mMaterial->getDiffuseMapResource(i));
-         mStages[i].setTex(MFT_DiffuseMap, _createTexture(mMaterial->mDiffuseMapAsset[i]->getImagePath(), &GFXStaticTextureSRGBProfile));
+         mStages[i].setTex(MFT_DiffuseMap, mMaterial->getDiffuseMapResource(i));
+         //mStages[i].setTex(MFT_DiffuseMap, _createTexture(mMaterial->getDiffuseMap(i), &GFXStaticTextureSRGBProfile));
          if (!mStages[i].getTex(MFT_DiffuseMap))
          {
             // Load a debug texture to make it clear to the user 
@@ -438,7 +437,7 @@ void ProcessedMaterial::_setStageData()
       // OverlayMap
       if (mMaterial->getOverlayMap(i) != StringTable->EmptyString())
       {
-         mStages[i].setTex(MFT_OverlayMap, _createTexture(mMaterial->getOverlayMap(i), &GFXStaticTextureSRGBProfile));
+         mStages[i].setTex(MFT_OverlayMap, mMaterial->getOverlayMapResource(i));
          if (!mStages[i].getTex(MFT_OverlayMap))
             mMaterial->logError("Failed to load overlay map %s for stage %i", mMaterial->getOverlayMap(i), i);
       }
@@ -446,7 +445,7 @@ void ProcessedMaterial::_setStageData()
       // LightMap
       if (mMaterial->getLightMap(i) != StringTable->EmptyString())
       {
-         mStages[i].setTex(MFT_LightMap, _createTexture(mMaterial->getLightMap(i), &GFXStaticTextureSRGBProfile));
+         mStages[i].setTex(MFT_LightMap, mMaterial->getLightMapResource(i));
          if (!mStages[i].getTex(MFT_LightMap))
             mMaterial->logError("Failed to load light map %s for stage %i", mMaterial->getLightMap(i), i);
       }
@@ -454,7 +453,7 @@ void ProcessedMaterial::_setStageData()
       // ToneMap
       if (mMaterial->getToneMap(i) != StringTable->EmptyString())
       {
-         mStages[i].setTex(MFT_ToneMap, _createTexture(mMaterial->getToneMap(i), &GFXStaticTextureProfile));
+         mStages[i].setTex(MFT_ToneMap, mMaterial->getToneMapResource(i));
          if (!mStages[i].getTex(MFT_ToneMap))
             mMaterial->logError("Failed to load tone map %s for stage %i", mMaterial->getToneMap(i), i);
       }
@@ -462,7 +461,7 @@ void ProcessedMaterial::_setStageData()
       // DetailMap
       if (mMaterial->getDetailMap(i) != StringTable->EmptyString())
       {
-         mStages[i].setTex(MFT_DetailMap, _createTexture(mMaterial->getDetailMap(i), &GFXStaticTextureProfile));
+         mStages[i].setTex(MFT_DetailMap, mMaterial->getDetailMapResource(i));
          if (!mStages[i].getTex(MFT_DetailMap))
             mMaterial->logError("Failed to load detail map %s for stage %i", mMaterial->getDetailMap(i), i);
       }
@@ -470,7 +469,7 @@ void ProcessedMaterial::_setStageData()
       // NormalMap
       if (mMaterial->getNormalMap(i) != StringTable->EmptyString())
       {
-         mStages[i].setTex(MFT_NormalMap, _createTexture(mMaterial->getNormalMap(i), &GFXNormalMapProfile));
+         mStages[i].setTex(MFT_NormalMap, mMaterial->getNormalMapResource(i));
          if (!mStages[i].getTex(MFT_NormalMap))
             mMaterial->logError("Failed to load normal map %s for stage %i", mMaterial->getNormalMap(i), i);
       }
@@ -478,11 +477,12 @@ void ProcessedMaterial::_setStageData()
       // Detail Normal Map
       if (mMaterial->getDetailNormalMap(i) != StringTable->EmptyString())
       {
-         mStages[i].setTex(MFT_DetailNormalMap, _createTexture(mMaterial->getDetailNormalMap(i), &GFXNormalMapProfile));
+         mStages[i].setTex(MFT_DetailNormalMap, mMaterial->getDetailNormalMapResource(i));
          if (!mStages[i].getTex(MFT_DetailNormalMap))
             mMaterial->logError("Failed to load normal map %s for stage %i", mMaterial->getDetailNormalMap(i), i);
       }
 
+      //depending on creation method this may or may not have been shoved into srgb space eroneously
       GFXTextureProfile* profile = &GFXStaticTextureProfile;
       if (mMaterial->mIsSRGb[i])
          profile = &GFXStaticTextureSRGBProfile;
@@ -512,7 +512,7 @@ void ProcessedMaterial::_setStageData()
       }
       if (mMaterial->getGlowMap(i) != StringTable->EmptyString())
       {
-         mStages[i].setTex(MFT_GlowMap, _createTexture(mMaterial->getGlowMap(i), &GFXStaticTextureProfile));
+         mStages[i].setTex(MFT_GlowMap, mMaterial->getGlowMapResource(i));
          if (!mStages[i].getTex(MFT_GlowMap))
             mMaterial->logError("Failed to load glow map %s for stage %i", mMaterial->getGlowMap(i), i);
       }

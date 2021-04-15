@@ -126,16 +126,18 @@ void TerrainBlock::_updateMaterials()
    for (U32 i = 0; i < mFile->mMaterials.size(); i++)
    {
       TerrainMaterial* mat = mFile->mMaterials[i];
+
+      if (mat->getDetailMap() != StringTable->EmptyString())
+         detailTexArray[i] = mat->getDetailMapResource();
+      if (mat->getMacroMap() != StringTable->EmptyString())
+         macroTexArray[i] = mat->getMacroMapResource();
+      if (mat->getNormalMap() != StringTable->EmptyString())
+         normalTexArray[i] = mat->getNormalMapResource();
+
+      //depending on creation method this may or may not have been shoved into srgb space eroneously
       GFXTextureProfile* profile = &GFXStaticTextureProfile;
       if (mat->getIsSRGB())
          profile = &GFXStaticTextureSRGBProfile;
-
-      if (mat->getDetailMap() != StringTable->EmptyString())
-         detailTexArray[i] = TEXMGR->createTexture(mat->getDetailMap(), profile);
-      if (mat->getMacroMap() != StringTable->EmptyString())
-         macroTexArray[i] = TEXMGR->createTexture(mat->getMacroMap(), profile);
-      if (mat->getNormalMap() != StringTable->EmptyString())
-         normalTexArray[i] = TEXMGR->createTexture(mat->getNormalMap(), profile);
       if (mat->getORMConfigMap() != StringTable->EmptyString())
          ormTexArray[i] = TEXMGR->createTexture(mat->getORMConfigMap(), profile);
    }
