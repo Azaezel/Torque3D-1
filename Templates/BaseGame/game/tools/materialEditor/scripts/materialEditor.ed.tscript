@@ -2475,15 +2475,15 @@ function MaterialEditorGui::saveCompositeMap(%this)
     %material = %this.currentMaterial;
     %layer = %this.currentLayer;
    
-    %roughMap = %material.getRoughMap(%layer);
     %aoMap = %material.getAOMap(%layer);
+    %roughMap = %material.getRoughMap(%layer);
     %metalMap = %material.getMetalMap(%layer);
     
-    %roughness = %material.RoughnessChan[%layer];
     %ao = %material.AOChan[%layer];
+    %roughness = %material.RoughnessChan[%layer];
     %metal = %material.metalChan[%layer];
     
-    %channelKey = %roughness SPC %ao SPC %metal SPC 0;
+    %channelKey = %ao SPC %roughness SPC %metal SPC 0;
     error("Storing: \"" @ %aoMap @"\" \""@ %roughMap @"\" \""@ %metalMap @"\" \""@ %channelKey @"\" \""@ %saveAs @"\"");
     saveCompositeTexture(%aoMap,%roughMap,%metalMap,"",%channelKey, %saveAs);
     %dlg.delete();

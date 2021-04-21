@@ -326,19 +326,19 @@ public: \
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, ORMConfigMap);
 
    bool     mIsSRGb[MAX_STAGES];
-   DECLARE_IMAGEASSET_ARRAY(Material, RoughMap, GFXStaticTextureSRGBProfile, MAX_STAGES);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, RoughMap);
-
-   bool     mInvertRoughness[MAX_STAGES];
-   F32      mRoughnessChan[MAX_STAGES];
    DECLARE_IMAGEASSET_ARRAY(Material, AOMap, GFXStaticTextureSRGBProfile, MAX_STAGES);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, AOMap);
-
    F32      mAOChan[MAX_STAGES];
+
+   DECLARE_IMAGEASSET_ARRAY(Material, RoughMap, GFXStaticTextureSRGBProfile, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, RoughMap);
+   F32      mRoughnessChan[MAX_STAGES];
+   bool     mInvertRoughness[MAX_STAGES];
+
    DECLARE_IMAGEASSET_ARRAY(Material, MetalMap, GFXStaticTextureSRGBProfile, MAX_STAGES);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, MetalMap);
-
    F32      mMetalChan[MAX_STAGES];
+
    DECLARE_IMAGEASSET_ARRAY(Material, GlowMap, GFXStaticTextureSRGBProfile, MAX_STAGES);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, GlowMap);
 
