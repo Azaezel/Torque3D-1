@@ -1625,8 +1625,12 @@ void PostEffect::setTexture( U32 index, const String &texFilePath )
 			texFilePath[0] == '#' )
 		return;
 
+    GFXTextureProfile* profile = &PostFxTextureProfile;
+    if (mTexSRGB[index])
+       profile = &PostFxTextureSRGBProfile;
+
     // Try to load the texture.
-    mTexture[index].set( texFilePath, &PostFxTextureProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );
+    mTexture[index].set( texFilePath, profile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );
 
     mTextureType[index] = NormalTextureType;
 }
