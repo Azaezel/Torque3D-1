@@ -296,15 +296,11 @@ U32 SoundAsset::getAssetById(StringTableEntry assetId, AssetPtr<SoundAsset>* mat
 
 U32 SoundAsset::getAssetByFileName(StringTableEntry fileName, AssetPtr<SoundAsset>* soundAsset)
 {
+   if (fileName == NULL || fileName == StringTable->EmptyString()) return AssetErrCode::NullAsset;
+
    AssetQuery query;
    U32 foundAssetcount = AssetDatabase.findAssetType(&query, "SoundAsset");
-   if (foundAssetcount == 0)
-   {
-      //Well that's bad, loading the fallback failed.
-      Con::warnf("MaterialAsset::getAssetByMaterialName - Finding of asset associated with filename %s failed with no fallback asset", fileName);
-      return AssetErrCode::Failed;
-   }
-   else
+   if (foundAssetcount > 0)
    {
       for (U32 i = 0; i < foundAssetcount; i++)
       {
@@ -318,6 +314,16 @@ U32 SoundAsset::getAssetByFileName(StringTableEntry fileName, AssetPtr<SoundAsse
          AssetDatabase.releaseAsset(query.mAssetList[i]); //cleanup if that's not the one we needed
       }
    }
+   else if (AssetDatabase.findAssetLooseFile(&query, fileName))
+   {
+      //acquire and bind the asset, and return it out
+      soundAsset->setAssetId(query.mAssetList[0]);
+      return (*soundAsset)->mLoadedState;
+   }
+
+   //Well that's bad, loading the fallback failed.
+   Con::warnf("SoundAsset::getAssetByFileName - Finding of asset associated with filename %s failed", fileName);
+   return AssetErrCode::Failed;
 
    //No good match
    return AssetErrCode::Failed;

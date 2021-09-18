@@ -238,33 +238,11 @@ void MaterialAsset::copyTo(SimObject* object)
 //------------------------------------------------------------------------------
 U32 MaterialAsset::getAssetByMaterialName(StringTableEntry matName, AssetPtr<MaterialAsset>* matAsset)
 {
+   if (matName == NULL || matName == StringTable->EmptyString()) return AssetErrCode::NullAsset;
+
    AssetQuery query;
    U32 foundAssetcount = AssetDatabase.findAssetType(&query, "MaterialAsset");
-   if (foundAssetcount == 0)
-   {
-      //Didn't work, so have us fall back to a placeholder asset
-      matAsset->setAssetId(MaterialAsset::smNoMaterialAssetFallback);
-
-      if (matAsset->isNull())
-      {
-         //Well that's bad, loading the fallback failed.
-         Con::warnf("MaterialAsset::getAssetByMaterialName - Finding of asset associated with material name %s failed with no fallback asset", matName);
-         return AssetErrCode::Failed;
-      }
-
-      //handle noshape not being loaded itself
-      if ((*matAsset)->mLoadedState == BadFileReference)
-      {
-         Con::warnf("ShapeAsset::getAssetByMaterialName - Finding of associated with aterial name %s failed, and fallback asset reported error of Bad File Reference.", matName);
-         return AssetErrCode::BadFileReference;
-      }
-
-      Con::warnf("ShapeAsset::getAssetByMaterialName - Finding of associated with aterial name %s failed, utilizing fallback asset", matName);
-
-      (*matAsset)->mLoadedState = AssetErrCode::UsingFallback;
-      return AssetErrCode::UsingFallback;
-   }
-   else
+   if (foundAssetcount >0)
    {
       for (U32 i = 0; i < foundAssetcount; i++)
       {
@@ -278,6 +256,33 @@ U32 MaterialAsset::getAssetByMaterialName(StringTableEntry matName, AssetPtr<Mat
          AssetDatabase.releaseAsset(query.mAssetList[i]); //cleanup if that's not the one we needed
       }
    }
+   else if (AssetDatabase.findAssetLooseFile(&query, matName))
+   {
+      //acquire and bind the asset, and return it out
+      matAsset->setAssetId(query.mAssetList[0]);
+      return (*matAsset)->mLoadedState;
+   }
+
+   matAsset->setAssetId(MaterialAsset::smNoMaterialAssetFallback);
+
+   if (matAsset->isNull())
+   {
+      //Well that's bad, loading the fallback failed.
+      Con::warnf("MaterialAsset::getAssetByMaterialName - Finding of asset associated with material name %s failed with no fallback asset", matName);
+      return AssetErrCode::Failed;
+   }
+
+   //handle noMaterial not being loaded itself
+   if ((*matAsset)->mLoadedState == BadFileReference)
+   {
+      Con::warnf("MaterialAsset::getAssetByMaterialName - Finding of associated with aterial name %s failed, and fallback asset reported error of Bad File Reference.", matName);
+      return AssetErrCode::BadFileReference;
+   }
+
+   //Didn't work, so have us fall back to a placeholder asset
+   Con::warnf("MaterialAsset::getAssetByMaterialName - Finding of associated with material name %s failed, utilizing fallback asset", matName);
+   (*matAsset)->mLoadedState = AssetErrCode::UsingFallback;
+   return AssetErrCode::UsingFallback;
 }
 
 StringTableEntry MaterialAsset::getAssetIdByMaterialName(StringTableEntry matName)

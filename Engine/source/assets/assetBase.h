@@ -72,6 +72,7 @@ public:
    enum AssetErrCode
    {
       Failed,
+      NullAsset,
       Ok,
       NotLoaded,
       BadFileReference,
