@@ -141,7 +141,7 @@ void tc_spinloop()
    #else
       asm("pause");
    #endif
-#elif
+#else
    __asm { pause };
 #endif
 }
