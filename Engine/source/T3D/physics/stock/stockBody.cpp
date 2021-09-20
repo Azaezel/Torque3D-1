@@ -32,8 +32,11 @@ bool StockBody::init(PhysicsCollision * shape, F32 mass, U32 bodyFlags, SceneObj
    MatrixF localXfm = mColShape->getLocalTransform();
    Point3F localInertia(0, 0, 0);
 
-   /// parity for now but this has got to go!
-   mIsDynamic = mass > 0.0f;
+   mBodyFlags = bodyFlags;
+
+   if (mBodyFlags & BF_DYNAMIC)
+      mIsDynamic = true;
+
    if (mIsDynamic)
    {
       mObjInertia.identity();
@@ -90,6 +93,34 @@ void StockBody::setMaterial(F32 restitution, F32 friction, F32 staticFriction)
    mRestitution = restitution;
    mFriction = friction;
    mStaticFriction = staticFriction;
+}
+
+void StockBody::applyCorrection(const MatrixF & xfm)
+{
+   if (mCenterOfMass)
+   {
+      MatrixF trans;
+      trans.mul(xfm, *mCenterOfMass);
+      setCMassTransform(trans);
+   }
+   else
+      setCMassTransform(xfm);
+}
+
+void StockBody::setCMassTransform(const MatrixF & xfm)
+{
+   *mCenterOfMass = xfm;
+}
+
+void StockBody::findContact(SceneObject ** contactObject, VectorF * contactNormal, Vector<SceneObject*>* outOverlapObjects) const
+{
+   // Placeholder for when its needed.
+   // This checks the bounds box of the object and checks if it is in contact with another.
+   // the loop of the stepworld will be using a different function than find contact but the same
+   // idea.
+   ///SimpleQueryList sql;
+   ///mObject->getContainer()->findObjects(box, colMask, SimpleQueryList::insertionCallback, &sql);
+
 }
 
 void StockBody::setTransform(const MatrixF & xfm)

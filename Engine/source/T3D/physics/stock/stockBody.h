@@ -20,7 +20,12 @@ class StockBody : public PhysicsBody
 {
    StockWorld *mWorld;
    StrongRefPtr<StockCollision> mColShape;
+   U32 mColMask;
+   U32 mBodyFlags;
    /// holds the same (few more) as mRigid.
+   Point3F force;
+   Point3F torque;
+
    F32 mMass;
    bool mIsDynamic;
    bool mIsEnabled;
@@ -40,11 +45,27 @@ class StockBody : public PhysicsBody
    F32 mStaticFriction;
 
 public:
+   ///---------------------------------------------------------------
+   /// TODO: For multi-shape collisions check the influence
+   ///       of each shapes bbox rather than the body.
+   ///       Costly but means each collision mesh can have
+   ///       different properties if required.
+   ///       example: vehicles, doors, ragdoll.
+   ///---------------------------------------------------------------
    StockBody();
    virtual ~StockBody();
 
    bool isAsleep() { return mSleep; }
    void awaken() { mSleep = false; }
+   PhysicsUserData getUser() { return mUserData; }
+   /// shocking that PhysicsBody doesn't have this as default.
+   void setColMask(const U32 mask) { mColMask = mask; }
+   const U32 getColMask() const { return mColMask; }
+   /// important for our stepworld.
+   const U32 getBodyTypes() const { return mBodyFlags; }
+
+   ///Main physics loop of stuffs.
+   void integrateVelocities(F32 step);
 
    // PhysicsBody
    virtual bool init(PhysicsCollision *shape, F32 mass, U32 bodyFlags, SceneObject *obj, PhysicsWorld *world);
@@ -60,10 +81,10 @@ public:
    virtual Point3F getLinVelocity() const { return mLinVelocity; }
    virtual Point3F getAngVelocity() const { return mAngVeloctiy; }
    virtual void setSleeping(bool sleeping) { mSleep = sleeping; };
-   virtual void setMaterial(F32 restitution,
-      F32 friction,
-      F32 staticFriction);
+   virtual void setMaterial(F32 restitution, F32 friction, F32 staticFriction);
    virtual void applyCorrection(const MatrixF &xfm);
+   void setCMassTransform(const MatrixF& xfm);
+
    virtual void applyImpulse(const Point3F &origin, const Point3F &force);
    virtual void applyTorque(const Point3F &torque);
    virtual void applyForce(const Point3F &force);
