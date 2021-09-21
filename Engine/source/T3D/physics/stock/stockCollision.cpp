@@ -177,6 +177,14 @@ void StockCollision::setObject(SceneObject* obj)
 //
 void StockCollision::addPlane(const PlaneF& plane)
 {
+   // Create a new convex.
+   BoxConvex* cp = new BoxConvex;
+   mConvexList->registerObject(cp);
+
+   cp->mCenter = plane.getPosition();
+   F32 height = 0.1f;
+   cp->mCenter.z -= height / 2.0f;
+   cp->mSize = Point3F(F32_MAX / 2, F32_MAX / 2, height);
 }
 
 void StockCollision::addBox(const Point3F& halfWidth, const MatrixF& localXfm)

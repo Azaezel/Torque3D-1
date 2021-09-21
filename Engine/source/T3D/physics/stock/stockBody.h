@@ -131,9 +131,11 @@ public:
    virtual void setSleeping(bool sleeping) { mSleep = sleeping; };
    virtual void setMaterial(F32 restitution, F32 friction, F32 staticFriction);
    virtual void applyCorrection(const MatrixF &xfm);
+   void applyDamping(F32 delta);
    void setCMassTransform(const MatrixF& xfm);
 
    virtual void applyImpulse(const Point3F &origin, const Point3F &force);
+   void applyTorqueImpulse(const Point3F & torque);
    virtual void applyTorque(const Point3F &torque);
    virtual void applyForce(const Point3F &force);
    virtual void findContact(SceneObject **contactObject, VectorF *contactNormal, Vector<SceneObject*> *outOverlapObjects) const;

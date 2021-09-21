@@ -205,22 +205,46 @@ void StockBody::applyCorrection(const MatrixF & xfm)
       setCMassTransform(xfm);
 }
 
-void StockBody::applyTorque(const Point3F& mTorque)
+void StockBody::applyDamping(F32 delta)
 {
-
+   mLinVelocity *= mPow((1.0f - mLinDamp), delta);
+   mAngVelocity *= mPow((1.0f - mAngDamp), delta);
 }
 
-void StockBody::applyForce(const Point3F& mForce)
+void StockBody::applyTorque(const Point3F& torque)
 {
+   Point3F tv;
+   mInvWorldInertia.mulV((torque *mAngFactor), &tv);
+   mTorque += tv;
+}
 
+void StockBody::applyForce(const Point3F& force)
+{
+   mForce += force * mLinFactor;
+}
+
+void StockBody::applyImpulse(const Point3F& r, const Point3F& impulse)
+{
+   mSleep = false;
+
+   mLinVelocity += impulse * mLinFactor * mOneOverMass;
+   Point3F tv;
+   mCross(r, impulse, &tv);
+
+   applyTorqueImpulse(mLinFactor * tv);
+}
+
+void StockBody::applyTorqueImpulse(const Point3F& torque)
+{
+   Point3F tv;
+   mInvWorldInertia.mulV(torque * mAngFactor, &tv);
+   mAngVelocity += tv;
 }
 
 void StockBody::clearForces()
 {
    mForce = Point3F::Zero;
    mTorque = Point3F::Zero;
-   mLinVelocity = Point3F::Zero;
-   mAngVelocity = Point3F::Zero;
 }
 
 void StockBody::findContact(SceneObject** contactObject, VectorF* contactNormal, Vector<SceneObject*>* outOverlapObjects) const
@@ -385,24 +409,12 @@ void StockBody::updateWorkingCollisionSet(const U32 mask, const F32 dt)
 
 void StockBody::updateForces(F32 dt)
 {
-   mTorque = Point3F(0, 0, 0);
-   mForce = mMass * mWorld->getGravity();
 
-   // Apply drag
-   //Point3F vertDrag = mLinVelocity * Point3F(1, 1, mDataBlock->vertFactor);
-   //mForce -= vertDrag * mDataBlock->dragForce;
-   mForce -= mLinVelocity * 0.7;
+   mLinVelocity += mForce * (mOneOverMass * dt);
+   Point3F torque;
 
-   // Add in physical zone mForce
-   //mForce += mAppliedForce;
-
-   F32 mDrag = 0.7;
-
-   mForce -= mLinVelocity * mDrag;
-   mTorque -= mAngMomentum * mDrag;
-
-   mForce = mForce;
-   mTorque = mTorque;
+   mInvWorldInertia.mulV(mTorque * dt, &torque);
+   mAngVelocity += torque;
 
    // If we're still mSleep, make sure we're not accumulating anything
    if (mSleep)
@@ -415,8 +427,6 @@ void StockBody::updatePos(F32 dt)
 
    Point3F origVelocity = mLinVelocity;
 
-   // Update internal forces acting on the body.
-   clearForces();
    updateForces(dt);
 
    // Update collision information based on our current pos.
@@ -798,23 +808,6 @@ void StockBody::updateCenterOfMass()
    // Move the center of mMass into world space
    mAngPosition.mulP(mCenterOfMass, &mWorldCenterOfMass);
    mWorldCenterOfMass += mLinPosition;
-}
-
-void StockBody::applyImpulse(const Point3F& r, const Point3F& impulse)
-{
-   mSleep = false;
-
-   // Linear momentum and velocity
-   mLinMomentum += impulse;
-   mLinVelocity.x = mLinMomentum.x * mOneOverMass;
-   mLinVelocity.y = mLinMomentum.y * mOneOverMass;
-   mLinVelocity.z = mLinMomentum.z * mOneOverMass;
-
-   // Rotational momentum and velocity
-   Point3F tv;
-   mCross(r, impulse, &tv);
-   mAngMomentum += tv;
-   mInvWorldInertia.mulV(mAngMomentum, &mAngVelocity);
 }
 
 //-----------------------------------------------------------------------------

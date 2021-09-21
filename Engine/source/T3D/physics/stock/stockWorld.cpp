@@ -76,7 +76,7 @@ void StockWorld::tickPhysics(U32 elapsedMs)
 
 }
 
-void StockWorld::stepWorld(F32 elapsed, U32 steps, F32 stepTime)
+void StockWorld::clearForces()
 {
    for (U32 i = 0; i < mNonStaticBodies.size(); i++)
    {
@@ -84,9 +84,44 @@ void StockWorld::stepWorld(F32 elapsed, U32 steps, F32 stepTime)
       if (!body->isDynamic())
          continue;
 
-      body->updateWorkingCollisionSet(-1, elapsed);
-      //body->updateForces(elapsed);
-      body->updatePos(elapsed);
+      body->clearForces();
+
+   }
+}
+
+void StockWorld::applyGravity()
+{
+   for (U32 i = 0; i < mNonStaticBodies.size(); i++)
+   {
+      StockBody* body = static_cast<StockBody*>(mNonStaticBodies[i]);
+      if (!body->isDynamic())
+         continue;
+
+      body->applyForce(mGravity);
+
+   }
+}
+
+void StockWorld::stepWorld(F32 elapsed, U32 steps, F32 stepTime)
+{
+   /// clear forces.
+   clearForces();
+   /// apply world gravity once.
+   applyGravity();
+   F32 adjTime = elapsed / steps;
+
+   for (U32 i = 0; i < steps; i++)
+   {
+      for (U32 j = 0; j < mNonStaticBodies.size(); j++)
+      {
+         StockBody* body = static_cast<StockBody*>(mNonStaticBodies[j]);
+         if (!body->isDynamic())
+            continue;
+
+         body->updateWorkingCollisionSet(-1, adjTime);
+         //body->updateForces(elapsed);
+         body->updatePos(adjTime);
+      }
    }
 }
 

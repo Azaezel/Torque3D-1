@@ -39,6 +39,8 @@ public:
    virtual bool initWorld(bool isServer,ProcessList *processList);
 
    void tickPhysics(U32 elapsedMs);
+   void clearForces();
+   void applyGravity();
    void stepWorld(F32 elapsed, U32 steps, F32 stepTime);
    void getPhysicsResults();
 
