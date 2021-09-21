@@ -135,6 +135,10 @@ void PhysicsMeshExample::setTransform(const MatrixF & mat)
    // Let SceneObject handle all of the matrix manipulation
    Parent::setTransform( mat );
 
+   mState.position = getPosition();
+   mState.orientation.set(mat);
+   mRenderState[0] = mRenderState[1] = mState;
+
    if (mPhysicsRep)
       mPhysicsRep->setTransform(getTransform());
 
@@ -151,8 +155,13 @@ U32 PhysicsMeshExample::packUpdate( NetConnection *conn, U32 mask, BitStream *st
    // Write our transform information
    if ( stream->writeFlag( mask & TransformMask ) )
    {
-      mathWrite(*stream, getTransform());
-      mathWrite(*stream, getScale());
+      stream->writeCompressedPoint(mState.position);
+      stream->writeQuat(mState.orientation, 9);
+      if (!stream->writeFlag(mState.sleeping))
+      {
+         stream->writeVector(mState.linVelocity, 1000.0f, 16, 9);
+         stream->writeVector(mState.angVelocity, 10.0f, 10, 9);
+      }
    }
 
    // Write out any of the updated editable properties
@@ -171,10 +180,34 @@ void PhysicsMeshExample::unpackUpdate(NetConnection *conn, BitStream *stream)
 
    if ( stream->readFlag() )  // TransformMask
    {
-      mathRead(*stream, &mObjToWorld);
-      mathRead(*stream, &mObjScale);
+      PhysicsState state;
+      stream->readCompressedPoint(&state.position);
+      stream->readQuat(&state.orientation, 9);
+      state.sleeping = stream->readFlag();
+      if (!state.sleeping)
+      {
+         stream->readVector(&state.linVelocity, 1000.0f, 16, 9);
+         stream->readVector(&state.angVelocity, 10.0f, 10, 9);
+      }
 
-      setTransform( mObjToWorld );
+      if (mPhysicsRep && mPhysicsRep->isDynamic())
+      {
+         // Set the new state on the physics object immediately.
+         mPhysicsRep->applyCorrection(state.getTransform());
+
+         mPhysicsRep->setSleeping(state.sleeping);
+         if (!state.sleeping)
+         {
+            mPhysicsRep->setLinVelocity(state.linVelocity);
+            mPhysicsRep->setAngVelocity(state.angVelocity);
+         }
+
+         mPhysicsRep->getState(&mState);
+      }
+
+      if (!mPhysicsRep || !mPhysicsRep->isDynamic())
+         mState = state;
+
    }
 
    if ( stream->readFlag() )  // UpdateMask
@@ -389,57 +422,46 @@ void PhysicsMeshExample::processTick(const Move* move)
    if (isMounted())
       return;
 
-   //
-   // Warp to catch up to server
-   if (mDelta.warpTicks > 0)
+   if (!mPhysicsRep->isDynamic())
+      return;
+
+   // Store the last render state.
+   mRenderState[0] = mRenderState[1];
+
+   // If the last render state doesn't match the last simulation 
+   // state then we got a correction and need to 
+   Point3F errorDelta = mRenderState[1].position - mState.position;
+   const bool doSmoothing = !errorDelta.isZero();
+
+   const bool wasSleeping = mState.sleeping;
+
+   // Get the new physics state.
+   if (mPhysicsRep)
    {
-      mDelta.warpTicks--;
-
-      // Set new pos.
-      MatrixF mat = mObjToWorld;
-      mat.getColumn(3, &mDelta.pos);
-      mDelta.pos += mDelta.warpOffset;
-      mat.setColumn(3, mDelta.pos);
-      Parent::setTransform(mat);
-
-      // Backstepping
-      mDelta.posVec.x = -mDelta.warpOffset.x;
-      mDelta.posVec.y = -mDelta.warpOffset.y;
-      mDelta.posVec.z = -mDelta.warpOffset.z;
+      mPhysicsRep->getState(&mState);
    }
    else
    {
-      /*if (isServerObject() && mAtRest && (mStatic == false && mDataBlock->sticky == false))
-      {
-         if (++mAtRestCounter > csmAtRestTimer)
-         {
-            mAtRest = false;
-            mAtRestCounter = 0;
-            setMaskBits(PositionMask);
-         }
-      }*/
-
-      if (!isHidden() && !isMounted())
-      {
-         PhysicsState state;
-
-         //grab our update
-         mPhysicsRep->getState(&state);
-
-         //Parent::setPosition(state.position);
-
-         mObjToWorld.setColumn(3, state.position);
-
-         /*updateVelocity(TickSec);
-         updateWorkingCollisionSet(isGhost() ? sClientCollisionMask : sServerCollisionMask, TickSec);
-         updatePos(isGhost() ? sClientCollisionMask : sServerCollisionMask, TickSec);*/
-      }
-      else
-      {
-         // Need to clear out last updatePos or warp interpolation
-         mDelta.posVec.set(0, 0, 0);
-      }
+      /// put mdelta here i guess?
    }
+
+   mRenderState[1] = mState;
+   if (doSmoothing)
+   {
+      F32 correction = mClampF(errorDelta.len() / 20.0f, 0.1f, 0.9f);
+      mRenderState[1].position.interpolate(mState.position, mRenderState[0].position, correction);
+      mRenderState[1].orientation.interpolate(mState.orientation, mRenderState[0].orientation, correction);
+   }
+
+   if (!wasSleeping || !mState.sleeping)
+   {
+      Parent::setTransform(mState.getTransform());
+
+      if (isServerObject() && mPhysicsRep && !PHYSICSMGR->isSinglePlayer())
+         setMaskBits(TransformMask);
+
+   }
+
 }
 
 void PhysicsMeshExample::interpolateTick(F32 dt)
@@ -448,12 +470,9 @@ void PhysicsMeshExample::interpolateTick(F32 dt)
    if (isMounted())
       return;
 
-   // Client side interpolation
-   Point3F pos = mDelta.pos + mDelta.posVec * dt;
-   MatrixF mat = mRenderObjToWorld;
-   mat.setColumn(3, pos);
-   setRenderTransform(mat);
-   mDelta.dt = dt;
+   PhysicsState state;
+   state.interpolate(mRenderState[1], mRenderState[0], dt);
+
    // PATHSHAPE
    updateRenderChangesByParent();
    // PATHSHAPE END

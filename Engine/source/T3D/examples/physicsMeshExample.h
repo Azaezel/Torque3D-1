@@ -95,6 +95,10 @@ class PhysicsMeshExample : public SceneObject
    };
    StateDelta mDelta;
 
+protected:
+   PhysicsState mState;
+   PhysicsState mRenderState[2];
+
 public:
    PhysicsMeshExample();
    virtual ~PhysicsMeshExample();
