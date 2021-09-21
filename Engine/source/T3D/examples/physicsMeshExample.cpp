@@ -426,7 +426,9 @@ void PhysicsMeshExample::processTick(const Move* move)
          //grab our update
          mPhysicsRep->getState(&state);
 
-         setPosition(state.position);
+         //Parent::setPosition(state.position);
+
+         mObjToWorld.setColumn(3, state.position);
 
          /*updateVelocity(TickSec);
          updateWorkingCollisionSet(isGhost() ? sClientCollisionMask : sServerCollisionMask, TickSec);

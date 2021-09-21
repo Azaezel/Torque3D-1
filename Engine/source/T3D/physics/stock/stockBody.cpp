@@ -70,7 +70,7 @@ StockBody::~StockBody()
    }
 }
 
-bool StockBody::init(PhysicsCollision * shape, F32 mMass, U32 bodyFlags, SceneObject * obj, PhysicsWorld * world)
+bool StockBody::init(PhysicsCollision * shape, F32 mass, U32 bodyFlags, SceneObject * obj, PhysicsWorld * world)
 {
    mWorld = (StockWorld*)world;
 
@@ -103,7 +103,12 @@ bool StockBody::init(PhysicsCollision * shape, F32 mMass, U32 bodyFlags, SceneOb
       mInvCenterOfMass->inverse();
    }
 
-   mMass = mMass;
+   mMass = mass;
+
+   if (mMass != 0)
+      mOneOverMass = 1 / mMass;
+   else
+      mOneOverMass = 0;
 
    mWorld->addBody(this);
 
@@ -166,10 +171,10 @@ void StockBody::setCMassTransform(const MatrixF & xfm)
 
 MatrixF& StockBody::getTransform(MatrixF *outMatrix)
 {
-   if (mInvCenterOfMass)
-      outMatrix->mul(*mInvCenterOfMass, *mCenterOfMass);
-   else
-      outMatrix->setPosition(mCenterOfMass);
+   /*if (mInvCenterOfMass)
+      outMatrix->mul(*mInvCenterOfMass, *mWorldCenterOfMass);
+   else*/
+      outMatrix->setPosition(mWorldCenterOfMass);
 
    return *outMatrix;
 }
@@ -380,8 +385,8 @@ void StockBody::updateWorkingCollisionSet(const U32 mask, const F32 dt)
 
 void StockBody::updateForces(F32 dt)
 {
-   Point3F mTorque(0, 0, 0);
-   Point3F mForce = mMass * mWorld->getGravity();
+   mTorque = Point3F(0, 0, 0);
+   mForce = mMass * mWorld->getGravity();
 
    // Apply drag
    //Point3F vertDrag = mLinVelocity * Point3F(1, 1, mDataBlock->vertFactor);
