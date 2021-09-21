@@ -35,6 +35,9 @@ class StockBody : public PhysicsBody
    Point3F mForce;
    Point3F mTorque;
 
+   Box3F mAABB;
+   Box3F mOOBB;
+
    F32 mMass;
    bool mIsDynamic;
    bool mIsEnabled;
@@ -153,7 +156,7 @@ public:
 
    //internal functions for the sim handling
    bool castRay(const Point3F& start, const Point3F& end, RayInfo* info);
-   void updateWorkingCollisionSet(const U32 mask, const F32 dt);
+   void updateWorkingCollisionSet();
    void updateForces(F32 dt);
    void updatePos(F32 dt);
    bool updateCollision(F32 dt);

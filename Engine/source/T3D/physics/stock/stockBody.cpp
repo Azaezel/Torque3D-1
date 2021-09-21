@@ -38,6 +38,9 @@ StockBody::StockBody()
       mAngFactor(1, 1, 1),
       mTimeoutList(NULL)
 {
+   /// need to make sure this is OOBB.
+   mAABB = Box3F(Point3F(0, 0, 0), Point3F(0, 0, 0));
+   mOOBB = Box3F(Point3F(0, 0, 0), Point3F(0, 0, 0));
    mObjInertia.identity();
    mInvCenterOfMass = new MatrixF();
 
@@ -111,6 +114,9 @@ bool StockBody::init(PhysicsCollision * shape, F32 mass, U32 bodyFlags, SceneObj
       mOneOverMass = 0;
 
    mWorld->addBody(this);
+
+   mAABB = obj->getWorldBox();
+   mOOBB = obj->getObjBox();
 
    mUserData.setObject(obj);
    mUserData.setBody(this);
@@ -344,27 +350,32 @@ bool StockBody::castRay(const Point3F& start, const Point3F& end, RayInfo* info)
    return false;
 }
 
-void StockBody::updateWorkingCollisionSet(const U32 mask, const F32 dt)
+void StockBody::updateWorkingCollisionSet()
 {
    // It is assumed that we will never accelerate more than 10 m/s for gravity...
    //
-   Point3F scaledVelocity = mLinVelocity * dt;
-   F32 len = scaledVelocity.len();
-   F32 newLen = len + (10 * dt);
+   //Point3F scaledVelocity = mLinVelocity.len * dt;
+   
 
    // Check to see if it is actually necessary to construct the new working list,
    //  or if we can use the cached version from the last query.  We use the x
    //  component of the min member of the mWorkingQueryBox, which is lame, but
    //  it works ok.
    bool updateSet = false;
-
+   /// predicted transform
+   //F32 len = (mLinVelocity.len() + 50) * TickSec;
    MatrixF transform;
    getTransform(&transform);
-   Box3F convexBox = mColShape->getConvexList()->getBoundingBox(transform, Point3F::One/*getScale()*/);
-   F32 l = (newLen * 1.1f) + 0.1f;  // from Convex::updateWorkingList
-   const Point3F  lPoint(l, l, l);
-   convexBox.minExtents -= lPoint;
-   convexBox.maxExtents += lPoint;
+   transform.setPosition(transform.getPosition() + mLinVelocity * TickSec);
+   //Box3F convexBox = mColShape->getConvexList()->getBoundingBox(transform, mUserData.getObject()->getScale());
+   /// make convex box from shapes AABB.
+   Box3F convexBox = mAABB;
+   /// move it to the predicted position.
+   convexBox.setCenter(transform.getPosition());
+   //F32 l = (len * 1.1f) + 0.1f;  // from Convex::updateWorkingList
+   //const Point3F  lPoint(l, l, l);
+   //convexBox.minExtents -= lPoint;
+   //convexBox.maxExtents += lPoint;
 
    // Check containment
    if (mWorkingQueryBox.minExtents.x != -1e9f)
@@ -381,10 +392,10 @@ void StockBody::updateWorkingCollisionSet(const U32 mask, const F32 dt)
    // Actually perform the query, if necessary
    if (updateSet == true)
    {
-      const Point3F  twolPoint(2.0f * l, 2.0f * l, 2.0f * l);
+      //const Point3F  twolPoint(2.0f * l, 2.0f * l, 2.0f * l);
       mWorkingQueryBox = convexBox;
-      mWorkingQueryBox.minExtents -= twolPoint;
-      mWorkingQueryBox.maxExtents += twolPoint;
+      //mWorkingQueryBox.minExtents -= twolPoint;
+      //mWorkingQueryBox.maxExtents += twolPoint;
 
       //disableCollision();
 
@@ -532,16 +543,16 @@ bool StockBody::updateCollision(F32 dt)
 {
    // Update collision information
    MatrixF mat, cmat;
-   //mColShape->getConvexList()->transform = &mat;
+   mat = mColShape->getConvexList()->getTransform();
    getTransform(&mat);
    cmat = mColShape->getConvexList()->getTransform();
 
    mCollisionList.clear();
-   CollisionState* state = mColShape->getConvexList()->findClosestState(cmat, /*getScale()*/Point3F::One, sCollisionTol);
+   CollisionState* state = mColShape->getConvexList()->findClosestState(cmat, mUserData.getObject()->getScale(), sCollisionTol);
    if (state && state->mDist <= sCollisionTol)
    {
       //resolveDisplacement(ns,state,dt);
-      mColShape->getConvexList()->getCollisionInfo(cmat, /*getScale()*/Point3F::One, &mCollisionList, sCollisionTol);
+      mColShape->getConvexList()->getCollisionInfo(cmat, mUserData.getObject()->getScale(), &mCollisionList, sCollisionTol);
    }
 
    // Resolve collisions
@@ -978,6 +989,10 @@ void StockBody::setTransform(const MatrixF& mat)
    // Update center of mMass
    mAngPosition.mulP(mCenterOfMass, &mWorldCenterOfMass);
    mWorldCenterOfMass += mLinPosition;
+
+   mAABB = mUserData.getObject()->getWorldBox();
+   mOOBB = mUserData.getObject()->getObjBox();
+
 }
 
 

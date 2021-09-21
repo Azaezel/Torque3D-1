@@ -118,7 +118,8 @@ void StockWorld::stepWorld(F32 elapsed, U32 steps, F32 stepTime)
          if (!body->isDynamic())
             continue;
 
-         body->updateWorkingCollisionSet(-1, adjTime);
+         /// collision filtering handled by body flags.
+         body->updateWorkingCollisionSet();
          //body->updateForces(elapsed);
          body->updatePos(adjTime);
       }
