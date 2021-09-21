@@ -39,6 +39,7 @@ function AssetBrowser::loadCreatorClasses(%this)
       %this.addCreatorClass( "RenderMeshExample" );
       %this.addCreatorClass( "RenderObjectExample" );
       %this.addCreatorClass( "RenderShapeExample" );
+      %this.addCreatorClass( "PhysicsMeshExample" );
    %this.endCreatorGroup(); 
    
    %this.beginCreatorGroup( "Level" );

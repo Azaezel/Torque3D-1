@@ -89,6 +89,8 @@ public:
    /// Returns the active gravity force.
    const Point3F& getGravity() const { return mGravity; }
 
+   void setGravity(const Point3F& gravity) { mGravity = gravity; }
+
    /// An abstract way to raycast into any type of PhysicsWorld, in a way 
    /// that mirrors a Torque-style raycast.  
    //

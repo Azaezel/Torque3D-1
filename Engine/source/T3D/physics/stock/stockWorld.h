@@ -21,6 +21,8 @@ protected:
    bool mIsSimulating;
    U32 mTickCount;
 
+   bool mIsServer;
+
    ProcessList *mProcessList;
 
    Vector<PhysicsBody*> mNonStaticBodies;
@@ -52,9 +54,10 @@ public:
 
    virtual void destroyWorld() {}
    virtual bool castRay(const Point3F &startPnt, const Point3F &endPnt, RayInfo *ri, const Point3F &impulse) { return false; }
-   virtual PhysicsBody* castRay(const Point3F &start, const Point3F &end, U32 bodyTypes) { return NULL; }
+   virtual PhysicsBody* castRay(const Point3F& start, const Point3F& end, U32 bodyTypes);
    virtual void explosion(const Point3F &pos, F32 radius, F32 forceMagnitude) {}
 
+   bool isServer() { return mIsServer; }
 };
 
 

@@ -4,15 +4,16 @@
 #include "T3D/physics/physicsShape.h"
 /// stock physics sets.
 #include "T3D/physics/stock/stockWorld.h"
+#include "T3D/physics/stock/stockCollision.h"
+#include "T3D/physics/stock/stockBody.h"
 #include "T3D/gameBase/gameProcess.h"
 #include "core/util/tNamedFactory.h"
 
 
-//AFTER_MODULE_INIT(Sim)
-//{
-//   NamedFactory < PhysicsPlugin>::add("Stock", &StockPlugin::create);
-
-//}
+AFTER_MODULE_INIT(Sim)
+{
+   NamedFactory<PhysicsPlugin>::add("Stock", &StockPlugin::create);
+}
 
 StockPlugin::StockPlugin()
 {
@@ -44,12 +45,12 @@ void StockPlugin::destroyPlugin()
 
 PhysicsCollision * StockPlugin::createCollision()
 {
-   return nullptr;
+   return new StockCollision();
 }
 
 PhysicsBody * StockPlugin::createBody()
 {
-   return nullptr;
+   return new StockBody();
 }
 
 PhysicsPlayer * StockPlugin::createPlayer()
@@ -59,20 +60,56 @@ PhysicsPlayer * StockPlugin::createPlayer()
 
 bool StockPlugin::isSimulationEnabled() const
 {
-   return false;
+   bool ret = false;
+   StockWorld *world = static_cast<StockWorld*>(getWorld(smClientWorldName));
+   if (world)
+   {
+      ret = world->getEnabled();
+      return ret;
+   }
+
+   world = static_cast<StockWorld*>(getWorld(smServerWorldName));
+   if (world)
+   {
+      ret = world->getEnabled();
+      return ret;
+   }
+
+   return ret;
+
 }
 
 void StockPlugin::enableSimulation(const String & worldName, bool enable)
 {
+   StockWorld *world = static_cast<StockWorld*>(getWorld(worldName));
+   if (world)
+      world->setEnabled(enable);
 }
 
 void StockPlugin::setTimeScale(const F32 timeScale)
 {
+   /// grab both, set both.
+   StockWorld *world = static_cast<StockWorld*>(getWorld(smClientWorldName));
+   if (world)
+      world->setEditorTimeScale(timeScale);
+
+   world = static_cast<StockWorld*>(getWorld(smServerWorldName));
+   if (world)
+      world->setEditorTimeScale(timeScale);
+
 }
 
 const F32 StockPlugin::getTimeScale() const
 {
-   return F32();
+   StockWorld *world = static_cast<StockWorld*>(getWorld(smClientWorldName));
+   if (!world)
+   {
+      world = static_cast<StockWorld*>(getWorld(smServerWorldName));
+      if (!world)
+         return 0.0f;
+   }
+
+   return world->getEditorTimeScale();
 }
 
 bool StockPlugin::createWorld(const String & worldName)

@@ -364,6 +364,12 @@ addPathRec("${srcDir}/ts/assimp")
 addPathRec("${srcDir}/ts/loader")
 addPathRec("${projectSrcDir}")
 
+message("Checking for stock physics library")
+if( NOT TORQUE_PHYSICS_BULLET AND NOT TORQUE_PHYSICS_PHYSX3)
+    message("Using stock physics!")
+    addPath( "${srcDir}/T3D/physics/stock" )
+endif()
+
 # Load module-based files
 if(EXISTS ${TORQUE_APP_DIR}/game/data)
     message("Reading modules in ${TORQUE_APP_DIR}/game/data path...")

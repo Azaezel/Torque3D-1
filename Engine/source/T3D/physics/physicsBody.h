@@ -52,7 +52,14 @@ public:
       BF_KINEMATIC = BIT( 1 ),
 
       /// The body responds to contacts but does not push forces into others.
-      BF_DEBRIS = BIT( 2 )
+      BF_DEBRIS = BIT( 2 ),
+
+      /// body does not respond to anything.
+      BF_STATIC = BIT(3),
+
+      /// body responds to everything! EVERYTHING YOU HEAR ME MUTHA FU***
+      BF_DYNAMIC = BIT(4)
+
    };
 
    /// Initialize the body with a collision shape 

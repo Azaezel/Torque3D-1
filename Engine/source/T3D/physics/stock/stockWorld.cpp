@@ -9,6 +9,7 @@
 #include "console/consoleTypes.h"
 #include "scene/sceneRenderState.h"
 #include "T3D/gameBase/gameProcess.h"
+#include "T3D/physics/stock/stockBody.h"
 
 StockWorld::StockWorld()
    :  mProcessList(NULL),
@@ -26,10 +27,8 @@ StockWorld::~StockWorld()
 
 void StockWorld::addBody(PhysicsBody* body)
 {
-
    /// for now just fire everything in here.
    mNonStaticBodies.push_back(body);
-
 }
 
 bool StockWorld::initWorld(bool isServer, ProcessList *processList)
@@ -37,6 +36,8 @@ bool StockWorld::initWorld(bool isServer, ProcessList *processList)
    /// just cos.
    if (!processList)
       return false;
+
+   mIsServer = isServer;
 
    mProcessList = processList;
    mProcessList->preTickSignal().notify(this, &StockWorld::getPhysicsResults );
@@ -77,7 +78,16 @@ void StockWorld::tickPhysics(U32 elapsedMs)
 
 void StockWorld::stepWorld(F32 elapsed, U32 steps, F32 stepTime)
 {
+   for (U32 i = 0; i < mNonStaticBodies.size(); i++)
+   {
+      StockBody* body = static_cast<StockBody*>(mNonStaticBodies[i]);
+      if (!body->isDynamic())
+         continue;
 
+      body->updateWorkingCollisionSet(-1, elapsed);
+      //body->updateForces(elapsed);
+      body->updatePos(elapsed);
+   }
 }
 
 void StockWorld::getPhysicsResults()
@@ -99,5 +109,12 @@ void StockWorld::setEnabled(bool enabled)
       getPhysicsResults();
 }
 
-
+PhysicsBody* StockWorld::castRay(const Point3F& start, const Point3F& end, U32 bodyTypes)
+{
+   /*for (U32 i = 0; i < mNonStaticBodies.size(); i++)
+   {
+      mNonStaticBodies[i]->cas
+   }*/
+   return NULL;
+}
 
