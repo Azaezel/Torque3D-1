@@ -671,14 +671,15 @@ bool RigidShape::onAdd()
    }
 
    // Create a new convex.
-   AssertFatal(mDataBlock->collisionDetails[0] != -1, "Error, a rigid shape must have a collision-1 detail!");
+   /*AssertFatal(mDataBlock->collisionDetails[0] != -1, "Error, a rigid shape must have a collision-1 detail!");
    mConvex.mObject    = this;
    mConvex.pShapeBase = this;
    mConvex.hullId     = 0;
    mConvex.box        = mObjBox;
    mConvex.box.minExtents.convolve(mObjScale);
    mConvex.box.maxExtents.convolve(mObjScale);
-   mConvex.findNodeTransform();
+   mConvex.findNodeTransform();*/
+
    _createPhysics();
 
    addToScene();
@@ -773,6 +774,8 @@ void RigidShape::processTick(const Move* move)
    // Store the last render state.
    mRenderState[0] = mRenderState[1];
 
+   updateMove(move);
+
    // If the last render state doesn't match the last simulation 
    // state then we got a correction and need to 
    Point3F errorDelta = mRenderState[1].position - mState.position;
@@ -857,7 +860,7 @@ bool RigidShape::onNewDataBlock(GameBaseData* dptr, bool reload)
    mRigid.restitution = mDataBlock->body.restitution;
    mRigid.setCenterOfMass(mDataBlock->massCenter);*/
 
-   _createPhysics();
+   //_createPhysics();
 
    // Ignores massBox, just set sphere for now. Derived objects
    // can set what they want.
@@ -978,7 +981,6 @@ void RigidShape::getCameraTransform(F32* pos,MatrixF* mat)
    mat->mul( gCamFXMgr.getTrans() );
 }
 
-
 //----------------------------------------------------------------------------
 
 void RigidShape::getVelocity(const Point3F& r, Point3F* v)
@@ -992,7 +994,6 @@ void RigidShape::applyImpulse(const Point3F &pos, const Point3F &impulse)
    mRigid.getOriginVector(pos,&r);
    mRigid.applyImpulse(r, impulse);
 }
-
 
 //----------------------------------------------------------------------------
 
@@ -1531,8 +1532,8 @@ U32 RigidShape::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       stream->writeQuat(mState.orientation, 9);
       if (!stream->writeFlag(mState.sleeping))
       {
-         stream->writeVector(mState.linVelocity, 1000.0f, 16, 9);
-         stream->writeVector(mState.angVelocity, 10.0f, 10, 9);
+         mathWrite(*stream, mState.linVelocity);
+         mathWrite(*stream, mState.angVelocity);
       }
    }
    
@@ -1559,8 +1560,8 @@ void RigidShape::unpackUpdate(NetConnection *con, BitStream *stream)
       state.sleeping = stream->readFlag();
       if (!state.sleeping)
       {
-         stream->readVector(&state.linVelocity, 1000.0f, 16, 9);
-         stream->readVector(&state.angVelocity, 10.0f, 10, 9);
+         mathRead(*stream, &state.linVelocity);
+         mathRead(*stream, &state.angVelocity);
       }
 
       if (mPhysicsRep && mPhysicsRep->isDynamic())

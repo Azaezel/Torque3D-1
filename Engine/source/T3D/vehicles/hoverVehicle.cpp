@@ -460,7 +460,6 @@ HoverVehicle::HoverVehicle()
       mJetThread[i] = NULL;
    }
 
-   mPhysicsRep = NULL;
 
 }
 
@@ -475,11 +474,11 @@ bool HoverVehicle::onAdd()
    if(!Parent::onAdd())
       return false;
 
-   _createPhysics();
+   //_createPhysics();
 
    addToScene();
 
-   mPhysicsRep->setTransform(mObjToWorld);
+   //mPhysicsRep->setTransform(mObjToWorld);
 
    if( !isServerObject() )
    {

@@ -737,9 +737,9 @@ bool Vehicle::onAdd()
    mConvex.box.maxExtents.convolve(mObjScale);
    mConvex.findNodeTransform();*/
 
-   _createPhysics();
+   //_createPhysics();
 
-   mPhysicsRep->setTransform(mObjToWorld);
+   //mPhysicsRep->setTransform(mObjToWorld);
 
    return true;
 }
@@ -860,8 +860,6 @@ bool Vehicle::onNewDataBlock(GameBaseData* dptr,bool reload)
    mDataBlock = dynamic_cast<VehicleData*>(dptr);
    if (!mDataBlock || !Parent::onNewDataBlock(dptr, reload))
       return false;
-
-   _createPhysics();
 
    if (isGhost()) 
    {
@@ -1163,8 +1161,8 @@ U32 Vehicle::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       stream->writeQuat(mState.orientation, 9);
       if (!stream->writeFlag(mState.sleeping))
       {
-         stream->writeVector(mState.linVelocity, 1000.0f, 16, 9);
-         stream->writeVector(mState.angVelocity, 10.0f, 10, 9);
+         mathWrite(*stream, mState.linVelocity);
+         mathWrite(*stream, mState.angVelocity);
       }
    }
 
@@ -1197,8 +1195,8 @@ void Vehicle::unpackUpdate(NetConnection *con, BitStream *stream)
       state.sleeping = stream->readFlag();
       if (!state.sleeping)
       {
-         stream->readVector(&state.linVelocity, 1000.0f, 16, 9);
-         stream->readVector(&state.angVelocity, 10.0f, 10, 9);
+         mathRead(*stream, &state.linVelocity);
+         mathRead(*stream, &state.angVelocity);
       }
 
       if (mPhysicsRep && mPhysicsRep->isDynamic())
