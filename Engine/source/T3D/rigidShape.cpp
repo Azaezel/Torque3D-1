@@ -573,13 +573,13 @@ RigidShape::RigidShape()
    mDelta.cameraRot.set(0,0,0);
    mDelta.cameraRotVec.set(0,0,0);
 
-   mRigid.linPosition.set(0, 0, 0);
+   /*mRigid.linPosition.set(0, 0, 0);
    mRigid.linVelocity.set(0, 0, 0);
    mRigid.angPosition.identity();
    mRigid.angVelocity.set(0, 0, 0);
    mRigid.linMomentum.set(0, 0, 0);
    mRigid.angMomentum.set(0, 0, 0);
-   mContacts.clear();
+   mContacts.clear();*/
 
    mCameraOffset.set(0,0,0);
 
@@ -613,7 +613,7 @@ U32 RigidShape::getCollisionMask()
 
 Point3F RigidShape::getVelocity() const
 {
-   return mRigid.linVelocity;
+   return mState.linVelocity;
 }
 
 //----------------------------------------------------------------------------
@@ -628,12 +628,12 @@ bool RigidShape::onAdd()
 
    // When loading from a mission script, the base SceneObject's transform
    // will have been set and needs to be transfered to the rigid body.
-   mRigid.setTransform(mObjToWorld);
+   
 
    // Initialize interpolation vars.      
-   mDelta.rot[1] = mDelta.rot[0] = mRigid.angPosition;
-   mDelta.pos = mRigid.linPosition;
-   mDelta.posVec = Point3F(0,0,0);
+   //mDelta.rot[1] = mDelta.rot[0] = mRigid.angPosition;
+   //mDelta.pos = mRigid.linPosition;
+   //mDelta.posVec = Point3F(0,0,0);
 
    // Create Emitters on the client
    if( isClientObject() )
@@ -699,6 +699,7 @@ bool RigidShape::onAdd()
       }
    }
 
+   mPhysicsRep->setTransform(mObjToWorld);
 
    if (isServerObject())
       scriptOnAdd();
@@ -750,8 +751,10 @@ void RigidShape::_createPhysics()
    {
       PhysicsWorld* world = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
       mPhysicsRep = PHYSICSMGR->createBody();
-      mPhysicsRep->init(colShape, 0, PhysicsBody::BF_KINEMATIC, this, world);
+      /// keep this as kinematic for now because of the mass checks.
+      mPhysicsRep->init(colShape, mDataBlock->mass, PhysicsBody::BF_KINEMATIC, this, world);
       mPhysicsRep->setTransform(getTransform());
+      mPhysicsRep->setMaterial(mDataBlock->body.restitution, mDataBlock->body.friction, 0.0f);
    }
 }
 
@@ -764,70 +767,51 @@ void RigidShape::processTick(const Move* move)
    if ( isMounted() )
       return;
 
-   // Warp to catch up to server
-   if (mDelta.warpCount < mDelta.warpTicks) 
+   if (!mPhysicsRep->isDynamic())
+      return;
+
+   // Store the last render state.
+   mRenderState[0] = mRenderState[1];
+
+   // If the last render state doesn't match the last simulation 
+   // state then we got a correction and need to 
+   Point3F errorDelta = mRenderState[1].position - mState.position;
+   const bool doSmoothing = !errorDelta.isZero();
+
+   const bool wasSleeping = mState.sleeping;
+
+   // Get the new physics state.
+   if (mPhysicsRep)
    {
-      mDelta.warpCount++;
-
-      // Set new pos.
-      mObjToWorld.getColumn(3,&mDelta.pos);
-      mDelta.pos += mDelta.warpOffset;
-      mDelta.rot[0] = mDelta.rot[1];
-      mDelta.rot[1].interpolate(mDelta.warpRot[0],mDelta.warpRot[1],F32(mDelta.warpCount)/mDelta.warpTicks);
-      setPosition(mDelta.pos,mDelta.rot[1]);
-
-      // Pos backstepping
-      mDelta.posVec.x = -mDelta.warpOffset.x;
-      mDelta.posVec.y = -mDelta.warpOffset.y;
-      mDelta.posVec.z = -mDelta.warpOffset.z;
+      mPhysicsRep->getState(&mState);
    }
-   else 
+   else
    {
-      if (!move) 
-      {
-         if (isGhost()) 
-         {
-            // If we haven't run out of prediction time,
-            // predict using the last known move.
-            if (mPredictionCount-- <= 0)
-               return;
-            move = &mDelta.move;
-         }
-         else
-            move = &NullMove;
-      }
-
-      // Process input move
-      updateMove(move);
-
-      // Save current rigid state interpolation
-      mDelta.posVec = mRigid.linPosition;
-      mDelta.rot[0] = mRigid.angPosition;
-
-      // Update the physics based on the integration rate
-      S32 count = mDataBlock->integration;
-      --mWorkingQueryBoxCountDown;
-
-      if (!mDisableMove)
-         updateWorkingCollisionSet(getCollisionMask());
-      for (U32 i = 0; i < count; i++)
-         updatePos(TickSec / count);
-
-      // Wrap up interpolation info
-      mDelta.pos     = mRigid.linPosition;
-      mDelta.posVec -= mRigid.linPosition;
-      mDelta.rot[1]  = mRigid.angPosition;
-
-      // Update container database
-      setPosition(mRigid.linPosition, mRigid.angPosition);
-      setMaskBits(PositionMask);
-      updateContainer();
-
-      //TODO: Only update when position has actually changed
-      //no need to check if mDataBlock->enablePhysicsRep is false as mPhysicsRep will be NULL if it is
-      if (mPhysicsRep)
-         mPhysicsRep->moveKinematicTo(getTransform());
+      /// put mdelta here i guess?
    }
+
+   mRenderState[1] = mState;
+   if (doSmoothing)
+   {
+      F32 correction = mClampF(errorDelta.len() / 20.0f, 0.1f, 0.9f);
+      mRenderState[1].position.interpolate(mState.position, mRenderState[0].position, correction);
+      mRenderState[1].orientation.interpolate(mState.orientation, mRenderState[0].orientation, correction);
+   }
+
+   if (!wasSleeping || !mState.sleeping)
+   {
+      Parent::setTransform(mState.getTransform());
+
+      if (isServerObject() && mPhysicsRep && !PHYSICSMGR->isSinglePlayer())
+         setMaskBits(PositionMask);
+
+   }
+   updateContainer();
+
+   //TODO: Only update when position has actually changed
+   //no need to check if mDataBlock->enablePhysicsRep is false as mPhysicsRep will be NULL if it is
+   if (mPhysicsRep)
+      mPhysicsRep->moveKinematicTo(getTransform());
 }
 
 void RigidShape::interpolateTick(F32 dt)
@@ -836,16 +820,9 @@ void RigidShape::interpolateTick(F32 dt)
    if ( isMounted() )
       return;
 
-   if(dt == 0.0f)
-      setRenderPosition(mDelta.pos, mDelta.rot[1]);
-   else
-   {
-      QuatF rot;
-      rot.interpolate(mDelta.rot[1], mDelta.rot[0], dt);
-      Point3F pos = mDelta.pos + mDelta.posVec * dt;
-      setRenderPosition(pos,rot);
-   }
-   mDelta.dt = dt;
+   PhysicsState state;
+   state.interpolate(mRenderState[1], mRenderState[0], dt);
+
 }
 
 void RigidShape::advanceTime(F32 dt)
@@ -861,7 +838,7 @@ void RigidShape::advanceTime(F32 dt)
    // here as it's a client side only animation.
    mCameraOffset -=
       (mCameraOffset * mDataBlock->cameraDecay +
-      mRigid.linVelocity * mDataBlock->cameraLag) * dt;
+      mState.linVelocity * mDataBlock->cameraLag) * dt;
 }
 
 
@@ -873,16 +850,18 @@ bool RigidShape::onNewDataBlock(GameBaseData* dptr, bool reload)
    if (!mDataBlock || !Parent::onNewDataBlock(dptr, reload))
       return false;
 
-   // Update Rigid Info
+  /* // Update Rigid Info
    mRigid.mass = mDataBlock->mass;
    mRigid.oneOverMass = 1 / mRigid.mass;
    mRigid.friction = mDataBlock->body.friction;
    mRigid.restitution = mDataBlock->body.restitution;
-   mRigid.setCenterOfMass(mDataBlock->massCenter);
+   mRigid.setCenterOfMass(mDataBlock->massCenter);*/
+
+   _createPhysics();
 
    // Ignores massBox, just set sphere for now. Derived objects
    // can set what they want.
-   mRigid.setObjectInertia();
+   //mRigid.setObjectInertia();
 
    scriptOnNewDataBlock();
 
@@ -1042,10 +1021,19 @@ void RigidShape::setRenderPosition(const Point3F& pos, const QuatF& rot)
 
 void RigidShape::setTransform(const MatrixF& newMat)
 {
-   mRigid.setTransform(newMat);
+   // Let SceneObject handle all of the matrix manipulation
    Parent::setTransform(newMat);
-   mRigid.atRest = false;
-   mContacts.clear();
+
+   mState.position = getPosition();
+   mState.orientation.set(newMat);
+   mRenderState[0] = mRenderState[1] = mState;
+
+   if (mPhysicsRep)
+      mPhysicsRep->setTransform(getTransform());
+
+   // Dirty our network mask so that the new transform gets
+   // transmitted to the client object
+   setMaskBits(PositionMask);
 }
 
 void RigidShape::forceClientTransform()
@@ -1539,11 +1527,13 @@ U32 RigidShape::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
    {
       stream->writeFlag(mask & ForceMoveMask);
 
-      stream->writeCompressedPoint(mRigid.linPosition);
-      mathWrite(*stream, mRigid.angPosition);
-      mathWrite(*stream, mRigid.linMomentum);
-      mathWrite(*stream, mRigid.angMomentum);
-      stream->writeFlag(mRigid.atRest);
+      stream->writeCompressedPoint(mState.position);
+      stream->writeQuat(mState.orientation, 9);
+      if (!stream->writeFlag(mState.sleeping))
+      {
+         stream->writeVector(mState.linVelocity, 1000.0f, 16, 9);
+         stream->writeVector(mState.angVelocity, 10.0f, 10, 9);
+      }
    }
    
    if(stream->writeFlag(mask & FreezeMask))
@@ -1563,73 +1553,33 @@ void RigidShape::unpackUpdate(NetConnection *con, BitStream *stream)
 
    if (stream->readFlag()) 
    {
-      // Check if we need to jump to the given transform
-      // rather than interpolate to it.
-      bool forceUpdate = stream->readFlag();
-
-      mPredictionCount = sMaxPredictionTicks;
-      F32 speed = mRigid.linVelocity.len();
-      mDelta.warpRot[0] = mRigid.angPosition;
-
-      // Read in new position and momentum values
-      stream->readCompressedPoint(&mRigid.linPosition);
-      mathRead(*stream, &mRigid.angPosition);
-      mathRead(*stream, &mRigid.linMomentum);
-      mathRead(*stream, &mRigid.angMomentum);
-      mRigid.atRest = stream->readFlag();
-      mRigid.updateVelocity();
-
-      if (!forceUpdate && isProperlyAdded()) 
+      PhysicsState state;
+      stream->readCompressedPoint(&state.position);
+      stream->readQuat(&state.orientation, 9);
+      state.sleeping = stream->readFlag();
+      if (!state.sleeping)
       {
-         // Determine number of ticks to warp based on the average
-         // of the client and server velocities.
-         Point3F cp = mDelta.pos + mDelta.posVec * mDelta.dt;
-         mDelta.warpOffset = mRigid.linPosition - cp;
+         stream->readVector(&state.linVelocity, 1000.0f, 16, 9);
+         stream->readVector(&state.angVelocity, 10.0f, 10, 9);
+      }
 
-         // Calc the distance covered in one tick as the average of
-         // the old speed and the new speed from the server.
-         F32 dt,as = (speed + mRigid.linVelocity.len()) * 0.5 * TickSec;
+      if (mPhysicsRep && mPhysicsRep->isDynamic())
+      {
+         // Set the new state on the physics object immediately.
+         mPhysicsRep->applyCorrection(state.getTransform());
 
-         // Cal how many ticks it will take to cover the warp offset.
-         // If it's less than what's left in the current tick, we'll just
-         // warp in the remaining time.
-         if (!as || (dt = mDelta.warpOffset.len() / as) > sMaxWarpTicks)
-            dt = mDelta.dt + sMaxWarpTicks;
-         else
-            dt = (dt <= mDelta.dt)? mDelta.dt : mCeil(dt - mDelta.dt) + mDelta.dt;
-
-         // Adjust current frame interpolation
-         if (mDelta.dt) 
+         mPhysicsRep->setSleeping(state.sleeping);
+         if (!state.sleeping)
          {
-            mDelta.pos = cp + (mDelta.warpOffset * (mDelta.dt / dt));
-            mDelta.posVec = (cp - mDelta.pos) / mDelta.dt;
-            QuatF cr;
-            cr.interpolate(mDelta.rot[1],mDelta.rot[0],mDelta.dt);
-            mDelta.rot[1].interpolate(cr,mRigid.angPosition,mDelta.dt / dt);
-            mDelta.rot[0].extrapolate(mDelta.rot[1],cr,mDelta.dt);
+            mPhysicsRep->setLinVelocity(state.linVelocity);
+            mPhysicsRep->setAngVelocity(state.angVelocity);
          }
 
-         // Calculated multi-tick warp
-         mDelta.warpCount = 0;
-         mDelta.warpTicks = (S32)(mFloor(dt));
-         if (mDelta.warpTicks) 
-         {
-            mDelta.warpOffset = mRigid.linPosition - mDelta.pos;
-            mDelta.warpOffset /= mDelta.warpTicks;
-            mDelta.warpRot[0] = mDelta.rot[1];
-            mDelta.warpRot[1] = mRigid.angPosition;
-         }
+         mPhysicsRep->getState(&mState);
       }
-      else 
-      {
-         // Set the shape to the server position
-         mDelta.dt  = 0;
-         mDelta.pos = mRigid.linPosition;
-         mDelta.posVec.set(0,0,0);
-         mDelta.rot[1] = mDelta.rot[0] = mRigid.angPosition;
-         mDelta.warpCount = mDelta.warpTicks = 0;
-         setPosition(mRigid.linPosition, mRigid.angPosition);
-      }
+
+      if (!mPhysicsRep || !mPhysicsRep->isDynamic())
+         mState = state;
    }
    
    if(stream->readFlag())

@@ -185,6 +185,8 @@ class RigidShape: public ShapeBase
    };
 
    PhysicsBody* mPhysicsRep;
+   PhysicsState mState;
+   PhysicsState mRenderState[2];
 
    StateDelta mDelta;
    S32 mPredictionCount;            ///< Number of ticks to predict
