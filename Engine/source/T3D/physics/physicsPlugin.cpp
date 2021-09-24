@@ -134,7 +134,7 @@ DefineEngineFunction( physicsPluginPresent, bool, (), , "physicsPluginPresent()"
    return PHYSICSMGR != NULL;
 }
 
-DefineEngineFunction( physicsInit, bool, (const char * library), ("default"), "physicsInit( [string library] )")
+DefineEngineFunction( physicsInit, bool, (const char * library), ("stock"), "physicsInit( [string library] )")
 {
    return PhysicsPlugin::activate( library );
 }

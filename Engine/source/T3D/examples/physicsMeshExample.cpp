@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "platform/platform.h"
-#include "T3D/examples/renderMeshExample.h"
+#include "T3D/examples/physicsMeshExample.h"
 
 #include "math/mathIO.h"
 #include "scene/sceneRenderState.h"
@@ -33,9 +33,12 @@
 #include "lighting/lightQuery.h"
 #include "console/engineAPI.h"
 
-IMPLEMENT_CO_NETOBJECT_V1(RenderMeshExample);
+#include "T3D/physics/physicsPlugin.h"
+#include "T3D/physics/physicsCollision.h"
 
-ConsoleDocClass( RenderMeshExample, 
+IMPLEMENT_CO_NETOBJECT_V1(PhysicsMeshExample);
+
+ConsoleDocClass( PhysicsMeshExample, 
    "@brief An example scene object which renders a mesh.\n\n"
    "This class implements a basic SceneObject that can exist in the world at a "
    "3D position and render itself. There are several valid ways to render an "
@@ -50,7 +53,7 @@ ConsoleDocClass( RenderMeshExample,
 //-----------------------------------------------------------------------------
 // Object setup and teardown
 //-----------------------------------------------------------------------------
-RenderMeshExample::RenderMeshExample()
+PhysicsMeshExample::PhysicsMeshExample()
 {
    // Flag this object so that it will always
    // be sent across the network to clients
@@ -61,10 +64,11 @@ RenderMeshExample::RenderMeshExample()
 
    INIT_MATERIALASSET(Material);
 
+   mPhysicsRep = NULL;
    mMaterialInst = NULL;
 }
 
-RenderMeshExample::~RenderMeshExample()
+PhysicsMeshExample::~PhysicsMeshExample()
 {
    if ( mMaterialInst )
       SAFE_DELETE( mMaterialInst );
@@ -73,17 +77,17 @@ RenderMeshExample::~RenderMeshExample()
 //-----------------------------------------------------------------------------
 // Object Editing
 //-----------------------------------------------------------------------------
-void RenderMeshExample::initPersistFields()
+void PhysicsMeshExample::initPersistFields()
 {
    addGroup( "Rendering" );
-   INITPERSISTFIELD_MATERIALASSET(Material, RenderMeshExample, "The material used to render the mesh.");
+   INITPERSISTFIELD_MATERIALASSET(Material, PhysicsMeshExample, "The material used to render the mesh.");
    endGroup( "Rendering" );
 
    // SceneObject already handles exposing the transform
    Parent::initPersistFields();
 }
 
-void RenderMeshExample::inspectPostApply()
+void PhysicsMeshExample::inspectPostApply()
 {
    Parent::inspectPostApply();
 
@@ -92,7 +96,7 @@ void RenderMeshExample::inspectPostApply()
    setMaskBits( UpdateMask );
 }
 
-bool RenderMeshExample::onAdd()
+bool PhysicsMeshExample::onAdd()
 {
    if ( !Parent::onAdd() )
       return false;
@@ -103,8 +107,12 @@ bool RenderMeshExample::onAdd()
 
    resetWorldBox();
 
+   _createPhysics();
+
    // Add this object to the scene
    addToScene();
+
+   setProcessTick(true);
 
    // Refresh this object's material (if any)
    updateMaterial();
@@ -112,25 +120,34 @@ bool RenderMeshExample::onAdd()
    return true;
 }
 
-void RenderMeshExample::onRemove()
+void PhysicsMeshExample::onRemove()
 {
+   SAFE_DELETE(mPhysicsRep);
+
    // Remove this object from the scene
    removeFromScene();
 
    Parent::onRemove();
 }
 
-void RenderMeshExample::setTransform(const MatrixF & mat)
+void PhysicsMeshExample::setTransform(const MatrixF & mat)
 {
    // Let SceneObject handle all of the matrix manipulation
    Parent::setTransform( mat );
+
+   mState.position = getPosition();
+   mState.orientation.set(mat);
+   mRenderState[0] = mRenderState[1] = mState;
+
+   if (mPhysicsRep)
+      mPhysicsRep->setTransform(getTransform());
 
    // Dirty our network mask so that the new transform gets
    // transmitted to the client object
    setMaskBits( TransformMask );
 }
 
-U32 RenderMeshExample::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
+U32 PhysicsMeshExample::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 {
    // Allow the Parent to get a crack at writing its info
    U32 retMask = Parent::packUpdate( conn, mask, stream );
@@ -138,8 +155,13 @@ U32 RenderMeshExample::packUpdate( NetConnection *conn, U32 mask, BitStream *str
    // Write our transform information
    if ( stream->writeFlag( mask & TransformMask ) )
    {
-      mathWrite(*stream, getTransform());
-      mathWrite(*stream, getScale());
+      stream->writeCompressedPoint(mState.position);
+      stream->writeQuat(mState.orientation, 9);
+      if (!stream->writeFlag(mState.sleeping))
+      {
+         stream->writeVector(mState.linVelocity, 1000.0f, 16, 9);
+         stream->writeVector(mState.angVelocity, 10.0f, 10, 9);
+      }
    }
 
    // Write out any of the updated editable properties
@@ -151,17 +173,41 @@ U32 RenderMeshExample::packUpdate( NetConnection *conn, U32 mask, BitStream *str
    return retMask;
 }
 
-void RenderMeshExample::unpackUpdate(NetConnection *conn, BitStream *stream)
+void PhysicsMeshExample::unpackUpdate(NetConnection *conn, BitStream *stream)
 {
    // Let the Parent read any info it sent
    Parent::unpackUpdate(conn, stream);
 
    if ( stream->readFlag() )  // TransformMask
    {
-      mathRead(*stream, &mObjToWorld);
-      mathRead(*stream, &mObjScale);
+      PhysicsState state;
+      stream->readCompressedPoint(&state.position);
+      stream->readQuat(&state.orientation, 9);
+      state.sleeping = stream->readFlag();
+      if (!state.sleeping)
+      {
+         stream->readVector(&state.linVelocity, 1000.0f, 16, 9);
+         stream->readVector(&state.angVelocity, 10.0f, 10, 9);
+      }
 
-      setTransform( mObjToWorld );
+      if (mPhysicsRep && mPhysicsRep->isDynamic())
+      {
+         // Set the new state on the physics object immediately.
+         mPhysicsRep->applyCorrection(state.getTransform());
+
+         mPhysicsRep->setSleeping(state.sleeping);
+         if (!state.sleeping)
+         {
+            mPhysicsRep->setLinVelocity(state.linVelocity);
+            mPhysicsRep->setAngVelocity(state.angVelocity);
+         }
+
+         mPhysicsRep->getState(&mState);
+      }
+
+      if (!mPhysicsRep || !mPhysicsRep->isDynamic())
+         mState = state;
+
    }
 
    if ( stream->readFlag() )  // UpdateMask
@@ -176,7 +222,7 @@ void RenderMeshExample::unpackUpdate(NetConnection *conn, BitStream *stream)
 //-----------------------------------------------------------------------------
 // Object Rendering
 //-----------------------------------------------------------------------------
-void RenderMeshExample::createGeometry()
+void PhysicsMeshExample::createGeometry()
 {
    static const Point3F cubePoints[8] = 
    {
@@ -246,7 +292,7 @@ void RenderMeshExample::createGeometry()
    mPrimitiveBuffer.unlock();
 }
 
-void RenderMeshExample::updateMaterial()
+void PhysicsMeshExample::updateMaterial()
 {
    if (mMaterialAsset.notNull())
    {
@@ -258,11 +304,11 @@ void RenderMeshExample::updateMaterial()
       mMaterialInst = MATMGR->createMatInstance(mMaterialAsset->getMaterialDefinitionName(), getGFXVertexFormat< VertexType >());
 
       if (!mMaterialInst)
-         Con::errorf("RenderMeshExample::updateMaterial - no Material called '%s'", mMaterialAsset->getMaterialDefinitionName());
+         Con::errorf("PhysicsMeshExample::updateMaterial - no Material called '%s'", mMaterialAsset->getMaterialDefinitionName());
    }
 }
 
-void RenderMeshExample::prepRenderImage( SceneRenderState *state )
+void PhysicsMeshExample::prepRenderImage( SceneRenderState *state )
 {
    // Do a little prep work if needed
    if ( mVertexBuffer.isNull() )
@@ -349,7 +395,93 @@ void RenderMeshExample::prepRenderImage( SceneRenderState *state )
    state->getRenderPass()->addInst( ri );
 }
 
-DefineEngineMethod( RenderMeshExample, postApply, void, (),,
+//
+void PhysicsMeshExample::_createPhysics()
+{
+   SAFE_DELETE(mPhysicsRep);
+
+   if (!PHYSICSMGR)
+      return;
+
+   F32 mass = 10;
+
+   PhysicsCollision* colShape = PHYSICSMGR->createCollision();
+   colShape->addBox(mObjBox.getExtents() * 0.5f, MatrixF::Identity);
+
+   PhysicsWorld* world = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
+   mPhysicsRep = PHYSICSMGR->createBody();
+   mPhysicsRep->init(colShape, mass, PhysicsBody::BF_DYNAMIC, this, world);
+   mPhysicsRep->setTransform(getTransform());
+}
+//
+
+void PhysicsMeshExample::processTick(const Move* move)
+{
+   Parent::processTick(move);
+
+   if (isMounted())
+      return;
+
+   if (!mPhysicsRep->isDynamic())
+      return;
+
+   // Store the last render state.
+   mRenderState[0] = mRenderState[1];
+
+   // If the last render state doesn't match the last simulation 
+   // state then we got a correction and need to 
+   Point3F errorDelta = mRenderState[1].position - mState.position;
+   const bool doSmoothing = !errorDelta.isZero();
+
+   const bool wasSleeping = mState.sleeping;
+
+   // Get the new physics state.
+   if (mPhysicsRep)
+   {
+      mPhysicsRep->getState(&mState);
+   }
+   else
+   {
+      /// put mdelta here i guess?
+   }
+
+   mRenderState[1] = mState;
+   if (doSmoothing)
+   {
+      F32 correction = mClampF(errorDelta.len() / 20.0f, 0.1f, 0.9f);
+      mRenderState[1].position.interpolate(mState.position, mRenderState[0].position, correction);
+      mRenderState[1].orientation.interpolate(mState.orientation, mRenderState[0].orientation, correction);
+   }
+
+   if (!wasSleeping || !mState.sleeping)
+   {
+      Parent::setTransform(mState.getTransform());
+
+      if (isServerObject() && mPhysicsRep && !PHYSICSMGR->isSinglePlayer())
+         setMaskBits(TransformMask);
+
+   }
+
+}
+
+void PhysicsMeshExample::interpolateTick(F32 dt)
+{
+   Parent::interpolateTick(dt);
+   if (isMounted())
+      return;
+
+   PhysicsState state;
+   state.interpolate(mRenderState[1], mRenderState[0], dt);
+
+   // PATHSHAPE
+   updateRenderChangesByParent();
+   // PATHSHAPE END
+}
+
+
+//
+
+DefineEngineMethod( PhysicsMeshExample, postApply, void, (),,
    "A utility method for forcing a network update.\n")
 {
 	object->inspectPostApply();

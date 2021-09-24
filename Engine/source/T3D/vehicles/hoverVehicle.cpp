@@ -459,6 +459,8 @@ HoverVehicle::HoverVehicle()
       mJetSeq[i] = -1;
       mJetThread[i] = NULL;
    }
+
+
 }
 
 HoverVehicle::~HoverVehicle()
@@ -472,8 +474,11 @@ bool HoverVehicle::onAdd()
    if(!Parent::onAdd())
       return false;
 
+   //_createPhysics();
+
    addToScene();
 
+   //mPhysicsRep->setTransform(mObjToWorld);
 
    if( !isServerObject() )
    {
@@ -647,7 +652,7 @@ F32 HoverVehicle::getBaseStabilizerLength() const
 {
    F32 base = mDataBlock->stabLenMin;
    F32 lengthDiff = mDataBlock->stabLenMax - mDataBlock->stabLenMin;
-   F32 velLength  = mRigid.linVelocity.len();
+   F32 velLength  = mState.linVelocity.len();
    F32 minVel     = getMin(velLength, mDataBlock->maxThrustSpeed);
    F32 velDiff    = mDataBlock->maxThrustSpeed - minVel;
    // Protect against divide by zero.
@@ -673,11 +678,10 @@ void HoverVehicle::updateForces(F32 /*dt*/)
 {
    PROFILE_SCOPE( HoverVehicle_UpdateForces );
 
-   Point3F gravForce(0, 0, mRigid.mass * mNetGravity);
+   Point3F gravForce(0, 0, mPhysicsRep->getMass() * mNetGravity);
 
-   MatrixF currTransform;
-   mRigid.getTransform(&currTransform);
-   mRigid.atRest = false;
+   MatrixF currTransform = mState.getTransform();
+   mState.sleeping = false;
 
    mThrustLevel = (mForwardThrust * mDataBlock->mainThrustForce    +
                    mReverseThrust * mDataBlock->reverseThrustForce +
@@ -695,7 +699,7 @@ void HoverVehicle::updateForces(F32 /*dt*/)
    Point3F torque(0, 0, 0);
    Point3F force(0, 0, 0);
 
-   Point3F vel = mRigid.linVelocity;
+   Point3F vel = mState.linVelocity;
    F32 baseStabLen = getBaseStabilizerLength();
    Point3F stabExtend(0, 0, -baseStabLen);
    currTransform.mulV(stabExtend);
@@ -712,7 +716,7 @@ void HoverVehicle::updateForces(F32 /*dt*/)
       currTransform.mulP(stabPoints[i].osPoint, &stabPoints[i].wsPoint);
       stabPoints[i].wsExtension = stabExtend;
       stabPoints[i].extension   = baseStabLen;
-      stabPoints[i].wsVelocity  = mRigid.linVelocity;
+      stabPoints[i].wsVelocity  = mState.linVelocity;
    }
 
    RayInfo rinfo;
@@ -769,21 +773,21 @@ void HoverVehicle::updateForces(F32 /*dt*/)
       force += gravForce * mDataBlock->floatingGravMag;
 
    // Braking
-   F32 vellen = mRigid.linVelocity.len();
+   F32 vellen = mState.linVelocity.len();
    if (mThrottle == 0.0f &&
        mLeftThrust == 0.0f &&
        mRightThrust == 0.0f &&
        vellen != 0.0f &&
        vellen < mDataBlock->brakingActivationSpeed)
    {
-      Point3F dir = mRigid.linVelocity;
+      Point3F dir = mState.linVelocity;
       dir.normalize();
       dir.neg();
       force += dir *  mDataBlock->brakingForce;
    }
 
    // Gyro Drag
-   torque = -mRigid.angMomentum * mDataBlock->gyroDrag;
+   torque = -mState.angularMomentum * mDataBlock->gyroDrag;
 
    // Move to proper normal
    Point3F sn, r;
@@ -858,7 +862,7 @@ void HoverVehicle::updateForces(F32 /*dt*/)
    torque -= r * (mSteering.y * mDataBlock->pitchForce);
 
    // Apply drag
-   Point3F vDrag = mRigid.linVelocity;
+   Point3F vDrag = mState.linVelocity;
    if (!mFloating) {
       vDrag.convolve(Point3F(1, 1, mDataBlock->vertFactor));
    } else {
@@ -871,11 +875,11 @@ void HoverVehicle::updateForces(F32 /*dt*/)
    // Add in physical zone force
    force += mAppliedForce;
 
-   force  -= mRigid.linVelocity * mDrag;
-   torque -= mRigid.angMomentum * mDrag;
+   force  -= mState.linVelocity * mDrag;
+   torque -= mState.angularMomentum * mDrag;
 
-   mRigid.force  = force;
-   mRigid.torque = torque;
+   //mRigid.force  = force;
+   //mRigid.torque = torque;
 }
 
 

@@ -285,7 +285,12 @@ public:
    virtual void renderWorkingList();
    
    /// Render this convex for debugging purposes.
-   virtual void render();   
+   virtual void render();
+
+   Convex* getNext() { return mNext; }
+   Convex* getPrev() { return mPrev; }
+
+   void setObject(SceneObject* obj) { mObject = obj; }
 };
 
 #endif // _CONVEX_H_

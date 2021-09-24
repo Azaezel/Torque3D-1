@@ -10,11 +10,10 @@
 #include "core/util/tNamedFactory.h"
 
 
-//AFTER_MODULE_INIT(Sim)
-//{
-//   NamedFactory < PhysicsPlugin>::add("Stock", &StockPlugin::create);
-
-//}
+AFTER_MODULE_INIT(Sim)
+{
+   NamedFactory<PhysicsPlugin>::add("Stock", &StockPlugin::create);
+}
 
 StockPlugin::StockPlugin()
 {

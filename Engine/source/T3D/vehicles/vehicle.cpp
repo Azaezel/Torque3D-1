@@ -641,24 +641,24 @@ Vehicle::Vehicle()
    mDataBlock = 0;
    mTypeMask |= VehicleObjectType | DynamicShapeObjectType;
 
-   mDelta.pos = Point3F(0,0,0);
+   /*mDelta.pos = Point3F(0,0,0);
    mDelta.posVec = Point3F(0,0,0);
    mDelta.warpTicks = mDelta.warpCount = 0;
    mDelta.dt = 1;
-   mDelta.move = NullMove;
+   mDelta.move = NullMove;*/
    mPredictionCount = 0;
    mDelta.cameraOffset.set(0,0,0);
    mDelta.cameraVec.set(0,0,0);
    mDelta.cameraRot.set(0,0,0);
    mDelta.cameraRotVec.set(0,0,0);
 
-   mRigid.linPosition.set(0, 0, 0);
+   /*mRigid.linPosition.set(0, 0, 0);
    mRigid.linVelocity.set(0, 0, 0);
    mRigid.angPosition.identity();
    mRigid.angVelocity.set(0, 0, 0);
    mRigid.linMomentum.set(0, 0, 0);
    mRigid.angMomentum.set(0, 0, 0);
-   mContacts.clear();
+   mContacts.clear();*/
 
    mSteering.set(0,0);
    mThrottle = 0;
@@ -694,7 +694,7 @@ bool Vehicle::onAdd()
    if (!Parent::onAdd())
       return false;
 
-   mWorkingQueryBox.minExtents.set(-1e9f, -1e9f, -1e9f);
+   /*mWorkingQueryBox.minExtents.set(-1e9f, -1e9f, -1e9f);
    mWorkingQueryBox.maxExtents.set(-1e9f, -1e9f, -1e9f);
 
    // When loading from a mission script, the base SceneObject's transform
@@ -704,7 +704,7 @@ bool Vehicle::onAdd()
    // Initialize interpolation vars.
    mDelta.rot[1] = mDelta.rot[0] = mRigid.angPosition;
    mDelta.pos = mRigid.linPosition;
-   mDelta.posVec = Point3F(0,0,0);
+   mDelta.posVec = Point3F(0,0,0);*/
 
    // Create Emitters on the client
    if( isClientObject() )
@@ -728,16 +728,18 @@ bool Vehicle::onAdd()
    }
 
    // Create a new convex.
-   AssertFatal(mDataBlock->collisionDetails[0] != -1, "Error, a vehicle must have a collision-1 detail!");
+   /*AssertFatal(mDataBlock->collisionDetails[0] != -1, "Error, a vehicle must have a collision-1 detail!");
    mConvex.mObject    = this;
    mConvex.pShapeBase = this;
    mConvex.hullId     = 0;
    mConvex.box        = mObjBox;
    mConvex.box.minExtents.convolve(mObjScale);
    mConvex.box.maxExtents.convolve(mObjScale);
-   mConvex.findNodeTransform();
+   mConvex.findNodeTransform();*/
 
-   _createPhysics();
+   //_createPhysics();
+
+   //mPhysicsRep->setTransform(mObjToWorld);
 
    return true;
 }
@@ -774,25 +776,6 @@ void Vehicle::processTick(const Move* move)
    if ( isMounted() )
       return;
 
-   // Warp to catch up to server
-   if (mDelta.warpCount < mDelta.warpTicks)
-   {
-      mDelta.warpCount++;
-
-      // Set new pos.
-      mObjToWorld.getColumn(3,&mDelta.pos);
-      mDelta.pos += mDelta.warpOffset;
-      mDelta.rot[0] = mDelta.rot[1];
-      mDelta.rot[1].interpolate(mDelta.warpRot[0],mDelta.warpRot[1],F32(mDelta.warpCount)/mDelta.warpTicks);
-      setPosition(mDelta.pos,mDelta.rot[1]);
-
-      // Pos backstepping
-      mDelta.posVec.x = -mDelta.warpOffset.x;
-      mDelta.posVec.y = -mDelta.warpOffset.y;
-      mDelta.posVec.z = -mDelta.warpOffset.z;
-   }
-   else 
-   {
       if (!move) 
       {
          if (isGhost()) 
@@ -810,34 +793,53 @@ void Vehicle::processTick(const Move* move)
       // Process input move
       updateMove(move);
 
-      // Save current rigid state interpolation
-      mDelta.posVec = mRigid.linPosition;
-      mDelta.rot[0] = mRigid.angPosition;
+      if (!mPhysicsRep->isDynamic())
+         return;
 
-      // Update the physics based on the integration rate
-      S32 count = mDataBlock->integration;
-      --mWorkingQueryBoxCountDown;
+      // Store the last render state.
+      mRenderState[0] = mRenderState[1];
 
-      if (!mDisableMove)
-         updateWorkingCollisionSet(getCollisionMask());
-      for (U32 i = 0; i < count; i++)
-         updatePos(TickSec / count);
+      // If the last render state doesn't match the last simulation 
+      // state then we got a correction and need to 
+      Point3F errorDelta = mRenderState[1].position - mState.position;
+      const bool doSmoothing = !errorDelta.isZero();
 
-      // Wrap up interpolation info
-      mDelta.pos     = mRigid.linPosition;
-      mDelta.posVec -= mRigid.linPosition;
-      mDelta.rot[1]  = mRigid.angPosition;
+      const bool wasSleeping = mState.sleeping;
 
-      // Update container database
-      setPosition(mRigid.linPosition, mRigid.angPosition);
-      setMaskBits(PositionMask);
+      // Get the new physics state.
+      if (mPhysicsRep)
+      {
+         mPhysicsRep->getState(&mState);
+      }
+      else
+      {
+         /// put mdelta here i guess?
+      }
+
+      updatePos(TickSec);
+
+      mRenderState[1] = mState;
+      if (doSmoothing)
+      {
+         F32 correction = mClampF(errorDelta.len() / 20.0f, 0.1f, 0.9f);
+         mRenderState[1].position.interpolate(mState.position, mRenderState[0].position, correction);
+         mRenderState[1].orientation.interpolate(mState.orientation, mRenderState[0].orientation, correction);
+      }
+
+      if (!wasSleeping || !mState.sleeping)
+      {
+         Parent::setTransform(mState.getTransform());
+
+         if (isServerObject() && mPhysicsRep && !PHYSICSMGR->isSinglePlayer())
+            setMaskBits(PositionMask);
+
+      }
       updateContainer();
 
       //TODO: Only update when position has actually changed
       //no need to check if mDataBlock->enablePhysicsRep is false as mPhysicsRep will be NULL if it is
       if (mPhysicsRep)
          mPhysicsRep->moveKinematicTo(getTransform());
-   }
 }
 
 void Vehicle::advanceTime(F32 dt)
@@ -858,17 +860,6 @@ bool Vehicle::onNewDataBlock(GameBaseData* dptr,bool reload)
    mDataBlock = dynamic_cast<VehicleData*>(dptr);
    if (!mDataBlock || !Parent::onNewDataBlock(dptr, reload))
       return false;
-
-   // Update Rigid Info
-   mRigid.mass = mDataBlock->mass;
-   mRigid.oneOverMass = 1 / mRigid.mass;
-   mRigid.friction = mDataBlock->body.friction;
-   mRigid.restitution = mDataBlock->body.restitution;
-   mRigid.setCenterOfMass(mDataBlock->massCenter);
-
-   // Ignores massBox, just set sphere for now. Derived objects
-   // can set what they want.
-   mRigid.setObjectInertia();
 
    if (isGhost()) 
    {
@@ -1064,106 +1055,10 @@ void Vehicle::updatePos(F32 dt)
 {
    PROFILE_SCOPE( Vehicle_UpdatePos );
 
-   Point3F origVelocity = mRigid.linVelocity;
+   Point3F origVelocity = mState.linVelocity;
 
-   // Update internal forces acting on the body.
-   mRigid.clearForces();
    updateForces(dt);
 
-   // Update collision information based on our current pos.
-   bool collided = false;
-   if (!mRigid.atRest && !mDisableMove)
-   {
-      collided = updateCollision(dt);
-
-      // Now that all the forces have been processed, lets
-      // see if we're at rest.  Basically, if the kinetic energy of
-      // the vehicles is less than some percentage of the energy added
-      // by gravity for a short period, we're considered at rest.
-      // This should really be part of the rigid class...
-      if (mCollisionList.getCount()) 
-      {
-         F32 k = mRigid.getKineticEnergy();
-         F32 G = mNetGravity * dt;
-         F32 Kg = 0.5 * mRigid.mass * G * G;
-         if (k < sRestTol * Kg && ++restCount > sRestCount)
-            mRigid.setAtRest();
-      }
-      else
-         restCount = 0;
-   }
-
-   // Integrate forward
-   if (!mRigid.atRest && !mDisableMove)
-      mRigid.integrate(dt);
-
-   // Deal with client and server scripting, sounds, etc.
-   if (isServerObject()) {
-
-      // Check triggers and other objects that we normally don't
-      // collide with.  This function must be called before notifyCollision
-      // as it will queue collision.
-      checkTriggers();
-
-      // Invoke the onCollision notify callback for all the objects
-      // we've just hit.
-      notifyCollision();
-
-      // Server side impact script callback
-      if (collided) {
-         VectorF collVec = mRigid.linVelocity - origVelocity;
-         F32 collSpeed = collVec.len();
-         if (collSpeed > mDataBlock->minImpactSpeed)
-            onImpact(collVec);
-      }
-
-      // Water script callbacks
-      if (!inLiquid && mWaterCoverage != 0.0f) {
-         mDataBlock->onEnterLiquid_callback( this, mWaterCoverage, mLiquidType.c_str() );
-         inLiquid = true;
-      }
-      else if (inLiquid && mWaterCoverage == 0.0f) {
-         mDataBlock->onLeaveLiquid_callback( this, mLiquidType.c_str() );
-         inLiquid = false;
-      }
-
-   }
-   else {
-
-      // Play impact sounds on the client.
-      if (collided) {
-         F32 collSpeed = (mRigid.linVelocity - origVelocity).len();
-         S32 impactSound = -1;
-         if (collSpeed >= mDataBlock->hardImpactSpeed)
-            impactSound = VehicleData::Body::HardImpactSound;
-         else
-            if (collSpeed >= mDataBlock->softImpactSpeed)
-               impactSound = VehicleData::Body::SoftImpactSound;
-
-         if (impactSound != -1 && mDataBlock->body.sound[impactSound] != NULL)
-            SFX->playOnce( mDataBlock->body.sound[impactSound], &getTransform() );
-      }
-
-      // Water volume sounds
-      F32 vSpeed = getVelocity().len();
-      if (!inLiquid && mWaterCoverage >= 0.8f) {
-         if (vSpeed >= mDataBlock->hardSplashSoundVel)
-            SFX->playOnce( mDataBlock->waterSound[VehicleData::ImpactHard], &getTransform() );
-         else
-            if (vSpeed >= mDataBlock->medSplashSoundVel)
-               SFX->playOnce( mDataBlock->waterSound[VehicleData::ImpactMedium], &getTransform() );
-         else
-            if (vSpeed >= mDataBlock->softSplashSoundVel)
-               SFX->playOnce( mDataBlock->waterSound[VehicleData::ImpactSoft], &getTransform() );
-         inLiquid = true;
-      }
-      else
-         if(inLiquid && mWaterCoverage < 0.8f) {
-            if (vSpeed >= mDataBlock->exitSplashSoundVel)
-               SFX->playOnce( mDataBlock->waterSound[VehicleData::ExitWater], &getTransform() );
-         inLiquid = false;
-      }
-   }
 }
 
 
@@ -1262,11 +1157,13 @@ U32 Vehicle::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 
    if (stream->writeFlag(mask & PositionMask))
    {
-      stream->writeCompressedPoint(mRigid.linPosition);
-      mathWrite(*stream, mRigid.angPosition);
-      mathWrite(*stream, mRigid.linMomentum);
-      mathWrite(*stream, mRigid.angMomentum);
-      stream->writeFlag(mRigid.atRest);
+      stream->writeCompressedPoint(mState.position);
+      stream->writeQuat(mState.orientation, 9);
+      if (!stream->writeFlag(mState.sleeping))
+      {
+         mathWrite(*stream, mState.linVelocity);
+         mathWrite(*stream, mState.angVelocity);
+      }
    }
 
    
@@ -1292,69 +1189,34 @@ void Vehicle::unpackUpdate(NetConnection *con, BitStream *stream)
 
    if (stream->readFlag()) 
    {
-      mPredictionCount = sMaxPredictionTicks;
-      F32 speed = mRigid.linVelocity.len();
-      mDelta.warpRot[0] = mRigid.angPosition;
-
-      // Read in new position and momentum values
-      stream->readCompressedPoint(&mRigid.linPosition);
-      mathRead(*stream, &mRigid.angPosition);
-      mathRead(*stream, &mRigid.linMomentum);
-      mathRead(*stream, &mRigid.angMomentum);
-      mRigid.atRest = stream->readFlag();
-      mRigid.updateVelocity();
-
-      if (isProperlyAdded()) 
+      PhysicsState state;
+      stream->readCompressedPoint(&state.position);
+      stream->readQuat(&state.orientation, 9);
+      state.sleeping = stream->readFlag();
+      if (!state.sleeping)
       {
-         // Determine number of ticks to warp based on the average
-         // of the client and server velocities.
-         Point3F cp = mDelta.pos + mDelta.posVec * mDelta.dt;
-         mDelta.warpOffset = mRigid.linPosition - cp;
+         mathRead(*stream, &state.linVelocity);
+         mathRead(*stream, &state.angVelocity);
+      }
 
-         // Calc the distance covered in one tick as the average of
-         // the old speed and the new speed from the server.
-         F32 dt,as = (speed + mRigid.linVelocity.len()) * 0.5 * TickSec;
+      if (mPhysicsRep && mPhysicsRep->isDynamic())
+      {
+         // Set the new state on the physics object immediately.
+         mPhysicsRep->applyCorrection(state.getTransform());
 
-         // Cal how many ticks it will take to cover the warp offset.
-         // If it's less than what's left in the current tick, we'll just
-         // warp in the remaining time.
-         if (!as || (dt = mDelta.warpOffset.len() / as) > sMaxWarpTicks)
-            dt = mDelta.dt + sMaxWarpTicks;
-         else
-            dt = (dt <= mDelta.dt)? mDelta.dt : mCeil(dt - mDelta.dt) + mDelta.dt;
-
-         // Adjust current frame interpolation
-         if (mDelta.dt) {
-            mDelta.pos = cp + (mDelta.warpOffset * (mDelta.dt / dt));
-            mDelta.posVec = (cp - mDelta.pos) / mDelta.dt;
-            QuatF cr;
-            cr.interpolate(mDelta.rot[1],mDelta.rot[0],mDelta.dt);
-            mDelta.rot[1].interpolate(cr,mRigid.angPosition,mDelta.dt / dt);
-            mDelta.rot[0].extrapolate(mDelta.rot[1],cr,mDelta.dt);
-         }
-
-         // Calculated multi-tick warp
-         mDelta.warpCount = 0;
-         mDelta.warpTicks = (S32)(mFloor(dt));
-         if (mDelta.warpTicks) 
+         mPhysicsRep->setSleeping(state.sleeping);
+         if (!state.sleeping)
          {
-            mDelta.warpOffset = mRigid.linPosition - mDelta.pos;
-            mDelta.warpOffset /= (F32)mDelta.warpTicks;
-            mDelta.warpRot[0] = mDelta.rot[1];
-            mDelta.warpRot[1] = mRigid.angPosition;
+            mPhysicsRep->setLinVelocity(state.linVelocity);
+            mPhysicsRep->setAngVelocity(state.angVelocity);
          }
+
+         mPhysicsRep->getState(&mState);
       }
-      else 
-      {
-         // Set the vehicle to the server position
-         mDelta.dt  = 0;
-         mDelta.pos = mRigid.linPosition;
-         mDelta.posVec.set(0,0,0);
-         mDelta.rot[1] = mDelta.rot[0] = mRigid.angPosition;
-         mDelta.warpCount = mDelta.warpTicks = 0;
-         setPosition(mRigid.linPosition, mRigid.angPosition);
-      }
-      mRigid.updateCenterOfMass();
+
+      if (!mPhysicsRep || !mPhysicsRep->isDynamic())
+         mState = state;
+
    }
 
    setEnergyLevel(stream->readFloat(8) * mDataBlock->maxEnergy);
