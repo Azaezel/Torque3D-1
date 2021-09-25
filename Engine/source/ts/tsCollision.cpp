@@ -1129,13 +1129,11 @@ PhysicsCollision* TSShape::_buildColShapes( bool useVisibleMesh, const Point3F &
          {
             // For a triangle mesh we gather the triangles raw from the
             // mesh and don't do any optimizations or cleanup.
-            ConcretePolyList polyList;
+            VertexPolyList polyList;
             polyList.setTransform( &MatrixF::Identity, scale );
             mesh->buildPolyList( 0, &polyList, surfaceKey, NULL );
-            colShape->addTriangleMesh( polyList.mVertexList.address(), 
-                                       polyList.mVertexList.size(),
-                                       polyList.mIndexList.address(),
-                                       polyList.mIndexList.size() / 3,
+            colShape->addConvex( polyList.getVertexList().address(), 
+                                 polyList.getVertexList().size(),
                                        localXfm );
          }
          else

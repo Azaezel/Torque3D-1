@@ -644,8 +644,8 @@ Vehicle::Vehicle()
    /*mDelta.pos = Point3F(0,0,0);
    mDelta.posVec = Point3F(0,0,0);
    mDelta.warpTicks = mDelta.warpCount = 0;
-   mDelta.dt = 1;
-   mDelta.move = NullMove;*/
+   mDelta.dt = 1;*/
+   mDelta.move = NullMove;
    mPredictionCount = 0;
    mDelta.cameraOffset.set(0,0,0);
    mDelta.cameraVec.set(0,0,0);
@@ -678,7 +678,6 @@ Vehicle::Vehicle()
    mWorkingQueryBox.maxExtents.set(-1e9f, -1e9f, -1e9f);
    mWorkingQueryBoxCountDown = sWorkingQueryBoxStaleThreshold;
 
-   mPhysicsRep = NULL;
 }
 
 U32 Vehicle::getCollisionMask()
@@ -796,44 +795,8 @@ void Vehicle::processTick(const Move* move)
       if (!mPhysicsRep->isDynamic())
          return;
 
-      // Store the last render state.
-      mRenderState[0] = mRenderState[1];
-
-      // If the last render state doesn't match the last simulation 
-      // state then we got a correction and need to 
-      Point3F errorDelta = mRenderState[1].position - mState.position;
-      const bool doSmoothing = !errorDelta.isZero();
-
-      const bool wasSleeping = mState.sleeping;
-
-      // Get the new physics state.
-      if (mPhysicsRep)
-      {
-         mPhysicsRep->getState(&mState);
-      }
-      else
-      {
-         /// put mdelta here i guess?
-      }
-
       updatePos(TickSec);
 
-      mRenderState[1] = mState;
-      if (doSmoothing)
-      {
-         F32 correction = mClampF(errorDelta.len() / 20.0f, 0.1f, 0.9f);
-         mRenderState[1].position.interpolate(mState.position, mRenderState[0].position, correction);
-         mRenderState[1].orientation.interpolate(mState.orientation, mRenderState[0].orientation, correction);
-      }
-
-      if (!wasSleeping || !mState.sleeping)
-      {
-         Parent::setTransform(mState.getTransform());
-
-         if (isServerObject() && mPhysicsRep && !PHYSICSMGR->isSinglePlayer())
-            setMaskBits(PositionMask);
-
-      }
       updateContainer();
 
       //TODO: Only update when position has actually changed
@@ -1103,16 +1066,6 @@ void Vehicle::writePacketData(GameConnection *connection, BitStream *stream)
 {
    Parent::writePacketData(connection, stream);
    mathWrite(*stream, mSteering);
-
-   mathWrite(*stream, mRigid.linPosition);
-   mathWrite(*stream, mRigid.angPosition);
-   mathWrite(*stream, mRigid.linMomentum);
-   mathWrite(*stream, mRigid.angMomentum);
-   stream->writeFlag(mRigid.atRest);
-   stream->writeFlag(mContacts.getCount() == 0);
-
-   stream->writeFlag(mDisableMove);
-   stream->setCompressionPoint(mRigid.linPosition);
 }
 
 void Vehicle::readPacketData(GameConnection *connection, BitStream *stream)
@@ -1120,19 +1073,6 @@ void Vehicle::readPacketData(GameConnection *connection, BitStream *stream)
    Parent::readPacketData(connection, stream);
    mathRead(*stream, &mSteering);
 
-   mathRead(*stream, &mRigid.linPosition);
-   mathRead(*stream, &mRigid.angPosition);
-   mathRead(*stream, &mRigid.linMomentum);
-   mathRead(*stream, &mRigid.angMomentum);
-   mRigid.atRest = stream->readFlag();
-   if (stream->readFlag())
-      mContacts.clear();
-   mRigid.updateInertialTensor();
-   mRigid.updateVelocity();
-   mRigid.updateCenterOfMass();
-
-   mDisableMove = stream->readFlag();
-   stream->setCompressionPoint(mRigid.linPosition);
 }
 
 
@@ -1154,18 +1094,6 @@ U32 Vehicle::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
    stream->writeFloat(yaw,9);
    stream->writeFloat(pitch,9);
    mDelta.move.pack(stream);
-
-   if (stream->writeFlag(mask & PositionMask))
-   {
-      stream->writeCompressedPoint(mState.position);
-      stream->writeQuat(mState.orientation, 9);
-      if (!stream->writeFlag(mState.sleeping))
-      {
-         mathWrite(*stream, mState.linVelocity);
-         mathWrite(*stream, mState.angVelocity);
-      }
-   }
-
    
    stream->writeFloat(mClampF(getEnergyValue(), 0.f, 1.f), 8);
 
@@ -1186,38 +1114,6 @@ void Vehicle::unpackUpdate(NetConnection *con, BitStream *stream)
    mSteering.x = (2 * yaw * mDataBlock->maxSteeringAngle) - mDataBlock->maxSteeringAngle;
    mSteering.y = (2 * pitch * mDataBlock->maxSteeringAngle) - mDataBlock->maxSteeringAngle;
    mDelta.move.unpack(stream);
-
-   if (stream->readFlag()) 
-   {
-      PhysicsState state;
-      stream->readCompressedPoint(&state.position);
-      stream->readQuat(&state.orientation, 9);
-      state.sleeping = stream->readFlag();
-      if (!state.sleeping)
-      {
-         mathRead(*stream, &state.linVelocity);
-         mathRead(*stream, &state.angVelocity);
-      }
-
-      if (mPhysicsRep && mPhysicsRep->isDynamic())
-      {
-         // Set the new state on the physics object immediately.
-         mPhysicsRep->applyCorrection(state.getTransform());
-
-         mPhysicsRep->setSleeping(state.sleeping);
-         if (!state.sleeping)
-         {
-            mPhysicsRep->setLinVelocity(state.linVelocity);
-            mPhysicsRep->setAngVelocity(state.angVelocity);
-         }
-
-         mPhysicsRep->getState(&mState);
-      }
-
-      if (!mPhysicsRep || !mPhysicsRep->isDynamic())
-         mState = state;
-
-   }
 
    setEnergyLevel(stream->readFloat(8) * mDataBlock->maxEnergy);
 }

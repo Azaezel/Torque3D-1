@@ -260,7 +260,7 @@ RigidShapeData::RigidShapeData()
 
    dragForce            = 0;
    vertFactor           = 0.25;
-
+   
    dustTrailEmitter = NULL;
    dustTrailID = 0;
    _setShape(ShapeAsset::smNoShapeAssetFallback);
@@ -339,6 +339,26 @@ bool RigidShapeData::preload(bool server, String &errorStr)
       if( !Sim::findObject( dustTrailID, dustTrailEmitter ) )
       {
          Con::errorf( ConsoleLogEntry::General, "RigidShapeData::preload Invalid packet, bad datablockId(dustTrailEmitter): 0x%x", dustTrailID );
+      }
+   }
+
+   // Prepare the shared physics collision shape.
+   if (!colShape && mShape)
+   {
+      colShape = mShape->buildColShape(false, Point3F::One);
+
+      // If we got here and didn't get a collision shape then
+      // we need to fail... can't have a shape without collision.
+      if (!colShape)
+      {
+         //no collision so we create a simple box collision shape from the shapes bounds and alert the user
+         Con::warnf("PhysicsShapeData::preload - No collision found for shape '%s', auto-creating one", mShapeAssetId);
+         Point3F halfWidth = mShape->mBounds.getExtents() * 0.5f;
+         colShape = PHYSICSMGR->createCollision();
+         MatrixF centerXfm(true);
+         centerXfm.setPosition(mShape->mBounds.getCenter());
+         colShape->addBox(halfWidth, centerXfm);
+         return true;
       }
    }
 
@@ -700,8 +720,6 @@ bool RigidShape::onAdd()
       }
    }
 
-   mPhysicsRep->setTransform(mObjToWorld);
-
    if (isServerObject())
       scriptOnAdd();
 
@@ -712,6 +730,8 @@ void RigidShape::onRemove()
 {
    scriptOnRemove();
    removeFromScene();
+
+   SAFE_DELETE(mPhysicsRep);
 
    U32 i=0;
    for( i=0; i<RigidShapeData::VC_NUM_DUST_EMITTERS; i++ )
@@ -744,19 +764,22 @@ void RigidShape::_createPhysics()
    if (!PHYSICSMGR || !mDataBlock->enablePhysicsRep)
       return;
 
-   TSShape* shape = mShapeInstance->getShape();
-   PhysicsCollision* colShape = NULL;
-   colShape = shape->buildColShape(false, getScale());
+   // Set the world box.
+   mObjBox = mDataBlock->mShape->mBounds;
+   resetWorldBox();
 
-   if (colShape)
-   {
-      PhysicsWorld* world = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
-      mPhysicsRep = PHYSICSMGR->createBody();
-      /// keep this as kinematic for now because of the mass checks.
-      mPhysicsRep->init(colShape, mDataBlock->mass, PhysicsBody::BF_KINEMATIC, this, world);
-      mPhysicsRep->setTransform(getTransform());
-      mPhysicsRep->setMaterial(mDataBlock->body.restitution, mDataBlock->body.friction, 0.0f);
-   }
+   const bool isDynamic = mDataBlock->mass > 0.0f;
+
+   mPhysicsRep = PHYSICSMGR->createBody();
+   mPhysicsRep->init(mDataBlock->colShape,
+      mDataBlock->mass,
+      isDynamic ? 0 : PhysicsBody::BF_KINEMATIC,
+      this,
+      PHYSICSMGR->getWorld(isServerObject() ? "server" : "client"));
+
+   mPhysicsRep->setMaterial(mDataBlock->body.restitution, mDataBlock->body.friction, 0.0f);
+
+   mPhysicsRep->setTransform(getTransform());
 }
 
 //----------------------------------------------------------------------------
@@ -860,7 +883,7 @@ bool RigidShape::onNewDataBlock(GameBaseData* dptr, bool reload)
    mRigid.restitution = mDataBlock->body.restitution;
    mRigid.setCenterOfMass(mDataBlock->massCenter);*/
 
-   //_createPhysics();
+   _createPhysics();
 
    // Ignores massBox, just set sphere for now. Derived objects
    // can set what they want.
@@ -1481,35 +1504,28 @@ void RigidShape::writePacketData(GameConnection *connection, BitStream *stream)
 {
    Parent::writePacketData(connection, stream);
 
-   mathWrite(*stream, mRigid.linPosition);
-   mathWrite(*stream, mRigid.angPosition);
-   mathWrite(*stream, mRigid.linMomentum);
-   mathWrite(*stream, mRigid.angMomentum);
-   stream->writeFlag(mRigid.atRest);
-   stream->writeFlag(mContacts.getCount() == 0);
-
-   stream->writeFlag(mDisableMove);
-   stream->setCompressionPoint(mRigid.linPosition);
+   stream->writeCompressedPoint(mState.position);
+   stream->writeQuat(mState.orientation, 4);
+   if (!stream->writeFlag(mState.sleeping))
+   {
+      mathWrite(*stream, mState.linVelocity);
+      mathWrite(*stream, mState.angVelocity);
+   }
 }
 
 void RigidShape::readPacketData(GameConnection *connection, BitStream *stream)
 {
    Parent::readPacketData(connection, stream);
 
-   mathRead(*stream, &mRigid.linPosition);
-   mathRead(*stream, &mRigid.angPosition);
-   mathRead(*stream, &mRigid.linMomentum);
-   mathRead(*stream, &mRigid.angMomentum);
-   mRigid.atRest = stream->readFlag();
-   if (stream->readFlag())
-      mContacts.clear();
-   mRigid.updateInertialTensor();
-   mRigid.updateVelocity();
-
-   mDisableMove = stream->readFlag();
-   stream->setCompressionPoint(mRigid.linPosition);
+   stream->readCompressedPoint(&mState.position);
+   stream->readQuat(&mState.orientation, 4);
+   mState.sleeping = stream->readFlag();
+   if (!mState.sleeping)
+   {
+      mathRead(*stream, &mState.linVelocity);
+      mathRead(*stream, &mState.angVelocity);
+   }
 }   
-
 
 //----------------------------------------------------------------------------
 
@@ -1529,7 +1545,7 @@ U32 RigidShape::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       stream->writeFlag(mask & ForceMoveMask);
 
       stream->writeCompressedPoint(mState.position);
-      stream->writeQuat(mState.orientation, 9);
+      stream->writeQuat(mState.orientation, 4);
       if (!stream->writeFlag(mState.sleeping))
       {
          mathWrite(*stream, mState.linVelocity);
@@ -1556,7 +1572,7 @@ void RigidShape::unpackUpdate(NetConnection *con, BitStream *stream)
    {
       PhysicsState state;
       stream->readCompressedPoint(&state.position);
-      stream->readQuat(&state.orientation, 9);
+      stream->readQuat(&state.orientation, 4);
       state.sleeping = stream->readFlag();
       if (!state.sleeping)
       {

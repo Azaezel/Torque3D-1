@@ -198,6 +198,8 @@ public:
    bool checkSleepCondition();
    void setSleep();
 
+   void calculateBouyancy();
+
    MatrixF getTransform();
    //void setTransform(const MatrixF& mat);
 };

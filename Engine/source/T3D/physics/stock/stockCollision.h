@@ -56,6 +56,7 @@ protected:
    Convex* mConvexList;
 
    /// local transform is calculated here.
+   Vector<Convex*> mConvexShapes;
    MatrixF mLocalXfm;
 
    void _addShape();

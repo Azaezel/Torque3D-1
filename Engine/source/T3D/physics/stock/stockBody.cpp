@@ -405,8 +405,8 @@ void StockBody::updateWorkingCollisionSet()
          ptr->disableCollision();
       }*/
 
-      mColShape->getConvexList()->updateWorkingList(mWorkingQueryBox, sCollisionMoveMask
-         /*isGhost() ? sClientCollisionContactMask : sServerCollisionContactMask*/);
+      mColShape->getConvexList()->updateWorkingList(mWorkingQueryBox, sCollisionMoveMask);
+         /*isGhost() ? sClientCollisionContactMask : sServerCollisionContactMask);*/
 
       //And now re-enable the collisions of the mounted things
       /*for (SceneObject* ptr = mMount.list; ptr; ptr = ptr->getMountLink())
@@ -542,9 +542,7 @@ void StockBody::updatePos(F32 dt)
 bool StockBody::updateCollision(F32 dt)
 {
    // Update collision information
-   MatrixF mat, cmat;
-   mat = mColShape->getConvexList()->getTransform();
-   getTransform(&mat);
+   MatrixF cmat;
    cmat = mColShape->getConvexList()->getTransform();
 
    mCollisionList.clear();
@@ -553,6 +551,7 @@ bool StockBody::updateCollision(F32 dt)
    {
       //resolveDisplacement(ns,state,dt);
       mColShape->getConvexList()->getCollisionInfo(cmat, mUserData.getObject()->getScale(), &mCollisionList, sCollisionTol);
+      Con::printf("Collision list count %d", mCollisionList.getCount());
    }
 
    // Resolve collisions
@@ -598,7 +597,7 @@ bool StockBody::resolveCollision(CollisionList& cList)
             // Keep track of objects we collide with
             if (!mWorld->isServer() && c.object->getTypeMask() & ShapeBaseObjectType)
             {
-               ShapeBase* col = static_cast<ShapeBase*>(c.object);
+               SceneObject* col = static_cast<SceneObject*>(c.object);
                queueCollision(col, v - col->getVelocity());
             }
          }
@@ -1058,4 +1057,31 @@ void StockBody::setSleep()
    mLinMomentum.set(0.0f, 0.0f, 0.0f);
    mAngVelocity.set(0.0f, 0.0f, 0.0f);
    mAngMomentum.set(0.0f, 0.0f, 0.0f);
+}
+
+void StockBody::calculateBouyancy()
+{
+   /*
+   Fb = Vs * D * g
+   Fb = force buoyancy
+   Vs = volume of the object that is submerged
+   D = density of the liquid
+   g = the force of gravity
+
+   /// bouyancy force always +z?
+   F32 Fb;
+   ContainerQueryInfo;
+   info.box = mUserData->getObject()->getWorldBox();
+
+   mUserData->getObject()->getContainer()findObjects(info.box, WaterObjectType,findRouter,&info);
+   F32 Vs   = info.waterCoverage;
+   F32 D    = info.waterDensity;
+   /// lets just assume gravity is -z
+   F32 g    = mWorld->getGravity().z;
+
+   Fb = Vs * D * g;
+
+   applyForce(Point3F(0,0,Fb));
+      
+   */
 }

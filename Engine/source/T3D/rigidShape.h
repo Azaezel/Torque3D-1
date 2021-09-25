@@ -123,6 +123,9 @@ class RigidShapeData : public ShapeBaseData
    ParticleEmitterData * dustTrailEmitter;
    S32                   dustTrailID;
 
+   /// The shared unscaled collision shape.
+   PhysicsCollisionRef colShape;
+
    //-------------------------------------- load set variables
 
   public:

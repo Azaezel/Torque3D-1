@@ -41,17 +41,15 @@ Point3F PolysoupConvex::support(const VectorF& vec) const
 
 Box3F PolysoupConvex::getBoundingBox() const
 {
-   //Box3F wbox = box;
-   //wbox.minExtents.convolve(mObject->getScale());
-   //wbox.maxExtents.convolve(mObject->getScale());
-   //mObject->getTransform().mul(wbox);
-   return box;
+   Box3F wbox = mObject->getWorldBox();
+   return wbox;
 }
 
 Box3F PolysoupConvex::getBoundingBox(const MatrixF& mat, const Point3F& scale) const
 {
    AssertISV(false, "PolysoupConvex::getBoundingBox(m,p) - Not implemented. -- XEA");
-   return box;
+   Box3F wbox = mObject->getWorldBox();
+   return wbox;
 }
 
 void PolysoupConvex::getPolyList(AbstractPolyList* list)
@@ -78,7 +76,7 @@ void PolysoupConvex::getPolyList(AbstractPolyList* list)
 void PolysoupConvex::getFeatures(const MatrixF& mat, const VectorF& n, ConvexFeature* cf)
 {
    cf->material = 0;
-   cf->mObject = mObject;
+   //cf->mObject = mObject;
 
    // For a tetrahedron this is pretty easy... first
    // convert everything into world space.
@@ -180,7 +178,7 @@ void StockCollision::addPlane(const PlaneF& plane)
    // Create a new convex.
    BoxConvex* cp = new BoxConvex;
    mConvexList->registerObject(cp);
-
+   cp->setObject(mObject);
    cp->mCenter = plane.getPosition();
    F32 height = 0.1f;
    cp->mCenter.z -= height / 2.0f;
@@ -191,6 +189,7 @@ void StockCollision::addBox(const Point3F& halfWidth, const MatrixF& localXfm)
 {
    // Create a new convex.
    BoxConvex* cp = new BoxConvex;
+   cp->setObject(mObject);
    mConvexList->registerObject(cp);
 
    cp->mCenter = localXfm.getPosition();
@@ -231,7 +230,7 @@ bool StockCollision::addConvex(const Point3F* points, U32 count, const MatrixF& 
 
       //cp->mesh = this;
       cp->idx = i;
-      cp->mObject = mObject;
+      cp->setObject(mObject);
 
       cp->normal = p;
       cp->verts[0] = a;

@@ -455,7 +455,7 @@ void PhysicsMeshExample::processTick(const Move* move)
 
    if (!wasSleeping || !mState.sleeping)
    {
-      Parent::setTransform(mState.getTransform());
+      setTransform(mState.getTransform());
 
       if (isServerObject() && mPhysicsRep && !PHYSICSMGR->isSinglePlayer())
          setMaskBits(TransformMask);
