@@ -21,6 +21,7 @@
 #endif
 #include "T3D/rigid.h"
 #include "collision/collision.h"
+#include "collision/boxConvex.h"
 
 class StockWorld;
 class StockCollision; /// the reason why this should be folded in. it should be called shape.
@@ -73,6 +74,7 @@ class StockBody : public PhysicsBody
    Box3F mWorkingQueryBox;
    CollisionList mCollisionList;
    CollisionList mContacts;
+   OrthoBoxConvex mConvex;
 
 public:
    enum PublicConstants {
@@ -142,6 +144,7 @@ public:
    virtual void applyTorque(const Point3F &torque);
    virtual void applyForce(const Point3F &force);
    virtual void findContact(SceneObject **contactObject, VectorF *contactNormal, Vector<SceneObject*> *outOverlapObjects) const;
+   void _findContact(SceneObject** contactObject, VectorF* contactNormal, Vector<SceneObject*>* outOverlapObjects);
    virtual void moveKinematicTo(const MatrixF &xfm);
 
    virtual bool isValid() { return mColShape != nullptr; }

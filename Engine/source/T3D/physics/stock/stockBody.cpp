@@ -124,6 +124,15 @@ bool StockBody::init(PhysicsCollision * shape, F32 mass, U32 bodyFlags, SceneObj
    mSleep = false;
    mIsEnabled = true;
 
+   mConvex.init(obj);
+   Box3F objBox = obj->getObjBox();
+   objBox.getCenter(&mConvex.mCenter);
+   mConvex.mSize.x = objBox.len_x() / 2.0;
+   mConvex.mSize.y = objBox.len_y() / 2.0;
+   mConvex.mSize.z = objBox.len_z() / 2.0;
+   mWorkingQueryBox.minExtents.set(-1e9f, -1e9f, -1e9f);
+   mWorkingQueryBox.maxExtents.set(-1e9f, -1e9f, -1e9f);
+
    return true;
 }
 
@@ -255,6 +264,11 @@ void StockBody::clearForces()
 
 void StockBody::findContact(SceneObject** contactObject, VectorF* contactNormal, Vector<SceneObject*>* outOverlapObjects) const
 {
+   this->findContact(contactObject, contactNormal, outOverlapObjects);
+}
+
+void StockBody::_findContact(SceneObject** contactObject, VectorF* contactNormal, Vector<SceneObject*>* outOverlapObjects)
+{
    MatrixF bodyTransform;
    Point3F pos;
 
@@ -263,7 +277,7 @@ void StockBody::findContact(SceneObject** contactObject, VectorF* contactNormal,
 
    bodyTransform.getColumn(3, &pos);
 
-   Box3F mScaledBox = mColShape->getConvexList()->getBoundingBox();
+   Box3F mScaledBox = mConvex.getBoundingBox();
 
    Box3F wBox;
    Point3F exp(0, 0, sTractionDistance);
@@ -295,7 +309,7 @@ void StockBody::findContact(SceneObject** contactObject, VectorF* contactNormal,
    wBox.maxExtents.z = pos.z + mScaledBox.maxExtents.z;*/
 
    // Build list from convex states here...
-   CollisionWorkingList& rList = mColShape->getConvexList()->getWorkingList();
+   CollisionWorkingList& rList = mConvex.getWorkingList();
    CollisionWorkingList* pList = rList.wLink.mNext;
    while (pList != &rList)
    {
@@ -363,7 +377,7 @@ void StockBody::updateWorkingCollisionSet()
    //  it works ok.
    bool updateSet = false;
    /// predicted transform
-   //F32 len = (mLinVelocity.len() + 50) * TickSec;
+   F32 len = (mLinVelocity.len() + 50) * TickSec;
    MatrixF transform;
    getTransform(&transform);
    transform.setPosition(transform.getPosition() + mLinVelocity * TickSec);
@@ -372,10 +386,10 @@ void StockBody::updateWorkingCollisionSet()
    Box3F convexBox = mAABB;
    /// move it to the predicted position.
    convexBox.setCenter(transform.getPosition());
-   //F32 l = (len * 1.1f) + 0.1f;  // from Convex::updateWorkingList
-   //const Point3F  lPoint(l, l, l);
-   //convexBox.minExtents -= lPoint;
-   //convexBox.maxExtents += lPoint;
+   F32 l = (len * 1.1f) + 0.1f;  // from Convex::updateWorkingList
+   const Point3F  lPoint(l, l, l);
+   convexBox.minExtents -= lPoint;
+   convexBox.maxExtents += lPoint;
 
    // Check containment
    if (mWorkingQueryBox.minExtents.x != -1e9f)
@@ -392,10 +406,10 @@ void StockBody::updateWorkingCollisionSet()
    // Actually perform the query, if necessary
    if (updateSet == true)
    {
-      //const Point3F  twolPoint(2.0f * l, 2.0f * l, 2.0f * l);
+      const Point3F  twolPoint(2.0f * l, 2.0f * l, 2.0f * l);
       mWorkingQueryBox = convexBox;
-      //mWorkingQueryBox.minExtents -= twolPoint;
-      //mWorkingQueryBox.maxExtents += twolPoint;
+      mWorkingQueryBox.minExtents -= twolPoint;
+      mWorkingQueryBox.maxExtents += twolPoint;
 
       //disableCollision();
 
@@ -405,8 +419,8 @@ void StockBody::updateWorkingCollisionSet()
          ptr->disableCollision();
       }*/
 
-      mColShape->getConvexList()->updateWorkingList(mWorkingQueryBox, sCollisionMoveMask);
-         /*isGhost() ? sClientCollisionContactMask : sServerCollisionContactMask);*/
+      mConvex.updateWorkingList(mWorkingQueryBox, sCollisionMoveMask
+         /*isGhost() ? sClientCollisionContactMask : sServerCollisionContactMask*/);
 
       //And now re-enable the collisions of the mounted things
       /*for (SceneObject* ptr = mMount.list; ptr; ptr = ptr->getMountLink())
@@ -542,16 +556,17 @@ void StockBody::updatePos(F32 dt)
 bool StockBody::updateCollision(F32 dt)
 {
    // Update collision information
-   MatrixF cmat;
-   cmat = mColShape->getConvexList()->getTransform();
+   MatrixF mat, cmat;
+   mat = mConvex.getTransform();
+   getTransform(&mat);
+   cmat = mConvex.getTransform();
 
    mCollisionList.clear();
-   CollisionState* state = mColShape->getConvexList()->findClosestState(cmat, mUserData.getObject()->getScale(), sCollisionTol);
+   CollisionState* state = mConvex.findClosestState(cmat, mUserData.getObject()->getScale(), sCollisionTol);
    if (state && state->mDist <= sCollisionTol)
    {
       //resolveDisplacement(ns,state,dt);
-      mColShape->getConvexList()->getCollisionInfo(cmat, mUserData.getObject()->getScale(), &mCollisionList, sCollisionTol);
-      Con::printf("Collision list count %d", mCollisionList.getCount());
+      mConvex.getCollisionInfo(cmat, mUserData.getObject()->getScale(), &mCollisionList, sCollisionTol);
    }
 
    // Resolve collisions
@@ -597,7 +612,7 @@ bool StockBody::resolveCollision(CollisionList& cList)
             // Keep track of objects we collide with
             if (!mWorld->isServer() && c.object->getTypeMask() & ShapeBaseObjectType)
             {
-               SceneObject* col = static_cast<SceneObject*>(c.object);
+               ShapeBase* col = static_cast<ShapeBase*>(c.object);
                queueCollision(col, v - col->getVelocity());
             }
          }
@@ -1057,31 +1072,4 @@ void StockBody::setSleep()
    mLinMomentum.set(0.0f, 0.0f, 0.0f);
    mAngVelocity.set(0.0f, 0.0f, 0.0f);
    mAngMomentum.set(0.0f, 0.0f, 0.0f);
-}
-
-void StockBody::calculateBouyancy()
-{
-   /*
-   Fb = Vs * D * g
-   Fb = force buoyancy
-   Vs = volume of the object that is submerged
-   D = density of the liquid
-   g = the force of gravity
-
-   /// bouyancy force always +z?
-   F32 Fb;
-   ContainerQueryInfo;
-   info.box = mUserData->getObject()->getWorldBox();
-
-   mUserData->getObject()->getContainer()findObjects(info.box, WaterObjectType,findRouter,&info);
-   F32 Vs   = info.waterCoverage;
-   F32 D    = info.waterDensity;
-   /// lets just assume gravity is -z
-   F32 g    = mWorld->getGravity().z;
-
-   Fb = Vs * D * g;
-
-   applyForce(Point3F(0,0,Fb));
-      
-   */
 }

@@ -43,18 +43,19 @@ void StockPlugin::destroyPlugin()
    delete this;
 }
 
-PhysicsCollision * StockPlugin::createCollision()
+PhysicsCollision* StockPlugin::createCollision()
 {
    return new StockCollision();
 }
 
-PhysicsBody * StockPlugin::createBody()
+PhysicsBody* StockPlugin::createBody()
 {
    return new StockBody();
 }
 
 PhysicsPlayer * StockPlugin::createPlayer()
 {
+   /// Stock player will be added!!! NOTICE ME!!
    return nullptr;
 }
 
