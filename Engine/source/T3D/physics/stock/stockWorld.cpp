@@ -31,6 +31,11 @@ void StockWorld::addBody(PhysicsBody* body)
    mNonStaticBodies.push_back(body);
 }
 
+void StockWorld::removeBody(PhysicsBody* body)
+{
+
+}
+
 bool StockWorld::initWorld(bool isServer, ProcessList *processList)
 {
    /// just cos.
@@ -122,6 +127,7 @@ void StockWorld::stepWorld(F32 elapsed, U32 steps, F32 stepTime)
          body->updateWorkingCollisionSet();
          //body->updateForces(elapsed);
          body->updatePos(adjTime);
+         //body->applyDamping(adjTime);
       }
    }
 }

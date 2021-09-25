@@ -13,12 +13,12 @@
 static F32 sTractionDistance = 0.04f;
 
 static U32 sCollisionMoveMask = TerrainObjectType |
-                                 WaterObjectType |
-                                 PlayerObjectType |
-                                 StaticShapeObjectType |
-                                 VehicleObjectType |
-                                 PhysicalZoneObjectType |
-                                 PathShapeObjectType;
+WaterObjectType |
+PlayerObjectType |
+StaticShapeObjectType |
+VehicleObjectType |
+PhysicalZoneObjectType |
+PathShapeObjectType;
 
 static F32 sRestTol = 0.5;             // % of gravity energy to be at rest
 static S32 sRestCount = 10;            // Consecutive ticks before comming to rest
@@ -29,14 +29,14 @@ Chunker<StockBody::CollisionTimeout> sTimeoutChunker;
 StockBody::CollisionTimeout* StockBody::sFreeTimeoutList = 0;
 
 StockBody::StockBody()
-   :  mWorld(NULL),
-      mMass(0.0f),
-      mIsDynamic(false),
-      mIsEnabled(false),
-      mSleep(false),
-      mLinFactor(1, 1, 1),
-      mAngFactor(1, 1, 1),
-      mTimeoutList(NULL)
+   : mWorld(NULL),
+   mMass(0.0f),
+   mIsDynamic(false),
+   mIsEnabled(false),
+   mSleep(false),
+   mLinFactor(1, 1, 1),
+   mAngFactor(1, 1, 1),
+   mTimeoutList(NULL)
 {
    /// need to make sure this is OOBB.
    mAABB = Box3F(Point3F(0, 0, 0), Point3F(0, 0, 0));
@@ -71,6 +71,12 @@ StockBody::~StockBody()
       cur->next = sFreeTimeoutList;
       sFreeTimeoutList = cur;
    }
+
+   mWorld->removeBody(this);
+
+   //SAFE_DELETE(mCenterOfMass);
+   SAFE_DELETE(mInvCenterOfMass);
+
 }
 
 bool StockBody::init(PhysicsCollision * shape, F32 mass, U32 bodyFlags, SceneObject * obj, PhysicsWorld * world)
@@ -147,7 +153,7 @@ void StockBody::getState(PhysicsState * outState)
    outState->linVelocity = getLinVelocity();
    outState->angVelocity = getAngVelocity();
 
-   outState->momentum = (1.0f / (1 / mMass)) * outState->linVelocity;
+   outState->momentum = (1.0f / mOneOverMass) * outState->linVelocity;
    outState->sleeping = mSleep;
 
 }
@@ -189,7 +195,7 @@ MatrixF& StockBody::getTransform(MatrixF *outMatrix)
    /*if (mInvCenterOfMass)
       outMatrix->mul(*mInvCenterOfMass, *mWorldCenterOfMass);
    else*/
-      outMatrix->setPosition(mWorldCenterOfMass);
+   outMatrix->setPosition(mWorldCenterOfMass);
 
    return *outMatrix;
 }
@@ -260,10 +266,6 @@ void StockBody::clearForces()
 {
    mForce = Point3F::Zero;
    mTorque = Point3F::Zero;
-   mLinVelocity = Point3F::Zero;
-   mAngVelocity = Point3F::Zero;
-   mLinMomentum = Point3F::Zero;
-   mAngMomentum = Point3F::Zero;
 }
 
 void StockBody::findContact(SceneObject** contactObject, VectorF* contactNormal, Vector<SceneObject*>* outOverlapObjects) const
@@ -373,7 +375,7 @@ void StockBody::updateWorkingCollisionSet()
    // It is assumed that we will never accelerate more than 10 m/s for gravity...
    //
    //Point3F scaledVelocity = mLinVelocity.len * dt;
-   
+
 
    // Check to see if it is actually necessary to construct the new working list,
    //  or if we can use the cached version from the last query.  We use the x
@@ -424,7 +426,7 @@ void StockBody::updateWorkingCollisionSet()
       }*/
 
       mConvex.updateWorkingList(mWorkingQueryBox, sCollisionMoveMask
-         /*isGhost() ? sClientCollisionContactMask : sServerCollisionContactMask*/);
+      /*isGhost() ? sClientCollisionContactMask : sServerCollisionContactMask*/);
 
       //And now re-enable the collisions of the mounted things
       /*for (SceneObject* ptr = mMount.list; ptr; ptr = ptr->getMountLink())
@@ -439,12 +441,7 @@ void StockBody::updateWorkingCollisionSet()
 void StockBody::updateForces(F32 dt)
 {
 
-   mLinVelocity += mForce * (mOneOverMass * dt);
-   Point3F torque;
-
-   mInvWorldInertia.mulV(mTorque * dt, &torque);
-   mAngVelocity += torque;
-
+   updateVelocity(dt);
    // If we're still mSleep, make sure we're not accumulating anything
    if (mSleep)
       setSleep();
@@ -763,7 +760,7 @@ bool StockBody::resolveContacts(CollisionList& cList, F32 dt)
    // Contact constraint forces act over time...
    mLinMomentum += p * dt;
    mAngMomentum += l * dt;
-   updateVelocity();
+   updateVelocity(dt);
    return true;
 }
 
@@ -781,6 +778,7 @@ void StockBody::checkTriggers()
 
 void StockBody::integrate(F32 delta)
 {
+   updateVelocity(delta);
    // Update Angular position
    F32 angle = mAngVelocity.len();
    if (angle != 0.0f) {
@@ -801,26 +799,20 @@ void StockBody::integrate(F32 delta)
       mLinPosition += mWorldCenterOfMass;
    }
 
-   // Update angular momentum
-   mAngMomentum = mAngMomentum + mTorque * delta;
-
    // Update linear position, momentum
    mLinPosition = mLinPosition + mLinVelocity * delta;
-   mLinMomentum = mLinMomentum + mForce * delta;
-   mLinVelocity = mLinMomentum * mOneOverMass;
 
    // Update dependent state variables
    updateInertialTensor();
-   updateVelocity();
    updateCenterOfMass();
 }
 
-void StockBody::updateVelocity()
+void StockBody::updateVelocity(F32 delta)
 {
-   mLinVelocity.x = mLinMomentum.x * mOneOverMass;
-   mLinVelocity.y = mLinMomentum.y * mOneOverMass;
-   mLinVelocity.z = mLinMomentum.z * mOneOverMass;
-   mInvWorldInertia.mulV(mAngMomentum, &mAngVelocity);
+   mLinVelocity += mForce * (mOneOverMass * delta);
+   Point3F tTorque;
+   mInvWorldInertia.mulV(mTorque * delta, &tTorque);
+   mAngVelocity += tTorque;
 }
 
 void StockBody::updateInertialTensor()
@@ -1077,3 +1069,26 @@ void StockBody::setSleep()
    mAngVelocity.set(0.0f, 0.0f, 0.0f);
    mAngMomentum.set(0.0f, 0.0f, 0.0f);
 }
+void StockBody::calculateBouyancy()
+{
+   /*
+   Fb = Vs * D * g
+   Fb = force buoyancy
+   Vs = volume of the object that is submerged
+   D = density of the liquid
+   g = the force of gravity
+   /// bouyancy force always +z?
+   F32 Fb;
+   ContainerQueryInfo;
+   info.box = mUserData->getObject()->getWorldBox();
+   mUserData->getObject()->getContainer()findObjects(info.box, WaterObjectType,findRouter,&info);
+   F32 Vs   = info.waterCoverage;
+   F32 D    = info.waterDensity;
+   /// lets just assume gravity is -z
+   F32 g    = mWorld->getGravity().z;
+   Fb = Vs * D * g;
+   applyForce(Point3F(0,0,Fb));
+
+   */
+}
+

@@ -70,6 +70,8 @@ PhysicsMeshExample::PhysicsMeshExample()
 
 PhysicsMeshExample::~PhysicsMeshExample()
 {
+   SAFE_DELETE(mPhysicsRep);
+
    if ( mMaterialInst )
       SAFE_DELETE( mMaterialInst );
 }
@@ -501,6 +503,8 @@ void PhysicsMeshExample::interpolateTick(F32 dt)
 
    PhysicsState state;
    state.interpolate(mRenderState[1], mRenderState[0], dt);
+
+   setRenderTransform(state.getTransform());
 
    // PATHSHAPE
    updateRenderChangesByParent();

@@ -182,7 +182,7 @@ public:
    void integrate(F32 delta);
 
    void updateInertialTensor();
-   void updateVelocity();
+   void updateVelocity(F32 dt);
    void updateCenterOfMass();
 
    bool resolveCollision(const Point3F& p, const Point3F& normal, StockBody*);

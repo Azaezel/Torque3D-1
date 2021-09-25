@@ -36,6 +36,8 @@ public:
 
    void addBody(PhysicsBody* body);
 
+   void removeBody(PhysicsBody * body);
+
    virtual bool initWorld(bool isServer,ProcessList *processList);
 
    void tickPhysics(U32 elapsedMs);
