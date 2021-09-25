@@ -112,6 +112,8 @@ bool PhysicsMeshExample::onAdd()
    // Add this object to the scene
    addToScene();
 
+   resetPhysicsState();
+
    setProcessTick(true);
 
    // Refresh this object's material (if any)
@@ -140,11 +142,37 @@ void PhysicsMeshExample::setTransform(const MatrixF & mat)
    mRenderState[0] = mRenderState[1] = mState;
 
    if (mPhysicsRep)
+   {
       mPhysicsRep->setTransform(getTransform());
+      mPhysicsRep->getState(&mState);
+   }
 
    // Dirty our network mask so that the new transform gets
    // transmitted to the client object
    setMaskBits( TransformMask );
+}
+
+void PhysicsMeshExample::resetPhysicsState()
+{
+   if (mPhysicsRep)
+   {
+      mState.orientation.set(getTransform());
+      mState.position.set(getPosition());
+      mState.sleeping = false;
+
+      mState.linVelocity = Point3F(0, 0, 0);
+      mState.angVelocity = Point3F(0, 0, 0);
+
+      mPhysicsRep->setSleeping(mState.sleeping);
+      mPhysicsRep->applyCorrection(mState.getTransform());
+
+      mPhysicsRep->setLinVelocity(mState.linVelocity);
+      mPhysicsRep->setAngVelocity(mState.angVelocity);
+
+      mPhysicsRep->getState(&mState);
+
+      setTransform(mState.getTransform());
+   }
 }
 
 U32 PhysicsMeshExample::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
@@ -203,6 +231,7 @@ void PhysicsMeshExample::unpackUpdate(NetConnection *conn, BitStream *stream)
          }
 
          mPhysicsRep->getState(&mState);
+         setTransform(mState.getTransform());
       }
 
       if (!mPhysicsRep || !mPhysicsRep->isDynamic())

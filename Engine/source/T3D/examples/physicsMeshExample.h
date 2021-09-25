@@ -153,10 +153,13 @@ public:
 
    //
    void _createPhysics();
+   void resetPhysicsState();
 
    //
    virtual void processTick(const Move* move);
    virtual void interpolateTick(F32 dt);
+
+
 };
 
 #endif // _PhysicsMeshExample_H_

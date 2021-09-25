@@ -260,6 +260,10 @@ void StockBody::clearForces()
 {
    mForce = Point3F::Zero;
    mTorque = Point3F::Zero;
+   mLinVelocity = Point3F::Zero;
+   mAngVelocity = Point3F::Zero;
+   mLinMomentum = Point3F::Zero;
+   mAngMomentum = Point3F::Zero;
 }
 
 void StockBody::findContact(SceneObject** contactObject, VectorF* contactNormal, Vector<SceneObject*>* outOverlapObjects) const

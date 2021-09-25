@@ -142,7 +142,18 @@ void StockWorld::setEnabled(bool enabled)
    mIsEnabled = enabled;
 
    if (!mIsEnabled)
+   {
       getPhysicsResults();
+
+      for (U32 j = 0; j < mNonStaticBodies.size(); j++)
+      {
+         StockBody* body = static_cast<StockBody*>(mNonStaticBodies[j]);
+         if (!body->isDynamic())
+            continue;
+
+         body->clearForces();
+      }
+   }
 }
 
 PhysicsBody* StockWorld::castRay(const Point3F& start, const Point3F& end, U32 bodyTypes)
