@@ -1096,7 +1096,7 @@ void WheeledVehicle::updateForces(F32 dt)
 
    // If we've added anything other than gravity, then we're no
    // longer at rest. Could test this a little more efficiently...
-   if (mRigid.atRest && (mRigid.force.len() || mRigid.torque.len()))
+   if (mRigid.atRest && ((mRigid.force.lenSquared() >= -(gGravity * gGravity)) || mRigid.torque.lenSquared() > POINT_EPSILON))
       mRigid.atRest = false;
 
    // Integrate and update velocity

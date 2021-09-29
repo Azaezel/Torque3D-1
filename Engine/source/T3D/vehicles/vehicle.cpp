@@ -148,7 +148,7 @@ VehicleData::VehicleData()
 
    minDrag = 0;
    maxDrag = 0;
-   integration = 1;
+   integration = 4;
    collisionTol = 0.1f;
    contactTol = 0.1f;
    massCenter.set(0,0,0);
@@ -1086,7 +1086,7 @@ void Vehicle::updatePos(F32 dt)
          F32 k = mRigid.getKineticEnergy();
          F32 G = mNetGravity * dt;
          F32 Kg = 0.5 * mRigid.mass * G * G;
-         if (k < sRestTol * Kg && ++restCount > sRestCount)
+         if (k < sRestTol * Kg && ++restCount > sRestCount/ mDataBlock->integration)
             mRigid.setAtRest();
       }
       else

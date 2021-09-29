@@ -113,7 +113,7 @@ HoverVehicle::JetActivation HoverVehicle::sJetActivation[NumThrustDirections] = 
 //
 HoverVehicleData::HoverVehicleData()
 {
-   dragForce            = 0;
+   dragForce            = 0.01f;
    vertFactor           = 0.25f;
    floatingThrustFactor = 0.15f;
 
@@ -292,7 +292,7 @@ bool HoverVehicleData::preload(bool server, String &errorStr)
    if (Parent::preload(server, errorStr) == false)
       return false;
 
-   if (dragForce <= 0.01f) {
+   if (dragForce < 0.01f) {
       Con::warnf("HoverVehicleData::preload: dragForce must be at least 0.01");
       dragForce = 0.01f;
    }

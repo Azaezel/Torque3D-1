@@ -228,7 +228,7 @@ RigidShapeData::RigidShapeData()
 
    minDrag = 0;
    maxDrag = 0;
-   integration = 1;
+   integration = 4;
    collisionTol = 0.1f;
    contactTol = 0.1f;
    massCenter.set(0,0,0);
@@ -258,7 +258,7 @@ RigidShapeData::RigidShapeData()
 
    dMemset(waterSound, 0, sizeof(waterSound));
 
-   dragForce            = 0;
+   dragForce            = 0.01f;
    vertFactor           = 0.25;
 
    dustTrailEmitter = NULL;
@@ -322,7 +322,7 @@ bool RigidShapeData::preload(bool server, String &errorStr)
       }
    }
 
-   if (dragForce <= 0.01f) 
+   if (dragForce < 0.01f) 
    {
       Con::warnf("RigidShapeData::preload: dragForce must be at least 0.01");
       dragForce = 0.01f;
@@ -1097,7 +1097,7 @@ void RigidShape::updatePos(F32 dt)
          F32 k = mRigid.getKineticEnergy();
          F32 G = mNetGravity * dt;
          F32 Kg = 0.5 * mRigid.mass * G * G;
-         if (k < sRestTol * Kg && ++restCount > sRestCount)
+         if (k < sRestTol * Kg && ++restCount > sRestCount / mDataBlock->integration)
             mRigid.setAtRest();
       }
       else
