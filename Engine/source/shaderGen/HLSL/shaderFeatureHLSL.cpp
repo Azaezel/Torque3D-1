@@ -717,12 +717,12 @@ Var* ShaderFeatureHLSL::addOutWsPosition( Vector<ShaderComponent*> &componentLis
                                           bool useInstancing,
                                           MultiLine *meta )
 {
-   Var *outWsPosition = (Var*)LangElement::find( "outWsPosition" );
+   Var *outWsPosition = (Var*)LangElement::find( "wsPosition" );
    if ( !outWsPosition )
    {
       ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
       outWsPosition = connectComp->getElement( RT_TEXCOORD );
-      outWsPosition->setName( "outWsPosition" );
+      outWsPosition->setName( "wsPosition" );
       outWsPosition->setStructName( "OUT" );
       outWsPosition->setType( "float3" );
 
@@ -2167,7 +2167,7 @@ void RTLightingFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
          /*Var *inPosition = (Var*)LangElement::find( "position" );
 
          Var *outNormal = connectComp->getElement( RT_TEXCOORD );
-         outNormal->setName( "wsNormal" );
+         outNormal->setName( "outWsNormal" );
          outNormal->setStructName( "OUT" );
          outNormal->setType( "float3" );
 
@@ -2201,7 +2201,7 @@ void RTLightingFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
    if ( !fd.features[MFT_NormalMap] )
    {
       Var *outNormal = connectComp->getElement( RT_TEXCOORD );
-      outNormal->setName( "wsNormal" );
+      outNormal->setName( "outWsNormal" );
       outNormal->setStructName( "OUT" );
       outNormal->setType( "float3" );
 

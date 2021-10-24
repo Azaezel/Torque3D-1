@@ -135,9 +135,30 @@ Var * AppVertConnectorGLSL::getElement(   RegisterType type,
    return NULL;
 }
 
+S32 QSORT_CALLBACK AppVertConnectorGLSL::_glslVarSort(const void *e1, const void *e2)
+{
+   Var *a = *((Var **)e1);
+   Var *b = *((Var **)e2);
+   return dStrcmp((char *)(a->name), (char *)(b->name));
+}
+
 void AppVertConnectorGLSL::sortVars()
 {
-   // Not required in GLSL
+   if (mElementList.size() > 1)
+      dQsort((void *)&mElementList[0], mElementList.size() - 1, sizeof(Var *), _glslVarSort);
+
+   U32 index = 0;
+   for (U32 i = 0; i < mElementList.size(); i++)
+   {
+      char out[32];
+      if (dStrstr(mElementList[0]->connectName, String("TEXCOORD")) != NULL)
+      {
+         dSprintf((char *)out, sizeof(out), "TEXCOORD%d", index);
+         mElementList[i]->setConnectName(out);
+         mElementList[i]->constNum = index;
+         index++;
+      }
+   }
 }
 
 void AppVertConnectorGLSL::setName( char *newName )
@@ -160,7 +181,7 @@ void AppVertConnectorGLSL::print( Stream &stream, bool isVertexShader )
 {
    if(!isVertexShader)
       return;
-
+   sortVars();
    U8 output[256];
 
    // print struct
@@ -280,10 +301,32 @@ Var * VertPixelConnectorGLSL::getElement( RegisterType type,
    return NULL;
 }
 
+S32 QSORT_CALLBACK VertPixelConnectorGLSL::_glslVarSort(const void *e1, const void *e2)
+{
+   Var *a = *((Var **)e1);
+   Var *b = *((Var **)e2);
+   return dStrcmp((char *)(a->name), (char *)(b->name));
+}
+
 void VertPixelConnectorGLSL::sortVars()
 {
-   // Not needed in GLSL
+   if (mElementList.size()>1)
+      dQsort((void *)&mElementList[0], mElementList.size() - 1, sizeof(Var *), _glslVarSort);
+
+   U32 index = 0;
+   for (U32 i = 0; i < mElementList.size(); i++)
+   {
+      char out[32];
+      if (dStrstr(mElementList[0]->connectName, String("TEXCOORD")) != NULL)
+      {
+         dSprintf((char *)out, sizeof(out), "TEXCOORD%d", index);
+         mElementList[i]->setConnectName(out);
+         mElementList[i]->constNum = index;
+         index++;
+      }
+   }
 }
+
 
 void VertPixelConnectorGLSL::setName( char *newName )
 {
@@ -303,6 +346,7 @@ void VertPixelConnectorGLSL::reset()
 
 void VertPixelConnectorGLSL::print( Stream &stream, bool isVerterShader )
 {
+   sortVars();
    // print out elements
    for( U32 i=0; i<mElementList.size(); i++ )
    {

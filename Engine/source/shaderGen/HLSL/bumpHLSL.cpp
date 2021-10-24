@@ -410,7 +410,7 @@ void NormalsOutFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
    ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
 
    Var *outNormal = connectComp->getElement( RT_TEXCOORD );
-   outNormal->setName( "wsNormal" );
+   outNormal->setName( "outWsNormal" );
    outNormal->setStructName( "OUT" );
    outNormal->setType( "float3" );
 

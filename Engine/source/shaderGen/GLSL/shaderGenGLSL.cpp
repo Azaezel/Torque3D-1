@@ -125,6 +125,7 @@ const char* ShaderGenComponentFactoryGLSL::typeToString( GFXDeclType type )
 ShaderComponent* ShaderGenComponentFactoryGLSL::createVertexInputConnector( const GFXVertexFormat &vertexFormat )
 {
    AppVertConnectorGLSL *vertComp = new AppVertConnectorGLSL;
+   vertComp->sortVars();
 
    // Loop thru the vertex format elements.
    for ( U32 i=0; i < vertexFormat.getElementCount(); i++ )

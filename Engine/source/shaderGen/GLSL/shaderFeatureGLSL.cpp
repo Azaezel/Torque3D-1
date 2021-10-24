@@ -2093,7 +2093,7 @@ void RTLightingFeatGLSL::processVert(  Vector<ShaderComponent*> &componentList,
          /*Var *inPosition = (Var*)LangElement::find( "position" );
 			
          Var *outNormal = connectComp->getElement( RT_TEXCOORD );
-         outNormal->setName( "wsNormal" );
+         outNormal->setName( "outWsNormal" );
          outNormal->setStructName( "OUT" );
          outNormal->setType( "vec3" );
 			
@@ -2127,7 +2127,7 @@ void RTLightingFeatGLSL::processVert(  Vector<ShaderComponent*> &componentList,
    if ( !fd.features[MFT_NormalMap] )
    {
       Var *outNormal = connectComp->getElement( RT_TEXCOORD );
-      outNormal->setName( "wsNormal" );
+      outNormal->setName( "outWsNormal" );
       outNormal->setStructName( "OUT" );
       outNormal->setType( "vec3" );
 
@@ -2189,7 +2189,7 @@ void RTLightingFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    inLightSpotDir->arraySize = 4;
    inLightSpotDir->constSortPos = cspPotentialPrimitive;
 
-   Var * lightSpotParams = new Var( "lightSpotParams", "vec2" );
+   Var * lightSpotParams = new Var( "inlightSpotParams", "vec2" );
    lightSpotParams->uniform = true;
    lightSpotParams->arraySize = 4;
    lightSpotParams->constSortPos = cspPotentialPrimitive;

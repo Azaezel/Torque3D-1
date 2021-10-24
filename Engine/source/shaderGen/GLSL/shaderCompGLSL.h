@@ -30,6 +30,8 @@
 
 class VertPixelConnectorGLSL : public ShaderConnector
 {
+private:
+   static S32 QSORT_CALLBACK _glslVarSort(const void *e1, const void *e2);
 public:
 
    // ShaderConnector
@@ -48,6 +50,8 @@ public:
 
 class AppVertConnectorGLSL : public ShaderConnector
 {
+private:
+   static S32 QSORT_CALLBACK _glslVarSort(const void *e1, const void *e2);
 public:
    virtual Var* getElement(   RegisterType type, 
                               U32 numElements = 1, 
