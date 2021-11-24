@@ -571,7 +571,7 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
    meta->addStatement(new GenOp("   @ *= @.y * @.w;\r\n",
       detailColor, new IndexOp(detailInfo, detailIndex), inDet));
 
-   if (!fd.features.hasFeature(MFT_TerrainHeightBlend))
+   if (!fd.features.hasFeature(MFT_TerrainNormalMap))
    {
       // Check to see if we have a gbuffer normal.
       Var* gbNormal = (Var*)LangElement::find("gbNormal");
@@ -958,7 +958,7 @@ void TerrainNormalMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
    LangElement *bumpNormDecl = new DecOp( bumpNorm );
    meta->addStatement( expandNormalMap( texOp, bumpNormDecl, bumpNorm, fd ) );
 
-   if (!fd.features.hasFeature(MFT_TerrainHeightBlend))
+   if (!fd.features.hasFeature(MFT_TerrainNormalMap))
    {
       Var* viewToTangent = getInViewToTangent(componentList);
 
