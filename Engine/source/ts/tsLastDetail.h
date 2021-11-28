@@ -148,10 +148,10 @@ protected:
    void _validateDim();
 
    /// Helper which returns the imposter diffuse map path.
-   String _getDiffuseMapPath() const { return mCachePath + ".imposter.dds"; }
+   String _getDiffuseMapPath() const { return mCachePath + "imposter.dds"; }
 
    /// Helper which returns the imposter normal map path.
-   String _getNormalMapPath() const { return mCachePath + ".imposter_normals.dds"; }
+   String _getNormalMapPath() const { return mCachePath + "imposter_normals.dds"; }
 
 public:
 

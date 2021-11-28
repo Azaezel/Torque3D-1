@@ -466,8 +466,8 @@ void TSLastDetail::_update()
    // Should we dump the images?
    if ( Con::getBoolVariable( "$TSLastDetail::dumpImposters", false ) )
    {
-      String imposterPath = mCachePath + ".imposter.png";
-      String normalsPath = mCachePath + ".imposter_normals.png";
+      String imposterPath = mCachePath + "imposter.png";
+      String normalsPath = mCachePath + "imposter_normals.png";
 
       FileStream stream;
       if ( stream.open( imposterPath, Torque::FS::File::Write  ) )
