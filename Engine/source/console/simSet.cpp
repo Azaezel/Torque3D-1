@@ -1027,7 +1027,7 @@ DefineEngineMethod( SimSet, getFullCount, S32, (), , "() Get the number of direc
 
 //-----------------------------------------------------------------------------
 
-DefineEngineMethod( SimSet, getObject, SimObject*, ( U32 index ),,
+DefineEngineMethod( SimSet, getObject, SimObject*, ( S32 index ),,
    "Get the object at the given index.\n"
    "@param index The object index.\n"
    "@return The object at the given index or -1 if index is out of range." )

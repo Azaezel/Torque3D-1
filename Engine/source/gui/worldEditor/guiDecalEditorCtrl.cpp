@@ -813,9 +813,9 @@ DefineEngineMethod( GuiDecalEditorCtrl, getDecalCount, S32, (), , "getDecalCount
 	return gDecalManager->mDecalInstanceVec.size();
 }
 
-DefineEngineMethod( GuiDecalEditorCtrl, getDecalTransform, const char*, ( U32 id ), , "getDecalTransform()" )
+DefineEngineMethod( GuiDecalEditorCtrl, getDecalTransform, const char*, ( U32 index), , "getDecalTransform(U32 index)" )
 {
-   DecalInstance *decalInstance = gDecalManager->mDecalInstanceVec[id];
+   DecalInstance *decalInstance = gDecalManager->mDecalInstanceVec[index];
 
    if( decalInstance == NULL )
       return "";
@@ -835,27 +835,27 @@ DefineEngineMethod( GuiDecalEditorCtrl, getDecalTransform, const char*, ( U32 id
 	return returnBuffer;
 }
 
-DefineEngineMethod( GuiDecalEditorCtrl, getDecalLookupName, const char*, ( U32 id ), , "getDecalLookupName( S32 )()" )
+DefineEngineMethod( GuiDecalEditorCtrl, getDecalLookupName, const char*, ( U32 index), , "getDecalLookupName( U32 index)()" )
 {
-	DecalInstance *decalInstance = gDecalManager->mDecalInstanceVec[id];
+	DecalInstance *decalInstance = gDecalManager->mDecalInstanceVec[index];
 	if( decalInstance == NULL )
 		return "invalid";
 
 	return decalInstance->mDataBlock->lookupName;
 }
 
-DefineEngineMethod( GuiDecalEditorCtrl, selectDecal, void, ( U32 id ), , "selectDecal( S32 )()" )
+DefineEngineMethod( GuiDecalEditorCtrl, selectDecal, void, ( U32 index), , "selectDecal( U32 index)()" )
 {
-	DecalInstance *decalInstance = gDecalManager->mDecalInstanceVec[id];
+	DecalInstance *decalInstance = gDecalManager->mDecalInstanceVec[index];
 	if( decalInstance == NULL )
 		return;
 
 	object->selectDecal( decalInstance );
 }
 
-DefineEngineMethod( GuiDecalEditorCtrl, editDecalDetails, void, ( U32 id, Point3F pos, Point3F tan,F32 size ), , "editDecalDetails( S32 )()" )
+DefineEngineMethod( GuiDecalEditorCtrl, editDecalDetails, void, ( U32 index, Point3F pos, Point3F tan,F32 size ), , "editDecalDetails( U32 index)()" )
 {
-	DecalInstance *decalInstance = gDecalManager->mDecalInstanceVec[id];
+	DecalInstance *decalInstance = gDecalManager->mDecalInstanceVec[index];
 	if( decalInstance == NULL )
 		return;
 

@@ -575,7 +575,7 @@ void ForestWindEmitter::onDeleteNotify(SimObject *object)
    safeDeleteObject();
 }
 
-DefineEngineMethod( ForestWindEmitter, attachToObject, void, ( U32 objectID ),,
+DefineEngineMethod( ForestWindEmitter, attachToObject, void, ( S32 objectID ),,
    "@brief Mounts the wind emitter to another scene object\n\n"
 
    "@param objectID Unique ID of the object wind emitter should attach to"

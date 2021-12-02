@@ -512,7 +512,7 @@ DefineEngineMethod(TCPObject, listen, void, (U32 port),,
 
    "@endtsexample\n")
 {
-   object->listen(U32(port));
+   object->listen(U16(port));
 }
 
 DefineEngineMethod(TCPObject, connect, void, (const char* address),, 
