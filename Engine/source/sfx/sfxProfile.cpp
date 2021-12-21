@@ -285,7 +285,10 @@ bool SFXProfile::_preloadBuffer()
 
 Resource<SFXResource>& SFXProfile::getResource()
 {
-   if (!mResource && Torque::FS::IsFile(mFilename))
+   char buf[1024];
+   FileName fullFilename = String(Platform::makeFullPathName(mFilename, buf, sizeof(buf)));
+
+   if (!mResource && SFXResource::exists(fullFilename))
       mResource = SFXResource::load(mFilename);
    else
       mResource = NULL;
