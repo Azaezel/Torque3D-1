@@ -218,6 +218,9 @@ bool SoundAsset::loadSound()
       {
          Con::errorf("SoundAsset::initializeAsset: Attempted to load file %s but it was not valid!", mSoundFile);
          mLoadedState = BadFileReference;
+         mSFXProfile.setDescription(NULL);
+         mSFXProfile.setSoundFileName(StringTable->insert(StringTable->EmptyString()));
+         mSFXProfile.setPreload(false);
          return false;
       }
       else

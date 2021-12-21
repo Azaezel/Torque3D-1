@@ -35,6 +35,7 @@
 #include "core/stream/bitStream.h"
 #include "core/resourceManager.h"
 #include "console/engineAPI.h"
+#include "core/stream/fileStream.h"
 
 using namespace Torque;
 
@@ -136,6 +137,7 @@ bool SFXProfile::onAdd()
       // If preload is enabled we load the resource
       // and device buffer now to avoid a delay on
       // first playback.
+      StringTableEntry naem = getName();
       if( mPreload && !_preloadBuffer() )
          Con::errorf( "SFXProfile(%s)::onAdd: The preload failed!", getName() );
    }
@@ -283,8 +285,10 @@ bool SFXProfile::_preloadBuffer()
 
 Resource<SFXResource>& SFXProfile::getResource()
 {
-   if( !mResource && mFilename != StringTable->EmptyString())
-      mResource = SFXResource::load( mFilename );
+   if (!mResource && Torque::FS::IsFile(mFilename))
+      mResource = SFXResource::load(mFilename);
+   else
+      mResource = NULL;
 
    return mResource;
 }
