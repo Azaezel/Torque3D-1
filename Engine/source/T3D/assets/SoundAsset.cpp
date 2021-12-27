@@ -218,6 +218,9 @@ bool SoundAsset::loadSound()
       {
          Con::errorf("SoundAsset::initializeAsset: Attempted to load file %s but it was not valid!", mSoundFile);
          mLoadedState = BadFileReference;
+         mSFXProfile.setDescription(NULL);
+         mSFXProfile.setSoundFileName(StringTable->insert(StringTable->EmptyString()));
+         mSFXProfile.setPreload(false);
          return false;
       }
       else
@@ -330,8 +333,8 @@ DefineEngineMethod(SoundAsset, getSoundPath, const char*, (), , "")
 }
 
 DefineEngineMethod(SoundAsset, playSound, S32, (Point3F position), (Point3F::Zero),
-   "Gets the number of materials for this shape asset.\n"
-   "@return Material count.\n")
+   "Plays the sound for this asset.\n"
+   "@return (sound plays).\n")
 {
    if (object->getSfxProfile())
    {
