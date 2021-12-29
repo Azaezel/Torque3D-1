@@ -265,6 +265,7 @@ struct ShapeBaseImageData: public GameBaseData {
       F32 emitterTime;              ///<
       S32 emitterNode[MaxShapes];   ///< Node ID on the shape to emit from
       SoundAsset* sound;
+      SFXTrack* soundTrack;         ///<Holdover for special, non-asset cases like SFXPlaylists
    };
    /// @name State Data
    /// Individual state data used to initialize struct array

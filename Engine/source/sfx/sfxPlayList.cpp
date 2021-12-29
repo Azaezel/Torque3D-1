@@ -347,7 +347,6 @@ bool SFXPlayList::preload( bool server, String& errorStr )
    validate();
       
    // Resolve SFXTracks and SFXStates on client.
-      
    if( !server )
    {
       for( U32 i = 0; i < NUM_SLOTS; ++ i )
