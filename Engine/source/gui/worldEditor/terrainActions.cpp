@@ -709,7 +709,7 @@ void PaintNoiseAction::process(Selection * sel, const Gui3DMouseEvent &, bool se
       mTerrainEditor->scheduleGridUpdate();
    }
 }
-/*
+
 void ThermalErosionAction::process(Selection * sel, const Gui3DMouseEvent &, bool selChanged, Type)
 {
    if( selChanged )
@@ -720,13 +720,13 @@ void ThermalErosionAction::process(Selection * sel, const Gui3DMouseEvent &, boo
       
       F32 height = 0;
       F32 maxHeight = 0;
-      U32 shift = getBinLog2( TerrainBlock::BlockSize );
+      U32 shift = getBinLog2(mNoiseSize);
 
-      for ( U32 x = 0; x < TerrainBlock::BlockSize; x++ )
+      for ( U32 x = 0; x < mNoiseSize; x++ )
       {
-         for ( U32 y = 0; y < TerrainBlock::BlockSize; y++ )
+         for ( U32 y = 0; y < mNoiseSize; y++ )
          {
-            height = fixedToFloat( tblock->getHeight( x, y ) );
+            height = fixedToFloat( tblock->getHeight( Point2I( x, y) ) );
             mTerrainHeights[ x + (y << 8)] = height;
 
             if ( height > maxHeight )
@@ -736,7 +736,7 @@ void ThermalErosionAction::process(Selection * sel, const Gui3DMouseEvent &, boo
 
       //mNoise.erodeThermal( &mTerrainHeights, &mNoiseData, 30.0f, 5.0f, 5, TerrainBlock::BlockSize, tblock->getSquareSize(), maxHeight );
          
-      mNoise.erodeHydraulic( &mTerrainHeights, &mNoiseData, 1, TerrainBlock::BlockSize );
+      mNoise.erodeHydraulic( &mTerrainHeights, &mNoiseData, 1, mNoiseSize);
 
       F32 heightDiff = 0;
 
@@ -761,8 +761,6 @@ void ThermalErosionAction::process(Selection * sel, const Gui3DMouseEvent &, boo
       mTerrainEditor->gridUpdateComplete();
    }
 }
-*/
-
 
 IMPLEMENT_CONOBJECT( TerrainSmoothAction );
 

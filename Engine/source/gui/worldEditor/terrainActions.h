@@ -302,16 +302,16 @@ class PaintNoiseAction : public TerrainAction
       F32 mScale;
 };
 
-/*
 class ThermalErosionAction : public TerrainAction
 {
    public:
       ThermalErosionAction(TerrainEditor * editor) 
-      : TerrainAction(editor)
+      : TerrainAction(editor),
+         mNoiseSize(256)
       {
          mNoise.setSeed( 1 );//Sim::getCurrentTime() );
-         mNoiseData.setSize( TerrainBlock::BlockSize * TerrainBlock::BlockSize );
-         mTerrainHeights.setSize( TerrainBlock::BlockSize * TerrainBlock::BlockSize );
+         mNoiseData.setSize(mNoiseSize * mNoiseSize);
+         mTerrainHeights.setSize(mNoiseSize * mNoiseSize);
       }
       
       StringTableEntry getName(){return("thermalErode");}
@@ -321,8 +321,10 @@ class ThermalErosionAction : public TerrainAction
       Noise2D mNoise;
       Vector<F32> mNoiseData;
       Vector<F32> mTerrainHeights;
+protected:
+
+   const U32 mNoiseSize;
 };
-*/
 
 /// An undo action used to perform terrain wide smoothing.
 class TerrainSmoothAction : public UndoAction
