@@ -734,7 +734,7 @@ void ThermalErosionAction::process(Selection * sel, const Gui3DMouseEvent &, boo
          }
       }
 
-      //mNoise.erodeThermal( &mTerrainHeights, &mNoiseData, 30.0f, 5.0f, 5, TerrainBlock::BlockSize, tblock->getSquareSize(), maxHeight );
+      mNoise.erodeThermal( &mTerrainHeights, &mNoiseData, 30.0f, 5.0f, 5, mNoiseSize, tblock->getSquareSize(), maxHeight );
          
       mNoise.erodeHydraulic( &mTerrainHeights, &mNoiseData, 1, mNoiseSize);
 
