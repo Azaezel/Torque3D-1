@@ -107,7 +107,8 @@ ConsoleSetType(TypeSoundAssetId)
 //-----------------------------------------------------------------------------
 
 SoundAsset::SoundAsset()
-   : AssetBase()
+   : AssetBase(),
+   mSFXProfile(NULL, StringTable->insert(StringTable->EmptyString()), false)
 {
    mSoundFile = StringTable->EmptyString();
    mSoundPath = StringTable->EmptyString();
@@ -132,7 +133,6 @@ SoundAsset::SoundAsset()
    mProfileDesc.mScatterDistance = Point3F(0.f, 0.f, 0.f);
    mProfileDesc.mPriority = 1.0f;
    mProfileDesc.mSourceGroup = NULL;
-
 }
 
 //-----------------------------------------------------------------------------
@@ -171,6 +171,20 @@ void SoundAsset::initPersistFields()
 
 }
 
+//------------------------------------------------------------------------------
+
+void SoundAsset::packData(BitStream *stream)
+{
+   mSFXProfile.packData(stream);
+   sfxWrite(stream, &mProfileDesc);
+}
+
+void SoundAsset::unpackData(BitStream *stream)
+{
+   mSFXProfile.unpackData(stream);
+   SFXDescription *descPtr = &mProfileDesc;
+   sfxRead(stream, &descPtr);
+}
 //------------------------------------------------------------------------------
 
 void SoundAsset::copyTo(SimObject* object)

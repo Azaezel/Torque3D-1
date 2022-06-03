@@ -116,6 +116,8 @@ public:
 
    /// Engine.
    static void initPersistFields();
+   virtual void packData(BitStream *stream);
+   virtual void unpackData(BitStream *stream);
    virtual void copyTo(SimObject* object);
 
    //SFXResource* getSound() { return mSoundResource; }
@@ -130,6 +132,8 @@ public:
    inline StringTableEntry getSoundPath(void) const { return mSoundPath; };
    SFXProfile* getSfxProfile() { return &mSFXProfile; }
    SFXDescription* getSfxDescription() { return &mProfileDesc; }
+   void setSfxProfile(SFXProfile _profile) {  mSFXProfile = _profile; }
+   void setSfxDescription(SFXDescription _description) { mProfileDesc = _description; }
 
    bool isLoop() { return mProfileDesc.mIsLooping; }
    bool is3D() { return mProfileDesc.mIs3D; }
@@ -188,8 +192,6 @@ public:
    StringTableEntry m##name##Name; \
    StringTableEntry m##name##AssetId;\
    AssetPtr<SoundAsset> m##name##Asset = NULL;\
-   SFXProfile* m##name##Profile = NULL;\
-   SFXDescription* m##name##Desc = NULL;\
 public: \
    const StringTableEntry get##name##File() const { return m##name##Name; }\
    void set##name##File(const FileName &_in) { m##name##Name = StringTable->insert(_in.c_str());}\
@@ -283,15 +285,13 @@ public: \
    SFXProfile* get##name##Profile()\
    {\
       if (get##name() != StringTable->EmptyString() && m##name##Asset.notNull())\
-         m##name##Profile = m##name##Asset->getSfxProfile();\
-         return m##name##Profile;\
+         return m##name##Asset->getSfxProfile();\
       return NULL;\
    }\
    SFXDescription* get##name##Description()\
    {\
       if (get##name() != StringTable->EmptyString() && m##name##Asset.notNull())\
-         m##name##Desc = m##name##Asset->getSfxDescription();\
-         return m##name##Desc;\
+         return m##name##Asset->getSfxDescription();\
       return NULL;\
    }\
    bool is##name##Valid() { return (get##name() != StringTable->EmptyString() && m##name##Asset->getStatus() == AssetBase::Ok); }
@@ -314,9 +314,7 @@ public: \
 #define PACKDATA_SOUNDASSET(name)\
    if (stream->writeFlag(m##name##Asset.notNull()))\
    {\
-      if (m##name##Profile)\
-         m##name##Profile->packData(stream);\
-      sfxWrite(stream, m##name##Desc);\
+      m##name##Asset->packData(stream);\
    }\
    else\
       stream->writeString(m##name##Name);
@@ -325,9 +323,7 @@ public: \
 #define UNPACKDATA_SOUNDASSET(name)\
    if (stream->readFlag())\
    {\
-      if (m##name##Profile)\
-         m##name##Profile->unpackData(stream);\
-      sfxRead(stream, &m##name##Desc);\
+      m##name##Asset->unpackData(stream);\
    }\
    else\
    {\
@@ -345,8 +341,6 @@ public: \
    StringTableEntry m##name##Name[max]; \
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<SoundAsset> m##name##Asset[max];\
-   SFXProfile* m##name##Profile[max];\
-   SFXDescription* m##name##Desc[max];\
 public: \
    const StringTableEntry get##name##File(const U32& index) const { return m##name##Name[index]; }\
    void set##name##File(const FileName &_in, const U32& index) { m##name##Name[index] = StringTable->insert(_in.c_str());}\
@@ -456,8 +450,7 @@ public: \
    SFXDescription* get##name##Description(const U32& id)\
    {\
       if (get##name(id) != StringTable->EmptyString() && m##name##Asset[id].notNull())\
-         m##name##Desc[id] = m##name##Asset[id]->getSfxDescription();\
-         return m##name##Desc[id];\
+         return m##name##Asset[id]->getSfxDescription();\
       return NULL;\
    }\
    bool is##name##Valid(const U32& id) {return (get##name(id) != StringTable->EmptyString() && m##name##Asset[id]->getStatus() == AssetBase::Ok); }
@@ -509,17 +502,13 @@ if (m##name##AssetId[index] != StringTable->EmptyString())\
    m##name##AssetId[index] = StringTable->EmptyString(); \
    m##name##Asset[index] = NULL;\
    m##name[index] = NULL;\
-   m##name##Profile[index] = NULL;\
-  m##name##Desc[index] = NULL;\
 }
 
 //network send - datablock
 #define PACKDATA_SOUNDASSET_ARRAY(name, index)\
    if (stream->writeFlag(m##name##Asset[index].notNull()))\
    {\
-      if (m##name##Profile[index])\
-         m##name##Profile[index]->packData(stream);\
-      sfxWrite(stream, m##name##Desc[index]);\
+      m##name##Asset[index]->packData(stream);\
    }\
    else\
       stream->writeString(m##name##Name[index]);
@@ -528,9 +517,7 @@ if (m##name##AssetId[index] != StringTable->EmptyString())\
 #define UNPACKDATA_SOUNDASSET_ARRAY(name, index)\
    if (stream->readFlag())\
    {\
-      if (m##name##Profile[index])\
-         m##name##Profile[index]->unpackData(stream);\
-      sfxRead(stream, &m##name##Desc[index]);\
+      m##name##Asset[index]->unpackData(stream);\
    }\
    else\
    {\
