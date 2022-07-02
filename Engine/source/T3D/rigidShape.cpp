@@ -1231,10 +1231,25 @@ void RigidShape::setRenderPosition(const Point3F& pos, const QuatF& rot)
 
 void RigidShape::setTransform(const MatrixF& newMat)
 {
-   mRigid.setTransform(newMat);
+   if (PHYSICSMGR && mDataBlock && mDataBlock->enablePhysicsRep)
+   {
+      // This is only called to set an absolute position
+      // so we discard the delta state.
+      mState.position = getPosition();
+      mState.orientation.set(newMat);
+      mRenderState[0] = mRenderState[1] = mState;
+      setMaskBits(PositionMask);
+
+      if (mPhysicsRep)
+         mPhysicsRep->setTransform(newMat);
+   }
+   else
+   {
+      mRigid.setTransform(newMat);
+      mRigid.atRest = false;
+      mContacts.clear();
+   }
    Parent::setTransform(newMat);
-   mRigid.atRest = false;
-   mContacts.clear();
 }
 
 void RigidShape::forceClientTransform()
