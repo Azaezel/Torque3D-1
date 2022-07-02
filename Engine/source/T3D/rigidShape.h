@@ -190,6 +190,13 @@ class RigidShape: public ShapeBase
    };
 
    PhysicsBody* mPhysicsRep;
+   /// The starting position to place the shape when
+   /// the level begins or is reset.
+   MatrixF mResetPos;
+   /// The current physics state.
+   PhysicsState mState;
+   /// The previous and current render states.
+   PhysicsState mRenderState[2];
 
    StateDelta mDelta;
    S32 mPredictionCount;            ///< Number of ticks to predict
@@ -266,6 +273,10 @@ public:
    void interpolateTick(F32 dt);
    void advanceTime(F32 dt);
 
+   void destroy();
+   void restore();
+   void storeRestorePos();
+   void _onPhysicsReset(PhysicsResetEvent reset);
    /// Disables collisions for this shape
    void disableCollision();
    
