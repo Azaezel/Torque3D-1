@@ -889,18 +889,16 @@ void RigidShape::processTick(const Move* move)
       const bool wasSleeping = mState.sleeping;
 
       // Get the new physics state.
-      if (mPhysicsRep)
+
+      mPhysicsRep->getState(&mState);
+      if (mPhysicsRep->isSimulationEnabled() && !mState.sleeping)
       {
-         mPhysicsRep->getState(&mState);
          updateContainer();
-         Point3F cmass = mPhysicsRep->getCMassPosition();
          // Apply physical zone forces.
          if (!mAppliedForce.isZero())
-            mPhysicsRep->applyImpulse(cmass, mAppliedForce);
-      }
-      else
-      {
-         // This is where we could extrapolate.
+            mPhysicsRep->applyForce(Point3F(mAppliedForce.z, mAppliedForce.y, mAppliedForce.x));
+         if (mNetGravity != gGravity)
+            mPhysicsRep->applyForce(Point3F(mNetGravity - gGravity - mPhysicsRep->getLinVelocity().z, 0, 0) * mDataBlock->mass);
       }
 
       // Smooth the correction back into the render state.
