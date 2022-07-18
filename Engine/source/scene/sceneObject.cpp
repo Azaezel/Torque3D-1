@@ -112,6 +112,7 @@ SceneObject::SceneObject()
 
    mObjScale.set(1,1,1);
    mObjToWorld.identity();
+   mLastXform.identity();
    mWorldToObj.identity();
 
    mObjBox      = Box3F(Point3F(0, 0, 0), Point3F(0, 0, 0));
@@ -411,11 +412,12 @@ void SceneObject::setTransform( const MatrixF& mat )
 {
    // This test is a bit expensive so turn it off in release.   
 #ifdef TORQUE_DEBUG
-   //AssertFatal( mat.isAffine(), "SceneObject::setTransform() - Bad transform (non affine)!" );
+   AssertFatal( mat.isAffine(), "SceneObject::setTransform() - Bad transform (non affine)!" );
 #endif
 
    PROFILE_SCOPE( SceneObject_setTransform );
 // PATHSHAPE
+   UpdateXformChange(mat);
    PerformUpdatesForChildren(mat);
 // PATHSHAPE END
 
@@ -521,8 +523,14 @@ void SceneObject::resetWorldBox()
    AssertFatal(mObjBox.isValidBox(), "SceneObject::resetWorldBox - Bad object box!");
 
    mWorldBox = mObjBox;
-   mWorldBox.minExtents.convolve(mObjScale);
-   mWorldBox.maxExtents.convolve(mObjScale);
+
+   Point3F scale = Point3F(mFabs(mObjScale.x), mFabs(mObjScale.y), mFabs(mObjScale.z));
+   mWorldBox.minExtents.convolve(scale);
+   mWorldBox.maxExtents.convolve(scale);
+
+   if (mObjToWorld.isNaN())
+      mObjToWorld.identity();
+
    mObjToWorld.mul(mWorldBox);
 
    AssertFatal(mWorldBox.isValidBox(), "SceneObject::resetWorldBox - Bad world box!");
@@ -585,11 +593,16 @@ void SceneObject::resetRenderWorldBox()
    AssertFatal( mObjBox.isValidBox(), "Bad object box!" );
 
    mRenderWorldBox = mObjBox;
-   mRenderWorldBox.minExtents.convolve( mObjScale );
-   mRenderWorldBox.maxExtents.convolve( mObjScale );
+   Point3F scale = Point3F(mFabs(mObjScale.x), mFabs(mObjScale.y), mFabs(mObjScale.z));
+   mRenderWorldBox.minExtents.convolve(scale);
+   mRenderWorldBox.maxExtents.convolve(scale);
+
+   if (mRenderObjToWorld.isNaN())
+      mRenderObjToWorld.identity();
+
    mRenderObjToWorld.mul( mRenderWorldBox );
 
-   AssertFatal( mRenderWorldBox.isValidBox(), "Bad world box!" );
+   AssertFatal( mRenderWorldBox.isValidBox(), "Bad Render world box!" );
 
    // Create mRenderWorldSphere from mRenderWorldBox.
 
@@ -1661,7 +1674,6 @@ void SceneObject::moveRender(const Point3F &delta)
 }
 
 void SceneObject::PerformUpdatesForChildren(MatrixF mat){
-	    UpdateXformChange(mat);
 		for (U32 i=0; i < getNumChildren(); i++) {
 			SceneObject *o = getChild(i);
 			o->updateChildTransform(); //update the position of the child object

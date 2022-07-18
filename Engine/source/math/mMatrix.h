@@ -226,6 +226,9 @@ public:
    friend MatrixF operator * ( const MatrixF &m1, const MatrixF &m2 );
    MatrixF& operator *= ( const MatrixF &m );
 
+   MatrixF& operator = (const MatrixF& m);
+   bool MatrixF::isNaN();
+   void MatrixF::clean();
    // Static identity matrix
    const static MatrixF Identity;
 };
@@ -354,7 +357,9 @@ inline void MatrixF::invertTo( MatrixF *out )
 
 inline MatrixF& MatrixF::affineInverse()
 {
-//   AssertFatal(isAffine() == true, "Error, this matrix is not an affine transform");
+#ifdef TORQUE_DEBUG
+   AssertFatal(isAffine() == true, "Error, this matrix is not an affine transform");
+#endif
    m_matF_affineInverse(m);
    return (*this);
 }
@@ -593,6 +598,27 @@ inline MatrixF& MatrixF::operator *= ( const MatrixF &m1 )
    return (*this);
 }
 
+inline MatrixF& MatrixF::operator = (const MatrixF& m1)
+{
+   for (U32 i = 0; i < 16; i++)
+      this->m[i] = m1.m[i];
+   return (*this);
+}
+inline bool MatrixF::isNaN()
+{
+   bool isaNaN = false;
+   for (U32 i = 0; i < 16; i++)
+      if (mIsNaN_F(m[i]))
+         isaNaN = true;
+   return isaNaN;
+}
+
+inline void MatrixF::clean()
+{
+   for (U32 i = 0; i < 16; i++)
+      if (mFabs(m[i]) < POINT_EPSILON * POINT_EPSILON)
+         m[i] = 0.0f;
+}
 //------------------------------------
 // Non-member methods
 //------------------------------------

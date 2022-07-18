@@ -840,6 +840,13 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
       SceneObject* nextSibling;        ///< Link to next child object of this object's parent 
       MatrixF      objToParent;   ///< this obects transformation in the parent object's space
       MatrixF      RenderobjToParent;   ///< this obects Render Offset transformation to the parent object
+      AttachInfo() {
+         firstChild = NULL;
+         parent = NULL;
+         nextSibling = NULL;
+         objToParent.identity();
+         RenderobjToParent.identity();
+      };
    } mGraph;
 // PATHSHAPE END
 

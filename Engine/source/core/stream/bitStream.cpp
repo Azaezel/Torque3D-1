@@ -482,9 +482,9 @@ void BitStream::readVector( Point3F *outVec, F32 maxMag, S32 magBits, S32 normal
 
 void BitStream::writeAffineTransform(const MatrixF& matrix)
 {
-//   AssertFatal(matrix.isAffine() == true,
-//               "BitStream::writeAffineTransform: Error, must write only affine transforms!");
-
+#ifdef TORQUE_DEBUG
+   AssertFatal(matrix.isAffine() == true, "BitStream::writeAffineTransform: Error, must write only affine transforms!");
+#endif
    Point3F pos;
    matrix.getColumn(3, &pos);
    mathWrite(*this, pos);
@@ -512,8 +512,9 @@ void BitStream::readAffineTransform(MatrixF* matrix)
 
    q.setMatrix(matrix);
    matrix->setColumn(3, pos);
-//   AssertFatal(matrix->isAffine() == true,
-//               "BitStream::readAffineTransform: Error, transform should be affine after this function!");
+#ifdef TORQUE_DEBUG
+   AssertFatal(matrix->isAffine() == true, "BitStream::readAffineTransform: Error, transform should be affine after this function!");
+#endif
 }
 
 void BitStream::writeQuat( const QuatF& quat, U32 bitCount )

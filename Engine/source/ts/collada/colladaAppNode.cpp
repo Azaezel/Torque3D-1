@@ -254,6 +254,7 @@ MatrixF ColladaAppNode::getTransform(F32 time)
          mat.scale(invScale);
       }
 
+      lastTransform.clean();
       // Post multiply the animated transform
       lastTransform.mul(mat);
    }
