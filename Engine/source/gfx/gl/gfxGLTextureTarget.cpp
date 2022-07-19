@@ -369,6 +369,17 @@ void GFXGLTextureTarget::makeActive()
    _impl->makeActive();
 }
 
+void GFXGLTextureTarget::activate()
+{
+   // So we don't do this over and over again
+   stateApplied();
+
+   if (_impl.isNull())
+      _impl = new _GFXGLTextureTargetFBOImpl(this);
+
+   _impl->applyState();
+}
+
 void GFXGLTextureTarget::deactivate()
 {
    _impl->finish();
