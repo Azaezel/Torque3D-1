@@ -3,5 +3,10 @@
     materialDefinitionName="corridor_mat">
     <Material
         Name="corridor_mat"
-        mapTo="corridor"/>
+        mapTo="corridor">
+        <Material.Stages>
+            <Stages_beginarray
+                DiffuseMapAsset="Prototyping:cooridor_image"/>
+        </Material.Stages>
+    </Material>
 </MaterialAsset>
