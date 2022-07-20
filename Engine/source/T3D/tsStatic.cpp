@@ -1865,10 +1865,18 @@ void TSStatic::setSelectionFlags(U8 flags)
    }
 }
 
+bool TSStatic::hasNode(const char* nodeName)
+{
+
+   S32 nodeIDx = getShapeResource()->findNode(nodeName);
+   return nodeIDx >= 0;
+}
+
 void TSStatic::getNodeTransform(const char *nodeName, const MatrixF &xfm, MatrixF *outMat)
 {
 
     S32 nodeIDx = getShapeResource()->findNode(nodeName);
+    if (nodeIDx < 0) return;
 
     MatrixF mountTransform = mShapeInstance->mNodeTransforms[nodeIDx];
     mountTransform.mul(xfm);
@@ -1883,10 +1891,18 @@ void TSStatic::getNodeTransform(const char *nodeName, const MatrixF &xfm, Matrix
 }
 
 
-DefineEngineMethod(TSStatic, getNodeTransform, TransformF, (const char *nodeName), ,
-   "@brief Get the world transform of the specified mount slot.\n\n"
+DefineEngineMethod(TSStatic, hasNode, bool, (const char* nodeName), ,
+   "@brief Get if this model has this node name.\n\n")
+{
+   MatrixF xf(true);
+   object->hasNode(nodeName);
+   return xf;
+}
 
-   "@param slot Image slot to query\n"
+DefineEngineMethod(TSStatic, getNodeTransform, TransformF, (const char *nodeName), ,
+   "@brief Get the world transform of the specified node name.\n\n"
+
+   "@param node name query\n"
    "@return the mount transform\n\n")
 {
    MatrixF xf(true);
