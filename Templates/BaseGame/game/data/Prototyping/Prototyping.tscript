@@ -51,10 +51,10 @@ function Prototyping::onDestroyClientConnection(%this)
     
 function expandRooms(%nodeObj, %count)
 {
+    if (!isObject(%nodeObj)) return;
     %count--;
     if (%count <=0) return;
-    %frameMesh = %nodeObj.findObjectByInternalName("frame");
-    echo(%frameMesh.ShapeAsset);
+    %frameMesh = %nodeObj.getChildGroup()-->frame;
     for (%i=1;%i<4;%i++)
     {
         if (%frameMesh.hasNode("exit"@ %i))
@@ -62,7 +62,7 @@ function expandRooms(%nodeObj, %count)
             %exitTrans = %frameMesh.getNodeTransform("exit"@ %i);
             %pos = getWords(%exitTrans,0,2);             
 		    %rot  = getWords(%exitTrans,3,5) SPC mRadToDeg(getWord(%exitTrans,6));
-		    %offset  = vectorScale(toEuler(%exitTrans),2);
+		    %offset  = vectorScale(toEuler(%exitTrans),2.1);
             %newPos = vectorAdd(%pos,%offset);
             %okay = containerBoxEmpty("-1",%newPos,2,2,2,false);
             if (%okay)
@@ -81,6 +81,15 @@ function expandRooms(%nodeObj, %count)
                 getScene(0).add(%mazNode);
                 expandRooms(%mazNode, %count);
              }
+             else
+             {
+                %mazNode = new Prefab()
+                { 
+                    fileName = "data/Prototyping/prefabs/tileBlock.prefab";
+                    position = %newPos;
+                    rotation = %rot;
+                };
+             }             
         }
     }
     
