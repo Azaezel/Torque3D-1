@@ -48,3 +48,49 @@ function Prototyping::onCreateClientConnection(%this)
 function Prototyping::onDestroyClientConnection(%this)
 {
 }
+    
+function expandRooms(%nodeObj, %count)
+{
+    %count--;
+    if (%count <=0) return;
+    %frameMesh = %nodeObj.findObjectByInternalName("frame");
+    echo(%frameMesh.ShapeAsset);
+    for (%i=1;%i<4;%i++)
+    {
+        if (%frameMesh.hasNode("exit"@ %i))
+        {
+            %exitTrans = %frameMesh.getNodeTransform("exit"@ %i);
+            %pos = getWords(%exitTrans,0,2);             
+		    %rot  = getWords(%exitTrans,3,5) SPC mRadToDeg(getWord(%exitTrans,6));
+		    %offset  = vectorScale(toEuler(%exitTrans),2);
+            %newPos = vectorAdd(%pos,%offset);
+            %okay = containerBoxEmpty("-1",%newPos,2,2,2,false);
+            if (%okay)
+            {
+                if (%count >1)
+                    %tilenum = getrandom(5);
+                else
+                    %tilenum = "block";
+                    
+                %mazNode = new Prefab()
+                { 
+                    fileName = "data/Prototyping/prefabs/tile"@ %tilenum @".prefab";
+                    position = %newPos;
+                    rotation = %rot;
+                };
+                getScene(0).add(%mazNode);
+                expandRooms(%mazNode, %count);
+             }
+        }
+    }
+    
+}
+
+function createMaze()
+{
+   %mazeStart = new Prefab() {
+      fileName = "data/Prototyping/prefabs/tileStart.prefab";
+   };
+   getScene(0).add(%mazeStart);
+   expandRooms(%mazeStart, 5);
+}

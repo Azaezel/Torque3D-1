@@ -1,0 +1,9 @@
+//--- OBJECT WRITE BEGIN ---
+$ThisPrefab = new SimGroup() {
+
+   new TSStatic() {
+      ShapeAsset = "Prototyping:tile5_shape";
+      internalName = "frame";
+   };
+};
+//--- OBJECT WRITE END ---

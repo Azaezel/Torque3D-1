@@ -1,0 +1,13 @@
+<MaterialAsset
+    AssetName="tileset_corridor"
+    materialDefinitionName="tileset_corridor">
+    <Material
+        Name="tileset_corridor"
+        mapTo="corridor"
+        originalAssetName="tileset_corridor">
+        <Material.Stages>
+            <Stages_beginarray
+                DiffuseMapAsset="Prototyping:cooridor_image"/>
+        </Material.Stages>
+    </Material>
+</MaterialAsset>

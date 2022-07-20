@@ -1,0 +1,7 @@
+<MaterialAsset
+    AssetName="corridor_mat"
+    materialDefinitionName="corridor_mat">
+    <Material
+        Name="corridor_mat"
+        mapTo="corridor"/>
+</MaterialAsset>
