@@ -1011,10 +1011,10 @@ DefineEngineFunction( VectorOrthoBasis, MatrixF, ( AngAxisF aa ),,
    return mat;
 }
 
-DefineEngineFunction(toEuler, EulerF, (MatrixF _in), ,
+DefineEngineFunction(toEuler, VectorF, (MatrixF _in), ,
    "#Brief get the rotation of a matrix\n")
 {
-   return _in.toEuler();
+   return _in.getForwardVector();
 }
 //-----------------------------------------------------------------------------
 

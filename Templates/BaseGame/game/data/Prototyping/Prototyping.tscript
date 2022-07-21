@@ -66,7 +66,7 @@ function expandRooms(%nodeObj, %count)
 		    %rot  = getWords(%exitTrans,3,5) SPC mRadToDeg(getWord(%exitTrans,6));
 		    %offset  = vectorScale(vectorNormalize(toEuler(%exitTrans)),2.0);
             %newPos = vectorAdd(%pos,%offset);
-            %okay = containerBoxEmpty(-1,%newPos,2,2,2,false);
+            %okay = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,1,1,1,false);
             if (%okay)
             {
                 if (%count >1)
@@ -111,5 +111,5 @@ function createMaze()
       fileName = "data/Prototyping/prefabs/tileStart.prefab";
    };
    getScene(0).add(%mazeStart);
-   expandRooms(%mazeStart, 5);
+   expandRooms(%mazeStart, 7);
 }
