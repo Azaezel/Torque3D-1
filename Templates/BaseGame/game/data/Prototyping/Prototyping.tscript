@@ -61,6 +61,7 @@ function expandRooms(%nodeObj, %count)
         if (%frameMesh.hasNode("exit"@ %i))
         {
             %exitTrans = %frameMesh.getNodeTransform("exit"@ %i);
+            warn("exit"@ %i @" found:"@ %exitTrans);
             %pos = getWords(%exitTrans,0,2);             
 		    %rot  = getWords(%exitTrans,3,5) SPC mRadToDeg(getWord(%exitTrans,6));
 		    %offset  = vectorScale(vectorNormalize(toEuler(%exitTrans)),2.0);

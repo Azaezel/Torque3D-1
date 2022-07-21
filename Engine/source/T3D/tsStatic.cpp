@@ -1876,21 +1876,20 @@ void TSStatic::getNodeTransform(const char *nodeName, const MatrixF &xfm, Matrix
 {
 
     S32 nodeIDx = getShapeResource()->findNode(nodeName);
-    if (nodeIDx < 0)
-    {
-       *outMat = getTransform();
-       return;
-    }
 
-    MatrixF mountTransform = mShapeInstance->mNodeTransforms[nodeIDx];
-    mountTransform.mul(xfm);
-    const Point3F &scale = getScale();
+    MatrixF nodeTransform(xfm);
+    const Point3F& scale = getScale();
+    if (nodeIDx != -1)
+    {
+       nodeTransform = mShapeInstance->mNodeTransforms[nodeIDx];
+       nodeTransform.mul(xfm);
+    }
     // The position of the mount point needs to be scaled.
-    Point3F position = mountTransform.getPosition();
+    Point3F position = nodeTransform.getPosition();
     position.convolve(scale);
-    mountTransform.setPosition(position);
+    nodeTransform.setPosition(position);
     // Also we would like the object to be scaled to the model.
-    outMat->mul(mObjToWorld, mountTransform);
+    outMat->mul(mObjToWorld, nodeTransform);
     return;
 }
 
@@ -1898,9 +1897,7 @@ void TSStatic::getNodeTransform(const char *nodeName, const MatrixF &xfm, Matrix
 DefineEngineMethod(TSStatic, hasNode, bool, (const char* nodeName), ,
    "@brief Get if this model has this node name.\n\n")
 {
-   MatrixF xf(true);
-   object->hasNode(nodeName);
-   return xf;
+   return object->hasNode(nodeName);
 }
 
 DefineEngineMethod(TSStatic, getNodeTransform, TransformF, (const char *nodeName), ,
