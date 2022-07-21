@@ -3,6 +3,8 @@ $ThisPrefab = new SimGroup() {
 
    new TSStatic() {
       ShapeAsset = "Prototyping:tileStart_shape";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
       internalName = "frame";
    };
 };

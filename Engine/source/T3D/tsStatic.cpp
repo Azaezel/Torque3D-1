@@ -1876,7 +1876,11 @@ void TSStatic::getNodeTransform(const char *nodeName, const MatrixF &xfm, Matrix
 {
 
     S32 nodeIDx = getShapeResource()->findNode(nodeName);
-    if (nodeIDx < 0) return;
+    if (nodeIDx < 0)
+    {
+       *outMat = getTransform();
+       return;
+    }
 
     MatrixF mountTransform = mShapeInstance->mNodeTransforms[nodeIDx];
     mountTransform.mul(xfm);
