@@ -869,7 +869,7 @@ bool ExplosionData::preload(bool server, String &errorStr)
 
          if (!getSoundProfile())
          {
-            Con::errorf(ConsoleLogEntry::General, "SplashData::preload: Cant get an sfxProfile for splash.");
+            Con::errorf(ConsoleLogEntry::General, "ExplosionData::preload: Cant get an sfxProfile for splash.");
             return false;
          }
       }

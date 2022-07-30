@@ -195,7 +195,7 @@ bool PrecipitationData::preload( bool server, String &errorStr )
          _setSound(getSound());
 
          if (!getSoundProfile())
-            Con::errorf(ConsoleLogEntry::General, "SplashData::preload: Cant get an sfxProfile for splash.");
+            Con::errorf(ConsoleLogEntry::General, "PrecipitationData::preload: Cant get an sfxProfile for splash.");
       }
    }
 

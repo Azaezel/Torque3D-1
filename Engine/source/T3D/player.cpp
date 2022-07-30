@@ -53,7 +53,7 @@
 #include "T3D/missionArea.h"
 #include "T3D/fx/particleEmitter.h"
 #include "T3D/fx/cameraFXMgr.h"
-#include "T3D/fx/splash.h"
+#include "T3D/fx/explosion.h"
 #include "T3D/tsStatic.h"
 #include "T3D/physics/physicsPlugin.h"
 #include "T3D/physics/physicsPlayer.h"
@@ -1051,8 +1051,8 @@ void PlayerData::initPersistFields()
 
    addGroup( "Interaction: Splashes" );
 
-      addField( "splash", TYPEID< SplashData >(), Offset(splash, PlayerData),
-         "@brief SplashData datablock used to create splashes when the player moves "
+      addField( "splash", TYPEID< ExplosionData >(), Offset(splash, PlayerData),
+         "@brief ExplosionData datablock used to create splashes when the player moves "
          "through water.\n\n" );
       addField( "splashVelocity", TypeF32, Offset(splashVelocity, PlayerData),
          "@brief Minimum velocity when moving through water to generate splashes.\n\n" );
@@ -3954,8 +3954,7 @@ void Player::updateActionThread()
             // Emit footpuffs.
 
             if (!footfallDustOverride && rInfo.t <= 0.5f && mWaterCoverage == 0.0f
-                                         && material && material->mShowDust
-                                         && mDataBlock->footPuffEmitter != nullptr)
+                                         && material && material->mShowDust )
             {
                // New emitter every time for visibility reasons
                ParticleEmitter * emitter = new ParticleEmitter;
@@ -7251,7 +7250,7 @@ void Player::createSplash( Point3F &pos, F32 speed )
    {
       MatrixF trans = getTransform();
       trans.setPosition( pos );
-      Splash *splash = new Splash;
+      Explosion *splash = new Explosion;
       splash->onNewDataBlock( mDataBlock->splash, false );
       splash->setTransform( trans );
       splash->setInitialState( trans.getPosition(), Point3F( 0.0, 0.0, 1.0 ) );

@@ -50,7 +50,7 @@
 #include "math/mathIO.h"
 #include "sim/netConnection.h"
 #include "T3D/fx/particleEmitter.h"
-#include "T3D/fx/splash.h"
+#include "T3D/fx/explosion.h"
 #include "T3D/physics/physicsPlugin.h"
 #include "T3D/physics/physicsWorld.h"
 #include "gfx/gfxTransformSaver.h"
@@ -344,7 +344,7 @@ void afxMagicMissileData::initPersistFields()
    addField("waterExplosion", TYPEID< ExplosionData >(), Offset(waterExplosion, ProjectileData));
    */
 
-   addField("splash", TYPEID<SplashData>(), Offset(splash, afxMagicMissileData));
+   addField("splash", TYPEID<ExplosionData>(), Offset(splash, afxMagicMissileData));
    /* From stock Projectile code...
    addField("decal", TYPEID< DecalData >(), Offset(decal, ProjectileData));
    */
@@ -1777,7 +1777,7 @@ void afxMagicMissile::create_splash(const Point3F& pos)
   MatrixF xfm = getTransform();
   xfm.setPosition(pos);
 
-  Splash* splash = new Splash();
+  Explosion* splash = new Explosion();
   splash->onNewDataBlock(mDataBlock->splash, false);
   splash->setTransform(xfm);
   splash->setInitialState(xfm.getPosition(), Point3F(0.0, 0.0, 1.0));

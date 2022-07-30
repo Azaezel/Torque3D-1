@@ -46,7 +46,7 @@
 
 #include "afx/afxConstraint.h"
 
-class SplashData;
+class ExplosionData;
 class ShapeBase;
 class TSShapeInstance;
 class PhysicsWorld;
@@ -123,7 +123,7 @@ public:
   S32 waterExplosionId;               // Water Explosion ID
   */
 
-  SplashData* splash;                 // Water Splash Datablock
+  ExplosionData* splash;                 // Water Splash Datablock
   S32 splashId;                       // Water splash ID
 
   DECLARE_SOUNDASSET(afxMagicMissileData, ProjectileSound);

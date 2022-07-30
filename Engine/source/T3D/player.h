@@ -42,7 +42,7 @@ class Material;
 class ParticleEmitter;
 class ParticleEmitterData;
 class DecalData;
-class SplashData;
+class ExplosionData;
 class PhysicsPlayer;
 class Player;
 
@@ -328,7 +328,7 @@ struct PlayerData: public ShapeBaseData {
    ParticleEmitterData * dustEmitter;
    S32 dustID;
 
-   SplashData* splash;
+   ExplosionData* splash;
    S32 splashId;
    F32 splashVelocity;
    F32 splashAngle;
