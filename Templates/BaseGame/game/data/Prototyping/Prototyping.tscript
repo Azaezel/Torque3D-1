@@ -63,16 +63,11 @@ function expandRooms(%nodeObj, %count)
             %exitTrans = %frameMesh.getNodeTransform("exit"@ %i);
             %pos = getWords(%exitTrans,0,2);             
 		    %rot  = getWords(%exitTrans,3,5) SPC mRadToDeg(getWord(%exitTrans,6));
-		    %offset  = vectorScale(vectorNormalize(toEuler(%exitTrans)),2);
-            //warn("exit"@ %i @" found:("@ %pos @")("@ vectorNormalize(toEuler(%exitTrans)) @")");
+            %degRot = getRotationForwardVector(getWords(%exitTrans,3,6));
+		    %offset  = vectorScale(%degRot,3);
+            //warn("exit"@ %i @" found:("@ %pos @")("@ %offset @")");
             %newPos = vectorAdd(%pos,%offset);
-            //%okay = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,2,2,2,false);
-            
-            %hit = containerRayCast(%pos,%newPos,$TypeMasks::StaticObjectType);            
-            %okay = false;            
-            if (%hit == 0)
-                %okay = true;
-                
+            %okay = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,1.9,1.9,1.9,false); 
             if (%okay)
             {
                 if (%count >1)
@@ -93,7 +88,7 @@ function expandRooms(%nodeObj, %count)
              }
              else
              { 
-                warn(%frameMesh.shapeAsset @".exit"@ %i @" blocked at ("@ %pos @")+("@ %offset @")=("@ %newPos @")");
+                //warn(%frameMesh.shapeAsset @".exit"@ %i @" blocked at ("@ %pos @")+("@ %offset @")=("@ %newPos @")");
                 %okay = false;
              }
              if (%okay == false)
@@ -117,5 +112,5 @@ function createMaze()
       fileName = "data/Prototyping/prefabs/tileStart.prefab";
    };
    getScene(0).add(%mazeStart);
-   expandRooms(%mazeStart, 10);
+   expandRooms(%mazeStart, 20);
 }
