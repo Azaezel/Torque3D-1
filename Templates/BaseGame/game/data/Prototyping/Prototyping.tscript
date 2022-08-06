@@ -64,10 +64,10 @@ function expandRooms(%nodeObj, %count)
             %pos = getWords(%exitTrans,0,2);             
 		    %rot  = getWords(%exitTrans,3,5) SPC mRadToDeg(getWord(%exitTrans,6));
             %degRot = getRotationForwardVector(getWords(%exitTrans,3,6));
-		    %offset  = vectorScale(%degRot,3);
+		    %offset  = vectorScale(%degRot,2);
             //warn("exit"@ %i @" found:("@ %pos @")("@ %offset @")");
             %newPos = vectorAdd(%pos,%offset);
-            %okay = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,1.9,1.9,1.9,false); 
+            %okay = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,0.9,0.9,0.9,false); 
             if (%okay)
             {
                 if (%count >1)
