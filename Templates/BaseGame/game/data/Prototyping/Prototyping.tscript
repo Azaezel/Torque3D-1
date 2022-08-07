@@ -62,7 +62,7 @@ function expandRooms(%nodeObj, %count)
             %exitTrans = %frameMesh.getNodeTransform("exit"@ %i);
             %pos = getWords(%exitTrans,0,2);             
 		    %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
-            %degRot = getRotationForwardVector(getWords(%exitTrans,3,6));
+            %degRot = getRotationForwardVector(%rot);
 		    %offset  = vectorScale(%degRot,2);
             //warn("exit"@ %i @" found:("@ %pos @")("@ %offset @")");
             %newPos = vectorAdd(%pos,%offset);
@@ -80,10 +80,24 @@ function expandRooms(%nodeObj, %count)
                         rotation = %rot;
                     };
                     getScene(0).add(%mazNode);
-                    expandRooms(%mazNode, %count);
+                    if (!expandRooms(%mazNode, %count))
+                        %count++;
                 }
                 else
+                {
                     %okay = false;
+                    if ($goalPlaced == false)
+                    {
+                        %mazNode = new Prefab(goal)
+                        { 
+                            fileName = "data/Prototyping/prefabs/tileGoal.prefab";
+                            position = %pos;
+                            rotation = %rot;
+                        };
+                        getScene(0).add(%mazNode);
+                        $goalPlaced = true;
+                    }
+                }
                     
              }
              else
@@ -108,9 +122,10 @@ function expandRooms(%nodeObj, %count)
 
 function createMaze()
 {
-   %mazeStart = new Prefab() {
+   $goalPlaced = false;
+   %mazeStart = new Prefab(start) {
       fileName = "data/Prototyping/prefabs/tileStart.prefab";
    };
    getScene(0).add(%mazeStart);
-   expandRooms(%mazeStart, 50);
+   expandRooms(%mazeStart, 10);
 }
