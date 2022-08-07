@@ -52,7 +52,6 @@ function Prototyping::onDestroyClientConnection(%this)
 function expandRooms(%nodeObj, %count)
 {
     if (!isObject(%nodeObj)) return;
-    %count--;
     if (%count <=0) return;
     //warn("node depth remaing: ", %count);
     %frameMesh = %nodeObj.getChildGroup()-->frame;
@@ -62,7 +61,7 @@ function expandRooms(%nodeObj, %count)
         {
             %exitTrans = %frameMesh.getNodeTransform("exit"@ %i);
             %pos = getWords(%exitTrans,0,2);             
-		    %rot  = getWords(%exitTrans,3,5) SPC mRadToDeg(getWord(%exitTrans,6));
+		    %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
             %degRot = getRotationForwardVector(getWords(%exitTrans,3,6));
 		    %offset  = vectorScale(%degRot,2);
             //warn("exit"@ %i @" found:("@ %pos @")("@ %offset @")");
@@ -72,6 +71,7 @@ function expandRooms(%nodeObj, %count)
             {
                 if (%count >1)
                 {
+                    %count--;
                     %tilenum = getrandom(4)+1;
                     %mazNode = new Prefab()
                     { 
@@ -112,5 +112,5 @@ function createMaze()
       fileName = "data/Prototyping/prefabs/tileStart.prefab";
    };
    getScene(0).add(%mazeStart);
-   expandRooms(%mazeStart, 20);
+   expandRooms(%mazeStart, 50);
 }
