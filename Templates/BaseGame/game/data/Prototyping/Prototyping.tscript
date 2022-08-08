@@ -49,9 +49,16 @@ function Prototyping::onDestroyClientConnection(%this)
 {
 }
 
-function getNextTileSize(%rot)
+function getNextTileBounds(%rot)
 {
-    return "2 2 2";
+    %baseScale = "4 4 8"; //todo: determine from lookup
+    %rotatedScale = VectorRot(%baseScale,%rot);
+    %rotatedScale.x = mRound(mAbs(%rotatedScale.x));
+    %rotatedScale.y = mRound(mAbs(%rotatedScale.y));
+    %rotatedScale.z = mRound(mAbs(%rotatedScale.z));
+    //echo(%rotatedScale);
+    %rotatedScale = VectorScale(%rotatedScale,0.5);
+    return %rotatedScale;
 }
 
 function expandRooms(%nodeObj, %count)
@@ -66,25 +73,25 @@ function expandRooms(%nodeObj, %count)
         {
             %wallwidth = "0.1 0.1 0.1";
             %exitTrans = %frameMesh.getNodeTransform("exit"@ %i);
-            %pos = getWords(%exitTrans,0,2);             
+            %exitPos = getWords(%exitTrans,0,2);             
 		    %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
             %degRot = getRotationForwardVector(%rot);
-		    %offset  = VectorMul(%degRot,getNextTileSize(%degRot));
-            //warn("exit"@ %i @" found:("@ %pos @")("@ %offset @")");
-            %newPos = vectorAdd(%pos,%offset);
-            %boxRad = VectorScale(getNextTileSize(),0.5);
-            %boxRad = VectorSub(%boxRad, %wallwidth);
-            %okay = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,0.9,0.9,0.9,false); 
+            %nextBounds = getNextTileBounds(getWord(%exitTrans,6));
+            //warn("exit"@ %i @" found:("@ %exitPos @")("@ %nextBounds @")");
+            %boxRad = VectorSub(%nextBounds, %wallwidth);
+            %newPos = vectorAdd(%exitPos,VectorScale(%degRot,VectorLen(%nextBounds)));
+            //echo("exitPos:"@ %newPos @" nextBounds:"@ %nextBounds @" scale:"@ %boxRad );
+            %okay = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,%boxRad.x,%boxRad.y,%boxRad.z,false); 
             if (%okay)
             {
                 if (%count >1)
                 {
                     %count--;
-                    %tilenum = getrandom(6)+1;
+                    %tilenum = getrandom(7)+1;
                     %mazNode = new Prefab()
                     { 
                         fileName = "data/Prototyping/prefabs/tile"@ %tilenum @".prefab";
-                        position = %pos;
+                        position = %exitPos;
                         rotation = %rot;
                     };
                     getScene(0).add(%mazNode);
@@ -99,11 +106,12 @@ function expandRooms(%nodeObj, %count)
                         %mazNode = new Prefab(goal)
                         { 
                             fileName = "data/Prototyping/prefabs/tileGoal.prefab";
-                            position = %pos;
+                            position = %exitPos;
                             rotation = %rot;
                         };
                         getScene(0).add(%mazNode);
                         $goalPlaced = true;
+                        %count++;
                         return false;
                     }
                 }
@@ -111,7 +119,7 @@ function expandRooms(%nodeObj, %count)
              }
              else
              { 
-                //warn(%frameMesh.shapeAsset @".exit"@ %i @" blocked at ("@ %pos @")+("@ %offset @")=("@ %newPos @")");
+                //warn(%frameMesh.shapeAsset @".exit"@ %i @" blocked at ("@ %exitPos @")+("@ %offset @")=("@ %newPos @")");
                 %okay = false;
              }
              if (%okay == false)
@@ -119,7 +127,7 @@ function expandRooms(%nodeObj, %count)
                 %mazNode = new Prefab()
                 { 
                     fileName = "data/Prototyping/prefabs/tileBlock.prefab";
-                    position = %pos;
+                    position = %exitPos;
                     rotation = %rot;
                 };
                 getScene(0).add(%mazNode);
@@ -137,4 +145,6 @@ function createMaze()
    };
    getScene(0).add(%mazeStart);
    expandRooms(%mazeStart, 20);
+   if ($goalPlaced == false)
+    error("bad maze!");
 }
