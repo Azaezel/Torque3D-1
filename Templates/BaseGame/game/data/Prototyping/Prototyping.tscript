@@ -48,7 +48,12 @@ function Prototyping::onCreateClientConnection(%this)
 function Prototyping::onDestroyClientConnection(%this)
 {
 }
-    
+
+function getNextTileSize(%rot)
+{
+    return "2 2 2";
+}
+
 function expandRooms(%nodeObj, %count)
 {
     if (!isObject(%nodeObj)) return;
@@ -59,20 +64,23 @@ function expandRooms(%nodeObj, %count)
     {
         if (%frameMesh.hasNode("exit"@ %i))
         {
+            %wallwidth = "0.1 0.1 0.1";
             %exitTrans = %frameMesh.getNodeTransform("exit"@ %i);
             %pos = getWords(%exitTrans,0,2);             
 		    %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
             %degRot = getRotationForwardVector(%rot);
-		    %offset  = vectorScale(%degRot,2);
+		    %offset  = VectorMul(%degRot,getNextTileSize(%degRot));
             //warn("exit"@ %i @" found:("@ %pos @")("@ %offset @")");
             %newPos = vectorAdd(%pos,%offset);
+            %boxRad = VectorScale(getNextTileSize(),0.5);
+            %boxRad = VectorSub(%boxRad, %wallwidth);
             %okay = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,0.9,0.9,0.9,false); 
             if (%okay)
             {
                 if (%count >1)
                 {
                     %count--;
-                    %tilenum = getrandom(4)+1;
+                    %tilenum = getrandom(6)+1;
                     %mazNode = new Prefab()
                     { 
                         fileName = "data/Prototyping/prefabs/tile"@ %tilenum @".prefab";
@@ -96,6 +104,7 @@ function expandRooms(%nodeObj, %count)
                         };
                         getScene(0).add(%mazNode);
                         $goalPlaced = true;
+                        return false;
                     }
                 }
                     
@@ -127,5 +136,5 @@ function createMaze()
       fileName = "data/Prototyping/prefabs/tileStart.prefab";
    };
    getScene(0).add(%mazeStart);
-   expandRooms(%mazeStart, 10);
+   expandRooms(%mazeStart, 20);
 }
