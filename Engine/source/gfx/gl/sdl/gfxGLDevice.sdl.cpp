@@ -253,11 +253,18 @@ void GFXGLWindowTarget::_WindowPresent()
 
 void GFXGLWindowTarget::_teardownCurrentMode()
 {
+   if (glIsFramebuffer(mBackBufferFBO))
+      glDeleteFramebuffers(1, &mBackBufferFBO);
+   mBackBufferFBO = 0;
 
+   if (glIsFramebuffer(mCopyFBO))
+      glDeleteFramebuffers(1, &mCopyFBO);
+   mCopyFBO = 0;
 }
 
 void GFXGLWindowTarget::_setupNewMode()
 {
+   makeActive();
 }
 
 void GFXGLWindowTarget::_makeContextCurrent()

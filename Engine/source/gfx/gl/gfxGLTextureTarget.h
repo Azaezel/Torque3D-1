@@ -61,8 +61,10 @@ public:
    _GFXGLTargetDesc* getTargetDesc(RenderSlot slot) const;
 
    /// @}
-   
-   void deactivate();
+
+   virtual void activate() override;
+   virtual void deactivate() override;
+
    void zombify();
    void resurrect();
    virtual const String describeSelf() const;
