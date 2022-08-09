@@ -1034,6 +1034,26 @@ void GFXGLDevice::_updateRenderTargets()
    }
 }
 
+void GFXGLDevice::beginReset()
+{
+   mInitialized = false;
+
+   // Clean up some commonly dangling state. This helps prevents issues with
+   // items that are destroyed by the texture manager callbacks and recreated
+   // later, but still left bound.
+   setVertexBuffer(NULL);
+   setPrimitiveBuffer(NULL);
+   for (S32 i = 0; i < getNumSamplers(); i++)
+      setTexture(i, NULL);
+}
+
+void GFXGLDevice::endReset(PlatformWindow* windowTarget)
+{
+   mInitialized = true;
+   // Mark everything dirty and flush to card, for sanity.
+   updateStates(true);
+}
+
 GFXFormat GFXGLDevice::selectSupportedFormat(   GFXTextureProfile* profile, 
                                                 const Vector<GFXFormat>& formats, 
                                                 bool texture, 

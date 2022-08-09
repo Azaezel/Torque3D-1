@@ -99,6 +99,8 @@ public:
    virtual GFXWindowTarget *allocWindowTarget(PlatformWindow *window);
    virtual void _updateRenderTargets();
 
+   void beginReset();
+   void endReset(PlatformWindow* windowTarget);
    ///@}
 
    /// @name Shader functions
