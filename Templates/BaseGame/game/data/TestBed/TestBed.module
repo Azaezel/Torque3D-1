@@ -1,0 +1,3 @@
+<ModuleDefinition canSave="true" canSaveDynamicFields="true" ModuleId="TestBed" VersionId="1" Group="Game" scriptFile="TestBed.tscript" CreateFunction="onCreate" DestroyFunction="onDestroy">
+    <DeclaredAssets canSave="true" canSaveDynamicFields="true" Extension="asset.taml" Recurse="true"/>
+</ModuleDefinition>

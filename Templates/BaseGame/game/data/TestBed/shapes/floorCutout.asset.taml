@@ -1,0 +1,1 @@
+<ShapeAsset canSave="true" canSaveDynamicFields="true" AssetName="floorCutout" fileName="@assetFile=floorCutout.dae" constuctorFileName="@assetFile=floorCutout.tscript" materialSlot0="@asset=TestBed:FloorGray" MaterialSlot1="@asset=TestBed:WallOrange" originalFilePath="D:/Gamedev/art/Blockout/testing/floorCutout.dae"/>

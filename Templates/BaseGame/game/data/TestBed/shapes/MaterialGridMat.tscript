@@ -1,0 +1,7 @@
+//--- OBJECT WRITE BEGIN ---
+singleton Material(MaterialGridMat) {
+   mapTo="MaterialGrid";
+   ORMConfigMapAsset[0] = "TestBed:materialGrid_ORM_image";
+   originalAssetName = "MaterialGrid";
+};
+//--- OBJECT WRITE END ---

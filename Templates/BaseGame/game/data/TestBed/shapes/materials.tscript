@@ -1,0 +1,15 @@
+
+singleton Material(floorCutout_WallOrange_001)
+{
+   mapTo = "WallOrange.001";
+   DiffuseMap[0] = "WallOrange.png.001";
+   metalness[0] = "0.5";
+   translucentBlendOp = "None";
+};
+
+singleton Material(floorCutout_FloorGray_002)
+{
+   mapTo = "FloorGray.002";
+   DiffuseMap[0] = "FloorGray.png.001";
+   translucentBlendOp = "None";
+};

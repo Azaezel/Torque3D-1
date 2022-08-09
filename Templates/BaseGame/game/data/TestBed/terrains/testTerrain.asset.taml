@@ -1,0 +1,1 @@
+<TerrainAsset canSave="true" canSaveDynamicFields="true" AssetName="testTerrain" terrainFile="@assetFile=testTerrain.ter" genWithNoise="0" resolution="1024" terrainMaterailAsset0="@asset=TestBed:dirtTerrMat" terrainMaterailAsset1="@asset=TestBed:grassTerrMat" TerrainMaterialAsset="TestBed:dirtTerrMat" VersionId="1"/>

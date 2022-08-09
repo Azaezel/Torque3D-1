@@ -1,0 +1,1513 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+    <asset>
+        <contributor>
+            <author>Torque3D MIT User</author>
+            <authoring_tool>Torque 3D MIT 3.9.0 Object Exporter</authoring_tool>
+        </contributor>
+        <created>9/15/2021 3:57:26 PM</created>
+        <modified>9/15/2021 3:57:26 PM</modified>
+        <unit name="meter" meter="1"/>
+        <up_axis>Z_UP</up_axis>
+    </asset>
+    <library_images>
+        <image id="FloorGray" name="FloorGray">
+            <init_from>file://warningMat</init_from>
+        </image>
+        <image id="WallOrange" name="WallOrange">
+            <init_from>file://warningMat</init_from>
+        </image>
+    </library_images>
+    <library_effects>
+        <effect id="FloorGray-effect" name="FloorGray-effect">
+            <profile_COMMON>
+                <newparam sid="FloorGray-surface">
+                    <surface type="2D">
+                        <init_from>FloorGray</init_from>
+                        <format>A8R8G8B8</format>
+                    </surface>
+                </newparam>
+                <newparam sid="FloorGray-sampler">
+                    <sampler2D>
+                        <source>FloorGray-surface</source>
+                    </sampler2D>
+                </newparam>
+                <technique sid="common">
+                    <blinn>
+                        <emission>
+                            <color sid="emission">0.0 0.0 0.0 1.0</color>
+                        </emission>
+                        <ambient>
+                            <color sid="ambient">0.0 0.0 0.0 1.0</color>
+                        </ambient>
+                        <diffuse>
+                            <texture texture="FloorGray-sampler" texcoord="UVMap">
+                                <extra>
+                                    <technique profile="MAYA">
+                                        <wrapU sid="wrapU0">TRUE</wrapU>
+                                        <wrapV sid="wrapV0">TRUE</wrapV>
+                                        <blend_mode>ADD</blend_mode>
+                                    </technique>
+                                </extra>
+                            </texture>
+                        </diffuse>
+                        <specular>
+                            <color sid="specular">0.5 0.5 0.5 1.0</color>
+                        </specular>
+                        <shininess>
+                            <float sid="shininess">1.0</float>
+                        </shininess>
+                        <reflective>
+                            <color sid="reflective">0.0 0.0 0.0 1.0</color>
+                        </reflective>
+                        <reflectivity>
+                            <float sid="reflectivity">0.5</float>
+                        </reflectivity>
+                        <transparent opaque="RGB_ZERO">
+                            <color sid="transparent">0.0 0.0 0.0 1.0</color>
+                        </transparent>
+                        <transparency>
+                            <float sid="transparency">0.0</float>
+                        </transparency>
+                        <index_of_refraction>
+                            <float sid="index_of_refraction">1</float>
+                        </index_of_refraction>
+                    </blinn>
+                </technique>
+            </profile_COMMON>
+        </effect>
+        <effect id="WallOrange-effect" name="WallOrange-effect">
+            <profile_COMMON>
+                <newparam sid="WallOrange-surface">
+                    <surface type="2D">
+                        <init_from>WallOrange</init_from>
+                        <format>A8R8G8B8</format>
+                    </surface>
+                </newparam>
+                <newparam sid="WallOrange-sampler">
+                    <sampler2D>
+                        <source>WallOrange-surface</source>
+                    </sampler2D>
+                </newparam>
+                <technique sid="common">
+                    <blinn>
+                        <emission>
+                            <color sid="emission">0.0 0.0 0.0 1.0</color>
+                        </emission>
+                        <ambient>
+                            <color sid="ambient">0.0 0.0 0.0 1.0</color>
+                        </ambient>
+                        <diffuse>
+                            <texture texture="WallOrange-sampler" texcoord="UVMap">
+                                <extra>
+                                    <technique profile="MAYA">
+                                        <wrapU sid="wrapU0">TRUE</wrapU>
+                                        <wrapV sid="wrapV0">TRUE</wrapV>
+                                        <blend_mode>ADD</blend_mode>
+                                    </technique>
+                                </extra>
+                            </texture>
+                        </diffuse>
+                        <specular>
+                            <color sid="specular">0.5 0.5 0.5 1.0</color>
+                        </specular>
+                        <shininess>
+                            <float sid="shininess">1.0</float>
+                        </shininess>
+                        <reflective>
+                            <color sid="reflective">0.0 0.0 0.0 1.0</color>
+                        </reflective>
+                        <reflectivity>
+                            <float sid="reflectivity">0.5</float>
+                        </reflectivity>
+                        <transparent opaque="RGB_ZERO">
+                            <color sid="transparent">0.0 0.0 0.0 1.0</color>
+                        </transparent>
+                        <transparency>
+                            <float sid="transparency">0.0</float>
+                        </transparency>
+                        <index_of_refraction>
+                            <float sid="index_of_refraction">1</float>
+                        </index_of_refraction>
+                    </blinn>
+                </technique>
+            </profile_COMMON>
+        </effect>
+    </library_effects>
+    <library_materials>
+        <material id="FloorGray-material" name="FloorGray">
+            <instance_effect url="#FloorGray-effect"/>
+        </material>
+        <material id="WallOrange-material" name="WallOrange">
+            <instance_effect url="#WallOrange-effect"/>
+        </material>
+    </library_materials>
+    <library_geometries>
+        <geometry id="testbedCutoutShape2-mesh" name="testbedCutoutShape2">
+            <mesh>
+                <source id="testbedCutoutShape2-mesh-positions">
+                    <float_array id="testbedCutoutShape2-mesh-positions-array" count="174">1.0000 -32.0000 5.1782 -15.0000 -16.0000 5.1782 -15.0000 -32.0000 5.1782 1.0000 -16.0000 5.1782 -15.0000 0.0000 5.1782 1.0000 0.0000 5.1782 -15.0000 16.0000 5.1782 1.0000 16.0000 5.1782 -15.0000 32.0000 5.1782 1.0000 32.0000 5.1782 17.0000 -32.0000 5.1782 17.0000 -16.0000 5.1782 33.0000 -32.0000 5.1782 33.0000 -16.0000 5.1782 17.0000 16.0000 5.1782 17.0000 32.0000 5.1782 17.0000 0.0000 5.1782 33.0000 0.0000 5.1782 33.0000 16.0000 5.1782 33.0000 32.0000 5.1782 -1.4611 -16.0707 5.1634 -1.4695 15.9711 5.1634 0.9978 16.0040 5.1634 1.0063 -16.0378 5.1634 -1.4695 15.9711 1.7180 -1.4611 -16.0707 1.7180 1.0063 -16.0378 1.7180 0.9978 16.0040 1.7180 17.0701 17.6878 5.1634 -1.4921 17.6680 5.1634 -1.4921 17.6680 1.7180 17.0701 17.6878 1.7180 17.0927 15.9910 5.1634 17.0927 15.9910 1.7180 17.0020 -15.8246 5.1634 16.9936 16.2172 5.1634 19.4609 16.2501 5.1634 19.4694 -15.7917 5.1634 16.9936 16.2172 1.7180 17.0020 -15.8246 1.7180 19.4694 -15.7917 1.7180 19.4609 16.2501 1.7180 17.5187 -15.9749 5.1634 -1.0436 -15.9947 5.1634 -1.0436 -15.9947 1.7180 17.5187 -15.9749 1.7180 -1.0210 -17.6915 5.1634 17.5413 -17.6717 5.1634 17.5413 -17.6717 1.7180 -1.0210 -17.6915 1.7180 -1.4611 -16.0708 1.7227 -1.4695 15.9712 1.7227 19.4539 16.0090 1.7227 19.4624 -16.0330 1.7227 -1.4695 15.9712 -1.7227 -1.4611 -16.0708 -1.7227 19.4624 -16.0330 -1.7227 19.4539 16.0090 -1.7227 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape2-mesh-positions-array" count="58" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="testbedCutoutShape2-mesh-normals">
+                    <float_array id="testbedCutoutShape2-mesh-normals-array" count="36">0.0000 0.0000 1.0000 0.0000 0.0000 -1.0000 1.0000 0.0003 -0.0000 -1.0000 -0.0003 -0.0000 -0.0133 0.9999 0.0000 0.0133 -0.9999 0.0000 -0.0011 1.0000 -0.0000 0.0011 -1.0000 0.0000 -0.9999 -0.0133 -0.0000 0.9999 0.0133 0.0000 -0.0018 1.0000 -0.0000 0.0018 -1.0000 0.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape2-mesh-normals-array" count="12" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="testbedCutoutShape2-mesh-map-0">
+                    <float_array id="testbedCutoutShape2-mesh-map-0-array" count="96">16.0000 -15.0000 0.0000 1.0000 0.0000 -15.0000 16.0000 1.0000 16.5196 1.9431 -15.5196 1.5245 -15.5195 -0.9431 16.5195 -0.5245 16.5196 1.5245 -15.5196 1.9431 -15.5195 -0.5245 16.5195 -0.9431 16.5209 2.2227 -15.5209 2.2227 -15.5209 -1.2227 16.5209 -1.2227 1.7338 2.2227 -0.7338 2.2227 -0.7338 -1.2227 1.7338 -1.2227 9.7811 2.2227 -8.7811 2.2227 -8.7811 -1.2227 9.7811 -1.2227 9.7804 1.4623 -8.7804 1.2347 -8.7804 -0.4623 9.7804 -0.2347 2.2227 1.3485 -1.2227 1.3485 -1.2227 -0.3485 2.2227 -0.3485 9.7804 1.2347 -8.7804 1.4622 -8.7804 -0.2347 9.7804 -0.4622 16.3991 11.1704 -15.6402 10.7518 -15.3990 -10.1704 16.6401 -9.7518 16.6402 10.7518 -15.3991 11.1704 -15.6401 -9.7518 16.3990 -10.1704 10.9618 2.2227 -9.9618 2.2227 -9.9618 -1.2227 10.9618 -1.2227 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape2-mesh-map-0-array" count="48" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="testbedCutoutShape2-mesh-vertices">
+                    <input semantic="POSITION" source="#testbedCutoutShape2-mesh-positions"/>
+                </vertices>
+                <triangles material="FloorGray-material" count="20">
+                    <input semantic="VERTEX" source="#testbedCutoutShape2-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#testbedCutoutShape2-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#testbedCutoutShape2-mesh-map-0" offset="2" set="0"/>
+                    <p>0 0 0 1 0 1 2 0 2 0 0 0 3 0 3 1 0 1 3 0 0 4 0 1 1 0 2 3 0 0 5 0 3 4 0 1 5 0 0 6 0 1 4 0 2 5 0 0 7 0 3 6 0 1 7 0 0 8 0 1 6 0 2 7 0 0 9 0 3 8 0 1 10 0 0 3 0 1 0 0 2 10 0 0 11 0 3 3 0 1 12 0 0 11 0 1 10 0 2 12 0 0 13 0 3 11 0 1 14 0 0 9 0 1 7 0 2 14 0 0 15 0 3 9 0 1 13 0 0 16 0 1 11 0 2 13 0 0 17 0 3 16 0 1 17 0 0 14 0 1 16 0 2 17 0 0 18 0 3 14 0 1 18 0 0 15 0 1 14 0 2 18 0 0 19 0 3 15 0 1 </p>
+                </triangles>
+                <triangles material="WallOrange-material" count="140">
+                    <input semantic="VERTEX" source="#testbedCutoutShape2-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#testbedCutoutShape2-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#testbedCutoutShape2-mesh-map-0" offset="2" set="0"/>
+                    <p>22 0 6 21 0 5 20 0 4 20 0 4 22 0 6 20 0 4 22 0 6 20 0 4 20 0 4 23 0 7 22 0 6 20 0 4 26 1 10 25 1 9 24 1 8 24 1 8 26 1 10 24 1 8 26 1 10 24 1 8 24 1 8 27 1 11 26 1 10 24 1 8 27 2 14 22 2 13 23 2 12 23 2 12 27 2 14 23 2 12 27 2 14 23 2 12 23 2 12 26 2 15 27 2 14 23 2 12 25 3 14 20 3 13 21 3 12 21 3 12 25 3 14 21 3 12 25 3 14 21 3 12 21 3 12 24 3 15 25 3 14 21 3 12 24 4 18 21 4 17 22 4 16 22 4 16 24 4 18 22 4 16 24 4 18 22 4 16 22 4 16 27 4 19 24 4 18 22 4 16 26 5 18 23 5 17 20 5 16 20 5 16 26 5 18 20 5 16 26 5 18 20 5 16 20 5 16 25 5 19 26 5 18 20 5 16 30 6 22 29 6 21 28 6 20 28 6 20 30 6 22 28 6 20 30 6 22 28 6 20 28 6 20 31 6 23 30 6 22 28 6 20 33 7 22 32 7 21 21 7 20 21 7 20 33 7 22 21 7 20 33 7 22 21 7 20 21 7 20 24 7 23 33 7 22 21 7 20 29 0 26 21 0 25 32 0 24 32 0 24 29 0 26 32 0 24 29 0 26 32 0 24 32 0 24 28 0 27 29 0 26 32 0 24 30 8 30 24 8 29 21 8 28 21 8 28 30 8 30 21 8 28 30 8 30 21 8 28 21 8 28 29 8 31 30 8 30 21 8 28 31 1 34 33 1 33 24 1 32 24 1 32 31 1 34 24 1 32 31 1 34 24 1 32 24 1 32 30 1 35 31 1 34 24 1 32 28 9 30 32 9 29 33 9 28 33 9 28 28 9 30 33 9 28 28 9 30 33 9 28 33 9 28 31 9 31 28 9 30 33 9 28 36 0 6 35 0 5 34 0 4 34 0 4 36 0 6 34 0 4 36 0 6 34 0 4 34 0 4 37 0 7 36 0 6 34 0 4 40 1 10 39 1 9 38 1 8 38 1 8 40 1 10 38 1 8 40 1 10 38 1 8 38 1 8 41 1 11 40 1 10 38 1 8 41 2 14 36 2 13 37 2 12 37 2 12 41 2 14 37 2 12 41 2 14 37 2 12 37 2 12 40 2 15 41 2 14 37 2 12 39 3 14 34 3 13 35 3 12 35 3 12 39 3 14 35 3 12 39 3 14 35 3 12 35 3 12 38 3 15 39 3 14 35 3 12 38 4 18 35 4 17 36 4 16 36 4 16 38 4 18 36 4 16 38 4 18 36 4 16 36 4 16 41 4 19 38 4 18 36 4 16 40 5 18 37 5 17 34 5 16 34 5 16 40 5 18 34 5 16 40 5 18 34 5 16 34 5 16 39 5 19 40 5 18 34 5 16 44 6 22 43 6 21 42 6 20 42 6 20 44 6 22 42 6 20 44 6 22 42 6 20 42 6 20 45 6 23 44 6 22 42 6 20 48 7 22 47 7 21 46 7 20 46 7 20 48 7 22 46 7 20 48 7 22 46 7 20 46 7 20 49 7 23 48 7 22 46 7 20 43 0 26 46 0 25 47 0 24 47 0 24 43 0 26 47 0 24 43 0 26 47 0 24 47 0 24 42 0 27 43 0 26 47 0 24 44 8 30 49 8 29 46 8 28 46 8 28 44 8 30 46 8 28 44 8 30 46 8 28 46 8 28 43 8 31 44 8 30 46 8 28 45 1 34 48 1 33 49 1 32 49 1 32 45 1 34 49 1 32 45 1 34 49 1 32 49 1 32 44 1 35 45 1 34 49 1 32 42 9 30 47 9 29 48 9 28 48 9 28 42 9 30 48 9 28 42 9 30 48 9 28 48 9 28 45 9 31 42 9 30 48 9 28 52 0 38 51 0 37 50 0 36 50 0 36 52 0 38 50 0 36 52 0 38 50 0 36 50 0 36 53 0 39 52 0 38 50 0 36 56 1 42 55 1 41 54 1 40 54 1 40 56 1 42 54 1 40 56 1 42 54 1 40 54 1 40 57 1 43 56 1 42 54 1 40 57 2 14 52 2 13 53 2 12 53 2 12 57 2 14 53 2 12 57 2 14 53 2 12 53 2 12 56 2 15 57 2 14 53 2 12 55 3 14 50 3 13 51 3 12 51 3 12 55 3 14 51 3 12 55 3 14 51 3 12 51 3 12 54 3 15 55 3 14 51 3 12 54 10 46 51 10 45 52 10 44 52 10 44 54 10 46 52 10 44 54 10 46 52 10 44 52 10 44 57 10 47 54 10 46 52 10 44 56 11 46 53 11 45 50 11 44 50 11 44 56 11 46 50 11 44 56 11 46 50 11 44 50 11 44 55 11 47 56 11 46 50 11 44 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">testbedCutoutShape2</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">testbedCutoutShape2-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="testbedCutoutShape32-mesh" name="testbedCutoutShape32">
+            <mesh>
+                <source id="testbedCutoutShape32-mesh-positions">
+                    <float_array id="testbedCutoutShape32-mesh-positions-array" count="174">1.0000 -32.0000 5.1782 -15.0000 -16.0000 5.1782 -15.0000 -32.0000 5.1782 1.0000 -16.0000 5.1782 -15.0000 0.0000 5.1782 1.0000 0.0000 5.1782 -15.0000 16.0000 5.1782 1.0000 16.0000 5.1782 -15.0000 32.0000 5.1782 1.0000 32.0000 5.1782 17.0000 -32.0000 5.1782 17.0000 -16.0000 5.1782 33.0000 -32.0000 5.1782 33.0000 -16.0000 5.1782 17.0000 16.0000 5.1782 17.0000 32.0000 5.1782 17.0000 0.0000 5.1782 33.0000 0.0000 5.1782 33.0000 16.0000 5.1782 33.0000 32.0000 5.1782 -1.4611 -16.0707 5.1634 -1.4695 15.9711 5.1634 0.9978 16.0040 5.1634 1.0063 -16.0378 5.1634 -1.4695 15.9711 1.7180 -1.4611 -16.0707 1.7180 1.0063 -16.0378 1.7180 0.9978 16.0040 1.7180 17.0701 17.6878 5.1634 -1.4921 17.6680 5.1634 -1.4921 17.6680 1.7180 17.0701 17.6878 1.7180 17.0927 15.9910 5.1634 17.0927 15.9910 1.7180 17.0020 -15.8246 5.1634 16.9936 16.2172 5.1634 19.4609 16.2501 5.1634 19.4694 -15.7917 5.1634 16.9936 16.2172 1.7180 17.0020 -15.8246 1.7180 19.4694 -15.7917 1.7180 19.4609 16.2501 1.7180 17.5187 -15.9749 5.1634 -1.0436 -15.9947 5.1634 -1.0436 -15.9947 1.7180 17.5187 -15.9749 1.7180 -1.0210 -17.6915 5.1634 17.5413 -17.6717 5.1634 17.5413 -17.6717 1.7180 -1.0210 -17.6915 1.7180 -1.4611 -16.0708 1.7227 -1.4695 15.9712 1.7227 19.4539 16.0090 1.7227 19.4624 -16.0330 1.7227 -1.4695 15.9712 -1.7227 -1.4611 -16.0708 -1.7227 19.4624 -16.0330 -1.7227 19.4539 16.0090 -1.7227 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape32-mesh-positions-array" count="58" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="testbedCutoutShape32-mesh-normals">
+                    <float_array id="testbedCutoutShape32-mesh-normals-array" count="36">0.0000 0.0000 1.0000 0.0000 0.0000 -1.0000 1.0000 0.0003 -0.0000 -1.0000 -0.0003 -0.0000 -0.0133 0.9999 0.0000 0.0133 -0.9999 0.0000 -0.0011 1.0000 -0.0000 0.0011 -1.0000 0.0000 -0.9999 -0.0133 -0.0000 0.9999 0.0133 0.0000 -0.0018 1.0000 -0.0000 0.0018 -1.0000 0.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape32-mesh-normals-array" count="12" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="testbedCutoutShape32-mesh-map-0">
+                    <float_array id="testbedCutoutShape32-mesh-map-0-array" count="96">16.0000 -15.0000 0.0000 1.0000 0.0000 -15.0000 16.0000 1.0000 16.5196 1.9431 -15.5196 1.5245 -15.5195 -0.9431 16.5195 -0.5245 16.5196 1.5245 -15.5196 1.9431 -15.5195 -0.5245 16.5195 -0.9431 16.5209 2.2227 -15.5209 2.2227 -15.5209 -1.2227 16.5209 -1.2227 1.7338 2.2227 -0.7338 2.2227 -0.7338 -1.2227 1.7338 -1.2227 9.7811 2.2227 -8.7811 2.2227 -8.7811 -1.2227 9.7811 -1.2227 9.7804 1.4623 -8.7804 1.2347 -8.7804 -0.4623 9.7804 -0.2347 2.2227 1.3485 -1.2227 1.3485 -1.2227 -0.3485 2.2227 -0.3485 9.7804 1.2347 -8.7804 1.4622 -8.7804 -0.2347 9.7804 -0.4622 16.3991 11.1704 -15.6402 10.7518 -15.3990 -10.1704 16.6401 -9.7518 16.6402 10.7518 -15.3991 11.1704 -15.6401 -9.7518 16.3990 -10.1704 10.9618 2.2227 -9.9618 2.2227 -9.9618 -1.2227 10.9618 -1.2227 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape32-mesh-map-0-array" count="48" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="testbedCutoutShape32-mesh-vertices">
+                    <input semantic="POSITION" source="#testbedCutoutShape32-mesh-positions"/>
+                </vertices>
+                <triangles material="FloorGray-material" count="20">
+                    <input semantic="VERTEX" source="#testbedCutoutShape32-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#testbedCutoutShape32-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#testbedCutoutShape32-mesh-map-0" offset="2" set="0"/>
+                    <p>0 0 0 1 0 1 2 0 2 0 0 0 3 0 3 1 0 1 3 0 0 4 0 1 1 0 2 3 0 0 5 0 3 4 0 1 5 0 0 6 0 1 4 0 2 5 0 0 7 0 3 6 0 1 7 0 0 8 0 1 6 0 2 7 0 0 9 0 3 8 0 1 10 0 0 3 0 1 0 0 2 10 0 0 11 0 3 3 0 1 12 0 0 11 0 1 10 0 2 12 0 0 13 0 3 11 0 1 14 0 0 9 0 1 7 0 2 14 0 0 15 0 3 9 0 1 13 0 0 16 0 1 11 0 2 13 0 0 17 0 3 16 0 1 17 0 0 14 0 1 16 0 2 17 0 0 18 0 3 14 0 1 18 0 0 15 0 1 14 0 2 18 0 0 19 0 3 15 0 1 </p>
+                </triangles>
+                <triangles material="WallOrange-material" count="140">
+                    <input semantic="VERTEX" source="#testbedCutoutShape32-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#testbedCutoutShape32-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#testbedCutoutShape32-mesh-map-0" offset="2" set="0"/>
+                    <p>22 0 6 21 0 5 20 0 4 20 0 4 22 0 6 20 0 4 22 0 6 20 0 4 20 0 4 23 0 7 22 0 6 20 0 4 26 1 10 25 1 9 24 1 8 24 1 8 26 1 10 24 1 8 26 1 10 24 1 8 24 1 8 27 1 11 26 1 10 24 1 8 27 2 14 22 2 13 23 2 12 23 2 12 27 2 14 23 2 12 27 2 14 23 2 12 23 2 12 26 2 15 27 2 14 23 2 12 25 3 14 20 3 13 21 3 12 21 3 12 25 3 14 21 3 12 25 3 14 21 3 12 21 3 12 24 3 15 25 3 14 21 3 12 24 4 18 21 4 17 22 4 16 22 4 16 24 4 18 22 4 16 24 4 18 22 4 16 22 4 16 27 4 19 24 4 18 22 4 16 26 5 18 23 5 17 20 5 16 20 5 16 26 5 18 20 5 16 26 5 18 20 5 16 20 5 16 25 5 19 26 5 18 20 5 16 30 6 22 29 6 21 28 6 20 28 6 20 30 6 22 28 6 20 30 6 22 28 6 20 28 6 20 31 6 23 30 6 22 28 6 20 33 7 22 32 7 21 21 7 20 21 7 20 33 7 22 21 7 20 33 7 22 21 7 20 21 7 20 24 7 23 33 7 22 21 7 20 29 0 26 21 0 25 32 0 24 32 0 24 29 0 26 32 0 24 29 0 26 32 0 24 32 0 24 28 0 27 29 0 26 32 0 24 30 8 30 24 8 29 21 8 28 21 8 28 30 8 30 21 8 28 30 8 30 21 8 28 21 8 28 29 8 31 30 8 30 21 8 28 31 1 34 33 1 33 24 1 32 24 1 32 31 1 34 24 1 32 31 1 34 24 1 32 24 1 32 30 1 35 31 1 34 24 1 32 28 9 30 32 9 29 33 9 28 33 9 28 28 9 30 33 9 28 28 9 30 33 9 28 33 9 28 31 9 31 28 9 30 33 9 28 36 0 6 35 0 5 34 0 4 34 0 4 36 0 6 34 0 4 36 0 6 34 0 4 34 0 4 37 0 7 36 0 6 34 0 4 40 1 10 39 1 9 38 1 8 38 1 8 40 1 10 38 1 8 40 1 10 38 1 8 38 1 8 41 1 11 40 1 10 38 1 8 41 2 14 36 2 13 37 2 12 37 2 12 41 2 14 37 2 12 41 2 14 37 2 12 37 2 12 40 2 15 41 2 14 37 2 12 39 3 14 34 3 13 35 3 12 35 3 12 39 3 14 35 3 12 39 3 14 35 3 12 35 3 12 38 3 15 39 3 14 35 3 12 38 4 18 35 4 17 36 4 16 36 4 16 38 4 18 36 4 16 38 4 18 36 4 16 36 4 16 41 4 19 38 4 18 36 4 16 40 5 18 37 5 17 34 5 16 34 5 16 40 5 18 34 5 16 40 5 18 34 5 16 34 5 16 39 5 19 40 5 18 34 5 16 44 6 22 43 6 21 42 6 20 42 6 20 44 6 22 42 6 20 44 6 22 42 6 20 42 6 20 45 6 23 44 6 22 42 6 20 48 7 22 47 7 21 46 7 20 46 7 20 48 7 22 46 7 20 48 7 22 46 7 20 46 7 20 49 7 23 48 7 22 46 7 20 43 0 26 46 0 25 47 0 24 47 0 24 43 0 26 47 0 24 43 0 26 47 0 24 47 0 24 42 0 27 43 0 26 47 0 24 44 8 30 49 8 29 46 8 28 46 8 28 44 8 30 46 8 28 44 8 30 46 8 28 46 8 28 43 8 31 44 8 30 46 8 28 45 1 34 48 1 33 49 1 32 49 1 32 45 1 34 49 1 32 45 1 34 49 1 32 49 1 32 44 1 35 45 1 34 49 1 32 42 9 30 47 9 29 48 9 28 48 9 28 42 9 30 48 9 28 42 9 30 48 9 28 48 9 28 45 9 31 42 9 30 48 9 28 52 0 38 51 0 37 50 0 36 50 0 36 52 0 38 50 0 36 52 0 38 50 0 36 50 0 36 53 0 39 52 0 38 50 0 36 56 1 42 55 1 41 54 1 40 54 1 40 56 1 42 54 1 40 56 1 42 54 1 40 54 1 40 57 1 43 56 1 42 54 1 40 57 2 14 52 2 13 53 2 12 53 2 12 57 2 14 53 2 12 57 2 14 53 2 12 53 2 12 56 2 15 57 2 14 53 2 12 55 3 14 50 3 13 51 3 12 51 3 12 55 3 14 51 3 12 55 3 14 51 3 12 51 3 12 54 3 15 55 3 14 51 3 12 54 10 46 51 10 45 52 10 44 52 10 44 54 10 46 52 10 44 54 10 46 52 10 44 52 10 44 57 10 47 54 10 46 52 10 44 56 11 46 53 11 45 50 11 44 50 11 44 56 11 46 50 11 44 56 11 46 50 11 44 50 11 44 55 11 47 56 11 46 50 11 44 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">testbedCutoutShape32</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">testbedCutoutShape32-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="testbedCutoutShape64-mesh" name="testbedCutoutShape64">
+            <mesh>
+                <source id="testbedCutoutShape64-mesh-positions">
+                    <float_array id="testbedCutoutShape64-mesh-positions-array" count="174">1.0000 -32.0000 5.1782 -15.0000 -16.0000 5.1782 -15.0000 -32.0000 5.1782 1.0000 -16.0000 5.1782 -15.0000 0.0000 5.1782 1.0000 0.0000 5.1782 -15.0000 16.0000 5.1782 1.0000 16.0000 5.1782 -15.0000 32.0000 5.1782 1.0000 32.0000 5.1782 17.0000 -32.0000 5.1782 17.0000 -16.0000 5.1782 33.0000 -32.0000 5.1782 33.0000 -16.0000 5.1782 17.0000 16.0000 5.1782 17.0000 32.0000 5.1782 17.0000 0.0000 5.1782 33.0000 0.0000 5.1782 33.0000 16.0000 5.1782 33.0000 32.0000 5.1782 -1.4611 -16.0707 5.1634 -1.4695 15.9711 5.1634 0.9978 16.0040 5.1634 1.0063 -16.0378 5.1634 -1.4695 15.9711 1.7180 -1.4611 -16.0707 1.7180 1.0063 -16.0378 1.7180 0.9978 16.0040 1.7180 17.0701 17.6878 5.1634 -1.4921 17.6680 5.1634 -1.4921 17.6680 1.7180 17.0701 17.6878 1.7180 17.0927 15.9910 5.1634 17.0927 15.9910 1.7180 17.0020 -15.8246 5.1634 16.9936 16.2172 5.1634 19.4609 16.2501 5.1634 19.4694 -15.7917 5.1634 16.9936 16.2172 1.7180 17.0020 -15.8246 1.7180 19.4694 -15.7917 1.7180 19.4609 16.2501 1.7180 17.5187 -15.9749 5.1634 -1.0436 -15.9947 5.1634 -1.0436 -15.9947 1.7180 17.5187 -15.9749 1.7180 -1.0210 -17.6915 5.1634 17.5413 -17.6717 5.1634 17.5413 -17.6717 1.7180 -1.0210 -17.6915 1.7180 -1.4611 -16.0708 1.7227 -1.4695 15.9712 1.7227 19.4539 16.0090 1.7227 19.4624 -16.0330 1.7227 -1.4695 15.9712 -1.7227 -1.4611 -16.0708 -1.7227 19.4624 -16.0330 -1.7227 19.4539 16.0090 -1.7227 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape64-mesh-positions-array" count="58" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="testbedCutoutShape64-mesh-normals">
+                    <float_array id="testbedCutoutShape64-mesh-normals-array" count="36">0.0000 0.0000 1.0000 0.0000 0.0000 -1.0000 1.0000 0.0003 -0.0000 -1.0000 -0.0003 -0.0000 -0.0133 0.9999 0.0000 0.0133 -0.9999 0.0000 -0.0011 1.0000 -0.0000 0.0011 -1.0000 0.0000 -0.9999 -0.0133 -0.0000 0.9999 0.0133 0.0000 -0.0018 1.0000 -0.0000 0.0018 -1.0000 0.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape64-mesh-normals-array" count="12" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="testbedCutoutShape64-mesh-map-0">
+                    <float_array id="testbedCutoutShape64-mesh-map-0-array" count="96">16.0000 -15.0000 0.0000 1.0000 0.0000 -15.0000 16.0000 1.0000 16.5196 1.9431 -15.5196 1.5245 -15.5195 -0.9431 16.5195 -0.5245 16.5196 1.5245 -15.5196 1.9431 -15.5195 -0.5245 16.5195 -0.9431 16.5209 2.2227 -15.5209 2.2227 -15.5209 -1.2227 16.5209 -1.2227 1.7338 2.2227 -0.7338 2.2227 -0.7338 -1.2227 1.7338 -1.2227 9.7811 2.2227 -8.7811 2.2227 -8.7811 -1.2227 9.7811 -1.2227 9.7804 1.4623 -8.7804 1.2347 -8.7804 -0.4623 9.7804 -0.2347 2.2227 1.3485 -1.2227 1.3485 -1.2227 -0.3485 2.2227 -0.3485 9.7804 1.2347 -8.7804 1.4622 -8.7804 -0.2347 9.7804 -0.4622 16.3991 11.1704 -15.6402 10.7518 -15.3990 -10.1704 16.6401 -9.7518 16.6402 10.7518 -15.3991 11.1704 -15.6401 -9.7518 16.3990 -10.1704 10.9618 2.2227 -9.9618 2.2227 -9.9618 -1.2227 10.9618 -1.2227 </float_array>
+                    <technique_common>
+                        <accessor source="#testbedCutoutShape64-mesh-map-0-array" count="48" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="testbedCutoutShape64-mesh-vertices">
+                    <input semantic="POSITION" source="#testbedCutoutShape64-mesh-positions"/>
+                </vertices>
+                <triangles material="FloorGray-material" count="20">
+                    <input semantic="VERTEX" source="#testbedCutoutShape64-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#testbedCutoutShape64-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#testbedCutoutShape64-mesh-map-0" offset="2" set="0"/>
+                    <p>0 0 0 1 0 1 2 0 2 0 0 0 3 0 3 1 0 1 3 0 0 4 0 1 1 0 2 3 0 0 5 0 3 4 0 1 5 0 0 6 0 1 4 0 2 5 0 0 7 0 3 6 0 1 7 0 0 8 0 1 6 0 2 7 0 0 9 0 3 8 0 1 10 0 0 3 0 1 0 0 2 10 0 0 11 0 3 3 0 1 12 0 0 11 0 1 10 0 2 12 0 0 13 0 3 11 0 1 14 0 0 9 0 1 7 0 2 14 0 0 15 0 3 9 0 1 13 0 0 16 0 1 11 0 2 13 0 0 17 0 3 16 0 1 17 0 0 14 0 1 16 0 2 17 0 0 18 0 3 14 0 1 18 0 0 15 0 1 14 0 2 18 0 0 19 0 3 15 0 1 </p>
+                </triangles>
+                <triangles material="WallOrange-material" count="140">
+                    <input semantic="VERTEX" source="#testbedCutoutShape64-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#testbedCutoutShape64-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#testbedCutoutShape64-mesh-map-0" offset="2" set="0"/>
+                    <p>22 0 6 21 0 5 20 0 4 20 0 4 22 0 6 20 0 4 22 0 6 20 0 4 20 0 4 23 0 7 22 0 6 20 0 4 26 1 10 25 1 9 24 1 8 24 1 8 26 1 10 24 1 8 26 1 10 24 1 8 24 1 8 27 1 11 26 1 10 24 1 8 27 2 14 22 2 13 23 2 12 23 2 12 27 2 14 23 2 12 27 2 14 23 2 12 23 2 12 26 2 15 27 2 14 23 2 12 25 3 14 20 3 13 21 3 12 21 3 12 25 3 14 21 3 12 25 3 14 21 3 12 21 3 12 24 3 15 25 3 14 21 3 12 24 4 18 21 4 17 22 4 16 22 4 16 24 4 18 22 4 16 24 4 18 22 4 16 22 4 16 27 4 19 24 4 18 22 4 16 26 5 18 23 5 17 20 5 16 20 5 16 26 5 18 20 5 16 26 5 18 20 5 16 20 5 16 25 5 19 26 5 18 20 5 16 30 6 22 29 6 21 28 6 20 28 6 20 30 6 22 28 6 20 30 6 22 28 6 20 28 6 20 31 6 23 30 6 22 28 6 20 33 7 22 32 7 21 21 7 20 21 7 20 33 7 22 21 7 20 33 7 22 21 7 20 21 7 20 24 7 23 33 7 22 21 7 20 29 0 26 21 0 25 32 0 24 32 0 24 29 0 26 32 0 24 29 0 26 32 0 24 32 0 24 28 0 27 29 0 26 32 0 24 30 8 30 24 8 29 21 8 28 21 8 28 30 8 30 21 8 28 30 8 30 21 8 28 21 8 28 29 8 31 30 8 30 21 8 28 31 1 34 33 1 33 24 1 32 24 1 32 31 1 34 24 1 32 31 1 34 24 1 32 24 1 32 30 1 35 31 1 34 24 1 32 28 9 30 32 9 29 33 9 28 33 9 28 28 9 30 33 9 28 28 9 30 33 9 28 33 9 28 31 9 31 28 9 30 33 9 28 36 0 6 35 0 5 34 0 4 34 0 4 36 0 6 34 0 4 36 0 6 34 0 4 34 0 4 37 0 7 36 0 6 34 0 4 40 1 10 39 1 9 38 1 8 38 1 8 40 1 10 38 1 8 40 1 10 38 1 8 38 1 8 41 1 11 40 1 10 38 1 8 41 2 14 36 2 13 37 2 12 37 2 12 41 2 14 37 2 12 41 2 14 37 2 12 37 2 12 40 2 15 41 2 14 37 2 12 39 3 14 34 3 13 35 3 12 35 3 12 39 3 14 35 3 12 39 3 14 35 3 12 35 3 12 38 3 15 39 3 14 35 3 12 38 4 18 35 4 17 36 4 16 36 4 16 38 4 18 36 4 16 38 4 18 36 4 16 36 4 16 41 4 19 38 4 18 36 4 16 40 5 18 37 5 17 34 5 16 34 5 16 40 5 18 34 5 16 40 5 18 34 5 16 34 5 16 39 5 19 40 5 18 34 5 16 44 6 22 43 6 21 42 6 20 42 6 20 44 6 22 42 6 20 44 6 22 42 6 20 42 6 20 45 6 23 44 6 22 42 6 20 48 7 22 47 7 21 46 7 20 46 7 20 48 7 22 46 7 20 48 7 22 46 7 20 46 7 20 49 7 23 48 7 22 46 7 20 43 0 26 46 0 25 47 0 24 47 0 24 43 0 26 47 0 24 43 0 26 47 0 24 47 0 24 42 0 27 43 0 26 47 0 24 44 8 30 49 8 29 46 8 28 46 8 28 44 8 30 46 8 28 44 8 30 46 8 28 46 8 28 43 8 31 44 8 30 46 8 28 45 1 34 48 1 33 49 1 32 49 1 32 45 1 34 49 1 32 45 1 34 49 1 32 49 1 32 44 1 35 45 1 34 49 1 32 42 9 30 47 9 29 48 9 28 48 9 28 42 9 30 48 9 28 42 9 30 48 9 28 48 9 28 45 9 31 42 9 30 48 9 28 52 0 38 51 0 37 50 0 36 50 0 36 52 0 38 50 0 36 52 0 38 50 0 36 50 0 36 53 0 39 52 0 38 50 0 36 56 1 42 55 1 41 54 1 40 54 1 40 56 1 42 54 1 40 56 1 42 54 1 40 54 1 40 57 1 43 56 1 42 54 1 40 57 2 14 52 2 13 53 2 12 53 2 12 57 2 14 53 2 12 57 2 14 53 2 12 53 2 12 56 2 15 57 2 14 53 2 12 55 3 14 50 3 13 51 3 12 51 3 12 55 3 14 51 3 12 55 3 14 51 3 12 51 3 12 54 3 15 55 3 14 51 3 12 54 10 46 51 10 45 52 10 44 52 10 44 54 10 46 52 10 44 54 10 46 52 10 44 52 10 44 57 10 47 54 10 46 52 10 44 56 11 46 53 11 45 50 11 44 50 11 44 56 11 46 50 11 44 56 11 46 50 11 44 50 11 44 55 11 47 56 11 46 50 11 44 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">testbedCutoutShape64</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">testbedCutoutShape64-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh1-1-mesh" name="ColMesh1-1">
+            <mesh>
+                <source id="ColMesh1-1-mesh-positions">
+                    <float_array id="ColMesh1-1-mesh-positions-array" count="24">1.0000 -16.0000 5.3032 1.0000 -16.0000 5.1782 -15.0000 -16.0000 5.1782 1.0000 -32.0000 5.3032 1.0000 -32.0000 5.1782 -15.0000 -32.0000 5.3032 -15.0000 -16.0000 5.3032 -15.0000 -32.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh1-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh1-1-mesh-normals">
+                    <float_array id="ColMesh1-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh1-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh1-1-mesh-map-0">
+                    <float_array id="ColMesh1-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh1-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh1-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh1-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh1-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh1-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh1-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh1-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh1-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh2-1-mesh" name="ColMesh2-1">
+            <mesh>
+                <source id="ColMesh2-1-mesh-positions">
+                    <float_array id="ColMesh2-1-mesh-positions-array" count="24">1.0000 0.0000 5.3032 1.0000 0.0000 5.1782 -15.0000 0.0000 5.1782 1.0000 -16.0000 5.3032 1.0000 -16.0000 5.1782 -15.0000 -16.0000 5.3032 -15.0000 0.0000 5.3032 -15.0000 -16.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh2-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh2-1-mesh-normals">
+                    <float_array id="ColMesh2-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh2-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh2-1-mesh-map-0">
+                    <float_array id="ColMesh2-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh2-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh2-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh2-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh2-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh2-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh2-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh2-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh2-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh3-1-mesh" name="ColMesh3-1">
+            <mesh>
+                <source id="ColMesh3-1-mesh-positions">
+                    <float_array id="ColMesh3-1-mesh-positions-array" count="24">1.0000 16.0000 5.3032 1.0000 16.0000 5.1782 -15.0000 16.0000 5.1782 1.0000 0.0000 5.3032 1.0000 0.0000 5.1782 -15.0000 0.0000 5.3032 -15.0000 16.0000 5.3032 -15.0000 0.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh3-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh3-1-mesh-normals">
+                    <float_array id="ColMesh3-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh3-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh3-1-mesh-map-0">
+                    <float_array id="ColMesh3-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh3-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh3-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh3-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh3-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh3-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh3-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh3-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh3-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh4-1-mesh" name="ColMesh4-1">
+            <mesh>
+                <source id="ColMesh4-1-mesh-positions">
+                    <float_array id="ColMesh4-1-mesh-positions-array" count="24">1.0000 32.0000 5.3032 1.0000 32.0000 5.1782 -15.0000 32.0000 5.1782 1.0000 16.0000 5.3032 1.0000 16.0000 5.1782 -15.0000 16.0000 5.3032 -15.0000 32.0000 5.3032 -15.0000 16.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh4-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh4-1-mesh-normals">
+                    <float_array id="ColMesh4-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh4-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh4-1-mesh-map-0">
+                    <float_array id="ColMesh4-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh4-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh4-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh4-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh4-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh4-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh4-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh4-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh4-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh5-1-mesh" name="ColMesh5-1">
+            <mesh>
+                <source id="ColMesh5-1-mesh-positions">
+                    <float_array id="ColMesh5-1-mesh-positions-array" count="24">17.0000 -16.0000 5.3032 17.0000 -16.0000 5.1782 1.0000 -16.0000 5.1782 17.0000 -32.0000 5.3032 17.0000 -32.0000 5.1782 1.0000 -32.0000 5.3032 1.0000 -16.0000 5.3032 1.0000 -32.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh5-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh5-1-mesh-normals">
+                    <float_array id="ColMesh5-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh5-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh5-1-mesh-map-0">
+                    <float_array id="ColMesh5-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh5-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh5-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh5-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh5-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh5-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh5-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh5-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh5-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh6-1-mesh" name="ColMesh6-1">
+            <mesh>
+                <source id="ColMesh6-1-mesh-positions">
+                    <float_array id="ColMesh6-1-mesh-positions-array" count="24">33.0000 -16.0000 5.3032 33.0000 -16.0000 5.1782 17.0000 -16.0000 5.1782 33.0000 -32.0000 5.3032 33.0000 -32.0000 5.1782 17.0000 -32.0000 5.3032 17.0000 -16.0000 5.3032 17.0000 -32.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh6-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh6-1-mesh-normals">
+                    <float_array id="ColMesh6-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh6-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh6-1-mesh-map-0">
+                    <float_array id="ColMesh6-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh6-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh6-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh6-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh6-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh6-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh6-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh6-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh6-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh7-1-mesh" name="ColMesh7-1">
+            <mesh>
+                <source id="ColMesh7-1-mesh-positions">
+                    <float_array id="ColMesh7-1-mesh-positions-array" count="24">17.0000 32.0000 5.3032 17.0000 32.0000 5.1782 1.0000 32.0000 5.1782 17.0000 16.0000 5.3032 17.0000 16.0000 5.1782 1.0000 16.0000 5.3032 1.0000 32.0000 5.3032 1.0000 16.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh7-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh7-1-mesh-normals">
+                    <float_array id="ColMesh7-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh7-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh7-1-mesh-map-0">
+                    <float_array id="ColMesh7-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh7-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh7-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh7-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh7-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh7-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh7-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh7-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh7-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh8-1-mesh" name="ColMesh8-1">
+            <mesh>
+                <source id="ColMesh8-1-mesh-positions">
+                    <float_array id="ColMesh8-1-mesh-positions-array" count="24">33.0000 0.0000 5.3032 33.0000 0.0000 5.1782 17.0000 0.0000 5.1782 33.0000 -16.0000 5.3032 33.0000 -16.0000 5.1782 17.0000 -16.0000 5.3032 17.0000 0.0000 5.3032 17.0000 -16.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh8-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh8-1-mesh-normals">
+                    <float_array id="ColMesh8-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh8-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh8-1-mesh-map-0">
+                    <float_array id="ColMesh8-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh8-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh8-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh8-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh8-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh8-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh8-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh8-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh8-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh9-1-mesh" name="ColMesh9-1">
+            <mesh>
+                <source id="ColMesh9-1-mesh-positions">
+                    <float_array id="ColMesh9-1-mesh-positions-array" count="24">33.0000 16.0000 5.3032 33.0000 16.0000 5.1782 17.0000 16.0000 5.1782 33.0000 0.0000 5.3032 33.0000 0.0000 5.1782 17.0000 0.0000 5.3032 17.0000 16.0000 5.3032 17.0000 0.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh9-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh9-1-mesh-normals">
+                    <float_array id="ColMesh9-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh9-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh9-1-mesh-map-0">
+                    <float_array id="ColMesh9-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh9-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh9-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh9-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh9-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh9-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh9-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh9-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh9-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh10-1-mesh" name="ColMesh10-1">
+            <mesh>
+                <source id="ColMesh10-1-mesh-positions">
+                    <float_array id="ColMesh10-1-mesh-positions-array" count="24">33.0000 32.0000 5.3032 33.0000 32.0000 5.1782 17.0000 32.0000 5.1782 33.0000 16.0000 5.3032 33.0000 16.0000 5.1782 17.0000 16.0000 5.3032 17.0000 32.0000 5.3032 17.0000 16.0000 5.1782 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh10-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh10-1-mesh-normals">
+                    <float_array id="ColMesh10-1-mesh-normals-array" count="3">0.0000 0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh10-1-mesh-normals-array" count="1" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh10-1-mesh-map-0">
+                    <float_array id="ColMesh10-1-mesh-map-0-array" count="2">0.0000 1.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh10-1-mesh-map-0-array" count="1" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh10-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh10-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="12">
+                    <input semantic="VERTEX" source="#ColMesh10-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh10-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh10-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 0 1 0 0 0 0 0 1 0 0 3 0 0 0 0 0 2 0 0 4 0 0 1 0 0 1 0 0 4 0 0 3 0 0 0 0 0 3 0 0 5 0 0 4 0 0 5 0 0 3 0 0 2 0 0 0 0 0 6 0 0 0 0 0 5 0 0 6 0 0 7 0 0 2 0 0 6 0 0 2 0 0 7 0 0 4 0 0 4 0 0 7 0 0 5 0 0 7 0 0 6 0 0 5 0 0 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh10-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh10-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh11-1-mesh" name="ColMesh11-1">
+            <mesh>
+                <source id="ColMesh11-1-mesh-positions">
+                    <float_array id="ColMesh11-1-mesh-positions-array" count="24">-1.4611 -16.0707 5.1634 -1.4695 15.9711 5.1634 0.9978 16.0040 5.1634 1.0063 -16.0378 5.1634 -1.4695 15.9711 1.7180 -1.4611 -16.0707 1.7180 1.0063 -16.0378 1.7180 0.9978 16.0040 1.7180 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh11-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh11-1-mesh-normals">
+                    <float_array id="ColMesh11-1-mesh-normals-array" count="18">0.0000 0.0000 1.0000 0.0000 0.0000 -1.0000 1.0000 0.0003 -0.0000 -1.0000 -0.0003 -0.0000 -0.0133 0.9999 0.0000 0.0133 -0.9999 0.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh11-1-mesh-normals-array" count="6" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh11-1-mesh-map-0">
+                    <float_array id="ColMesh11-1-mesh-map-0-array" count="32">16.5196 1.9431 -15.5196 1.5245 -15.5195 -0.9431 16.5195 -0.5245 16.5196 1.5245 -15.5196 1.9431 -15.5195 -0.5245 16.5195 -0.9431 16.5209 2.2227 -15.5209 2.2227 -15.5209 -1.2227 16.5209 -1.2227 1.7338 2.2227 -0.7338 2.2227 -0.7338 -1.2227 1.7338 -1.2227 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh11-1-mesh-map-0-array" count="16" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh11-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh11-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="24">
+                    <input semantic="VERTEX" source="#ColMesh11-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh11-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh11-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 2 1 0 1 0 0 0 0 0 0 2 0 2 0 0 0 2 0 2 0 0 0 0 0 0 3 0 3 2 0 2 0 0 0 6 1 6 5 1 5 4 1 4 4 1 4 6 1 6 4 1 4 6 1 6 4 1 4 4 1 4 7 1 7 6 1 6 4 1 4 7 2 10 2 2 9 3 2 8 3 2 8 7 2 10 3 2 8 7 2 10 3 2 8 3 2 8 6 2 11 7 2 10 3 2 8 5 3 10 0 3 9 1 3 8 1 3 8 5 3 10 1 3 8 5 3 10 1 3 8 1 3 8 4 3 11 5 3 10 1 3 8 4 4 14 1 4 13 2 4 12 2 4 12 4 4 14 2 4 12 4 4 14 2 4 12 2 4 12 7 4 15 4 4 14 2 4 12 6 5 14 3 5 13 0 5 12 0 5 12 6 5 14 0 5 12 6 5 14 0 5 12 0 5 12 5 5 15 6 5 14 0 5 12 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh11-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh11-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh12-1-mesh" name="ColMesh12-1">
+            <mesh>
+                <source id="ColMesh12-1-mesh-positions">
+                    <float_array id="ColMesh12-1-mesh-positions-array" count="24">17.0701 17.6878 5.1634 -1.4921 17.6680 5.1634 -1.4921 17.6680 1.7180 17.0701 17.6878 1.7180 -1.4695 15.9712 5.1634 17.0927 15.9910 5.1634 17.0927 15.9910 1.7180 -1.4695 15.9712 1.7180 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh12-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh12-1-mesh-normals">
+                    <float_array id="ColMesh12-1-mesh-normals-array" count="18">-0.0011 1.0000 -0.0000 0.0011 -1.0000 0.0000 0.0000 -0.0000 1.0000 -0.9999 -0.0133 -0.0000 0.0000 -0.0000 -1.0000 0.9999 0.0133 0.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh12-1-mesh-normals-array" count="6" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh12-1-mesh-map-0">
+                    <float_array id="ColMesh12-1-mesh-map-0-array" count="32">9.7811 2.2227 -8.7811 2.2227 -8.7811 -1.2227 9.7811 -1.2227 9.7804 1.4623 -8.7804 1.2347 -8.7804 -0.4623 9.7804 -0.2347 2.2227 1.3485 -1.2227 1.3485 -1.2227 -0.3485 2.2227 -0.3485 9.7804 1.2347 -8.7804 1.4622 -8.7804 -0.2347 9.7804 -0.4622 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh12-1-mesh-map-0-array" count="16" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh12-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh12-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="24">
+                    <input semantic="VERTEX" source="#ColMesh12-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh12-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh12-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 2 1 0 1 0 0 0 0 0 0 2 0 2 0 0 0 2 0 2 0 0 0 0 0 0 3 0 3 2 0 2 0 0 0 6 1 2 5 1 1 4 1 0 4 1 0 6 1 2 4 1 0 6 1 2 4 1 0 4 1 0 7 1 3 6 1 2 4 1 0 1 2 6 4 2 5 5 2 4 5 2 4 1 2 6 5 2 4 1 2 6 5 2 4 5 2 4 0 2 7 1 2 6 5 2 4 2 3 10 7 3 9 4 3 8 4 3 8 2 3 10 4 3 8 2 3 10 4 3 8 4 3 8 1 3 11 2 3 10 4 3 8 3 4 14 6 4 13 7 4 12 7 4 12 3 4 14 7 4 12 3 4 14 7 4 12 7 4 12 2 4 15 3 4 14 7 4 12 0 5 10 5 5 9 6 5 8 6 5 8 0 5 10 6 5 8 0 5 10 6 5 8 6 5 8 3 5 11 0 5 10 6 5 8 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh12-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh12-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh13-1-mesh" name="ColMesh13-1">
+            <mesh>
+                <source id="ColMesh13-1-mesh-positions">
+                    <float_array id="ColMesh13-1-mesh-positions-array" count="24">17.0020 -15.8246 5.1634 16.9936 16.2172 5.1634 19.4609 16.2501 5.1634 19.4694 -15.7917 5.1634 16.9936 16.2172 1.7180 17.0020 -15.8246 1.7180 19.4694 -15.7917 1.7180 19.4609 16.2501 1.7180 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh13-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh13-1-mesh-normals">
+                    <float_array id="ColMesh13-1-mesh-normals-array" count="18">0.0000 0.0000 1.0000 0.0000 0.0000 -1.0000 1.0000 0.0003 -0.0000 -1.0000 -0.0003 -0.0000 -0.0133 0.9999 0.0000 0.0133 -0.9999 0.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh13-1-mesh-normals-array" count="6" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh13-1-mesh-map-0">
+                    <float_array id="ColMesh13-1-mesh-map-0-array" count="32">16.5196 1.9431 -15.5196 1.5245 -15.5195 -0.9431 16.5195 -0.5245 16.5196 1.5245 -15.5196 1.9431 -15.5195 -0.5245 16.5195 -0.9431 16.5209 2.2227 -15.5209 2.2227 -15.5209 -1.2227 16.5209 -1.2227 1.7338 2.2227 -0.7338 2.2227 -0.7338 -1.2227 1.7338 -1.2227 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh13-1-mesh-map-0-array" count="16" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh13-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh13-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="24">
+                    <input semantic="VERTEX" source="#ColMesh13-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh13-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh13-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 2 1 0 1 0 0 0 0 0 0 2 0 2 0 0 0 2 0 2 0 0 0 0 0 0 3 0 3 2 0 2 0 0 0 6 1 6 5 1 5 4 1 4 4 1 4 6 1 6 4 1 4 6 1 6 4 1 4 4 1 4 7 1 7 6 1 6 4 1 4 7 2 10 2 2 9 3 2 8 3 2 8 7 2 10 3 2 8 7 2 10 3 2 8 3 2 8 6 2 11 7 2 10 3 2 8 5 3 10 0 3 9 1 3 8 1 3 8 5 3 10 1 3 8 5 3 10 1 3 8 1 3 8 4 3 11 5 3 10 1 3 8 4 4 14 1 4 13 2 4 12 2 4 12 4 4 14 2 4 12 4 4 14 2 4 12 2 4 12 7 4 15 4 4 14 2 4 12 6 5 14 3 5 13 0 5 12 0 5 12 6 5 14 0 5 12 6 5 14 0 5 12 0 5 12 5 5 15 6 5 14 0 5 12 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh13-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh13-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh14-1-mesh" name="ColMesh14-1">
+            <mesh>
+                <source id="ColMesh14-1-mesh-positions">
+                    <float_array id="ColMesh14-1-mesh-positions-array" count="24">17.5187 -15.9749 5.1634 -1.0436 -15.9947 5.1634 -1.0436 -15.9947 1.7180 17.5187 -15.9749 1.7180 -1.0210 -17.6915 5.1634 17.5413 -17.6717 5.1634 17.5413 -17.6717 1.7180 -1.0210 -17.6915 1.7180 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh14-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh14-1-mesh-normals">
+                    <float_array id="ColMesh14-1-mesh-normals-array" count="18">-0.0011 1.0000 -0.0000 0.0011 -1.0000 0.0000 0.0000 0.0000 1.0000 -0.9999 -0.0133 0.0000 0.0000 -0.0000 -1.0000 0.9999 0.0133 -0.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh14-1-mesh-normals-array" count="6" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh14-1-mesh-map-0">
+                    <float_array id="ColMesh14-1-mesh-map-0-array" count="32">9.7811 2.2227 -8.7811 2.2227 -8.7811 -1.2227 9.7811 -1.2227 9.7804 1.4623 -8.7804 1.2347 -8.7804 -0.4623 9.7804 -0.2347 2.2227 1.3485 -1.2227 1.3485 -1.2227 -0.3485 2.2227 -0.3485 9.7804 1.2347 -8.7804 1.4622 -8.7804 -0.2347 9.7804 -0.4622 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh14-1-mesh-map-0-array" count="16" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh14-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh14-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="24">
+                    <input semantic="VERTEX" source="#ColMesh14-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh14-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh14-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 2 1 0 1 0 0 0 0 0 0 2 0 2 0 0 0 2 0 2 0 0 0 0 0 0 3 0 3 2 0 2 0 0 0 6 1 2 5 1 1 4 1 0 4 1 0 6 1 2 4 1 0 6 1 2 4 1 0 4 1 0 7 1 3 6 1 2 4 1 0 1 2 6 4 2 5 5 2 4 5 2 4 1 2 6 5 2 4 1 2 6 5 2 4 5 2 4 0 2 7 1 2 6 5 2 4 2 3 10 7 3 9 4 3 8 4 3 8 2 3 10 4 3 8 2 3 10 4 3 8 4 3 8 1 3 11 2 3 10 4 3 8 3 4 14 6 4 13 7 4 12 7 4 12 3 4 14 7 4 12 3 4 14 7 4 12 7 4 12 2 4 15 3 4 14 7 4 12 0 5 10 5 5 9 6 5 8 6 5 8 0 5 10 6 5 8 0 5 10 6 5 8 6 5 8 3 5 11 0 5 10 6 5 8 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh14-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh14-1-mesh</param>
+            </technique>
+        </extra>
+        <geometry id="ColMesh15-1-mesh" name="ColMesh15-1">
+            <mesh>
+                <source id="ColMesh15-1-mesh-positions">
+                    <float_array id="ColMesh15-1-mesh-positions-array" count="24">-1.4611 -16.0708 1.7227 -1.4695 15.9712 1.7227 19.4539 16.0090 1.7227 19.4624 -16.0330 1.7227 -1.4695 15.9712 -1.7227 -1.4611 -16.0708 -1.7227 19.4624 -16.0330 -1.7227 19.4539 16.0090 -1.7227 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh15-1-mesh-positions-array" count="8" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh15-1-mesh-normals">
+                    <float_array id="ColMesh15-1-mesh-normals-array" count="18">0.0000 0.0000 1.0000 -0.0000 -0.0000 -1.0000 1.0000 0.0003 -0.0000 -1.0000 -0.0003 -0.0000 -0.0018 1.0000 -0.0000 0.0018 -1.0000 0.0000 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh15-1-mesh-normals-array" count="6" stride="3">
+                            <param name="X" type="float"/>
+                            <param name="Y" type="float"/>
+                            <param name="Z" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <source id="ColMesh15-1-mesh-map-0">
+                    <float_array id="ColMesh15-1-mesh-map-0-array" count="32">16.3991 11.1704 -15.6402 10.7518 -15.3990 -10.1704 16.6401 -9.7518 16.6402 10.7518 -15.3991 11.1704 -15.6401 -9.7518 16.3990 -10.1704 16.5210 2.2227 -15.5210 2.2227 -15.5210 -1.2227 16.5210 -1.2227 10.9618 2.2227 -9.9618 2.2227 -9.9618 -1.2227 10.9618 -1.2227 </float_array>
+                    <technique_common>
+                        <accessor source="#ColMesh15-1-mesh-map-0-array" count="16" stride="2">
+                            <param name="S" type="float"/>
+                            <param name="T" type="float"/>
+                        </accessor>
+                    </technique_common>
+                </source>
+                <vertices id="ColMesh15-1-mesh-vertices">
+                    <input semantic="POSITION" source="#ColMesh15-1-mesh-positions"/>
+                </vertices>
+                <triangles material="" count="24">
+                    <input semantic="VERTEX" source="#ColMesh15-1-mesh-vertices" offset="0"/>
+                    <input semantic="NORMAL" source="#ColMesh15-1-mesh-normals" offset="1"/>
+                    <input semantic="TEXCOORD" source="#ColMesh15-1-mesh-map-0" offset="2" set="0"/>
+                    <p>2 0 2 1 0 1 0 0 0 0 0 0 2 0 2 0 0 0 2 0 2 0 0 0 0 0 0 3 0 3 2 0 2 0 0 0 6 1 6 5 1 5 4 1 4 4 1 4 6 1 6 4 1 4 6 1 6 4 1 4 4 1 4 7 1 7 6 1 6 4 1 4 7 2 10 2 2 9 3 2 8 3 2 8 7 2 10 3 2 8 7 2 10 3 2 8 3 2 8 6 2 11 7 2 10 3 2 8 5 3 10 0 3 9 1 3 8 1 3 8 5 3 10 1 3 8 5 3 10 1 3 8 1 3 8 4 3 11 5 3 10 1 3 8 4 4 14 1 4 13 2 4 12 2 4 12 4 4 14 2 4 12 4 4 14 2 4 12 2 4 12 7 4 15 4 4 14 2 4 12 6 5 14 3 5 13 0 5 12 0 5 12 6 5 14 0 5 12 6 5 14 0 5 12 0 5 12 5 5 15 6 5 14 0 5 12 </p>
+                </triangles>
+            </mesh>
+        </geometry>
+        <extra>
+            <technique profile="OpenCOLLADAMaya">
+                <originalMayaNodeId sid="originalMayaNodeId">ColMesh15-1</originalMayaNodeId>
+                <double_sided sid="double_sided">1</double_sided>
+                <param sid="colladaId" type="string">ColMesh15-1-mesh</param>
+            </technique>
+        </extra>
+    </library_geometries>
+    <library_visual_scenes>
+        <visual_scene id="RootNode" name="RootNode">
+            <node id="testbedCutoutShape2" name="testbedCutoutShape2" type="NODE">
+                <instance_geometry url="#testbedCutoutShape2-mesh" name="testbedCutoutShape2">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="FloorGray-material" target="#FloorGray-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                            <instance_material symbol="WallOrange-material" target="#WallOrange-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">testbedCutoutShape2</originalMayaNodeId>
+                        <param sid="colladaId" type="string">testbedCutoutShape2</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="testbedCutoutShape32" name="testbedCutoutShape32" type="NODE">
+                <instance_geometry url="#testbedCutoutShape32-mesh" name="testbedCutoutShape32">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="FloorGray-material" target="#FloorGray-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                            <instance_material symbol="WallOrange-material" target="#WallOrange-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">testbedCutoutShape32</originalMayaNodeId>
+                        <param sid="colladaId" type="string">testbedCutoutShape32</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="testbedCutoutShape64" name="testbedCutoutShape64" type="NODE">
+                <instance_geometry url="#testbedCutoutShape64-mesh" name="testbedCutoutShape64">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="FloorGray-material" target="#FloorGray-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                            <instance_material symbol="WallOrange-material" target="#WallOrange-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">testbedCutoutShape64</originalMayaNodeId>
+                        <param sid="colladaId" type="string">testbedCutoutShape64</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh1-1" name="ColMesh1-1" type="NODE">
+                <instance_geometry url="#ColMesh1-1-mesh" name="ColMesh1-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh1-1-material" target="#ColMesh1-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh1-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh1-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh2-1" name="ColMesh2-1" type="NODE">
+                <instance_geometry url="#ColMesh2-1-mesh" name="ColMesh2-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh2-1-material" target="#ColMesh2-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh2-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh2-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh3-1" name="ColMesh3-1" type="NODE">
+                <instance_geometry url="#ColMesh3-1-mesh" name="ColMesh3-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh3-1-material" target="#ColMesh3-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh3-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh3-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh4-1" name="ColMesh4-1" type="NODE">
+                <instance_geometry url="#ColMesh4-1-mesh" name="ColMesh4-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh4-1-material" target="#ColMesh4-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh4-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh4-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh5-1" name="ColMesh5-1" type="NODE">
+                <instance_geometry url="#ColMesh5-1-mesh" name="ColMesh5-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh5-1-material" target="#ColMesh5-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh5-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh5-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh6-1" name="ColMesh6-1" type="NODE">
+                <instance_geometry url="#ColMesh6-1-mesh" name="ColMesh6-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh6-1-material" target="#ColMesh6-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh6-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh6-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh7-1" name="ColMesh7-1" type="NODE">
+                <instance_geometry url="#ColMesh7-1-mesh" name="ColMesh7-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh7-1-material" target="#ColMesh7-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh7-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh7-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh8-1" name="ColMesh8-1" type="NODE">
+                <instance_geometry url="#ColMesh8-1-mesh" name="ColMesh8-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh8-1-material" target="#ColMesh8-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh8-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh8-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh9-1" name="ColMesh9-1" type="NODE">
+                <instance_geometry url="#ColMesh9-1-mesh" name="ColMesh9-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh9-1-material" target="#ColMesh9-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh9-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh9-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh10-1" name="ColMesh10-1" type="NODE">
+                <instance_geometry url="#ColMesh10-1-mesh" name="ColMesh10-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh10-1-material" target="#ColMesh10-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh10-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh10-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh11-1" name="ColMesh11-1" type="NODE">
+                <instance_geometry url="#ColMesh11-1-mesh" name="ColMesh11-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh11-1-material" target="#ColMesh11-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh11-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh11-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh12-1" name="ColMesh12-1" type="NODE">
+                <instance_geometry url="#ColMesh12-1-mesh" name="ColMesh12-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh12-1-material" target="#ColMesh12-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh12-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh12-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh13-1" name="ColMesh13-1" type="NODE">
+                <instance_geometry url="#ColMesh13-1-mesh" name="ColMesh13-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh13-1-material" target="#ColMesh13-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh13-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh13-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh14-1" name="ColMesh14-1" type="NODE">
+                <instance_geometry url="#ColMesh14-1-mesh" name="ColMesh14-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh14-1-material" target="#ColMesh14-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh14-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh14-1</param>
+                    </technique>
+                </extra>
+            </node>
+            <node id="ColMesh15-1" name="ColMesh15-1" type="NODE">
+                <instance_geometry url="#ColMesh15-1-mesh" name="ColMesh15-1">
+                    <bind_material>
+                        <technique_common>
+                            <instance_material symbol="ColMesh15-1-material" target="#ColMesh15-1-material">
+                                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                            </instance_material>
+                        </technique_common>
+                    </bind_material>
+                </instance_geometry>
+                <extra>
+                    <technique profile="OpenCOLLADA">
+                        <cast_shadows sid="cast_shadows" type="bool">1</cast_shadows>
+                        <receive_shadows sid="receive_shadows" type="bool">1</receive_shadows>
+                        <primary_visibility sid="primary_visibility" type="int">1</primary_visibility>
+                        <secondary_visibility sid="secondary_visibility" type="int">1</secondary_visibility>
+                    </technique>
+                </extra>
+                <extra>
+                    <technique profile="OpenCOLLADAMaya">
+                        <originalMayaNodeId sid="originalMayaNodeId" type="string">ColMesh15-1</originalMayaNodeId>
+                        <param sid="colladaId" type="string">ColMesh15-1</param>
+                    </technique>
+                </extra>
+            </node>
+        </visual_scene>
+    </library_visual_scenes>
+    <scene>
+        <instance_visual_scene url="#RootNode"/>
+    </scene>
+</COLLADA>

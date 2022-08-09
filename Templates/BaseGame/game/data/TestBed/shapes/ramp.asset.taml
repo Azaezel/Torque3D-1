@@ -1,0 +1,1 @@
+<ShapeAsset canSave="true" canSaveDynamicFields="true" AssetName="ramp" fileName="@assetFile=ramp.dae" constuctorFileName="@assetFile=ramp.tscript" materialSlot0="@asset=TestBed:FloorGray" MaterialSlot1="@asset=TestBed:WallOrange" originalFilePath="D:/Gamedev/art/Blockout/testing/ramp.dae"/>

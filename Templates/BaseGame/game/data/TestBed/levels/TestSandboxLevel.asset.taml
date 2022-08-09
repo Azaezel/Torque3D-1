@@ -1,0 +1,15 @@
+<LevelAsset
+    AssetName="TestSandboxLevel"
+    LevelFile="@assetFile=TestSandboxLevel.mis"
+    LevelName="Test Sandbox"
+    PostFXPresetFile="@assetFile=TestSandboxLevel.postfxpreset.tscript"
+    DecalsFile="@assetFile=TestSandboxLevel.mis.decals"
+    ForestFile="@assetFile=TestSandboxLevel.forest"
+    NavmeshFile="@assetFile=TestSandboxLevel.nav"
+    staticObjectAssetDependency0="@asset=TestBed:sandboxTerrBlock"
+    staticObjectAssetDependency1="@asset=TestBed:floorCutout"
+    staticObjectAssetDependency2="@asset=TestBed:floorPlane"
+    staticObjectAssetDependency3="@asset=TestBed:ramp"
+    staticObjectAssetDependency4="@asset=Prototyping:kork_chanShape"
+    staticObjectAssetDependency5="@asset=TestBed:MaterialGrid_shape"
+    VersionId="1"/>

@@ -1,0 +1,1418 @@
+//--- OBJECT WRITE BEGIN ---
+new Scene(TestSandboxLevel) {
+   isEditing = "1";
+      cdTrack = "2";
+      CTF_scoreLimit = "5";
+      Enabled = "1";
+      musicTrack = "lush";
+      originalAssetName = "TestSandboxLevel";
+
+   new LevelInfo(theLevelInfo) {
+      fogColor = "0.6 0.6 0.7 1";
+      fogDensityOffset = "700";
+      canvasClearColor = "0 0 0 255";
+      soundAmbience = "AudioAmbienceDefault";
+         advancedLightmapSupport = "0";
+         desc0 = "A blank room template that acts as a starting point.";
+         Enabled = "1";
+         LevelName = "Blank Room Template";
+   };
+   new SimGroup(environment) {
+
+      new ScatterSky() {
+         MoonMatAsset = "Core_Rendering:moon_wglow";
+         useNightCubemap = "1";
+         nightCubemap = "nightCubemap";
+         texSize = "2048";
+            mieScattering = "0.0045";
+      };
+      new CloudLayer() {
+         TextureAsset = "Core_Rendering:clouds_normal_displacement_image";
+         coverage = "0.3";
+      };
+      new TimeOfDay() {
+         startTime = "0.4";
+         Time = "0.45";
+         play = "0";
+         position = "13.1088 75.3236 0";
+         scale = "0 0 0";
+      };
+      new ForestWindEmitter() {
+      };
+      new WaterPlane() {
+         baseColor = "45 108 171 255";
+         waveDir[0] = "0 1";
+         waveDir[1] = "0.707 0.707";
+         waveDir[2] = "0.5 0.86";
+         waveSpeed[0] = "1";
+         waveSpeed[1] = "1";
+         waveSpeed[2] = "1";
+         waveMagnitude[0] = "0.2";
+         waveMagnitude[1] = "0.2";
+         waveMagnitude[2] = "0.2";
+         RippleTexAsset = "Core_Rendering:ripple_image";
+         rippleDir[0] = "0 1";
+         rippleDir[1] = "0.707 0.707";
+         rippleDir[2] = "0.5 0.86";
+         rippleSpeed[0] = "0.065";
+         rippleSpeed[1] = "0.09";
+         rippleSpeed[2] = "0.04";
+         rippleTexScale[0] = "7.14 7.14";
+         rippleTexScale[1] = "6.25 12.5";
+         rippleTexScale[2] = "50 50";
+         overallRippleMagnitude = "1";
+         FoamTexAsset = "Core_Rendering:foam_image";
+         DepthGradientTexAsset = "Core_Rendering:depthcolor_ramp_image";
+         position = "0 0 -16";
+      };
+      new DecalRoad() {
+         MaterialAsset = "Prototyping:NatureBrown";
+         textureLength = "4";
+         position = "-50.9376 55.2502 -0.25";
+
+         Node = "-50.937599 55.250198 -0.250000 7.000000";
+         Node = "-51.149601 23.153700 0.000000 7.000000";
+      };
+      new DecalRoad() {
+         MaterialAsset = "Prototyping:NatureBrown";
+         textureLength = "4";
+         position = "-50.9376 55.2502 -0.25";
+
+         Node = "-50.937599 55.250198 -0.250000 7.000000";
+         Node = "-51.149601 23.153700 0.000000 7.000000";
+      };
+      new River() {
+         SubdivideLength = "1";
+         FlowMagnitude = "5";
+         baseColor = "45 108 171 255";
+         waveDir[0] = "0 1";
+         waveDir[1] = "0.707 0.707";
+         waveDir[2] = "0.5 0.86";
+         waveSpeed[0] = "1";
+         waveSpeed[1] = "1";
+         waveSpeed[2] = "1";
+         waveMagnitude[0] = "0.2";
+         waveMagnitude[1] = "0.2";
+         waveMagnitude[2] = "0.2";
+         RippleTexAsset = "Core_Rendering:ripple_image";
+         rippleDir[0] = "0 1";
+         rippleDir[1] = "0.707 0.707";
+         rippleDir[2] = "0.5 0.86";
+         rippleSpeed[0] = "-0.065";
+         rippleSpeed[1] = "0.09";
+         rippleSpeed[2] = "0.04";
+         rippleTexScale[0] = "7.14 7.14";
+         rippleTexScale[1] = "6.25 12.5";
+         rippleTexScale[2] = "50 50";
+         FoamTexAsset = "Core_Rendering:foam_image";
+         DepthGradientTexAsset = "Core_Rendering:depthcolor_ramp_image";
+         position = "37 135.08 -1";
+
+         Node = "37.000000 135.080475 -1.000000 16.005796 7.088630 0.000000 0.000000 1.000000";
+         Node = "37.000000 86.999123 -1.000000 17.125019 7.719406 0.000000 0.000000 1.000000";
+      };
+      new GroundCover() {
+         MaterialAsset = "Prototyping:NatureGreen";
+         radius = "40";
+         dissolveRadius = "35";
+         maxElements = "2000";
+         probability[0] = "1";
+         maxSlope[0] = "35";
+         windGustLength = "10";
+         windGustStrength = "0.2";
+         windTurbulenceFrequency = "0.6";
+         windTurbulenceStrength = "0.1025";
+      };
+      new TerrainBlock() {
+         TerrainAsset = "TestBed:sandboxTerrBlock";
+         position = "-536 -446 -513";
+      };
+      new WaterBlock() {
+         baseColor = "45 108 171 255";
+         waveDir[0] = "0 1";
+         waveDir[1] = "0.707 0.707";
+         waveDir[2] = "0.5 0.86";
+         waveSpeed[0] = "1";
+         waveSpeed[1] = "1";
+         waveSpeed[2] = "1";
+         waveMagnitude[0] = "0.2";
+         waveMagnitude[1] = "0.2";
+         waveMagnitude[2] = "0.2";
+         RippleTexAsset = "Core_Rendering:ripple_image";
+         rippleDir[0] = "0 1";
+         rippleDir[1] = "0.707 0.707";
+         rippleDir[2] = "0.5 0.86";
+         rippleSpeed[0] = "0.065";
+         rippleSpeed[1] = "0.09";
+         rippleSpeed[2] = "0.04";
+         rippleTexScale[0] = "7.14 7.14";
+         rippleTexScale[1] = "6.25 12.5";
+         rippleTexScale[2] = "50 50";
+         overallRippleMagnitude = "1";
+         FoamTexAsset = "Core_Rendering:foam_image";
+         DepthGradientTexAsset = "Core_Rendering:depthcolor_ramp_image";
+         position = "37 39 -0.533894";
+         scale = "16 32 16";
+      };
+   };
+   new SimGroup(convexes) {
+
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-18 87 1";
+         rotation = "-0.57735 0.577351 -0.57735 240";
+
+         surface = "3.40465e-07 9.32007e-07 -2.83122e-07 1 -0.0241395 -5.35703e-08 6.01202 0 0 0 1 1 3.24434e-05 1 1";
+         surface = "1.3684e-18 1 9.92035e-13 3.03298e-06 -0.0241395 2.5846e-08 -1.72515e-08 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 4.98393e-06 4.98393e-06 0.707106 -0.0241396 -1.40055 3.00601 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -0.535761 7.19031e-06 3.00601 0 0 0 1 1 0 1 1";
+         surface = "4.98392e-06 0.707107 0.707107 -4.98393e-06 -0.0241396 1.40055 3.00601 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.487482 -7.23401e-06 3.00601 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-11 87 1";
+         rotation = "0.577351 -0.57735 0.57735 120";
+
+         surface = "8.51161e-07 9.31993e-07 -8.49362e-07 1 2.56507e-06 9.59321e-06 6.63841 0 0 0 1 1 9.733e-05 1 1";
+         surface = "0 1 0 0 2.53548e-05 1.75172e-06 1.01405 0 0 0 1 1 0 1 1";
+         surface = "-0.707106 5.84888e-06 5.84889e-06 0.707108 1.3193e-05 -1.40055 3.82623 0 0 0 1 1 0 1 1";
+         surface = "0.500001 -0.500001 -0.5 -0.499999 -0.511609 1.36128e-05 3.82623 0 0 0 1 1 0 1 1";
+         surface = "5.76651e-06 0.707107 0.707106 -5.7665e-06 1.46235e-05 1.40056 3.82623 0 0 0 1 1 0 1 1";
+         surface = "-0.499999 -0.499999 -0.500001 0.500001 0.511637 -3.19569e-06 3.82623 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-18.4979 95.0771 0.999998";
+         rotation = "-0.57735 0.577351 0.577351 240";
+
+         surface = "-4.42203e-07 -2.76627e-07 2.83122e-07 1 -9.99894e-06 -7.25256 0.845513 0 0 0 1 1 3.24434e-05 1 1";
+         surface = "1.21534e-19 1 4.22472e-07 -2.87673e-13 -1.00722e-05 -7.25256 -6.54868e-06 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 2.40745e-07 2.40745e-07 0.707106 -9.57736e-06 -15.003 0.422747 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -1.40056 -7.25256 0.422754 0 0 0 1 1 0 1 1";
+         surface = "-4.57217e-07 0.707107 0.707107 -5.26831e-08 -9.49346e-06 0.497884 0.42276 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 1.40054 -7.25256 0.422753 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-12 71.4965 1";
+         rotation = "0.707107 0 -0.707107 180";
+
+         surface = "0 0 0 1 -5.00679e-06 3.51667e-06 6.98117 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 -5.00679e-06 3.51667e-06 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 0 0 0.707107 -5.00679e-06 -0.50692 3.49058 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -1.40056 3.51667e-06 3.49058 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 0.707107 0 -5.00679e-06 0.506927 3.49058 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 1.40055 3.51667e-06 3.49058 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-4 72 1";
+         rotation = "0 0.707107 -0.707107 180";
+
+         surface = "0 0 0 1 3.02735 0 1.01385 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 3.02735 0 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 0 -0 0.707107 3.02735 -1.40055 0.506925 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -0.5 0 0.506925 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 0.707107 0 3.02735 1.40055 0.506925 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 6.5547 0 0.506925 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-18 79 1";
+         rotation = "0.57735 0.57735 -0.57735 120";
+
+         surface = "0 1.29026e-09 0 1 4.52821 -8.59511e-09 0.99577 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 -9.81815e-10 4.52821 8.59474e-09 2.26779e-08 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 -1.45976e-07 -1.45976e-07 0.707106 4.52821 -1.40055 0.497885 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -7.02077 -4.76837e-06 0.497885 0 0 0 1 1 0 1 1";
+         surface = "-1.45976e-07 0.707107 0.707107 1.45976e-07 4.52821 1.40055 0.497885 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 16.0772 4.76837e-06 0.497885 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-4 71 2";
+
+         surface = "2.19754e-07 0 0 1 0 12.3158 0.499995 0 0 0 1 1 0 1 1";
+         surface = "0 1 -2.2228e-07 -0 0 12.3158 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0 24.1145 -0.900563 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 0.517143 -0.900552 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 12.3158 -0.900558 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 12.3158 -0.900558 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-18 78.4792 1";
+         rotation = "-0.57735 0.577351 -0.57735 240";
+
+         surface = "3.40465e-07 9.32007e-07 -2.83122e-07 1 -0.0241395 -5.35703e-08 6.01202 0 0 0 1 1 3.24434e-05 1 1";
+         surface = "1.3684e-18 1 9.92035e-13 3.03298e-06 -0.0241395 2.5846e-08 -1.72515e-08 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 4.98393e-06 4.98393e-06 0.707107 -0.0241396 -1.40055 3.00601 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -0.535761 7.19031e-06 3.00601 0 0 0 1 1 0 1 1";
+         surface = "4.98392e-06 0.707107 0.707107 -4.98393e-06 -0.0241396 1.40055 3.00601 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.487482 -7.23401e-06 3.00601 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "-11.0191 78.5033 0.999993";
+         rotation = "0.577351 -0.57735 0.57735 120";
+
+         surface = "8.51161e-07 9.31993e-07 -8.49362e-07 1 2.56507e-06 9.59321e-06 6.63841 0 0 0 1 1 9.733e-05 1 1";
+         surface = "0 1 0 0 2.53548e-05 1.75172e-06 1.01405 0 0 0 1 1 0 1 1";
+         surface = "-0.707106 5.84888e-06 5.84889e-06 0.707107 1.3193e-05 -1.40055 3.82623 0 0 0 1 1 0 1 1";
+         surface = "0.500001 -0.500001 -0.5 -0.499999 -0.511609 1.36128e-05 3.82623 0 0 0 1 1 0 1 1";
+         surface = "5.76651e-06 0.707107 0.707106 -5.7665e-06 1.46235e-05 1.40056 3.82623 0 0 0 1 1 0 1 1";
+         surface = "-0.499999 -0.499999 -0.500001 0.500001 0.511637 -3.19569e-06 3.82623 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:FloorGray";
+         position = "-2.51032 -3.52997 -0.100799";
+
+         surface = "0 0 0 1 0.506475 3.52976 0.30204 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0.506475 3.52976 -0.5 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0.506475 7.52558 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0.506475 -0.466052 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -3.49192 3.52976 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 4.50487 3.52976 -0.09898 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:FloorGray";
+         position = "7.48161 -3.52997 -0.100799";
+
+         surface = "0 0 0 1 0.506475 3.52976 0.30204 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0.506475 3.52976 -0.5 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707107 0.506475 7.52558 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0.506475 -0.466052 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -3.49192 3.52976 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 4.50487 3.52976 -0.09898 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:FloorGray";
+         position = "17.4973 -3.52997 -0.100799";
+
+         surface = "0 0 0 1 0.506475 3.52976 0.30204 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0.506475 3.52976 -0.5 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0.506475 7.52558 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0.506475 -0.466052 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -3.49192 3.52976 -0.09898 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 4.50487 3.52976 -0.09898 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "4.55723 81.8925 0.281743";
+         rotation = "-0.57735 -0.57735 0.57735 120";
+
+         surface = "1.53235e-06 -9.51337e-08 1.45778e-13 1 -0.967448 -2.0115 5.89565 0 0 0 1 1 0 1 1";
+         surface = "1.4578e-13 1 -1.53237e-06 9.51337e-08 -0.967448 -2.01149 4.88798 0 0 0 1 1 0 1 1";
+         surface = "-0.707114 1.30253e-07 3.40631e-07 0.7071 -0.967448 -2.47826 5.39182 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -2.22053 -2.01149 5.39182 0 0 0 1 1 0 1 1";
+         surface = "3.23812e-07 0.707102 0.707111 -1.13437e-07 -0.967448 -1.54473 5.39181 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.285635 -2.0115 5.39181 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:Glass";
+         position = "10.5014 81.8925 0.281744";
+         rotation = "-0.57735 -0.57735 0.57735 120";
+
+         surface = "1.53235e-06 -9.51337e-08 1.45778e-13 1 -0.967448 -2.0115 5.89565 0 0 0 1 1 0 1 1";
+         surface = "1.4578e-13 1 -1.53237e-06 9.51337e-08 -0.967448 -2.01149 4.88798 0 0 0 1 1 0 1 1";
+         surface = "-0.707114 1.30253e-07 3.40631e-07 0.707099 -0.967448 -2.47826 5.39182 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -2.22053 -2.01149 5.39182 0 0 0 1 1 0 1 1";
+         surface = "3.23812e-07 0.707102 0.707111 -1.13437e-07 -0.967448 -1.54473 5.39181 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.285635 -2.0115 5.39181 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "10.5014 86.89 0.281741";
+         rotation = "-0.57735 -0.57735 0.57735 120";
+
+         surface = "1.53235e-06 -9.51337e-08 1.45778e-13 1 -0.967448 -2.0115 5.89565 0 0 0 1 1 0 1 1";
+         surface = "1.4578e-13 1 -1.53237e-06 9.51337e-08 -0.967448 -2.01149 4.88798 0 0 0 1 1 0 1 1";
+         surface = "-0.707114 1.30253e-07 3.40631e-07 0.7071 -0.967448 -2.47826 5.39182 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -2.22053 -2.01149 5.39182 0 0 0 1 1 0 1 1";
+         surface = "3.23812e-07 0.707102 0.707111 -1.13437e-07 -0.967448 -1.54473 5.39181 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.285635 -2.0115 5.39181 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:Glass";
+         position = "4.55723 86.8785 0.281739";
+         rotation = "-0.57735 -0.57735 0.57735 120";
+
+         surface = "1.53235e-06 -9.51337e-08 1.45778e-13 1 -0.967448 -2.0115 5.89565 0 0 0 1 1 0 1 1";
+         surface = "1.4578e-13 1 -1.53237e-06 9.51337e-08 -0.967448 -2.01149 4.88798 0 0 0 1 1 0 1 1";
+         surface = "-0.707114 1.30253e-07 3.40631e-07 0.707099 -0.967448 -2.47826 5.39182 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -2.22053 -2.01149 5.39182 0 0 0 1 1 0 1 1";
+         surface = "3.23812e-07 0.707102 0.707111 -1.13437e-07 -0.967448 -1.54473 5.39181 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.285635 -2.0115 5.39181 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "13.5227 54.4858 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707107 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "16.5165 54.4891 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "19.5427 54.4891 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707107 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "-3.50605 54.4891 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "-6.53235 54.4891 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707107 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "-9.52605 54.4858 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "13.5227 40.4897 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "16.5165 40.493 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707107 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "19.5427 40.493 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "-3.50605 40.493 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707107 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "-6.53235 40.493 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "-9.52605 40.4897 2.27655";
+
+         surface = "0 0 0 1 0 0 0.5 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707107 0 0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 -0.5 -0.900555 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 0 -0.900556 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "12.4852 71.4892 2";
+
+         surface = "3.33556e-07 0 0 1 0 8.02232 0.499995 0 0 0 1 1 0 1 1";
+         surface = "0 1 -3.41498e-07 0 0 8.02232 -2.30111 0 0 0 1 1 0 1 1";
+         surface = "0.707107 0 0 0.707106 0 15.5275 -0.900563 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 -0.707107 0 0 0.517143 -0.900552 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 -0.5 0.5 -0.5 8.02232 -0.900558 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 0.5 0.5 0.5 8.02232 -0.900558 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:InteractiveRed";
+         position = "11.9852 79.0029 1.09944";
+         rotation = "0.57735 0.57735 -0.57735 120";
+
+         surface = "0 0 0 1 7.50649 2.30717e-09 13.9931 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 7.50648 -2.31118e-09 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 -3.32354e-06 -3.32354e-06 0.707106 7.50648 -1.40055 6.99655 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 6.99923 -4.76837e-06 6.99654 0 0 0 1 1 0 1 1";
+         surface = "-3.32354e-06 0.707107 0.707107 3.32354e-06 7.50648 1.40055 6.99655 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 8.01374 4.76837e-06 6.99654 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:NatureGreen";
+         position = "-2.00784 79.0029 1.09944";
+         rotation = "0.57735 0.57735 -0.57735 120";
+
+         surface = "0 0 0 1 0.496485 5.41276e-09 0.99577 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0.496485 -5.41305e-09 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 -2.24267e-07 -2.24267e-07 0.707106 0.496485 -1.40055 0.497885 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -7.02077 -4.76837e-06 0.497885 0 0 0 1 1 0 1 1";
+         surface = "-2.24267e-07 0.707107 0.707107 2.24267e-07 0.496485 1.40055 0.497885 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 8.01374 4.76837e-06 0.497885 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:FloorGray";
+         position = "-2.50572 79.0029 2.49999";
+         rotation = "2.97512e-07 -2.97512e-07 -1 90";
+
+         surface = "0 0 0 1 0 -2.54365 0.571269 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 -2.54365 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 0 -0 0.707106 0 -5.58518 0.285634 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -8.01374 -2.54365 0.285634 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 0.707107 0 0 0.497885 0.285634 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 8.01374 -2.54365 0.285634 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:FloorGray";
+         position = "3.07946 79.0029 2.78563";
+         rotation = "-0.57735 -0.57735 -0.57735 120";
+
+         surface = "0 0 0 1 5.4517 4.93312e-07 4.95653 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 5.4517 4.90165e-07 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 4.11262e-09 4.11262e-09 0.707106 5.4517 -0.285634 2.47827 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 2.88966 5.21541e-07 2.47826 0 0 0 1 1 0 1 1";
+         surface = "4.11262e-09 0.707107 0.707107 -4.11262e-09 5.4517 0.285635 2.47827 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 8.01374 4.61936e-07 2.47826 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:FloorGray";
+         position = "8.03599 79.0029 2.78563";
+         rotation = "-0.57735 -0.57735 -0.57735 120";
+
+         surface = "0 0 0 1 0 4.91738e-07 4.9564 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 4.91738e-07 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 0 0 0.707106 0 -0.285634 2.4782 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -8.01374 4.91738e-07 2.4782 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 0.707107 0 0 0.285635 2.4782 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 8.01374 4.91738e-07 2.4782 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:Glass";
+         position = "5.55772 81.8925 2.78563";
+         rotation = "-0.57735 -0.57735 0.57735 120";
+
+         surface = "0 0 0 1 0 0 6.19266 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 -2.10373e-07 0 0.707106 -5.91104e-15 -2.47827 3.09633 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -0.285635 0 3.09633 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 0.707107 2.10373e-07 5.68434e-14 2.47827 3.09633 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.285635 0 3.09633 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:DetailBlue";
+         position = "5.55772 75.6999 2.78563";
+         rotation = "-0.57735 -0.57735 0.57735 120";
+
+         surface = "0 0 0 1 0 0 0 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 -2.10373e-07 0 0.707106 0 -2.47827 0 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -0.285635 0 0 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 0.707107 2.10373e-07 0 2.47827 0 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.285635 0 0 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:FloorGray";
+         position = "5.55772 75.6999 2.78563";
+         rotation = "-0.57735 -0.57735 0.57735 120";
+
+         surface = "0 0 0 1 0 0 4.70374 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 0 0 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 -2.10373e-07 2.10373e-07 0.707106 3.69685e-09 -2.47827 2.35187 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -0.285635 0 2.35187 0 0 0 1 1 0 1 1";
+         surface = "2.10373e-07 0.707107 0.707107 2.10373e-07 1.10908e-08 2.47827 2.35187 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 0.285635 0 2.35187 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "12.4852 72.0063 1.09945";
+         rotation = "0 0.707107 -0.707107 180";
+
+         surface = "0 0 0 1 3.02735 0 1.01385 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 3.02735 0 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 0 -0 0.707106 3.02735 -1.40055 0.506925 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -0.5 0 0.506925 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 0.707107 0 3.02735 1.40055 0.506925 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 6.5547 0 0.506925 0 0 0 1 1 0 1 1";
+      };
+      new ConvexShape() {
+         MaterialAsset = "Prototyping:WallOrange";
+         position = "3.98982 71.4994 1.09945";
+         rotation = "0.707107 0 -0.707107 180";
+
+         surface = "0 0 0 1 -5.00679e-06 3.51667e-06 6.98117 0 0 0 1 1 0 1 1";
+         surface = "0 1 0 0 -5.00679e-06 3.51667e-06 0 0 0 0 1 1 0 1 1";
+         surface = "-0.707107 0 0 0.707106 -5.00679e-06 -0.50692 3.49058 0 0 0 1 1 0 1 1";
+         surface = "0.5 -0.5 -0.5 -0.5 -1.40056 3.51667e-06 3.49058 0 0 0 1 1 0 1 1";
+         surface = "0 0.707107 0.707107 0 -5.00679e-06 0.506927 3.49058 0 0 0 1 1 0 1 1";
+         surface = "0.5 0.5 0.5 -0.5 1.40055 3.51667e-06 3.49058 0 0 0 1 1 0 1 1";
+      };
+   };
+   new SimGroup(groundplanes) {
+
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "69 31 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "85 47 0";
+         rotation = "0 0 1 180";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "69 47 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "101 47 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "101 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "101 31 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "69 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "85 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "85 31 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 95 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 127 0";
+         rotation = "0 0 1 180";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 95 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 111 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 127 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 111 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 111 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 95 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 95 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 111 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 127 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 127 0";
+         rotation = "0 0 1 180";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "5 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-11 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "5 95 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-11 95 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 143 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 111 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 95 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 111 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 95 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 95 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 111 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 143 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 143 0";
+         rotation = "0 0 1 180";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 79 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 127 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 127 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 127 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "5 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-11 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 -1 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 47 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "5 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-11 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-11 31 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "5 31 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "5 47 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-11 47 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "5 63 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-11 63 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 63 0";
+         rotation = "0 0 1 180";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 63 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 47 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "21 31 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 31 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 47 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 31 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "37 47 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 63 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "53 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 63 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 63 0";
+         rotation = "0 0 1 180";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 63 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 47 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 47 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 31 0";
+         rotation = "0 0 1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-75 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-27 31 0";
+         rotation = "0 0 -1 90";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 63 0";
+         rotation = "0 0 1 180";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorCutout";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 15 0";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 31 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-43 47 -8";
+      };
+      new TSStatic() {
+         ShapeAsset = "TestBed:floorPlane";
+         collisionType = "Visible Mesh";
+         decalType = "Visible Mesh";
+         position = "-59 31 -8";
+      };
+   };
+   new SimGroup(zones) {
+
+      new Portal() {
+         position = "-11 87 1";
+         scale = "2.13017 1.32872 2.36901";
+
+         plane = "1 -0 5.96046e-07 0.5";
+         plane = "-0 -1 -0 0.5";
+         plane = "-1 -0 5.96046e-07 0.5";
+         plane = "-0 1 -0 0.5";
+         plane = "-0 -0 1 0.5";
+         plane = "-0 -0 -1 0.5";
+         point = "-0.5 -0.5 0.5";
+         point = "-0.5 -0.5 -0.5";
+         point = "-0.5 0.5 -0.5";
+         point = "-0.5 0.5 0.5";
+         point = "0.5 0.5 -0.5";
+         point = "0.5 0.5 0.5";
+         point = "0.5 -0.5 -0.5";
+         point = "0.5 -0.5 0.5";
+         edge = "0 5 0 3";
+         edge = "0 1 3 2";
+         edge = "0 4 2 1";
+         edge = "0 3 1 0";
+         edge = "1 5 3 5";
+         edge = "1 2 5 4";
+         edge = "1 4 4 2";
+         edge = "2 5 5 7";
+         edge = "2 3 7 6";
+         edge = "2 4 6 4";
+         edge = "3 5 7 0";
+         edge = "3 4 1 6";
+      };
+      new Zone() {
+         position = "-11 91.2013 1.13423";
+         scale = "14.0817 8.18855 2.61195";
+
+         plane = "1 -0 5.96046e-07 0.5";
+         plane = "-0 -1 -0 0.5";
+         plane = "-1 -0 5.96046e-07 0.5";
+         plane = "-0 1 -0 0.5";
+         plane = "-0 -0 1 0.5";
+         plane = "-0 -0 -1 0.5";
+         point = "-0.5 -0.5 0.5";
+         point = "-0.5 -0.5 -0.5";
+         point = "-0.5 0.5 -0.5";
+         point = "-0.5 0.5 0.5";
+         point = "0.5 0.5 -0.5";
+         point = "0.5 0.5 0.5";
+         point = "0.5 -0.5 -0.5";
+         point = "0.5 -0.5 0.5";
+         edge = "0 5 0 3";
+         edge = "0 1 3 2";
+         edge = "0 4 2 1";
+         edge = "0 3 1 0";
+         edge = "1 5 3 5";
+         edge = "1 2 5 4";
+         edge = "1 4 4 2";
+         edge = "2 5 5 7";
+         edge = "2 3 7 6";
+         edge = "2 4 6 4";
+         edge = "3 5 7 0";
+         edge = "3 4 1 6";
+      };
+      new Zone() {
+         position = "-11.2619 82.5564 1.12072";
+         scale = "14.0817 8.08895 2.61195";
+      };
+      new Portal() {
+         position = "-10.9806 78.4669 1.20153";
+         scale = "2.13017 1.32872 2.36901";
+      };
+      new Portal() {
+         position = "-11.2877 71.4715 1.20153";
+         scale = "1.49994 1.66805 2.36901";
+      };
+      new Zone() {
+         position = "-11.2619 75.0109 1.01251";
+         scale = "14.0817 6.95967 2.61195";
+      };
+   };
+   new SimGroup(Lighting) {
+
+      new Skylight() {
+         position = "0 0 50";
+         persistentId = "d5eb3afb-dced-11e9-a423-bb0e346e3870";
+            dirtyGameObject = "0";
+      };
+      new BoxEnvironmentProbe() {
+         refScale = "15.4341 15.9079 3.46948";
+         position = "5 79.0487 1.22172";
+         scale = "15.4341 15.9079 3.46948";
+         persistentId = "9954214b-167f-11ec-8ed6-c03ff06e3cb2";
+      };
+   };
+   new SimGroup(particles) {
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:ramp";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "1 47 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:ramp";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "5 41 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:ramp";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "5 53 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:ramp";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "9 47 0";
+   };
+   new VolumetricFog() {
+      ShapeAsset = "Core_Rendering:Fog_Cube";
+      fogDensity = "0.05";
+      position = "85 31 -9";
+      scale = "9 9 8";
+         shapeName = "core/rendering/shapes/Fog_Cube.DAE";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:kork_chanShape";
+      position = "-15.5739 82.5369 0.043309";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:kork_chanShape";
+      position = "-7.06292 74.9124 0.0433095";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:CylinderPrimitive";
+      position = "-6.61205 83.1357 -0.0032357";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:ConePrimitive";
+      position = "-11.4759 83.1051 -0.0238941";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:TorusPrimitive";
+      position = "-15.7985 75.1976 0.110251";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:CubePrimitive";
+      position = "-11.2902 75.1932 0.00518942";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "69 -1 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "85 -1 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "101 -1 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:kork_chanShape";
+      position = "-11.1328 90.4088 0.043309";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:kork_chanShape";
+      position = "-14.8722 90.4088 0.043309";
+   };
+   new TSStatic() {
+      ShapeAsset = "Prototyping:kork_chanShape";
+      position = "-7.55764 90.4088 0.043309";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:MaterialGrid_shape";
+      position = "-59 -33 1";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-43 -17 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-59 -17 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-75 -17 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-43 -33 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-59 -33 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-75 -33 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-43 -49 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-59 -49 0";
+   };
+   new TSStatic() {
+      ShapeAsset = "TestBed:floorPlane";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+      position = "-75 -49 0";
+   };
+};
+//--- OBJECT WRITE END ---
+
