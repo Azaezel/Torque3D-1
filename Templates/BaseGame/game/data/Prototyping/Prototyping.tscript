@@ -62,7 +62,8 @@ function getNextTileBounds(%rot,%scale)
 
 function findGap(%startPos, %startRot, %scale)
 {
-    %wallwidth = "0.1 0.1 0.1";
+    %scale = vectorAdd(%scale, "1 1 1");
+    %wallwidth = "0.25 0.25 0.25";
     %nextBounds = getNextTileBounds(getWord(%startRot,3), %scale);
     //warn("exit"@ %i @" found:("@ %startPos @")("@ %nextBounds @")");
     %degRot = getRotationForwardVector(%startRot);
@@ -96,11 +97,11 @@ function expandRooms(%nodeObj, %count)
             %okay = false;
             if (%tilenum>6) //magic numbers are magic. fix meh.
             {
-                %okay = findGap(%exitPos, %rot, "4 4 8");
+                %okay = findGap(%exitPos, %rot, "10 10 10");
                 if (!%okay) %tilenum -=6;
             }
             if (!%okay)
-                %okay = findGap(%exitPos, %rot, "2 2 2");
+                %okay = findGap(%exitPos, %rot, "5 5 5");
                 
             if (%okay)
             {
@@ -131,7 +132,7 @@ function expandRooms(%nodeObj, %count)
                         getScene(0).add(%mazNode);
                         $goalPlaced = true;
                         %count++;
-                        return false; //early out so we don't wall ourselves off
+                        continue; //early out so we don't wall ourselves off
                     }
                 }
                     

@@ -1,12 +1,13 @@
 <MaterialAsset
     AssetName="corridor_mat"
-    materialDefinitionName="corridor_mat">
+    materialDefinitionName="corridor_mat"
+    imageMap0="@asset=Prototyping:tileset_cooridor_a_image">
     <Material
         Name="corridor_mat"
         mapTo="corridor">
         <Material.Stages>
             <Stages_beginarray
-                DiffuseMapAsset="Prototyping:cooridor_image"/>
+                DiffuseMapAsset="Prototyping:tileset_cooridor_a_image"/>
         </Material.Stages>
     </Material>
 </MaterialAsset>
