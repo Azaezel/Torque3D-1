@@ -56,7 +56,7 @@ function getNextTileBounds(%rot,%scale)
     %rotatedScale.y = mRound(mAbs(%rotatedScale.y));
     %rotatedScale.z = mRound(mAbs(%rotatedScale.z));
     //echo(%rotatedScale);
-    %rotatedScale = VectorScale(%rotatedScale,0.5);
+    //%rotatedScale = VectorScale(%rotatedScale,0.5);
     return %rotatedScale;
 }
 
@@ -104,11 +104,16 @@ function expandRooms(%nodeObj, %count)
 		    %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
             
             //pick a tile from the potential list
-            %tilenum = getrandom(7)+1;
+            %tilenum = getrandom(8)+1;
             
             // check if we have an empty gap for the tile, picking a smaller one to try if that fails
             // todo: better size-tracking logic
             %okay = false;
+            if (%tilenum>8) //magic numbers are magic. fix meh.
+            {
+                %okay = findGap(%exitPos, %rot, "20 20 5");
+                if (!%okay) %tilenum -=1;
+            }
             if (%tilenum>6) //magic numbers are magic. fix meh.
             {
                 %okay = findGap(%exitPos, %rot, "10 10 10");

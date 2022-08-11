@@ -1,0 +1,11 @@
+//--- OBJECT WRITE BEGIN ---
+$ThisPrefab = new SimGroup() {
+
+   new TSStatic() {
+      ShapeAsset = "Prototyping:tile9_shape";
+      internalName = "frame";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+   };
+};
+//--- OBJECT WRITE END ---
