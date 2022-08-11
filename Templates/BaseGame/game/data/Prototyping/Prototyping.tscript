@@ -70,7 +70,19 @@ function findGap(%startPos, %startRot, %scale)
     %boxRad = VectorSub(%nextBounds, %wallwidth);
     %newPos = vectorAdd(%startPos,VectorScale(%degRot,VectorLen(%nextBounds)));
     //echo("startPos:"@ %newPos @" nextBounds:"@ %nextBounds @" scale:"@ %boxRad );
+    expandMazebox(%newPos,%boxRad);
     return containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,%boxRad.x,%boxRad.y,%boxRad.z,false); 
+}
+
+function expandMazebox(%pos,%box)
+{
+    $mazeMax.x = getMaxF($mazeMax.x, %pos.x+%box.x);
+    $mazeMax.y = getMaxF($mazeMax.y, %pos.y+%box.y);
+    $mazeMax.z = getMaxF($mazeMax.z, %pos.z+%box.z);
+    
+    $mazeMin.x = getMinF($mazeMin.x, %pos.x-%box.x);
+    $mazeMin.y = getMinF($mazeMin.y, %pos.y-%box.y);
+    $mazeMin.z = getMinF($mazeMin.z, %pos.z-%box.z);
 }
 
 function expandRooms(%nodeObj, %count)
@@ -123,7 +135,7 @@ function expandRooms(%nodeObj, %count)
                     %okay = false;
                     if ($goalPlaced == false) //if we've hit max, go ahead and place our goal tile (assumes smallest size)
                     {
-                        %mazNode = new Prefab(goal)
+                        %mazNode = new Prefab(mazeGoal)
                         { 
                             fileName = "data/Prototyping/prefabs/tileGoal.prefab";
                             position = %exitPos;
@@ -157,14 +169,28 @@ function expandRooms(%nodeObj, %count)
     return %okay;
 }
 
+function genNavmesh()
+{
+	%newMesh = new NavMesh(theNavMesh)
+	{
+        position = vectorScale(VectorAdd($mazeMax,$mazeMin),0.5);
+        scale = vectorSub($mazeMax,$mazeMin);
+	};
+	getScene(0).add(%newMesh);
+    %newMesh.build();
+}
+
 function createMaze()
 {
    $goalPlaced = false;
-   %mazeStart = new Prefab(start) {
+   $mazeMax = "1 1 1";
+   $mazeMin = "-1 -1 -1";
+   %mazeStart = new Prefab(mazeStart) {
       fileName = "data/Prototyping/prefabs/tileStart.prefab";
    };
    getScene(0).add(%mazeStart);
    expandRooms(%mazeStart, 20);
    if ($goalPlaced == false) //todo: track tiles in an array, and kill em to regen it if all else fails
     error("bad maze!");
+   genNavmesh();
 }
