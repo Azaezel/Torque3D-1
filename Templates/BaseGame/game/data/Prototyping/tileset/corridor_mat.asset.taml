@@ -7,7 +7,9 @@
         mapTo="corridor">
         <Material.Stages>
             <Stages_beginarray
-                DiffuseMapAsset="Prototyping:tileset_cooridor_a_image"/>
+                DiffuseMapAsset="Prototyping:tileset_cooridor_a_image"
+                NormalMapAsset="Prototyping:cooridor_n_image"
+                ORMConfigMapAsset="Prototyping:cooridor_orm_image"/>
         </Material.Stages>
     </Material>
 </MaterialAsset>
