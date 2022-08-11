@@ -70,8 +70,10 @@ function findGap(%startPos, %startRot, %scale)
     %boxRad = VectorSub(%nextBounds, %wallwidth);
     %newPos = vectorAdd(%startPos,VectorScale(%degRot,VectorLen(%nextBounds)));
     //echo("startPos:"@ %newPos @" nextBounds:"@ %nextBounds @" scale:"@ %boxRad );
-    expandMazebox(%newPos,%boxRad);
-    return containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,%boxRad.x,%boxRad.y,%boxRad.z,false); 
+    %isEmpty = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,%boxRad.x,%boxRad.y,%boxRad.z,false); 
+    if (%isEmpty)
+        expandMazebox(%newPos,%boxRad);
+    return %isEmpty;
 }
 
 function expandMazebox(%pos,%box)
@@ -127,8 +129,7 @@ function expandRooms(%nodeObj, %count)
                         rotation = %rot;
                     };
                     getScene(0).add(%mazNode);
-                    if (!expandRooms(%mazNode, %count))
-                        %count++;
+                    expandRooms(%mazNode, %count);
                 }
                 else
                 {
@@ -189,7 +190,7 @@ function createMaze()
       fileName = "data/Prototyping/prefabs/tileStart.prefab";
    };
    getScene(0).add(%mazeStart);
-   expandRooms(%mazeStart, 20);
+   expandRooms(%mazeStart, 50);
    if ($goalPlaced == false) //todo: track tiles in an array, and kill em to regen it if all else fails
     error("bad maze!");
    genNavmesh();
