@@ -63,7 +63,7 @@ function getNextTileBounds(%rot,%scale)
 function findGap(%startPos, %startRot, %scale)
 {
     %scale = vectorAdd(%scale, "1 1 1");
-    %wallwidth = "0.25 0.25 0.25";
+    %wallwidth = "0.0 0.0 0.0";
     %nextBounds = getNextTileBounds(getWord(%startRot,3), %scale);
     //warn("exit"@ %i @" found:("@ %startPos @")("@ %nextBounds @")");
     %degRot = getRotationForwardVector(%startRot);
@@ -134,6 +134,7 @@ function expandRooms(%nodeObj, %count)
                         rotation = %rot;
                     };
                     getScene(0).add(%mazNode);
+                    placedTiles.push_back(%mazNode);
                     expandRooms(%mazNode, %count);
                 }
                 else
@@ -148,6 +149,7 @@ function expandRooms(%nodeObj, %count)
                             rotation = %rot;
                         };
                         getScene(0).add(%mazNode);
+                        placedTiles.push_back(%mazNode);
                         $goalPlaced = true;
                         %count++;
                         continue; //early out so we don't wall ourselves off
@@ -169,6 +171,7 @@ function expandRooms(%nodeObj, %count)
                     rotation = %rot;
                 };
                 getScene(0).add(%mazNode);
+                placedTiles.push_back(%mazNode);
              }
         }
     }
@@ -186,17 +189,43 @@ function genNavmesh()
     %newMesh.build();
 }
 
+function resetMaze()
+{
+    //reset global tracking vars
+    $goalPlaced = false;
+    if (!isObject(placedTiles))
+    {
+        new ArrayObject(placedTiles){};
+    }
+    else
+    {
+        placedTiles.setCurrent(placedTiles.count()-1);
+        while (placedTiles.count()>0)
+        {
+            %objID = placedTiles.getKey(placedTiles.getCurrent());
+            %objID.delete();
+            placedTiles.pop_back();
+        }
+    }
+    
+    $mazeMax = "1 1 1";
+    $mazeMin = "-1 -1 -1";
+    if (isObject(theNavMesh))
+        theNavMesh.cancelBuild();
+}
+
 function createMaze()
 {
-   $goalPlaced = false;
-   $mazeMax = "1 1 1";
-   $mazeMin = "-1 -1 -1";
-   %mazeStart = new Prefab(mazeStart) {
-      fileName = "data/Prototyping/prefabs/tileStart.prefab";
-   };
-   getScene(0).add(%mazeStart);
-   expandRooms(%mazeStart, 50);
-   if ($goalPlaced == false) //todo: track tiles in an array, and kill em to regen it if all else fails
-    error("bad maze!");
+    resetMaze();
+    while($goalPlaced == false)
+    {
+        resetMaze();
+        %mazeStart = new Prefab(mazeStart) {
+            fileName = "data/Prototyping/prefabs/tileStart.prefab";
+        };
+        placedTiles.push_back(%mazeStart);
+        getScene(0).add(%mazeStart);
+        expandRooms(%mazeStart, 50);
+   }
    genNavmesh();
 }
