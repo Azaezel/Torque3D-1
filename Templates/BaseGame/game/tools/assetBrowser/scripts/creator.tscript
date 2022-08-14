@@ -43,6 +43,7 @@ function AssetBrowser::loadCreatorClasses(%this)
    %this.endCreatorGroup(); 
    
    %this.beginCreatorGroup( "Level" );
+      %this.addCreatorClass("Entity" );
       %this.addCreatorClass("Camera" );
       %this.addCreatorClass("GroundPlane",  "Ground Plane" );
       %this.addCreatorClass("LevelInfo",    "Level Info" );

@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 //Scripts
-//exec("./scripts/componentEditor.ed." @ $TorqueScriptFileExtension);
+exec("./scripts/componentEditor.ed." @ $TorqueScriptFileExtension);
 //exec("./scripts/stateMachineEditor.ed." @ $TorqueScriptFileExtension);
 exec("./scripts/superToolTipDlg.ed." @ $TorqueScriptFileExtension);
 
@@ -30,6 +30,6 @@ exec("./gui/superToolTipDlg.ed.gui");
 //exec("./gui/stateMachineDlg.ed.gui");
 
 //field types
-exec("./interface/materialFieldType." @ $TorqueScriptFileExtension);
-exec("./interface/typeMaskFieldType." @ $TorqueScriptFileExtension);
-exec("./interface/stateMachineField." @ $TorqueScriptFileExtension);
+//exec("./interface/materialFieldType." @ $TorqueScriptFileExtension);
+//exec("./interface/typeMaskFieldType." @ $TorqueScriptFileExtension);
+//exec("./interface/stateMachineField." @ $TorqueScriptFileExtension);

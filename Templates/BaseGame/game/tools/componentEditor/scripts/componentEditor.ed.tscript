@@ -96,6 +96,18 @@ function QuickEditComponentList::refresh(%this)
 {
    %this.clear();
    
+   foreach( %datablock in DatablockSet )
+   {
+      if(%datablock.getClassName() !$= "Component")
+         continue;
+         
+      %id = %datablock.getId();
+         
+      %this.add( %datablock.getName(), true );
+   }
+   
+   return;
+   
    //find all ComponentAssets
    %assetQuery = new AssetQuery();
    if(!AssetDatabase.findAssetType(%assetQuery, "ComponentAsset"))
@@ -198,9 +210,16 @@ function QuickEditComponentList::onCancel( %this )
 
 function AddComponentQuickEditButton::onClick(%this)
 {
-   %component = %this.componentList.componentToAdd;
+   //%component = %this.componentList.componentToAdd;
+   %component = QuickEditComponentList.getText();
+   
+   %entityObject = Inspector.getInspectObject(0);
+   %entityObject.addComponent(%component);
+   
+   schedule( 50, 0, "refreshInspector", Inspector.getInspectObject(0) );
+   EWorldEditor.isDirty = true;
 	
-	%componentName = %this.componentList.componentToAdd.componentName;
+	/*%componentName = %this.componentList.componentToAdd.componentName;
 	%componentClass = %this.componentList.componentToAdd.componentClass;
 	
 	%command = "$ComponentEditor::newComponent = new" SPC %componentClass SPC "(){ class = \"" 
@@ -223,7 +242,7 @@ function AddComponentQuickEditButton::onClick(%this)
    %instance.owner.add(%instance);
    
    schedule( 50, 0, "refreshInspector", Inspector.getInspectObject(0) );
-   EWorldEditor.isDirty = true;
+   EWorldEditor.isDirty = true;*/
 }
 
 function addComponent(%obj, %instance)
