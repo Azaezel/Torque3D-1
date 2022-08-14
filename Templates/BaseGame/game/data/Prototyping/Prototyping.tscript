@@ -215,13 +215,16 @@ function expandRooms(%nodeObj, %count)
 
 function genNavmesh()
 {
-	%newMesh = new NavMesh(theNavMesh)
-	{
-        position = vectorScale(VectorAdd($mazeMax,$mazeMin),0.5);
-        scale = vectorSub($mazeMax,$mazeMin);
-	};
-	getScene(0).add(%newMesh);
-    %newMesh.build();
+    if (!isObject(theNavMesh))
+    {
+        %newMesh = new NavMesh(theNavMesh)
+        {
+        };
+        getScene(0).add(%newMesh);
+    }
+    theNavMesh.position = vectorScale(VectorAdd($mazeMax,$mazeMin),0.5);
+    theNavMesh.scale = vectorSub($mazeMax,$mazeMin);
+    theNavMesh.build();
 }
 
 function resetMaze()
@@ -257,8 +260,14 @@ function onMazeDone()
         createMaze();
 }
 
-function createMaze()
+function createMaze(%tileDepth)
 {
+    if ($scheduledExpansion>0)
+    {
+        error("still expanding!");
+        return;
+    }
+    if (%tileDepth == 0) %tileDepth =50;
     resetMaze();        
     $scheduledExpansion=1;
     %mazeStart = new Prefab(mazeStart) {
@@ -266,5 +275,5 @@ function createMaze()
     };
     placedTiles.push_back(%mazeStart);
     getScene(0).add(%mazeStart);
-    expandRooms(%mazeStart, 50);
+    expandRooms(%mazeStart, %tileDepth);
 }
