@@ -51,28 +51,31 @@ function Prototyping::onDestroyClientConnection(%this)
 
 function getNextTileBounds(%rot,%scale)
 {
-    %rotatedScale = VectorRot(%scale,%rot);
+    %rotatedScale = VectorRot(%scale,mDegToRad(%rot));
     %rotatedScale.x = mRound(mAbs(%rotatedScale.x));
     %rotatedScale.y = mRound(mAbs(%rotatedScale.y));
     %rotatedScale.z = mRound(mAbs(%rotatedScale.z));
-    //echo(%rotatedScale);
-    //%rotatedScale = VectorScale(%rotatedScale,0.5);
+    %rotatedScale = VectorScale(%rotatedScale,0.5);
+    //echo("in:("@%scale @"["@ %rot @"]) out:"@ %rotatedScale);
     return %rotatedScale;
+}
+
+function vectorLongest(%vec)
+{
+    return getMaxF(getMaxF(%vec.x,%vec.y),%vec.z);
 }
 
 function findGap(%startPos, %startRot, %scale)
 {
-    %scale = vectorAdd(%scale, "1 1 1");
-    %wallwidth = "0.0 0.0 0.0";
     %nextBounds = getNextTileBounds(getWord(%startRot,3), %scale);
-    //warn("exit"@ %i @" found:("@ %startPos @")("@ %nextBounds @")");
+    %wallwidth = "0.001 0.001 0.001";
     %degRot = getRotationForwardVector(%startRot);
+    %newPos = vectorAdd(%startPos,VectorScale(%degRot,vectorLongest(%nextBounds)));
     %boxRad = VectorSub(%nextBounds, %wallwidth);
-    %newPos = vectorAdd(%startPos,VectorScale(%degRot,VectorLen(%nextBounds)));
-    //echo("startPos:"@ %newPos @" nextBounds:"@ %nextBounds @" scale:"@ %boxRad );
-    %isEmpty = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,%boxRad.x,%boxRad.y,%boxRad.z,false); 
+    //echo("centroid:"@ %newPos @"["@ getWord(%startRot,3) @"] area tested:"@ %boxRad );
+    %isEmpty = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,%boxRad.x,%boxRad.y,%boxRad.z,false);
     if (%isEmpty)
-        expandMazebox(%newPos,%boxRad);
+        expandMazebox(%newPos,%nextBounds);
     return %isEmpty;
 }
 
@@ -103,114 +106,161 @@ function scrambleExits(%exits)
     return %exits;
 }
 
+function findRoomSize(%tilenum,%exitPos,%rot)
+{
+    // check if we have an empty gap for the tile, picking a smaller one to try if that fails
+    // todo: better size-tracking logic
+    %okay = false;
+    if (%tilenum == 9) //magic numbers are magic. fix meh.
+    {
+        if (!findGap(%exitPos, %rot, "20 20 5"))
+        {
+            %tilenum -=1;
+            return findRoomSize(%tilenum,%exitPos,%rot);
+        }
+    }
+    else if (%tilenum == 8) //magic numbers are magic. fix meh.
+    {
+        if (!findGap(%exitPos, %rot, "10 10 20"))
+        {
+            %tilenum -=1;
+            return findRoomSize(%tilenum,%exitPos,%rot);
+        }
+    }
+    else if (%tilenum>5) //magic numbers are magic. fix meh.
+    {
+        if (!findGap(%exitPos, %rot, "5 10 20"))
+        {
+            %tilenum -=2;
+            return findRoomSize(%tilenum,%exitPos,%rot);
+        }
+    }
+    else if (!findGap(%exitPos, %rot, "5 5 5"))
+    {
+        %tilenum = 0;
+        //echo("fully blocked!");
+    }
+    return %tilenum;
+}
+
+function placeRoom(%nodeObj, %curExit, %count)
+{
+    %frameMesh = %nodeObj.getChildGroup()-->frame;
+    //get where the next tile is to be placed, and in what orientation
+    //do so by looking in the prefab for a tsstatic with internalname = "frame"; for a node labeled exit1-4
+    %exitTrans = %frameMesh.getNodeTransform(%curExit);
+    %exitPos = getWords(%exitTrans,0,2);             
+    %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
+    
+    //pick a tile from the potential list
+    %tilenum = getrandom(8)+1;
+    %tilenum = findRoomSize(%tilenum,%exitPos,%rot);
+    
+    if (%tilenum>0)
+    {
+        if (%count >1) //have we run out the clock on placeable tiles?
+        {
+            %mazNode = new Prefab()
+            { 
+                fileName = "data/Prototyping/prefabs/tile"@ %tilenum @".prefab";
+                position = %exitPos;
+                rotation = %rot;
+            };
+            getScene(0).add(%mazNode);
+            placedTiles.push_back(%mazNode);
+        }
+        else
+        {
+            if ($goalPlaced == false) //if we've hit max, go ahead and place our goal tile (assumes smallest size)
+            {
+                %mazNode = new Prefab(mazeGoal)
+                { 
+                    fileName = "data/Prototyping/prefabs/tileGoal.prefab";
+                    position = %exitPos;
+                    rotation = %rot;
+                };
+                getScene(0).add(%mazNode);
+                placedTiles.push_back(%mazNode);
+                $goalPlaced = true;
+                RoomPlaced(%mazNode, %count);
+            }
+            else
+            {
+                %tilenum = 0;
+            }
+        }
+    }
+    
+    if (%tilenum == 0) //are we completely blocked?
+    {
+        %mazNode = new Prefab()
+        { 
+            fileName = "data/Prototyping/prefabs/tileBlock.prefab";
+            position = %exitPos;
+            rotation = %rot;
+        };
+        getScene(0).add(%mazNode);
+        placedTiles.push_back(%mazNode);
+    }
+    RoomPlaced(%mazNode, %count);
+}
+
+function RoomPlaced(%nodeObj, %count)
+{
+    $scheduledExpansion--;
+    %noExit = false;
+    
+    if (%nodeObj.fileName $= "data/Prototyping/prefabs/tileBlock.prefab")
+        %noExit = false;
+    if (%nodeObj.fileName $= "data/Prototyping/prefabs/tileGoal.prefab")
+        %noExit = false;
+
+    if ( %noExit == false)
+    {
+        expandRooms(%nodeObj, %count-1);
+    }
+}
+
 function expandRooms(%nodeObj, %count)
 {
     if (!isObject(%nodeObj)) return;
     if (%count <=0) return;
     //warn("node depth remaing: ", %count);
     %frameMesh = %nodeObj.getChildGroup()-->frame;
-    
+    if (!isObject(%frameMesh))
+    {
+        echo("no frame detected in" @ %nodeObj.fileName);
+        return;
+    }
     %exitCount = 0;
     %exitList = "";
-    for (%i=0;%i<4;%i++)
+
+    while (%frameMesh.hasNode("exit"@ %exitCount+1))
     {
-        if (%frameMesh.hasNode("exit"@ %i))
-        {
-            %exitCount++;
-            %exitList = %exitList SPC %exitCount;
-        }
+        %exitCount++;
+        %exitList = %exitList SPC %exitCount;
     }
     %exitList = trim(%exitList);
     %exitList = scrambleExits(%exitList);
     
     for (%i=0;%i<%exitCount;%i++)
     {
+        $scheduledExpansion++;
         %curExit = "exit" @ getWord(%exitList,%i);
-        //get where the next tile is to be placed, and in what orientation
-        //do so by looking in the prefab for a tsstatic with internalname = "frame"; for a node labeled exit1-4
-        %exitTrans = %frameMesh.getNodeTransform(%curExit);
-        %exitPos = getWords(%exitTrans,0,2);             
-        %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
-            
-        //pick a tile from the potential list
-        %tilenum = getrandom(8)+1;
-            
-        // check if we have an empty gap for the tile, picking a smaller one to try if that fails
-        // todo: better size-tracking logic
-        %okay = false;
-        if (%tilenum>8) //magic numbers are magic. fix meh.
-        {
-            %okay = findGap(%exitPos, %rot, "20 20 5");
-            if (!%okay) %tilenum -=1;
-        }
-        if (%tilenum>6) //magic numbers are magic. fix meh.
-        {
-            %okay = findGap(%exitPos, %rot, "10 10 10");
-            if (!%okay) %tilenum -=6;
-        }
-        if (!%okay)
-            %okay = findGap(%exitPos, %rot, "5 5 5");
-                
-        if (%okay)
-        {
-            if (%count >1) //have we run out the clock on placeable tiles?
-            {
-                %count--;
-                %mazNode[%i] = new Prefab()
-                { 
-                    fileName = "data/Prototyping/prefabs/tile"@ %tilenum @".prefab";
-                    position = %exitPos;
-                    rotation = %rot;
-                };
-                getScene(0).add(%mazNode[%i]);
-                placedTiles.push_back(%mazNode[%i]);
-            }
-            else
-            {
-                %okay = false;
-                if ($goalPlaced == false) //if we've hit max, go ahead and place our goal tile (assumes smallest size)
-                {
-                    %mazNode[%i] = new Prefab(mazeGoal)
-                    { 
-                        fileName = "data/Prototyping/prefabs/tileGoal.prefab";
-                        position = %exitPos;
-                        rotation = %rot;
-                    };
-                    getScene(0).add(%mazNode[%i]);
-                    placedTiles.push_back(%mazNode[%i]);
-                    $goalPlaced = true;
-                    %count++;
-                    continue; //early out so we don't wall ourselves off
-                }
-            }
-        }
-        else
-        {
-            %okay = false;
-        }
-        if (%okay == false) //are we completely blocked?
-        {
-            %mazNode[%i] = new Prefab()
-            { 
-                fileName = "data/Prototyping/prefabs/tileBlock.prefab";
-                position = %exitPos;
-                rotation = %rot;
-            };
-            getScene(0).add(%mazNode[%i]);
-            placedTiles.push_back(%mazNode[%i]);
-        }
-    }
-    $scheduledExpansion--;
-    for (%i=0;%i<%exitCount;%i++)
-    {
-        if (%mazNode[%i].fileName !$= "data/Prototyping/prefabs/tileBlock.prefab")
-        {
-            $scheduledExpansion++;
-            schedule(32,0,"expandRooms",%mazNode[%i], %count);
-        }
+        //need to give things time to spawn to test against
+        mazeScheduler.nextTimeSlot += %i;
+        schedule(mazeScheduler.nextTimeSlot,mazeScheduler,"placeRoom", %nodeObj, %curExit, %count);
     }
     if ($scheduledExpansion <=0)
-        onMazeDone();
+        onMazeFilled();
+}
+
+function onMazeFilled()
+{
+    if ($goalPlaced)
+        genNavmesh();
+    else
+        createMaze($mazeDepth);
 }
 
 function genNavmesh()
@@ -225,12 +275,21 @@ function genNavmesh()
     theNavMesh.position = vectorScale(VectorAdd($mazeMax,$mazeMin),0.5);
     theNavMesh.scale = vectorSub($mazeMax,$mazeMin);
     theNavMesh.build();
+    onMazeDone();
 }
 
 function resetMaze()
 {
     //reset global tracking vars
     $goalPlaced = false;
+    $scheduledExpansion=0;
+    
+    if (isObject(mazeScheduler))
+    {
+        mazeScheduler.delete();
+    }        
+    new scriptObject(mazeScheduler){};
+    
     if (!isObject(placedTiles))
     {
         new ArrayObject(placedTiles){};
@@ -254,22 +313,15 @@ function resetMaze()
 
 function onMazeDone()
 {
-    if ($goalPlaced)
-        genNavmesh();
-    else
-        createMaze();
+    echo("Maze Ready");
 }
 
+//createMaze(10)
 function createMaze(%tileDepth)
 {
-    if ($scheduledExpansion>0)
-    {
-        error("still expanding!");
-        return;
-    }
+    $mazeDepth = %tileDepth;
     if (%tileDepth == 0) %tileDepth =50;
-    resetMaze();        
-    $scheduledExpansion=1;
+    resetMaze();
     %mazeStart = new Prefab(mazeStart) {
         fileName = "data/Prototyping/prefabs/tileStart.prefab";
     };
