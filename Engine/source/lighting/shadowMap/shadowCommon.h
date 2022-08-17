@@ -54,7 +54,8 @@ enum ShadowFilterMode
 {
    ShadowFilterMode_None,
    ShadowFilterMode_SoftShadow,
-   ShadowFilterMode_SoftShadowHighQuality
+   ShadowFilterMode_SoftShadowHighQuality,
+   ShadowFilterMode_SoftShadowHighestQuality
 };
 
 DefineEnumType( ShadowFilterMode );

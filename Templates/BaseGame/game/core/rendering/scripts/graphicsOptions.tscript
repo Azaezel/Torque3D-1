@@ -511,6 +511,15 @@ new SimGroup( SoftShadowList )
       class = "GraphicsQualityLevel";
       caseSensitive = true;
       
+      displayName = "Highest";
+                  
+      key["$pref::Shadows::filterMode"] = "SoftShadowHighestQuality"; 
+   };
+   new ArrayObject()
+   {
+      class = "GraphicsQualityLevel";
+      caseSensitive = true;
+      
       displayName = "High";
                   
       key["$pref::Shadows::filterMode"] = "SoftShadowHighQuality"; 

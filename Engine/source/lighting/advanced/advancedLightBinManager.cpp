@@ -76,6 +76,9 @@ ImplementEnumType( ShadowFilterMode,
       "@brief A 12 tap rotated poisson disk soft shadow filter.\n"
       "It performs all the taps for every point without any early rejection." },
 
+   { ShadowFilterMode_SoftShadowHighestQuality, "SoftShadowHighestQuality",
+      "@brief A 12x4 tap rotated poisson disk soft shadow filter.\n"
+      "It performs all the taps for every point without any early rejection." },
 EndImplementEnumType;
 
 // NOTE: The order here matches that of the LightInfo::Type enum.
@@ -550,8 +553,10 @@ AdvancedLightBinManager::LightMaterialInfo* AdvancedLightBinManager::_getLightMa
             shadowMacros.push_back( GFXShaderMacro( "SOFTSHADOW" ) );
            
             const F32 SM = GFX->getPixelShaderVersion();
-            if ( SM >= 3.0f && smShadowFilterMode == ShadowFilterMode_SoftShadowHighQuality )
+            if ( SM >= 3.0f && smShadowFilterMode >= ShadowFilterMode_SoftShadowHighQuality )
                shadowMacros.push_back( GFXShaderMacro( "SOFTSHADOW_HIGH_QUALITY" ) );
+            if (SM >= 3.0f && smShadowFilterMode == ShadowFilterMode_SoftShadowHighestQuality)
+               shadowMacros.push_back(GFXShaderMacro("SOFTSHADOW_HIGHEST_QUALITY"));
          }
       }
    

@@ -89,8 +89,13 @@ float softShadow_sampleTaps(  TORQUE_SAMPLER2D(shadowMap1),
       tap.x = ( sNonUniformTaps[t].x * sinCos.y - sNonUniformTaps[t].y * sinCos.x ) * filterRadius;
       tap.y = ( sNonUniformTaps[t].y * sinCos.y + sNonUniformTaps[t].x * sinCos.x ) * filterRadius;
       float occluder = TORQUE_TEX2DLOD( shadowMap1, float4( shadowPos + tap, 0, 0 ) ).r;
-
-      float esm = saturate( exp( esmFactor * ( occluder - distToLight ) ) );
+      #if defined( SOFTSHADOW_HIGHEST_QUALITY )
+        occluder += TORQUE_TEX2DLOD( shadowMap1, float4( shadowPos - tap, 0, 0 ) ).r;
+        occluder += TORQUE_TEX2DLOD( shadowMap1, float4( shadowPos + tap.yx, 0, 0 ) ).r;
+        occluder += TORQUE_TEX2DLOD( shadowMap1, float4( shadowPos - tap.yx, 0, 0 ) ).r;
+        occluder *= 0.25;
+      #endif
+      float esm = saturate( exp( esmFactor/ float( endTap - startTap ) * ( occluder - distToLight ) ) );
       shadow += esm / float( endTap - startTap );
    }
 
