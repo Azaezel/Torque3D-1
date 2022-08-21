@@ -196,7 +196,7 @@ public:
    /// 
    /// By default, this method will resolve all color targets.
    virtual void resolve()=0;
-
+   virtual void genMipMaps() {};
    /// Returns true if the automatic generation of mip maps is enabled
    inline bool isGenMipsEnabled() const { return mGenMips; }
 

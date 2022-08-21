@@ -70,7 +70,7 @@ public:
    virtual void resolve();
    
    virtual void resolveTo(GFXTextureObject* obj);
-   
+   void genMipMaps() {};
 protected:
 
    friend class GFXGLDevice;

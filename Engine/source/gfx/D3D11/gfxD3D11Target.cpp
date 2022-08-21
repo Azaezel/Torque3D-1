@@ -261,6 +261,18 @@ void GFXD3D11TextureTarget::activate()
    D3D11DEVICECONTEXT->OMSetRenderTargets(MaxRenderSlotId, rtViews, dsView);
 
 }
+void GFXD3D11TextureTarget::genMipMaps()
+{
+   if (!mGenMips)
+      return;
+   //re-gen mip maps
+   for (U32 i = 0; i < 6; i++)
+   {
+      ID3D11ShaderResourceView* pSRView = mTargetSRViews[GFXTextureTarget::Color0 + i];
+      if (pSRView)
+         D3D11DEVICECONTEXT->GenerateMips(pSRView);
+   }
+}
 
 void GFXD3D11TextureTarget::deactivate()
 {

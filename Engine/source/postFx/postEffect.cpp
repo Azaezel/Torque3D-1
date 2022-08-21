@@ -141,19 +141,18 @@ IMPLEMENT_CONOBJECT(PostEffect);
 
 GFX_ImplementTextureProfile( PostFxTextureProfile,
                             GFXTextureProfile::DiffuseMap,
-                            GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::NoMipmap,
+                            GFXTextureProfile::Static | GFXTextureProfile::PreserveSize,
                             GFXTextureProfile::NONE );
 
 GFX_ImplementTextureProfile( PostFxTextureSRGBProfile,
                              GFXTextureProfile::DiffuseMap,
-                             GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::NoMipmap | GFXTextureProfile::SRGB,
+                             GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::SRGB,
                              GFXTextureProfile::NONE);
 
 GFX_ImplementTextureProfile( VRTextureProfile,
                             GFXTextureProfile::DiffuseMap,
                             GFXTextureProfile::PreserveSize |
-                            GFXTextureProfile::RenderTarget |
-                            GFXTextureProfile::NoMipmap,
+                            GFXTextureProfile::RenderTarget,
                             GFXTextureProfile::NONE );
 
 GFX_ImplementTextureProfile( VRDepthProfile,
@@ -1514,6 +1513,11 @@ void PostEffect::process(  const SceneRenderState *state,
 
    if ( mTargetTex || mTargetDepthStencil )
    {
+      if (mTarget->isGenMipsEnabled())
+      {
+         mTarget->genMipMaps();
+         Con::warnf("%i mips genned", mTargetTex->getMipLevels());
+      }
       mTarget->resolve();
       GFX->popActiveRenderTarget();
    }

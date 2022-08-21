@@ -63,7 +63,7 @@ public:
 
    /// Note we always copy the Color0 RenderSlot.
    virtual void resolveTo( GFXTextureObject *tex );
-
+   void genMipMaps();
    virtual void activate();
    virtual void deactivate();
 
