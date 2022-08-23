@@ -42,6 +42,7 @@
 Signal<void(const char*,bool)> LightManager::smActivateSignal;
 LightManager *LightManager::smActiveLM = NULL;
 
+LinearColorF gFallbackAmbient;
 
 LightManager::LightManager( const char *name, const char *id )
    :  mName( name ),
@@ -166,8 +167,11 @@ LightInfo* LightManager::getDefaultLight()
       return mSpecialLights[ LightManager::slSunLightType ];
 
    // Else return a dummy special light.
-   if ( !mDefaultLight )
+   if (!mDefaultLight)
+   {
       mDefaultLight = createLightInfo();
+   }
+   mDefaultLight->setAmbient(gFallbackAmbient);
    return mDefaultLight;
 }
 

@@ -68,7 +68,7 @@ extern ColorI gCanvasClearColor;
 
 /// @see DecalManager
 extern F32 gDecalBias;
-
+extern LinearColorF gFallbackAmbient;
 /// @see AccumulationVolume
 extern GFXTexHandle gLevelAccuMap;
 
@@ -86,6 +86,7 @@ LevelInfo::LevelInfo()
       mDecalBias( 0.0015f ),
       mCanvasClearColor( 255, 0, 255, 255 ),
       mAmbientLightBlendPhase( 1.f ),
+      mFallbackAmbient(LinearColorF(0.25f, 0.25f, 0.25f, 1.0f)),
       mSoundAmbience( NULL ),
       mSoundDistanceModel( SFXDistanceModelLinear ),
       mSoundscape( NULL )
@@ -163,6 +164,8 @@ void LevelInfo::initPersistFields()
       addField( "ambientLightBlendCurve", TypeEaseF, Offset( mAmbientLightBlendCurve, LevelInfo ),
          "Interpolation curve to use for blending from one ambient light color to a different one." );
 
+      addField("fallbackAmbient", TypeColorF, Offset(mFallbackAmbient, LevelInfo),
+         "Ambient Color to use if no global light source exists.");
       //addField( "advancedLightmapSupport", TypeBool, Offset( mAdvancedLightmapSupport, LevelInfo ),
       //   "Enable expanded support for mixing static and dynamic lighting (more costly)" );
 
@@ -323,7 +326,7 @@ void LevelInfo::_updateSceneGraph()
    scene->setVisibleGhostDistance( mVisibleGhostDistance );
 
    gDecalBias = mDecalBias;
-
+   gFallbackAmbient = mFallbackAmbient;
    // Set ambient lighting properties.
 
    scene->setAmbientLightTransitionTime( mAmbientLightBlendPhase * 1000.f );
