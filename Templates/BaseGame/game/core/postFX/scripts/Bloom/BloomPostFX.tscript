@@ -226,6 +226,7 @@ function BloomPostFX::onAdd(%this)
 
 function BloomPostFX::onEnabled( %this )
 {
+   $PostFX::HDRPostFX::enableBloom = 0;
    return true;
 }
 
