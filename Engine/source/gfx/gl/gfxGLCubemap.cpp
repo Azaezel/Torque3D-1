@@ -322,8 +322,19 @@ void GFXGLCubemapArray::init(GFXCubemapHandle *cubemaps, const U32 cubemapCount)
    AssertFatal(cubemaps, "GFXGLCubemapArray- Got null GFXCubemapHandle!");
    AssertFatal(*cubemaps, "GFXGLCubemapArray - Got empty cubemap!");
 
-   setCubeTexSize(cubemaps);
+   U32 downscalePower = GFXTextureManager::smTextureReductionLevel;
+   U32 scaledSize = cubemaps[0]->getSize();
+
+   if (downscalePower != 0)
+   {
+      // Otherwise apply the appropriate scale...
+      scaledSize >>= downscalePower;
+   }
+
+   //all cubemaps must be the same size,format and number of mipmaps. Grab the details from the first cubemap
+   mSize = scaledSize;
    mFormat = cubemaps[0]->getFormat();
+   mMipMapLevels = cubemaps[0]->getMipMapLevels() - downscalePower;
    mNumCubemaps = cubemapCount;
    const bool isCompressed = ImageUtil::isCompressedFormat(mFormat);
 
@@ -368,8 +379,19 @@ void GFXGLCubemapArray::init(GFXCubemapHandle *cubemaps, const U32 cubemapCount)
 //Just allocate the cubemap array but we don't upload any data
 void GFXGLCubemapArray::init(const U32 cubemapCount, const U32 cubemapFaceSize, const GFXFormat format)
 {
-   setCubeTexSize(cubemapCount);
+   U32 downscalePower = GFXTextureManager::smTextureReductionLevel;
+   U32 scaledSize = cubemapFaceSize;
+
+   if (downscalePower != 0)
+   {
+      // Otherwise apply the appropriate scale...
+      scaledSize >>= downscalePower;
+   }
+
+   //all cubemaps must be the same size,format and number of mipmaps. Grab the details from the first cubemap
+   mSize = scaledSize;
    mFormat = format;
+   mMipMapLevels = ImageUtil::getMaxMipCount(scaledSize, scaledSize);
    mNumCubemaps = cubemapCount;
    const bool isCompressed = ImageUtil::isCompressedFormat(mFormat);
 
