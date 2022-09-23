@@ -29,6 +29,13 @@ bool Component::onAdd()
    return true;
 }
 
+void Component::consoleInit()
+{
+   Parent::consoleInit();
+
+   //DirectorManager::get()->addDirector(ComponentDirector());
+}
+
 void Component::initPersistFields()
 {
    Parent::initPersistFields();
@@ -47,12 +54,16 @@ void Component::unpackData(BitStream* stream)
 
 ComponentInstance Component::createInstance(Entity* owner) const
 {
-   return ComponentInstance(*this, *owner);
+   ComponentInstance compInst = ComponentInstance(*this, *owner);
+   ComponentInstance::sComponentInstanceList.push_back(compInst);
+   return compInst;
 }
 
 //
 //
 //
+Vector< ComponentInstance> ComponentInstance::sComponentInstanceList;
+
 ComponentInstance::ComponentInstance(const Component& componentData, const Entity& ownerEntity)
 {
    mComponentData = &componentData;
@@ -61,7 +72,14 @@ ComponentInstance::ComponentInstance(const Component& componentData, const Entit
 
 ComponentInstance::~ComponentInstance()
 {
+   ComponentInstance::sComponentInstanceList.clear();
 }
+
+void ComponentInstance::destroyInstance()
+{
+   //ComponentInstance::sComponentInstanceList.remove(*this);
+}
+
 void ComponentInstance::update()
 {
 }

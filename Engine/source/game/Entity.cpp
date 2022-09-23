@@ -64,6 +64,42 @@ void Entity::onRemove()
    Parent::onRemove();
 }
 
+//
+//
+void Entity::onPostAdd()
+{
+   //everything's done and added. go ahead and initialize the components
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      mComponents[i]->onComponentAdd();
+   }
+
+   //Set up the networked components
+   mNetworkedComponents.clear();
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      if (mComponents[i]->isNetworked())
+      {
+         NetworkedComponent netComp;
+         netComp.componentIndex = i;
+         netComp.updateState = NetworkedComponent::Adding;
+         netComp.updateMaskBits = -1;
+
+         mNetworkedComponents.push_back(netComp);
+      }
+   }
+
+   if (!mNetworkedComponents.empty())
+   {
+      setMaskBits(AddComponentsMask);
+      setMaskBits(ComponentsUpdateMask);
+   }
+
+   if (isMethod("onAdd"))
+      Con::executef(this, "onAdd");
+
+//
+//
 void Entity::setTransform(const MatrixF & mat)
 {
    // Let SceneObject handle all of the matrix manipulation

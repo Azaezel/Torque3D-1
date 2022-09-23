@@ -26,6 +26,8 @@
 #include "renderInstance/renderPassManager.h"
 #include "math/util/matrixSet.h"
 
+#include "game/directors/directorManager.h"
+
 //-----------------------------------------------------------------------------
 
 SceneRenderState::SceneRenderState( SceneManager* sceneManager,
@@ -107,6 +109,9 @@ void SceneRenderState::renderObjects( SceneObject** objects, U32 numObjects )
       SceneObject* object = objects[ i ];
       object->prepRenderImage( this );
    }
+
+   //Run through any directors that are flagged to run during the 'Rendering' timing
+   DirectorManager::get()->update(DirectorManager::TimingGroup::Rendering);
 
    PROFILE_END();
 

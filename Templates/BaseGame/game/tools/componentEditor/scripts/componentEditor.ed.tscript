@@ -98,7 +98,7 @@ function QuickEditComponentList::refresh(%this)
    
    foreach( %datablock in DatablockSet )
    {
-      if(%datablock.getClassName() !$= "Component")
+      if(!%datablock.isMemberOfClass("Component"))
          continue;
          
       %id = %datablock.getId();

@@ -43,6 +43,9 @@ public:
    //--------------------------------------------------------------------------
    // Set up any fields that we want to be editable (like position)
    static void initPersistFields();
+   
+   //
+   virtual void onPostAdd();
 
    // Handle when we are added to the scene and removed from the scene
    bool onAdd();

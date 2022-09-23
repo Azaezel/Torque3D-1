@@ -1,3 +1,7 @@
 datablock Component(TestComponent)
 {
 };
+
+datablock RenderMeshComponent(TestRenderComponent)
+{
+};

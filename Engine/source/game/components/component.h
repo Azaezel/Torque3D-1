@@ -29,16 +29,22 @@ class Component: public SimDataBlock {
 
    bool onAdd();
    static void initPersistFields();
+   static void consoleInit();
    virtual void packData  (BitStream* stream);
    virtual void unpackData(BitStream* stream);
 
    //
    //
-   ComponentInstance createInstance(Entity* owner) const;
+   virtual ComponentInstance createInstance(Entity* owner) const;
 };
 
 class ComponentInstance
 {
+   friend Component;
+
+private:
+   static Vector<ComponentInstance> sComponentInstanceList;
+
 protected:
    const Component* mComponentData;
    const Entity* mOwner;
@@ -48,7 +54,9 @@ public:
    ComponentInstance(const Component& componentData, const Entity& ownerEntity);
    ~ComponentInstance();
 
-   void update();
+   virtual void destroyInstance();
+
+   virtual void update();
 
    const Component& getComponentData() { return *mComponentData; }
    const Entity& getOwnerEntity() { return *mOwner; }

@@ -74,6 +74,8 @@
 #include "assets/assetManager.h"
 #endif
 
+#include "game/directors/directorManager.h"
+
 DITTS( F32, gTimeScale, 1.0 );
 DITTS( U32, gTimeAdvance, 0 );
 DITTS( U32, gFrameSkip, 0 );
@@ -264,6 +266,8 @@ void StandardMainLoop::init()
    
    ThreadPool::GlobalThreadPool::createSingleton();
 
+   DirectorManager::init();
+
    // Set engineAPI initialized to true
    engineAPI::gIsInitialized = true;
 
@@ -348,6 +352,8 @@ void StandardMainLoop::shutdown()
    // Shut down modules.
    
    EngineModuleManager::shutdownSystem();
+
+   DirectorManager::shutdown();
    
    ThreadPool::GlobalThreadPool::deleteSingleton();
 
