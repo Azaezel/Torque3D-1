@@ -77,6 +77,21 @@ public:
       return &mComponents[index];
    }
 
+   template <class T>
+   T* getComponentInstance() {
+
+      for (U32 i = 0; i < mComponents.size(); i++)
+      {
+         T* compInst = dynamic_cast<T*>(mComponents[i]);
+         if (compInst != nullptr)
+         {
+            return T;
+         }
+      }
+      
+      return nullptr;
+   }
+
    U32 getComponentCount() const
    {
       return mComponents.size();

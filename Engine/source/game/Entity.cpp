@@ -97,6 +97,7 @@ void Entity::onPostAdd()
 
    if (isMethod("onAdd"))
       Con::executef(this, "onAdd");
+}
 
 //
 //
