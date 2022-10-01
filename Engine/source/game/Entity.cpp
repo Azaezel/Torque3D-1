@@ -160,8 +160,29 @@ bool Entity::addComponent(const Component& component)
    return true;
 }
 
+bool Entity::removeComponent(const Component& component)
+{
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      if (mComponents[i].getComponentData().getId() == component.getId())
+      {
+         mComponents.erase(i);
+         return true;
+      }
+   }
+
+   return false;
+}
+
 DefineEngineMethod(Entity, addComponent, bool, (Component* toAddComponent), (nullAsType<Component*>()),
-   "@brief Get if this model has this node name.\n\n")
+   "@brief Add a component to the entity\n\n")
 {
    return object->addComponent(*toAddComponent);
 }
+
+DefineEngineMethod(Entity, removeComponent, bool, (Component* toRemoveComponent), (nullAsType<Component*>()),
+   "@brief Remove a component from the entity\n")
+{
+   return object->removeComponent(*toRemoveComponent);
+}
+

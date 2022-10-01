@@ -98,4 +98,5 @@ public:
    }
 
    bool addComponent(const Component& component);
+   bool removeComponent(const Component& component);
 };
