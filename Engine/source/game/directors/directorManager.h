@@ -43,6 +43,9 @@ public:
       PostSim
    };
 
+   typedef Signal <void(Entity* ent, const Component& comp)> AddComponentSignal;
+   typedef Signal <void(Entity* ent, const Component& comp)> RemoveComponentSignal;
+
 private:
    /// @name Device management variables
    /// @{
@@ -56,6 +59,9 @@ public:
    ~DirectorManager();
 
    void update(TimingGroup currentTiming);
+
+   void registerComponent(Entity* ent, const Component& comp);
+   void unregisterComponent(Entity* ent, const Component& comp);
 
    /*void addDirector(Director director)
    {

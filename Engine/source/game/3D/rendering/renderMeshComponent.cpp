@@ -45,6 +45,16 @@ ComponentInstance RenderMeshComponent::createInstance(Entity* owner) const
    return compInst;
 }
 
+bool RenderMeshComponent::addComponent(Entity* ent)
+{
+   RenderMeshComponent::getAddedSignal().trigger(ent, *this);
+}
+
+bool RenderMeshComponent::removeComponent(Entity* ent)
+{
+   RenderMeshComponent::getAddedSignal().trigger(ent, *this);
+}
+
 //
 //
 Vector< RenderMeshComponentInstance> RenderMeshComponentInstance::sComponentInstanceList;
@@ -84,6 +94,8 @@ void RenderMeshComponentInstance::update(const MatrixF& transform)
 RenderMeshDirector::RenderMeshDirector()
 {
    mTimingGroup = DirectorManager::Rendering;
+   RenderMeshComponent::getAddedSignal().notify(this, registerComponent);
+   RenderMeshComponent::getRemovedSignal().notify(this, unregisterComponent);
 }
 
 RenderMeshDirector::~RenderMeshDirector()
@@ -91,7 +103,7 @@ RenderMeshDirector::~RenderMeshDirector()
    RenderMeshComponentInstance::sComponentInstanceList.clear();
 }
 
-void RenderMeshDirector::registerEntity(Entity* entity)
+void RenderMeshDirector::registerComponent(Entity* entity, const Component& comp)
 {
    RenderMeshEntityRef ref;
    ref.ownerEntity = entity;
@@ -102,7 +114,7 @@ void RenderMeshDirector::registerEntity(Entity* entity)
       mValidEntriesList.push_back(ref);
 }
 
-void RenderMeshDirector::unregisterEntity(Entity* entity)
+void RenderMeshDirector::unregisterComponent(Entity* entity, const Component& comp)
 {
    for (U32 i = 0; i < mValidEntriesList.size(); i++)
    {

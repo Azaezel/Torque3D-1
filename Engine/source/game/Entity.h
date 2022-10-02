@@ -18,14 +18,42 @@ class Entity : public SceneObject
    // the client version of the object to receive updates
    // from the server version (like if it has been moved
    // or edited)
-   enum MaskBits 
+   enum MaskBits
    {
-      TransformMask = Parent::NextFreeMask << 0,
-      NextFreeMask  = Parent::NextFreeMask << 1
+      BoundsMask = Parent::NextFreeMask << 0,
+      ComponentsUpdateMask = Parent::NextFreeMask << 1,
+      AddComponentsMask = Parent::NextFreeMask << 2,
+      RemoveComponentsMask = Parent::NextFreeMask << 3,
+      NamespaceMask = Parent::NextFreeMask << 4,
+      NextFreeMask = Parent::NextFreeMask << 5
    };
 
 protected:
    Vector<ComponentInstance> mComponents;
+
+   //Bit of helper data to let us track and manage the adding, removal and updating of networked components
+   struct NetworkedComponent
+   {
+      U32 componentIndex;
+
+      enum UpdateState
+      {
+         None,
+         Adding,
+         Removing,
+         Updating
+      };
+
+      UpdateState updateState;
+
+      U32 updateMaskBits;
+   };
+
+   Vector<NetworkedComponent> mNetworkedComponents;
+
+   U32                        mComponentNetMask;
+
+   bool                       mStartComponentUpdate;
 
 public:
    Entity();
@@ -60,6 +88,11 @@ public:
    // This function handles receiving relevant data from the server
    // object and applying it to the client object
    void unpackUpdate( NetConnection *conn, BitStream *stream );
+
+   void setComponentsDirty();
+   void setComponentDirty(Component* comp, bool forceUpdate = false);
+
+   void setComponentNetMask(Component* comp, U32 mask);
 
    //
    // Editing
@@ -97,6 +130,6 @@ public:
       return mComponents.size();
    }
 
-   bool addComponent(const Component& component);
-   bool removeComponent(const Component& component);
+   bool addComponent(Component* component);
+   bool removeComponent(Component* component);
 };

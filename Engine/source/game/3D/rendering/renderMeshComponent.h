@@ -21,10 +21,19 @@ public:
    virtual void packData(BitStream* stream);
    virtual void unpackData(BitStream* stream);
 
-
+   virtual bool addComponent(Entity* ent);
+   virtual bool removeComponent(Entity* ent);
    //
    //
    virtual ComponentInstance createInstance(Entity* owner) const;
+
+   typedef Signal <void(Entity* ent, const Component& comp)> AddComponentSignal;
+   static AddComponentSignal smAddedComponentSignal;
+   static AddComponentSignal& getAddedSignal() { return smAddedComponentSignal; }
+
+   typedef Signal <void(Entity* ent, const Component& comp)> RemoveComponentSignal;
+   static RemoveComponentSignal smRemovedComponentSignal;
+   static RemoveComponentSignal& getRemovedSignal() { return smRemovedComponentSignal; }
 };
 
 //
@@ -74,8 +83,8 @@ public:
    RenderMeshDirector();
    ~RenderMeshDirector();
 
-   void registerEntity(Entity* entity);
-   void unregisterEntity(Entity* entity);
+   void registerComponent(Entity* entity, const Component& comp);
+   void unregisterComponent(Entity* entity, const Component& comp);
 
    void update();
 };

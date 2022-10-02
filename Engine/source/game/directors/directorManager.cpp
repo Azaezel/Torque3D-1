@@ -29,6 +29,19 @@ void DirectorManager::update(TimingGroup currentTiming)
       }
    }
 }
+
+void DirectorManager::registerComponent(Entity* ent, const Component& comp)
+{
+   for (U32 i = 0; i < mDirectors.size(); i++)
+   {
+      mDirectors[i].registerComponent(ent, comp);
+   }
+}
+
+void DirectorManager::unregisterComponent(Entity* ent, const Component& comp)
+{
+
+}
 //
 //
 //

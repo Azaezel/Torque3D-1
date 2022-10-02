@@ -335,6 +335,7 @@ addPath("${srcDir}/postFx")
 
 addPath("${srcDir}/game/")
 addPath("${srcDir}/game/3D/rendering")
+addPath("${srcDir}/game/3D/transforms")
 addPath("${srcDir}/game/components")
 addPath("${srcDir}/game/directors")
 

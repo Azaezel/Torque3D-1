@@ -33,9 +33,20 @@ class Component: public SimDataBlock {
    virtual void packData  (BitStream* stream);
    virtual void unpackData(BitStream* stream);
 
+   virtual bool addComponent(Entity* ent);
+   virtual bool removeComponent(Entity* ent);
+
    //
    //
    virtual ComponentInstance createInstance(Entity* owner) const;
+
+   typedef Signal <void(Entity* ent, const Component& comp)> AddComponentSignal;
+   static AddComponentSignal smAddedComponentSignal;
+   virtual AddComponentSignal& getAddedSignal() { return smAddedComponentSignal; }
+
+   typedef Signal <void(Entity* ent, const Component& comp)> RemoveComponentSignal;
+   static RemoveComponentSignal smRemovedComponentSignal;
+   virtual RemoveComponentSignal& getRemovedSignal() { return smRemovedComponentSignal; }
 };
 
 class ComponentInstance
