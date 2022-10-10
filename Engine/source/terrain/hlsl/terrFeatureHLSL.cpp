@@ -630,7 +630,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
          detailColor, detailMapArray, detailMapSampler, detCoord, new IndexOp(detailInfo, detailIndex)));
    }
 
-   meta->addStatement(new GenOp("   @ *= @.y * max(@,@.w);\r\n", detailColor, new IndexOp(detailInfo, detailIndex), detailBlend, detCoord));
+   meta->addStatement(new GenOp("   @ *= @.y * @;\r\n", detailColor, new IndexOp(detailInfo, detailIndex), detailBlend));
 
    if (!fd.features.hasFeature(MFT_TerrainNormalMap))
    {
@@ -646,7 +646,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
       {
          Var* viewToTangent = getInViewToTangent(componentList);
 
-         meta->addStatement(new GenOp("   @ = lerp( @, @[2], max(@,@.w) );\r\n", gbNormal, gbNormal, viewToTangent, detailBlend, detCoord));
+         meta->addStatement(new GenOp("   @ = lerp( @, @[2], @ );\r\n", gbNormal, gbNormal, viewToTangent, detailBlend));
       }
 
       ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
@@ -656,7 +656,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
       Var* outColor = (Var*)LangElement::find(getOutputTargetVarName(target));
 
-      meta->addStatement(new GenOp("      @ += @ * max(@,@.w);\r\n", outColor, detailColor, detailBlend, detCoord));
+      meta->addStatement(new GenOp("      @ += @ * @);\r\n", outColor, detailColor, detailBlend));
    }
 
    output = meta;
@@ -1338,6 +1338,18 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
       return;
    }
 
+   Var* depth = (Var*)LangElement::find("baseBlendDepth");
+   if (depth == NULL)
+   {
+      depth = new Var;
+      depth->setType("float");
+      depth->setName("baseBlendDepth");
+      depth->uniform = true;
+      depth->constSortPos = cspPrimitive;
+   }
+
+   Var* maxHeight = new Var("maxHeight", "float");
+   meta->addStatement(new GenOp("   @ = 0;\r\n", new DecOp(maxHeight)));
    // Compute blend factors
    for (S32 idx = 0; idx < detailCount; ++idx)
    {
@@ -1362,82 +1374,47 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
          blendContrast->uniform = true;
          blendContrast->constSortPos = cspPrimitive;
       }
-
+      
+      Var* detCoord = (Var*)LangElement::find(String::ToString("detCoord%d", idx));
       Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
       if (!detailH)
       {
          detailH = new Var;
          detailH->setType("float");
          detailH->setName(String::ToString("detailH%d", idx));
-         meta->addStatement(new GenOp("   @ = 0;\r\n", new DecOp(detailH)));
 
+         meta->addStatement(new GenOp("   @ = @;\r\n", new DecOp(detailH), depth));
          meta->addStatement(new GenOp("   if (@ > 0.0f) {\r\n", detailBlend));
          if (bumpNormal != NULL)
          {
-            meta->addStatement(new GenOp("      @ = @.a + @;\r\n",
-               detailH, bumpNormal, blendDepth));
+            meta->addStatement(new GenOp("      @ += @.a * @;\r\n", detailH, bumpNormal, blendContrast));
          }
-         else
-         {
-            meta->addStatement(new GenOp("      @ = @;\r\n",
-               detailH, blendDepth));
-         }
-
-         meta->addStatement(new GenOp("      @ = (@ * 2.0f - 1.0f) * @;\r\n",
-            detailH, detailH, blendContrast));
-
          meta->addStatement(new GenOp("   }\r\n"));
+         meta->addStatement(new GenOp("   @ = (@+ @) * @ * @.w;\r\n", detailH, detailH, blendDepth, detailBlend, detCoord));
+         meta->addStatement(new GenOp("   @ = max(@,@);\r\n", maxHeight, maxHeight, detailH));
       }
    }
 
    meta->addStatement(new GenOp("\r\n"));
 
-   Var* depth = (Var*)LangElement::find("baseBlendDepth");
-   if (depth == NULL)
-   {
-      depth = new Var;
-      depth->setType("float");
-      depth->setName("baseBlendDepth");
-      depth->uniform = true;
-      depth->constSortPos = cspPrimitive;
-   }
-
-   Var* maxHeight = new Var("maxHeight", "float");
-   meta->addStatement(new GenOp("   @ = 0;\r\n", new DecOp(maxHeight)));
-
-   for (S32 idx = 0; idx < detailCount; ++idx)
-   {
-      Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
-      Var* detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", idx));
-      Var* detCoord = (Var*)LangElement::find(String::ToString("detCoord%d", idx));
-
-      meta->addStatement(new GenOp("   @ = max(@, @ + max(@,@.w));\r\n", maxHeight, maxHeight, detailH, detailBlend, detCoord));
-      meta->addStatement(new GenOp("   @ += @;\r\n", detailTot, detailH));
-   }
-
-   meta->addStatement(new GenOp("   @ -= @;\r\n",
-      maxHeight, depth));
+   meta->addStatement(new GenOp("   @ -= @;\r\n", maxHeight, depth));
 
    meta->addStatement(new GenOp("\r\n"));
 
    for (S32 idx = 0; idx < detailCount; ++idx)
    {
       Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
-      Var* detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", idx));
       Var* detailB = (Var*)LangElement::find(String::ToString("detailB%d", idx));
-      Var* detCoord = (Var*)LangElement::find(String::ToString("detCoord%d", idx));
-
       if (!detailB)
       {
          detailB = new Var;
          detailB->setType("float");
          detailB->setName(String::ToString("detailB%d", idx));
 
-         meta->addStatement(new GenOp("   @ = max(@ + max(@,@.w), @);\r\n", new DecOp(detailB), detailH, detailBlend, detCoord, maxHeight));
+         meta->addStatement(new GenOp("   @ = max(@-@, 0);\r\n", new DecOp(detailB), detailH, maxHeight));
       }
       meta->addStatement(new GenOp("   @ += @;\r\n", detailTot, detailB));
    }
-   meta->addStatement(new GenOp("   if (@<0.0001) @ = 0.0001;\r\n", detailTot, detailTot));
    meta->addStatement(new GenOp("\r\n"));
 
    meta->addStatement(new GenOp("   @.rgb += (", outColor));
@@ -1452,7 +1429,7 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
          meta->addStatement(new GenOp(" + "));
       }
 
-      meta->addStatement(new GenOp("@.rgb * @", detailColor, detailB));
+      meta->addStatement(new GenOp("(@.rgb * @)", detailColor, detailB));
    }
 
    meta->addStatement(new GenOp(") / @;\r\n", detailTot));
@@ -1496,17 +1473,6 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
 
    meta->addStatement(new GenOp("\r\n"));
 
-   for (S32 idx = 0; idx < detailCount; ++idx)
-   {
-      Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
-      Var* detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", idx));
-      Var* detCoord = (Var*)LangElement::find(String::ToString("detCoord%d", idx));
-
-
-      Var* normalDetailB =  normalDetailB = new Var(String::ToString("normalDetailB%d", idx), "float");
-      meta->addStatement(new GenOp("   @ = max(@ + max(@,@.w), @);\r\n", new DecOp(normalDetailB), detailH, detailBlend, detCoord, maxHeight));
-   }
-
    // Compute normals
    Var* gbNormal = (Var*)LangElement::find("gbNormal");
    if (!gbNormal)
@@ -1523,7 +1489,7 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
 
       for (S32 idx = 0; idx < detailCount; ++idx)
       {
-         Var* normalDetailB = (Var*)LangElement::find(String::ToString("normalDetailB%d", idx));
+         Var* detailB = (Var*)LangElement::find(String::ToString("detailB%d", idx));
          Var* bumpNormal = (Var*)LangElement::find(String::ToString("bumpNormal%d", idx));
          Var* viewToTangent = getInViewToTangent(componentList);
 
@@ -1534,11 +1500,11 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
 
          if (bumpNormal != NULL)
          {
-            meta->addStatement(new GenOp("mul(@.xyz, @) * @", bumpNormal, viewToTangent, normalDetailB));
+            meta->addStatement(new GenOp("mul(@.xyz, @) * @", bumpNormal, viewToTangent, detailB));
          }
          else
          {
-            meta->addStatement(new GenOp("@[2] * @", viewToTangent, normalDetailB));
+            meta->addStatement(new GenOp("@[2] * @", viewToTangent, detailB));
          }
       }
 
