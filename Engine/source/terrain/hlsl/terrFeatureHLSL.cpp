@@ -1447,45 +1447,30 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
    meta->addStatement(new GenOp(");\r\n"));
 
     // Compute normals
-   Var* gbNormal = (Var*)LangElement::find("gbNormal");
    Var* viewToTangent = getInViewToTangent(componentList);
+   Var* bumpSum = new Var("bumpNorm", "float3");
+
+   meta->addStatement(new GenOp("   @ = float3(0, 0, 1)", new DecOp(bumpSum)));
+   for (S32 idx = 0; idx < detailCount; ++idx)
+   {
+      Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
+      Var* bumpNormal = (Var*)LangElement::find(String::ToString("bumpNormal%d", idx));
+      if (bumpNormal != NULL)
+      {
+         meta->addStatement(new GenOp("+(@.xyz * @)", bumpNormal, detailH));
+      }
+         
+   }
+   meta->addStatement(new GenOp(";\r\n"));
+
+   Var* gbNormal = (Var*)LangElement::find("gbNormal");
    if (!gbNormal)
    {
-      gbNormal = new Var;
-      gbNormal->setName("gbNormal");
-      gbNormal->setType("float3");
-      meta->addStatement(new GenOp("   @ = @[2];\r\n", new DecOp(gbNormal), viewToTangent));
+      gbNormal = new Var("gbNormal","float3");
+      meta->addStatement(new GenOp("   @ = ", new DecOp(gbNormal)));
    }
-   if (detailCount > 0)
-   {
-      if (gbNormal != NULL)
-      {
-         meta->addStatement(new GenOp("  @ = mul(normalize(", gbNormal));
-
-         for (S32 idx = 0; idx < detailCount; ++idx)
-         {
-            Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
-            Var* bumpNormal = (Var*)LangElement::find(String::ToString("bumpNormal%d", idx));
-
-            if (idx > 0)
-            {
-               meta->addStatement(new GenOp(" + "));
-            }
-
-            if (bumpNormal != NULL)
-            {
-               meta->addStatement(new GenOp("(@.xyz * @)", bumpNormal, detailH));
-            }
-            else
-            {
-               meta->addStatement(new GenOp("(float3(0,0,1) * @)", detailH));
-            }
-         }
-
-         meta->addStatement(new GenOp("),@);\r\n", viewToTangent));
-      }
-   }
-
-
+   else
+      meta->addStatement(new GenOp("   @ = ", gbNormal));
+   meta->addStatement(new GenOp("mul(normalize(@),@);\r\n", bumpSum, viewToTangent));
    output = meta;
 }
