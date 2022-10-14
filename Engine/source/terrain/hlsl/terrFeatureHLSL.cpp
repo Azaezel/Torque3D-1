@@ -649,10 +649,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
          meta->addStatement(new GenOp("   @ = lerp( @, @[2], @ );\r\n", gbNormal, gbNormal, viewToTangent, detailBlend));
       }
 
-      ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
-
-      if (fd.features.hasFeature(MFT_isDeferred))
-         target = ShaderFeature::RenderTarget1;
+      ShaderFeature::OutputTarget target = (fd.features[MFT_isDeferred]) ? RenderTarget1 : DefaultTarget;
 
       Var* outColor = (Var*)LangElement::find(getOutputTargetVarName(target));
 
@@ -900,10 +897,7 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
    meta->addStatement( new GenOp( "   @ *= @.y * @.w;\r\n",
                                     detailColor, new IndexOp(detailInfo, detailIndex), inDet ) );
 
-   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
-
-   if (fd.features.hasFeature(MFT_isDeferred))
-      target= ShaderFeature::RenderTarget1;
+   ShaderFeature::OutputTarget target = (fd.features[MFT_isDeferred]) ? RenderTarget1 : DefaultTarget;
 
    Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
 
@@ -1301,11 +1295,7 @@ void TerrainHeightMapBlendHLSL::processVert(Vector<ShaderComponent*>& componentL
 void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentList,
    const MaterialFeatureData& fd)
 {
-
-   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
-
-   if (fd.features.hasFeature(MFT_isDeferred))
-      target = ShaderFeature::RenderTarget1;
+   ShaderFeature::OutputTarget target = (fd.features[MFT_isDeferred]) ? RenderTarget1 : DefaultTarget;
 
    Var* outColor = (Var*)LangElement::find(getOutputTargetVarName(target));
 
@@ -1342,7 +1332,7 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
    }
 
    Var* heightRange = new Var("heightRange", "float2");
-   meta->addStatement(new GenOp("   @ = float2(0,0);//x=min, y=max\r\n", new DecOp(heightRange)));
+   meta->addStatement(new GenOp("   @ = float2(2.0f,0);//x=min, y=max\r\n", new DecOp(heightRange)));
    // Compute blend factors
    for (S32 idx = 0; idx < detailCount; ++idx)
    {
@@ -1386,13 +1376,26 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
    }
 
    meta->addStatement(new GenOp("\r\n"));
-
-   for (S32 idx = 0; idx < detailCount; ++idx)
+   if (detailCount > 1)
    {
-      Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
-      meta->addStatement(new GenOp("   @ = (@-@.x)/(@.y-@.x)-@.x;\r\n", detailH, detailH, heightRange, heightRange, heightRange, heightRange));
+      for (S32 idx = 0; idx < detailCount; ++idx)
+      {
+         Var* detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", idx));
+         Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
+         meta->addStatement(new GenOp("   if ( @ > 0.0f ) @ = (@-@.x)/(@.y-@.x);\r\n", detailBlend, detailH, detailH, heightRange, heightRange, heightRange));
+         meta->addStatement(new GenOp("   else @ = 0.0;\r\n", detailH));
+
+      }
+      meta->addStatement(new GenOp("\r\n"));
    }
-   meta->addStatement(new GenOp("\r\n"));
+   else
+   {
+      for (S32 idx = 0; idx < detailCount; ++idx)
+      {
+         Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
+         meta->addStatement(new GenOp("   @ = 1.0;\r\n", detailH));
+      }
+   }
 
    meta->addStatement(new GenOp("   @.rgb += (", outColor));
 
@@ -1413,11 +1416,9 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
 
    // Compute ORM
    Var* ormOutput;
-   OutputTarget targ = DefaultTarget;
    if (fd.features[MFT_isDeferred])
    {
-      targ = RenderTarget2;
-      ormOutput = (Var*)LangElement::find(getOutputTargetVarName(targ));
+      ormOutput = (Var*)LangElement::find(getOutputTargetVarName(RenderTarget2));
    }
    else
    {
@@ -1436,11 +1437,11 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
       }
       if (matinfoCol)
       {
-         meta->addStatement(new GenOp("@ * @", matinfoCol, detailH));
+         meta->addStatement(new GenOp("(@ * @)", matinfoCol, detailH));
       }
       else
       {
-         meta->addStatement(new GenOp("float3(1.0, 1.0, 0.0) * @", detailH));
+         meta->addStatement(new GenOp("(float3(1.0, 1.0, 0.0) * @)", detailH));
       }
    }
 
