@@ -653,7 +653,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
       Var* outColor = (Var*)LangElement::find(getOutputTargetVarName(target));
 
-      meta->addStatement(new GenOp("      @ += @ * @);\r\n", outColor, detailColor, detailBlend));
+      meta->addStatement(new GenOp("      @ += @ * @;\r\n", outColor, detailColor, detailBlend));
    }
 
    output = meta;
@@ -1403,13 +1403,14 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
    {
       Var* detailColor = (Var*)LangElement::find(String::ToString("detailColor%d", idx));
       Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
+      Var* detCoord = (Var*)LangElement::find(String::ToString("detCoord%d", idx));
 
       if (idx > 0)
       {
          meta->addStatement(new GenOp(" + "));
       }
 
-      meta->addStatement(new GenOp("(@.rgb * @)", detailColor, detailH));
+      meta->addStatement(new GenOp("((@.rgb * @)*max(@.w,0))", detailColor, detailH, detCoord));
    }
 
    meta->addStatement(new GenOp(");\r\n"));
