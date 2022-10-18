@@ -1457,9 +1457,10 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
    {
       Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
       Var* bumpNormal = (Var*)LangElement::find(String::ToString("bumpNormal%d", idx));
+      Var* detCoord = (Var*)LangElement::find(String::ToString("detCoord%d", idx));
       if (bumpNormal != NULL)
       {
-         meta->addStatement(new GenOp("+(@.xyz * @)", bumpNormal, detailH));
+         meta->addStatement(new GenOp("+(@.xyz * @*max(@.w,0))", bumpNormal, detailH, detCoord));
       }
          
    }
