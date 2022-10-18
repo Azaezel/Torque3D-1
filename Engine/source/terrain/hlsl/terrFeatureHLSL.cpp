@@ -1358,7 +1358,6 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
       }
       Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
       Var* detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", idx));
-      Var* detCoord = (Var*)LangElement::find(String::ToString("detCoord%d", idx));
       if (!detailH)
       {
          detailH = new Var;
@@ -1370,7 +1369,7 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
          {
             meta->addStatement(new GenOp("   @ += @.a * @;\r\n", detailH, bumpNormal, blendContrast));
          }
-         meta->addStatement(new GenOp("   @ *= @*max(@.w,0.1);\r\n", detailH, detailBlend, detCoord));
+         meta->addStatement(new GenOp("   @ *= @;\r\n", detailH, detailBlend));
          meta->addStatement(new GenOp("   @ = float2(min(@.x,@),max(@.y,@));\r\n", heightRange, heightRange, detailH, heightRange, detailH));
       }
    }
@@ -1382,9 +1381,7 @@ void TerrainHeightMapBlendHLSL::processPix(Vector<ShaderComponent*>& componentLi
       {
          Var* detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", idx));
          Var* detailH = (Var*)LangElement::find(String::ToString("detailH%d", idx));
-         meta->addStatement(new GenOp("   if ( @ > 0.0f ) @ = (@-@.x)/(@.y-@.x);\r\n", detailBlend, detailH, detailH, heightRange, heightRange, heightRange));
-         meta->addStatement(new GenOp("   else @ = 0.0;\r\n", detailH));
-
+         meta->addStatement(new GenOp("   @ = (@-@.x)/(@.y-@.x);\r\n", detailH, detailH, heightRange, heightRange, heightRange));
       }
       meta->addStatement(new GenOp("\r\n"));
    }
