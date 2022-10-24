@@ -71,14 +71,14 @@ void Entity::onPostAdd()
    //everything's done and added. go ahead and initialize the components
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      mComponents[i]->onComponentAdd();
+      mComponents[i].onComponentAdd();
    }
 
    //Set up the networked components
    mNetworkedComponents.clear();
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      if (mComponents[i]->isNetworked())
+      if (mComponents[i].getComponentData().isNetworked())
       {
          NetworkedComponent netComp;
          netComp.componentIndex = i;
@@ -139,7 +139,7 @@ U32 Entity::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
       {
          if (mNetworkedComponents[i].updateState == NetworkedComponent::Adding)
          {
-            const char* className = mComponents[mNetworkedComponents[i].componentIndex]->getClassName();
+            const char* className = mComponents[mNetworkedComponents[i].componentIndex].getComponentData().getClassName();
             stream->writeString(className, strlen(className));
 
             mNetworkedComponents[i].updateState = NetworkedComponent::Updating;
@@ -206,7 +206,7 @@ U32 Entity::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
          {
             stream->writeInt(i, 8);
 
-            mNetworkedComponents[i].updateMaskBits = mComponents[mNetworkedComponents[i].componentIndex]->packUpdate(con, mNetworkedComponents[i].updateMaskBits, stream);
+            mNetworkedComponents[i].updateMaskBits = mComponents[mNetworkedComponents[i].componentIndex].packUpdate(conn, mNetworkedComponents[i].updateMaskBits, stream);
 
             if (mNetworkedComponents[i].updateMaskBits != 0)
                forceUpdate = true;
@@ -352,8 +352,7 @@ void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
       {
          U32 updateComponentIndex = stream->readInt(8);
 
-         ComponentInstance* comp = &mComponents[updateComponentIndex];
-         comp->unpackUpdate(con, stream);
+         mComponents[updateComponentIndex].unpackUpdate(con, stream);
       }
    }
 
@@ -390,7 +389,7 @@ void Entity::setComponentNetMask(Component* comp, U32 mask)
 
    for (U32 i = 0; i < mNetworkedComponents.size(); i++)
    {
-      U32 netCompId = mComponents[mNetworkedComponents[i].componentIndex]->getId();
+      U32 netCompId = mComponents[mNetworkedComponents[i].componentIndex].getComponentData().getId();
       U32 compId = comp->getId();
 
       if (netCompId == compId &&
@@ -438,9 +437,9 @@ void Entity::setComponentDirty(Component* comp, bool forceUpdate)
 {
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      if (mComponents[i]->getId() == comp->getId())
+      if (mComponents[i].getComponentData().getId() == comp->getId())
       {
-         mComponents[i]->setOwner(this);
+         mComponents[i].setMaskBits(-1); //force general update
          return;
       }
    }
@@ -484,39 +483,15 @@ void Entity::onEndInspect()
 }
 #endif
 
-bool Entity::addComponent(Component* component)
-{
-   component->addComponent(this);
-
-   mComponents.push_back(component->createInstance(this));
-   return true;
-}
-
-bool Entity::removeComponent(Component* component)
-{
-   for (U32 i = 0; i < mComponents.size(); i++)
-   {
-      if (mComponents[i].getComponentData().getId() == component->getId())
-      {
-         mComponents.erase(i);
-         return true;
-      }
-   }
-
-   component->removeComponent(this);
-
-   return false;
-}
-
 DefineEngineMethod(Entity, addComponent, bool, (Component* toAddComponent), (nullAsType<Component*>()),
    "@brief Add a component to the entity\n\n")
 {
-   return object->addComponent(*toAddComponent);
+   return object->addComponent(toAddComponent);
 }
 
 DefineEngineMethod(Entity, removeComponent, bool, (Component* toRemoveComponent), (nullAsType<Component*>()),
    "@brief Remove a component from the entity\n")
 {
-   return object->removeComponent(*toRemoveComponent);
+   return object->removeComponent(toRemoveComponent);
 }
 

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "game/components/component.h"
+#include "game/components/componentInstance.h"
+
 #include "game/directors/directorManager.h"
 #include "game/3D/transforms/transform3DComponent.h"
 
@@ -27,13 +29,7 @@ public:
    //
    virtual ComponentInstance createInstance(Entity* owner) const;
 
-   typedef Signal <void(Entity* ent, const Component& comp)> AddComponentSignal;
-   static AddComponentSignal smAddedComponentSignal;
-   static AddComponentSignal& getAddedSignal() { return smAddedComponentSignal; }
-
-   typedef Signal <void(Entity* ent, const Component& comp)> RemoveComponentSignal;
-   static RemoveComponentSignal smRemovedComponentSignal;
-   static RemoveComponentSignal& getRemovedSignal() { return smRemovedComponentSignal; }
+   COMP_REGISTER_SIGNALS();
 };
 
 //
@@ -58,8 +54,8 @@ public:
 //
 class RenderMeshDirector : public Director
 {
-friend DirectorManager;
-typedef Director Parent;
+   friend DirectorManager;
+   typedef Director Parent;
 
    struct RenderMeshEntityRef
    {

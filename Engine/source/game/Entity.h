@@ -5,11 +5,9 @@
 #endif
 
 #include "components/component.h"
+#include "components/componentObject.h"
 
-class Component;
-class ComponentInstance;
-
-class Entity : public SceneObject
+class Entity : public SceneObject, public ComponentObject
 {
    typedef SceneObject Parent;
 
@@ -29,7 +27,6 @@ class Entity : public SceneObject
    };
 
 protected:
-   Vector<ComponentInstance> mComponents;
 
    //Bit of helper data to let us track and manage the adding, removal and updating of networked components
    struct NetworkedComponent
@@ -99,37 +96,4 @@ public:
    //
    void onInspect(GuiInspector* inspector);
    void onEndInspect();
-
-   //
-   // Components
-   //
-   ComponentInstance* getComponentInstance(const U32& index) {
-      if (index >= mComponents.size())
-         return nullptr;
-
-      return &mComponents[index];
-   }
-
-   template <class T>
-   T* getComponentInstance() {
-
-      for (U32 i = 0; i < mComponents.size(); i++)
-      {
-         T* compInst = dynamic_cast<T*>(mComponents[i]);
-         if (compInst != nullptr)
-         {
-            return T;
-         }
-      }
-      
-      return nullptr;
-   }
-
-   U32 getComponentCount() const
-   {
-      return mComponents.size();
-   }
-
-   bool addComponent(Component* component);
-   bool removeComponent(Component* component);
 };

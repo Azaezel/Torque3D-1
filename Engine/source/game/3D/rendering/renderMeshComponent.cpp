@@ -55,8 +55,9 @@ bool RenderMeshComponent::removeComponent(Entity* ent)
    RenderMeshComponent::getAddedSignal().trigger(ent, *this);
 }
 
+//==================================================================================================
 //
-//
+//==================================================================================================
 Vector< RenderMeshComponentInstance> RenderMeshComponentInstance::sComponentInstanceList;
 
 RenderMeshComponentInstance::RenderMeshComponentInstance(const RenderMeshComponent& componentData, const Entity& ownerEntity)
@@ -89,8 +90,9 @@ void RenderMeshComponentInstance::update(const MatrixF& transform)
 }
 
 
+//==================================================================================================
 //
-//
+//==================================================================================================
 RenderMeshDirector::RenderMeshDirector()
 {
    mTimingGroup = DirectorManager::Rendering;
