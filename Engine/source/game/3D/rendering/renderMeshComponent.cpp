@@ -1,7 +1,10 @@
 #include "renderMeshComponent.h"
 #include "gfx/gfxDrawUtil.h"
+#include "game/Entity.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(RenderMeshComponent);
+
+IMPL_COMP_REGISTER_SIGNALS(RenderMeshComponent);
 
 RenderMeshComponent::RenderMeshComponent()
 {
@@ -13,6 +16,8 @@ bool RenderMeshComponent::onAdd()
    if (!Parent::onAdd())
       return false;
 
+   addComponentField("Shape", "The Shape Asset to be rendered by this component", "TypeShapeAssetId");
+
    return true;
 }
 
@@ -20,7 +25,7 @@ void RenderMeshComponent::consoleInit()
 {
    Parent::consoleInit();
 
-   DirectorManager::get()->mDirectors.push_back(RenderMeshDirector());
+   DirectorManager::get()->mDirectors.push_back(new RenderMeshDirector());
 }
 
 void RenderMeshComponent::initPersistFields()
@@ -38,21 +43,14 @@ void RenderMeshComponent::unpackData(BitStream* stream)
    Parent::unpackData(stream);
 }
 
-ComponentInstance RenderMeshComponent::createInstance(Entity* owner) const
+ComponentInstance RenderMeshComponent::createInstance(ComponentObject* owner) const
 {
    RenderMeshComponentInstance compInst = RenderMeshComponentInstance(*this, *owner);
+
+   setupFields(&compInst, true);
    RenderMeshComponentInstance::sComponentInstanceList.push_back(compInst);
+   
    return compInst;
-}
-
-bool RenderMeshComponent::addComponent(Entity* ent)
-{
-   RenderMeshComponent::getAddedSignal().trigger(ent, *this);
-}
-
-bool RenderMeshComponent::removeComponent(Entity* ent)
-{
-   RenderMeshComponent::getAddedSignal().trigger(ent, *this);
 }
 
 //==================================================================================================
@@ -60,10 +58,10 @@ bool RenderMeshComponent::removeComponent(Entity* ent)
 //==================================================================================================
 Vector< RenderMeshComponentInstance> RenderMeshComponentInstance::sComponentInstanceList;
 
-RenderMeshComponentInstance::RenderMeshComponentInstance(const RenderMeshComponent& componentData, const Entity& ownerEntity)
+RenderMeshComponentInstance::RenderMeshComponentInstance(const RenderMeshComponent& componentData, const ComponentObject& owner)
 {
    mComponentData = &componentData;
-   mOwner = &ownerEntity;
+   mOwner = &owner;
 }
 
 RenderMeshComponentInstance::~RenderMeshComponentInstance()
@@ -89,38 +87,41 @@ void RenderMeshComponentInstance::update(const MatrixF& transform)
    GFX->getDrawUtil()->drawCube(desc, bounds, ColorI(255, 0, 0, 255));
 }
 
-
 //==================================================================================================
 //
 //==================================================================================================
-RenderMeshDirector::RenderMeshDirector()
+RenderMeshDirector::RenderMeshDirector() : Director()
 {
    mTimingGroup = DirectorManager::Rendering;
-   RenderMeshComponent::getAddedSignal().notify(this, registerComponent);
-   RenderMeshComponent::getRemovedSignal().notify(this, unregisterComponent);
+   RenderMeshComponent::getAddedComponentSignal().notify(this, &RenderMeshDirector::registerComponent);
+   RenderMeshComponent::getRemovedComponentSignal().notify(this, &RenderMeshDirector::unregisterComponent);
+
+   mValidEntriesList.clear();
+
+   bool asdas = true;
 }
 
 RenderMeshDirector::~RenderMeshDirector()
 {
-   RenderMeshComponentInstance::sComponentInstanceList.clear();
+   mValidEntriesList.clear();
 }
 
-void RenderMeshDirector::registerComponent(Entity* entity, const Component& comp)
+void RenderMeshDirector::registerComponent(ComponentObject* owner, const Component& comp)
 {
    RenderMeshEntityRef ref;
-   ref.ownerEntity = entity;
-   ref.mesh = entity->getComponentInstance<RenderMeshComponentInstance>();
-   ref.transform = entity->getComponentInstance<Transform3DComponentInstance>();
+   ref.owner = owner;
+   ref.mesh = owner->getComponentInstance<RenderMeshComponentInstance>();
+   //ref.transform = owner->getComponentInstance<Transform3DComponentInstance>();
 
    if(ref.isValid())
       mValidEntriesList.push_back(ref);
 }
 
-void RenderMeshDirector::unregisterComponent(Entity* entity, const Component& comp)
+void RenderMeshDirector::unregisterComponent(ComponentObject* owner, const Component& comp)
 {
    for (U32 i = 0; i < mValidEntriesList.size(); i++)
    {
-      if (mValidEntriesList[i].ownerEntity == entity)
+      if (mValidEntriesList[i].owner == owner)
       {
          mValidEntriesList.erase(i);
          return;
@@ -134,10 +135,11 @@ void RenderMeshDirector::update()
    {
       RenderMeshEntityRef& ref = mValidEntriesList[i];
 
-      bool isClient = ref.ownerEntity->isClientObject();
+      Entity* ownerEntity = static_cast<Entity*>(ref.owner);
+      bool isClient = ownerEntity->isClientObject();
       if (!isClient)
          continue;
 
-      ref.mesh->update(ref.transform->getWorldTransform());
+      ref.mesh->update(/*ref.transform->getWorldTransform()*/ownerEntity->getTransform());
    }
 }

@@ -22,32 +22,33 @@ void DirectorManager::update(TimingGroup currentTiming)
 {
    for (U32 i = 0; i < mDirectors.size(); i++)
    {
-      if (mDirectors[i].mTimingGroup == currentTiming)
+      if (mDirectors[i]->mTimingGroup == currentTiming)
       {
-         RenderMeshDirector* renderDir = static_cast<RenderMeshDirector*>(&mDirectors[i]);
-         renderDir->update();
+         //RenderMeshDirector* renderDir = dynamic_cast<RenderMeshDirector*>(mDirectors[i]);
+         //if(renderDir)
+         mDirectors[i]->update();
       }
    }
 }
 
-void DirectorManager::registerComponent(Entity* ent, const Component& comp)
+/*void DirectorManager::registerComponent(ComponentObject* owner, const Component& comp)
 {
    for (U32 i = 0; i < mDirectors.size(); i++)
    {
-      mDirectors[i].registerComponent(ent, comp);
+      mDirectors[i].registerComponent(owner, comp);
    }
 }
 
-void DirectorManager::unregisterComponent(Entity* ent, const Component& comp)
+void DirectorManager::unregisterComponent(ComponentObject* owner, const Component& comp)
 {
 
-}
+}*/
 //
 //
 //
 Director::Director()
 {
-
+   mTimingGroup = 0;
 }
 Director::~Director()
 {

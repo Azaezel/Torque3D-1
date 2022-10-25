@@ -3,6 +3,8 @@
 #include "console/sim.h"
 #endif
 
+#include "game/components/componentObject.h"
+
 class DirectorManager;
 
 class Director
@@ -16,7 +18,7 @@ public:
    Director();
    ~Director();
 
-   void update() {};
+   virtual void update() {};
 };
 
 class DirectorManager
@@ -43,8 +45,8 @@ public:
       PostSim
    };
 
-   typedef Signal <void(Entity* ent, const Component& comp)> AddComponentSignal;
-   typedef Signal <void(Entity* ent, const Component& comp)> RemoveComponentSignal;
+   //typedef Signal <void(ComponentObject* owner, const Component& comp)> AddComponentSignal;
+   //typedef Signal <void(ComponentObject* owner, const Component& comp)> RemoveComponentSignal;
 
 private:
    /// @name Device management variables
@@ -52,7 +54,7 @@ private:
    static DirectorManager* smDirectorManager; ///< Global GFXDevice
 
   public:
-   Vector<Director> mDirectors;
+   Vector<Director*> mDirectors;
 
 public:
    DirectorManager();
@@ -60,8 +62,8 @@ public:
 
    void update(TimingGroup currentTiming);
 
-   void registerComponent(Entity* ent, const Component& comp);
-   void unregisterComponent(Entity* ent, const Component& comp);
+   //void registerComponent(ComponentObject* owner, const Component& comp);
+   //void unregisterComponent(ComponentObject* owner, const Component& comp);
 
    /*void addDirector(Director director)
    {

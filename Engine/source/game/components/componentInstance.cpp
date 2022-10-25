@@ -15,7 +15,7 @@ ComponentInstance::ComponentInstance(const Component& componentData, const Compo
 
 ComponentInstance::~ComponentInstance()
 {
-   ComponentInstance::sComponentInstanceList.clear();
+   //ComponentInstance::sComponentInstanceList.clear();
 }
 
 void ComponentInstance::destroyInstance()
@@ -36,7 +36,9 @@ void ComponentInstance::setMaskBits(U32 orMask)
    AssertFatal(orMask != 0, "Invalid net mask bits set.");
 
    if (mOwner)
-      mOwner->setComponentNetMask(this, orMask);
+   {
+      (const_cast<ComponentObject*>(mOwner))->setComponentNetMask(this, orMask);
+   }
 }
 
 U32 ComponentInstance::packUpdate(NetConnection* con, U32 mask, BitStream* stream)
@@ -214,4 +216,11 @@ void ComponentInstance::removeBehaviorField(const char* fieldName)
    }
 
    setDataField(fieldName, NULL, "");
+}
+
+void ComponentInstance::packToStream(Stream& stream, U32 tabStop, S32 behaviorID, U32 flags /* = 0  */)
+{
+   char buffer[1024];
+
+   writeFields(stream, tabStop);
 }

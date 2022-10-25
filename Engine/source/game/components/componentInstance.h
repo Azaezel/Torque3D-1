@@ -1,6 +1,16 @@
 #pragma once
 
 #include "component.h"
+#ifndef _NETCONNECTION_H_
+#include "sim/netConnection.h"
+#endif
+#ifndef _BITSTREAM_H_
+#include "core/stream/bitStream.h"
+#endif
+
+class Component;
+class ComponentObject;
+struct ComponentField;
 
 class ComponentInstance : public SimObject
 {
@@ -27,12 +37,15 @@ public:
    ComponentInstance(const Component& componentData, const ComponentObject& ownerEntity);
    ~ComponentInstance();
 
+   virtual void packToStream(Stream& stream, U32 tabStop, S32 behaviorID, U32 flags = 0);
+
    virtual void destroyInstance();
 
    virtual void update();
    virtual void updateDelta(F32 dt);
 
    const Component& getComponentData() { return *mComponentData; }
+   Component* getComponentDataPtr() { return const_cast<Component*>(mComponentData); }
    const ComponentObject& getOwnerObject() { return *mOwner; }
 
    //

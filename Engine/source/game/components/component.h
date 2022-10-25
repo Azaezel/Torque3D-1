@@ -5,9 +5,9 @@
 #endif
 
 #include "componentMacroHelpers.h"
-#include "game/Entity.h"
+#include "game/components/componentObject.h"
 
-class Entity;
+class ComponentObject;
 class ComponentInstance;
 
 struct ComponentField
@@ -56,16 +56,13 @@ public:
    virtual void packData  (BitStream* stream);
    virtual void unpackData(BitStream* stream);
 
-   virtual bool addComponent(ComponentObject* owner);
-   virtual bool removeComponent(ComponentObject* owner);
+   COMP_REGISTER_SIGNALS(Component);
 
    //
    //
    virtual ComponentInstance createInstance(ComponentObject* owner) const;
 
    bool setupFields(ComponentInstance* bi, bool forceSetup = false) const;
-
-   COMP_REGISTER_SIGNALS();
 
    //
    /// @name Adding Named Fields

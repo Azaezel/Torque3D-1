@@ -26,6 +26,7 @@
 #include "console/simFieldDictionary.h"
 #include "game/components/component.h"
 #include "gui/controls/guiPopUpCtrlEx.h"
+#include "game/Entity.h"
 
 class GuiInspectorEntityGroup : public GuiInspectorGroup
 {

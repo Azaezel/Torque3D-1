@@ -5,12 +5,15 @@
 #include "console/engineAPI.h"
 #include "core/stream/bitStream.h"
 #include "math/mathIO.h"
+#include "core/stream/fileStream.h"
 
 //-----------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------
 
 IMPLEMENT_CO_DATABLOCK_V1(Component);
+
+IMPL_COMP_REGISTER_SIGNALS(Component);
 
 ConsoleDocClass( Component,
    "@brief \n"

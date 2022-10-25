@@ -4,7 +4,7 @@
 #include "game/components/componentInstance.h"
 
 #include "game/directors/directorManager.h"
-#include "game/3D/transforms/transform3DComponent.h"
+//#include "game/3D/transforms/transform3DComponent.h"
 
 class RenderMeshDirector;
 
@@ -23,13 +23,10 @@ public:
    virtual void packData(BitStream* stream);
    virtual void unpackData(BitStream* stream);
 
-   virtual bool addComponent(Entity* ent);
-   virtual bool removeComponent(Entity* ent);
+   COMP_REGISTER_SIGNALS(RenderMeshComponent);
    //
    //
-   virtual ComponentInstance createInstance(Entity* owner) const;
-
-   COMP_REGISTER_SIGNALS();
+   virtual ComponentInstance createInstance(ComponentObject* owner) const;
 };
 
 //
@@ -43,7 +40,7 @@ private:
 
 public:
    RenderMeshComponentInstance() { mComponentData = nullptr; mOwner = nullptr; }
-   RenderMeshComponentInstance(const RenderMeshComponent& componentData, const Entity& ownerEntity);
+   RenderMeshComponentInstance(const RenderMeshComponent& componentData, const ComponentObject& owner);
    ~RenderMeshComponentInstance();
 
    virtual void destroyInstance();
@@ -54,18 +51,18 @@ public:
 //
 class RenderMeshDirector : public Director
 {
-   friend DirectorManager;
    typedef Director Parent;
+   friend DirectorManager;
 
    struct RenderMeshEntityRef
    {
-      Entity* ownerEntity;
+      ComponentObject* owner;
       StrongRefPtr<RenderMeshComponentInstance> mesh;
-      StrongRefPtr<Transform3DComponentInstance> transform;
+      //StrongRefPtr<Transform3DComponentInstance> transform;
 
       bool isValid()
       {
-         if (ownerEntity != nullptr && !mesh.isNull() && !transform.isNull())
+         if (owner != nullptr && !mesh.isNull() /* && !transform.isNull()*/)
             return true;
 
          return false;
@@ -79,8 +76,8 @@ public:
    RenderMeshDirector();
    ~RenderMeshDirector();
 
-   void registerComponent(Entity* entity, const Component& comp);
-   void unregisterComponent(Entity* entity, const Component& comp);
+   void registerComponent(ComponentObject* owner, const Component& comp);
+   void unregisterComponent(ComponentObject* owner, const Component& comp);
 
-   void update();
+   virtual void update();
 };

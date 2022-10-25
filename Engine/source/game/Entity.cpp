@@ -8,6 +8,10 @@
 #include "gfx/gfxTransformSaver.h"
 #include "renderInstance/renderPassManager.h"
 
+// Client prediction
+static F32 sMinWarpTicks = 0.5f;       // Fraction of tick at which instant warp occurs
+static S32 sMaxWarpTicks = 3;          // Max warp duration in ticks
+static S32 sMaxPredictionTicks = 30;   // Number of ticks to predict
 
 IMPLEMENT_CO_NETOBJECT_V1(Entity);
 
@@ -44,22 +48,36 @@ bool Entity::onAdd()
    if ( !Parent::onAdd() )
       return false;
 
-   // Set up a 1x1x1 bounding box
-   mObjBox.set( Point3F( -0.5f, -0.5f, -0.5f ),
-                Point3F(  0.5f,  0.5f,  0.5f ) );
+   mObjBox = Box3F(Point3F(-0.5, -0.5, -0.5), Point3F(0.5, 0.5, 0.5));
 
    resetWorldBox();
+   setObjectBox(mObjBox);
 
-   // Add this object to the scene
    addToScene();
+
+   //Make sure we get positioned
+   if (isServerObject())
+   {
+      setMaskBits(TransformMask);
+      //setMaskBits(NamespaceMask);
+   }
+   else
+   {
+      //We can shortcut the initialization here because stuff generally ghosts down in order, and onPostAdd isn't called on ghosts.
+      onPostAdd();
+   }
 
    return true;
 }
 
 void Entity::onRemove()
 {
+   clearComponents(true);
+
    // Remove this object from the scene
    removeFromScene();
+
+   onDataSet.removeAll();
 
    Parent::onRemove();
 }
@@ -69,10 +87,10 @@ void Entity::onRemove()
 void Entity::onPostAdd()
 {
    //everything's done and added. go ahead and initialize the components
-   for (U32 i = 0; i < mComponents.size(); i++)
+   /*for (U32 i = 0; i < mComponents.size(); i++)
    {
       mComponents[i].onComponentAdd();
-   }
+   }*/
 
    //Set up the networked components
    mNetworkedComponents.clear();
@@ -99,9 +117,24 @@ void Entity::onPostAdd()
       Con::executef(this, "onAdd");
 }
 
+void Entity::setDataField(StringTableEntry slotName, const char* array, const char* value)
+{
+   Parent::setDataField(slotName, array, value);
+
+   onDataSet.trigger(this, slotName, value);
+}
+
+void Entity::onStaticModified(const char* slotName, const char* newValue)
+{
+   Parent::onStaticModified(slotName, newValue);
+
+   onDataSet.trigger(this, slotName, newValue);
+}
+
 //
 //
-void Entity::setTransform(const MatrixF & mat)
+//
+/*void Entity::setTransform(const MatrixF& mat)
 {
    // Let SceneObject handle all of the matrix manipulation
    Parent::setTransform( mat );
@@ -109,11 +142,535 @@ void Entity::setTransform(const MatrixF & mat)
    // Dirty our network mask so that the new transform gets
    // transmitted to the client object
    setMaskBits( TransformMask );
+}*/
+
+bool Entity::_setPosition(void* object, const char* index, const char* data)
+{
+   Entity* so = static_cast<Entity*>(object);
+   if (so)
+   {
+      Point3F pos;
+
+      if (!dStrcmp(data, ""))
+         pos = Point3F(0, 0, 0);
+      else
+         Con::setData(TypePoint3F, &pos, 0, 1, &data);
+
+      so->setTransform(pos, so->mRot);
+   }
+   return false;
 }
 
+const char* Entity::_getPosition(void* obj, const char* data)
+{
+   Entity* so = static_cast<Entity*>(obj);
+   if (so)
+   {
+      Point3F pos = so->getPosition();
+
+      static const U32 bufSize = 256;
+      char* returnBuffer = Con::getReturnBuffer(bufSize);
+      dSprintf(returnBuffer, bufSize, "%g %g %g", pos.x, pos.y, pos.z);
+      return returnBuffer;
+   }
+   return "0 0 0";
+}
+
+bool Entity::_setRotation(void* object, const char* index, const char* data)
+{
+   Entity* so = static_cast<Entity*>(object);
+   if (so)
+   {
+      RotationF rot;
+      Con::setData(TypeRotationF, &rot, 0, 1, &data);
+
+      //so->mRot = rot;
+      //MatrixF mat = rot.asMatrixF();
+      //mat.setPosition(so->getPosition());
+      //so->setTransform(mat);
+      so->setTransform(so->getPosition(), rot);
+   }
+   return false;
+}
+
+const char* Entity::_getRotation(void* obj, const char* data)
+{
+   Entity* so = static_cast<Entity*>(obj);
+   if (so)
+   {
+      EulerF eulRot = so->mRot.asEulerF();
+
+      static const U32 bufSize = 256;
+      char* returnBuffer = Con::getReturnBuffer(bufSize);
+      dSprintf(returnBuffer, bufSize, "%g %g %g", mRadToDeg(eulRot.x), mRadToDeg(eulRot.y), mRadToDeg(eulRot.z));
+      return returnBuffer;
+   }
+   return "0 0 0";
+}
+
+void Entity::setTransform(const MatrixF& mat)
+{
+   MatrixF oldTransform = getTransform();
+
+   if (isMounted())
+   {
+      // Use transform from mounted object
+      Point3F newPos = mat.getPosition();
+      Point3F parentPos = mMount.object->getTransform().getPosition();
+
+      Point3F newOffset = newPos - parentPos;
+
+      if (!newOffset.isZero())
+      {
+         mPos = newOffset;
+      }
+
+      Point3F matEul = mat.toEuler();
+
+      if (matEul != Point3F(0, 0, 0))
+      {
+         Point3F mountEul = mMount.object->getTransform().toEuler();
+         Point3F diff = matEul - mountEul;
+
+         mRot = diff;
+      }
+      else
+      {
+         mRot = Point3F(0, 0, 0);
+      }
+
+      RotationF addRot = mRot + RotationF(mMount.object->getTransform());
+      MatrixF transf = addRot.asMatrixF();
+      transf.setPosition(mPos + mMount.object->getPosition());
+
+      Parent::setTransform(transf);
+
+      if (transf != oldTransform)
+         setMaskBits(TransformMask);
+   }
+   else
+   {
+      //Are we part of a prefab?
+      /*Prefab* p = Prefab::getPrefabByChild(this);
+      if (p)
+      {
+         //just let our prefab know we moved
+         p->childTransformUpdated(this, mat);
+      }*/
+      //else
+      {
+         //mRot.set(mat);
+         //Parent::setTransform(mat);
+
+         RotationF rot = RotationF(mat);
+
+         EulerF tempRot = rot.asEulerF(RotationF::Degrees);
+
+         Point3F pos;
+
+         mat.getColumn(3, &pos);
+
+         setTransform(pos, rot);
+      }
+   }
+}
+
+void Entity::setTransform(const Point3F& position, const RotationF& rotation)
+{
+   MatrixF oldTransform = getTransform();
+
+   if (isMounted())
+   {
+      mPos = position;
+      mRot = rotation;
+
+      RotationF addRot = mRot + RotationF(mMount.object->getTransform());
+      MatrixF transf = addRot.asMatrixF();
+      transf.setPosition(mPos + mMount.object->getPosition());
+
+      Parent::setTransform(transf);
+
+      if (transf != oldTransform)
+         setMaskBits(TransformMask);
+   }
+   else
+   {
+      /*MatrixF newMat, imat, xmat, ymat, zmat;
+      Point3F radRot = Point3F(mDegToRad(rotation.x), mDegToRad(rotation.y), mDegToRad(rotation.z));
+      xmat.set(EulerF(radRot.x, 0, 0));
+      ymat.set(EulerF(0.0f, radRot.y, 0.0f));
+      zmat.set(EulerF(0, 0, radRot.z));
+      imat.mul(zmat, xmat);
+      newMat.mul(imat, ymat);*/
+
+      MatrixF newMat = rotation.asMatrixF();
+
+      newMat.setColumn(3, position);
+
+      mPos = position;
+      mRot = rotation;
+
+      //if (isServerObject())
+      //   setMaskBits(TransformMask);
+
+      //setTransform(temp);
+
+      // This test is a bit expensive so turn it off in release.   
+#ifdef TORQUE_DEBUG
+      //AssertFatal( mat.isAffine(), "SceneObject::setTransform() - Bad transform (non affine)!" );
+#endif
+
+      //PROFILE_SCOPE(Entity_setTransform);
+
+      // Update the transforms.
+      Parent::setTransform(newMat);
+
+      /*U32 compCount = mComponents.size();
+      for (U32 i = 0; i < compCount; ++i)
+      {
+         mComponents[i]->ownerTransformSet(&newMat);
+      }*/
+
+      Point3F newPos = newMat.getPosition();
+      RotationF newRot = newMat;
+
+      Point3F oldPos = oldTransform.getPosition();
+      RotationF oldRot = oldTransform;
+
+      if (newPos != oldPos || newRot != oldRot)
+         setMaskBits(TransformMask);
+   }
+}
+
+void Entity::setRenderTransform(const MatrixF& mat)
+{
+   Parent::setRenderTransform(mat);
+}
+
+void Entity::setRenderTransform(const Point3F& position, const RotationF& rotation)
+{
+   if (isMounted())
+   {
+      mPos = position;
+      mRot = rotation;
+
+      RotationF addRot = mRot + RotationF(mMount.object->getTransform());
+      MatrixF transf = addRot.asMatrixF();
+      transf.setPosition(mPos + mMount.object->getPosition());
+
+      Parent::setRenderTransform(transf);
+   }
+   else
+   {
+      MatrixF newMat = rotation.asMatrixF();
+
+      newMat.setColumn(3, position);
+
+      mPos = position;
+      mRot = rotation;
+
+      Parent::setRenderTransform(newMat);
+
+      /*U32 compCount = mComponents.size();
+      for (U32 i = 0; i < compCount; ++i)
+      {
+         mComponents[i]->ownerTransformSet(&newMat);
+      }*/
+   }
+}
+
+MatrixF Entity::getTransform()
+{
+   if (isMounted())
+   {
+      MatrixF mat;
+
+      //Use transform from mount
+      mMount.object->getMountTransform(mMount.node, mMount.xfm, &mat);
+
+      Point3F transPos = mat.getPosition() + mPos;
+
+      mat.mul(mRot.asMatrixF());
+
+      mat.setPosition(transPos);
+
+      return mat;
+   }
+   else
+   {
+      return Parent::getTransform();
+   }
+}
+
+void Entity::setMountOffset(const Point3F& posOffset)
+{
+   if (isMounted())
+   {
+      mMount.xfm.setColumn(3, posOffset);
+      //mPos = posOffset;
+      setMaskBits(MountedMask);
+   }
+}
+
+void Entity::setMountRotation(const EulerF& rotOffset)
+{
+   if (isMounted())
+   {
+      MatrixF temp, imat, xmat, ymat, zmat;
+
+      Point3F radRot = Point3F(mDegToRad(rotOffset.x), mDegToRad(rotOffset.y), mDegToRad(rotOffset.z));
+      xmat.set(EulerF(radRot.x, 0, 0));
+      ymat.set(EulerF(0.0f, radRot.y, 0.0f));
+      zmat.set(EulerF(0, 0, radRot.z));
+
+      imat.mul(zmat, xmat);
+      temp.mul(imat, ymat);
+
+      temp.setColumn(3, mMount.xfm.getPosition());
+
+      mMount.xfm = temp;
+
+      setMaskBits(MountedMask);
+   }
+}
+//
+void Entity::getCameraTransform(F32* pos, MatrixF* mat)
+{
+   /*Component* foundComp = getComponent(sCameraComponentType);
+
+   if (foundComp != nullptr)
+   {
+      CameraComponent* cameraComp = static_cast<CameraComponent*>(foundComp);
+      cameraComp->getCameraTransform(pos, mat);
+   }*/
+}
+
+void Entity::getMountTransform(S32 index, const MatrixF& xfm, MatrixF* outMat)
+{
+   /*renderComponent* renderComp = getComponent<renderComponent>(sRenderComponentType);
+
+   if (renderComp)
+   {
+      renderComp->getShapeInstance()->animate();
+      S32 nodeCount = renderComp->getShapeInstance()->getShape()->nodes.size();
+
+      if (index >= 0 && index < nodeCount)
+      {
+         MatrixF mountTransform = renderComp->getShapeInstance()->mNodeTransforms[index];
+         mountTransform.mul(xfm);
+         const Point3F& scale = getScale();
+
+         // The position of the mount point needs to be scaled.
+         Point3F position = mountTransform.getPosition();
+         position.convolve(scale);
+         mountTransform.setPosition(position);
+
+         // Also we would like the object to be scaled to the model.
+         outMat->mul(mObjToWorld, mountTransform);
+         return;
+      }
+   }*/
+
+   // Then let SceneObject handle it.
+   Parent::getMountTransform(index, xfm, outMat);
+}
+
+void Entity::getRenderMountTransform(F32 delta, S32 index, const MatrixF& xfm, MatrixF* outMat)
+{
+   /*renderComponent* renderComp = getComponent<renderComponent>(sRenderComponentType);
+
+   if (renderComp && renderComp->getShapeInstance())
+   {
+      renderComp->getShapeInstance()->animate();
+      S32 nodeCount = renderComp->getShape()->nodes.size();
+
+      if (index >= 0 && index < nodeCount)
+      {
+         MatrixF mountTransform = renderComp->getShapeInstance()->mNodeTransforms[index];
+         mountTransform.mul(xfm);
+         const Point3F& scale = getScale();
+
+         // The position of the mount point needs to be scaled.
+         Point3F position = mountTransform.getPosition();
+         position.convolve(scale);
+         mountTransform.setPosition(position);
+
+         // Also we would like the object to be scaled to the model.
+         outMat->mul(getRenderTransform(), mountTransform);
+         return;
+      }
+   }*/
+
+   // Then let SceneObject handle it.
+   Parent::getMountTransform(index, xfm, outMat);
+}
+//
+// Updating
+//
+void Entity::processTick(const Move* move)
+{
+   //This would presumably be behaviors execution?
+   /*for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      mComponents[i]->processTick();
+   }*/
+
+   if (!isHidden())
+   {
+      if (mDelta.warpCount < mDelta.warpTicks)
+      {
+         mDelta.warpCount++;
+
+         // Set new pos.
+         mObjToWorld.getColumn(3, &mDelta.pos);
+         mDelta.pos += mDelta.warpOffset;
+         mDelta.rot[0] = mDelta.rot[1];
+         mDelta.rot[1].interpolate(mDelta.warpRot[0], mDelta.warpRot[1], F32(mDelta.warpCount) / mDelta.warpTicks);
+         setTransform(mDelta.pos, mDelta.rot[1]);
+
+         // Pos backstepping
+         mDelta.posVec.x = -mDelta.warpOffset.x;
+         mDelta.posVec.y = -mDelta.warpOffset.y;
+         mDelta.posVec.z = -mDelta.warpOffset.z;
+      }
+      else
+      {
+         if (isMounted())
+         {
+            MatrixF mat;
+            mMount.object->getMountTransform(mMount.node, mMount.xfm, &mat);
+            Parent::setTransform(mat);
+            Parent::setRenderTransform(mat);
+         }
+         else
+         {
+            if (!move)
+            {
+               if (isGhost())
+               {
+                  // If we haven't run out of prediction time,
+                  // predict using the last known move.
+                  if (mPredictionCount-- <= 0)
+                     return;
+
+                  move = &mDelta.move;
+               }
+               else
+               {
+                  move = &NullMove;
+               }
+            }
+         }
+      }
+
+      Move prevMove = mLastMove;
+
+      if (move != NULL)
+         mLastMove = *move;
+      else
+         mLastMove = NullMove;
+
+      if (move && isServerObject())
+      {
+         if ((move->y != 0 || prevMove.y != 0)
+            || (move->x != 0 || prevMove.x != 0)
+            || (move->z != 0 || prevMove.x != 0))
+         {
+            if (isMethod("moveVectorEvent"))
+               Con::executef(this, "moveVectorEvent", move->x, move->y, move->z);
+         }
+
+         if (move->yaw != 0)
+         {
+            if (isMethod("moveYawEvent"))
+               Con::executef(this, "moveYawEvent", move->yaw);
+         }
+
+         if (move->pitch != 0)
+         {
+            if (isMethod("movePitchEvent"))
+               Con::executef(this, "movePitchEvent", move->pitch);
+         }
+
+         if (move->roll != 0)
+         {
+            if (isMethod("moveRollEvent"))
+               Con::executef(this, "moveRollEvent", move->roll);
+         }
+
+         for (U32 i = 0; i < MaxTriggerKeys; i++)
+         {
+            if (move->trigger[i] != prevMove.trigger[i])
+            {
+               if (isMethod("moveTriggerEvent"))
+                  Con::executef(this, "moveTriggerEvent", i, move->trigger[i]);
+            }
+         }
+      }
+
+      // Save current rigid state interpolation
+      mDelta.posVec = getPosition();
+      mDelta.rot[0] = mRot.asQuatF();
+
+      //Handle any script updates, which can include physics stuff
+      if (isServerObject() && isMethod("processTick"))
+         Con::executef(this, "processTick");
+
+      // Wrap up interpolation info
+      mDelta.pos = getPosition();
+      mDelta.posVec -= getPosition();
+      mDelta.rot[1] = mRot.asQuatF();
+
+      setTransform(getPosition(), mRot);
+
+      //Lifetime test
+      /*if (mLifetimeMS != 0)
+      {
+         S32 currentTime = Platform::getRealMilliseconds();
+         if (currentTime - mStartTimeMS >= mLifetimeMS)
+            deleteObject();
+      }*/
+   }
+}
+
+void Entity::advanceTime(F32 dt)
+{
+}
+
+void Entity::interpolateTick(F32 dt)
+{
+   if (dt == 0.0f)
+   {
+      setRenderTransform(mDelta.pos, mDelta.rot[1]);
+   }
+   else
+   {
+      QuatF rot;
+      rot.interpolate(mDelta.rot[1], mDelta.rot[0], dt);
+      Point3F pos = mDelta.pos + mDelta.posVec * dt;
+
+      setRenderTransform(pos, rot);
+   }
+
+   mDelta.dt = dt;
+}
+
+//
+// Networking
+//
 U32 Entity::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 {
    U32 retMask = Parent::packUpdate(conn, mask, stream);
+
+   if (stream->writeFlag(mask & TransformMask))
+   {
+      stream->writeCompressedPoint(mPos);
+      mathWrite(*stream, getRotation());
+
+      mDelta.move.pack(stream);
+
+      stream->writeFlag(!(mask & NoWarpMask));
+   }
 
    if (stream->writeFlag(mask & BoundsMask))
    {
@@ -238,7 +795,7 @@ U32 Entity::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 
 void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
 {
-   Parent::unpackUpdate(con, stream);
+   Parent::unpackUpdate(conn, stream);
 
    if (stream->readFlag())
    {
@@ -352,7 +909,7 @@ void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
       {
          U32 updateComponentIndex = stream->readInt(8);
 
-         mComponents[updateComponentIndex].unpackUpdate(con, stream);
+         mComponents[updateComponentIndex].unpackUpdate(conn, stream);
       }
    }
 
@@ -383,91 +940,328 @@ void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
    }*/
 }
 
-void Entity::setComponentNetMask(Component* comp, U32 mask)
+//
+// Mounting and heirarchy manipulation
+//
+void Entity::mountObject(SceneObject* objB, const MatrixF& txfm)
 {
-   setMaskBits(Entity::ComponentsUpdateMask);
+   Parent::mountObject(objB, -1, txfm);
+   Parent::addObject(objB);
+}
 
-   for (U32 i = 0; i < mNetworkedComponents.size(); i++)
-   {
-      U32 netCompId = mComponents[mNetworkedComponents[i].componentIndex].getComponentData().getId();
-      U32 compId = comp->getId();
+void Entity::mountObject(SceneObject* obj, S32 node, const MatrixF& xfm)
+{
+   Parent::mountObject(obj, node, xfm);
+}
 
-      if (netCompId == compId &&
-         (mNetworkedComponents[i].updateState == NetworkedComponent::None || mNetworkedComponents[i].updateState == NetworkedComponent::Updating))
-      {
-         mNetworkedComponents[i].updateState = NetworkedComponent::Updating;
-         mNetworkedComponents[i].updateMaskBits |= mask;
+void Entity::onMount(SceneObject* obj, S32 node)
+{
+   deleteNotify(obj);
 
-         break;
-      }
+   // Are we mounting to a GameBase object?
+   Entity* entityObj = dynamic_cast<Entity*>(obj);
+
+   //if (entityObj && entityObj->getControlObject() != this)
+   //   processAfter(entityObj);
+
+   if (!isGhost()) {
+      setMaskBits(MountedMask);
+
+      //TODO implement this callback
+      //onMount_callback( this, obj, node );
    }
 }
 
-void Entity::setComponentsDirty()
+void Entity::onUnmount(SceneObject* obj, S32 node)
 {
-   /*if (mToLoadComponents.empty())
-      mStartComponentUpdate = true;
+   clearNotify(obj);
 
-   //we need to build a list of behaviors that need to be pushed across the network
-   for (U32 i = 0; i < mComponents.size(); i++)
+   Entity* entityObj = dynamic_cast<Entity*>(obj);
+
+   //if (entityObj && entityObj->getControlObject() != this)
+   //   clearProcessAfter();
+
+   if (!isGhost()) {
+      setMaskBits(MountedMask);
+
+      //TODO implement this callback
+      //onUnmount_callback( this, obj, node );
+   }
+}
+void Entity::addObject(SimObject* object)
+{
+   Component* component = dynamic_cast<Component*>(object);
+   if (component)
    {
-      // We can do this because both are in the string table
-      Component *comp = mComponents[i];
+      addComponent(component);
+      return;
+   }
 
-      if (comp->isNetworked())
+   Entity* e = dynamic_cast<Entity*>(object);
+   if (e)
+   {
+      MatrixF offset;
+
+      //offset.mul(getWorldTransform(), e->getWorldTransform());
+
+      //check if we're mounting to a node on a shape we have
+      /*String node = e->getDataField("mountNode", NULL);
+      if (!node.isEmpty())
       {
-         bool unique = true;
-         for (U32 i = 0; i < mToLoadComponents.size(); i++)
+         renderComponent* renderComp = getComponent<renderComponent>(sRenderComponentType);
+         if (renderComp)
          {
-            if (mToLoadComponents[i]->getId() == comp->getId())
-            {
-               unique = false;
-               break;
-            }
+            TSShape* shape = renderComp->getShape();
+            S32 nodeIdx = shape->findNode(node);
+
+            mountObject(e, nodeIdx, MatrixF::Identity);
          }
-         if (unique)
-            mToLoadComponents.push_back(comp);
+         else
+         {
+            mountObject(e, MatrixF::Identity);
+         }
       }
+      else
+      {*/
+         /*Point3F posOffset = mPos - e->getPosition();
+         mPos = posOffset;
+
+         RotationF rotOffset = mRot - e->getRotation();
+         mRot = rotOffset;
+         setMaskBits(TransformMask);
+         mountObject(e, MatrixF::Identity);*/
+
+         mountObject(e, MatrixF::Identity);
+      //}
+
+      //e->setMountOffset(e->getPosition() - getPosition());
+
+      //Point3F diff = getWorldTransform().toEuler() - e->getWorldTransform().toEuler();
+
+      //e->setMountRotation(Point3F(mRadToDeg(diff.x),mRadToDeg(diff.y),mRadToDeg(diff.z)));
+
+      //mountObject(e, offset);
    }
-
-   setMaskBits(ComponentsMask);*/
-}
-
-void Entity::setComponentDirty(Component* comp, bool forceUpdate)
-{
-   for (U32 i = 0; i < mComponents.size(); i++)
+   else
    {
-      if (mComponents[i].getComponentData().getId() == comp->getId())
+      SceneObject* so = dynamic_cast<SceneObject*>(object);
+      if (so)
       {
-         mComponents[i].setMaskBits(-1); //force general update
+         //get the difference and build it as our offset!
+         Point3F posOffset = so->getPosition() - mPos;
+         RotationF rotOffset = RotationF(so->getTransform()) - mRot;
+
+         MatrixF offset = rotOffset.asMatrixF();
+         offset.setPosition(posOffset);
+
+         mountObject(so, offset);
          return;
       }
    }
 
-   //if (!found)
-   //   return;
+   Parent::addObject(object);
+}
 
-   //if(mToLoadComponents.empty())
-   //	mStartComponentUpdate = true;
-
-   /*if (comp->isNetworked() || forceUpdate)
+void Entity::removeObject(SimObject* object)
+{
+   Entity* e = dynamic_cast<Entity*>(object);
+   if (e)
    {
-      bool unique = true;
-      for (U32 i = 0; i < mToLoadComponents.size(); i++)
-      {
-         if (mToLoadComponents[i]->getId() == comp->getId())
-         {
-            unique = false;
-            break;
-         }
-      }
-      if (unique)
-         mToLoadComponents.push_back(comp);
+      mPos = mPos + e->getPosition();
+      mRot = mRot + e->getRotation();
+      unmountObject(e);
+      setMaskBits(TransformMask);
+   }
+   else
+   {
+      SceneObject* so = dynamic_cast<SceneObject*>(object);
+      if (so)
+         unmountObject(so);
    }
 
-   setMaskBits(ComponentsMask);*/
-
+   Parent::removeObject(object);
 }
+
+SimObject* Entity::findObjectByInternalName(StringTableEntry internalName, bool searchChildren)
+{
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      if (mComponents[i].getComponentData().getInternalName() == internalName)
+      {
+         return mComponents[i].getComponentDataPtr();
+      }
+   }
+
+   return Parent::findObjectByInternalName(internalName, searchChildren);
+}
+
+//
+// IO
+//
+static void writeTabs(Stream& stream, U32 count)
+{
+   char tab[] = "   ";
+   while (count--)
+      stream.write(3, (void*)tab);
+}
+
+void Entity::write(Stream& stream, U32 tabStop, U32 flags)
+{
+   // Do *not* call parent on this
+
+   /*VectorPtr<ComponentObject *> &componentList = lockComponentList();
+   // export selected only?
+   if( ( flags & SelectedOnly ) && !isSelected() )
+   {
+   for( BehaviorObjectIterator i = componentList.begin(); i != componentList.end(); i++ )
+   (*i)->write(stream, tabStop, flags);
+
+   goto write_end;
+   }*/
+
+   //catch if we have any written behavior fields already in the file, and clear them. We don't need to double-up
+   //the entries for no reason.
+   /*if(getFieldDictionary())
+   {
+   //get our dynamic field count, then parse through them to see if they're a behavior or not
+
+   //reset it
+   SimFieldDictionary* fieldDictionary = getFieldDictionary();
+   SimFieldDictionaryIterator itr(fieldDictionary);
+   for (S32 i = 0; i < fieldDictionary->getNumFields(); i++)
+   {
+   if (!(*itr))
+   break;
+
+   SimFieldDictionary::Entry* entry = *itr;
+   if(strstr(entry->slotName, "_behavior"))
+   {
+   entry->slotName = "";
+   entry->value = "";
+   }
+
+   ++itr;
+   }
+   }*/
+   //all existing written behavior fields should be cleared. now write the object block
+
+   writeTabs(stream, tabStop);
+
+   char buffer[1024];
+   dSprintf(buffer, sizeof(buffer), "new %s(%s) {\r\n", getClassName(), getName() ? getName() : "");
+   stream.write(dStrlen(buffer), buffer);
+   writeFields(stream, tabStop + 1);
+
+   stream.write(1, "\n");
+   ////first, write out our behavior objects
+
+   // NOW we write the behavior fields proper
+   if (mComponents.size() > 0)
+   {
+      // Pack out the behaviors into fields
+      for (U32 i = 0; i < mComponents.size(); i++)
+      {
+         writeTabs(stream, tabStop + 1);
+         dSprintf(buffer, sizeof(buffer), "new %s() {\r\n", mComponents[i].getComponentData().getClassName());
+         stream.write(dStrlen(buffer), buffer);
+         //bi->writeFields( stream, tabStop + 2 );
+
+         //mComponents[i]->packToStream(stream, tabStop + 2, i - 1, flags);
+
+         writeTabs(stream, tabStop + 1);
+         stream.write(4, "};\r\n");
+      }
+   }
+
+   //
+   //if (size() > 0)
+   //   stream.write(2, "\r\n");
+
+   for (U32 i = 0; i < size(); i++)
+   {
+      SimObject* child = (*this)[i];
+      if (child->getCanSave())
+         child->write(stream, tabStop + 1, flags);
+   }
+
+   //stream.write(2, "\r\n");
+
+   writeTabs(stream, tabStop);
+   stream.write(4, "};\r\n");
+
+   //write_end:
+   //unlockComponentList();
+}
+
+SimObject* Entity::getTamlChild(const U32 childIndex) const
+{
+   // Sanity!
+   AssertFatal(childIndex < getTamlChildCount(), "SimSet::getTamlChild() - Child index is out of range.");
+
+   // For when the assert is not used.
+   if (childIndex >= getTamlChildCount())
+      return NULL;
+
+   //we always order components first, child objects second
+   if (childIndex >= getComponentCount())
+      return at(childIndex - getComponentCount());
+   else
+      return getComponent(childIndex);
+}
+//
+void Entity::onCameraScopeQuery(NetConnection* connection, CameraScopeQuery* query)
+{
+   // Object itself is in scope.
+   Parent::onCameraScopeQuery(connection, query);
+
+   /*CameraComponent* cameraComp = getComponent<CameraComponent>(sCameraComponentType);
+   if (cameraComp != nullptr)
+   {
+      cameraComp->onCameraScopeQuery(connection, query);
+   }*/
+}
+//
+void Entity::setObjectBox(const Box3F& objBox)
+{
+   mObjBox = objBox;
+   resetWorldBox();
+
+   if (isServerObject())
+      setMaskBits(BoundsMask);
+}
+
+/*void Entity::updateContainer()
+{
+   PROFILE_SCOPE(Entity_updateContainer);
+
+   // Update container drag and buoyancy properties
+   containerInfo.box = getWorldBox();
+   //containerInfo.mass = mMass;
+
+   getContainer()->findObjects(containerInfo.box, WaterObjectType | PhysicalZoneObjectType, findRouter, &containerInfo);
+
+   //mWaterCoverage = info.waterCoverage;
+   //mLiquidType    = info.liquidType;
+   //mLiquidHeight  = info.waterHeight;   
+   //setCurrentWaterObject( info.waterObject );
+
+   // This value might be useful as a datablock value,
+   // This is what allows the player to stand in shallow water (below this coverage)
+   // without jiggling from buoyancy
+   /*if (info.waterCoverage >= 0.25f)
+   {
+      // water viscosity is used as drag for in water.
+      // ShapeBaseData drag is used for drag outside of water.
+      // Combine these two components to calculate this ShapeBase object's
+      // current drag.
+      mDrag = (info.waterCoverage * info.waterViscosity) +
+         (1.0f - info.waterCoverage) * mDrag;
+      //mBuoyancy = (info.waterDensity / mDataBlock->density) * info.waterCoverage;
+   }
+
+   //mAppliedForce = info.appliedForce;
+   mGravityMod = info.gravityScale;*/
+//}
 
 //
 //
@@ -475,11 +1269,71 @@ void Entity::setComponentDirty(Component* comp, bool forceUpdate)
 #ifdef TORQUE_TOOLS
 void Entity::onInspect(GuiInspector* inspector)
 {
+   /*S32 groupIdx = inspector->findExistentGroupIndex(StringTable->insert("GameObject"));
+   GuiInspectorGroup* editingGroup = inspector->findExistentGroup(StringTable->insert("Editing"));
+   //GuiControl* stack = dynamic_cast<GuiControl*>(materialGroup->findObjectByInternalName(StringTable->insert("Stack")));
+
+   GuiInspectorEntityGroup* components = new GuiInspectorEntityGroup("Components", inspector);
+   if (components != NULL)
+   {
+      components->registerObject();
+
+      inspector->insertInspectorGroup(groupIdx, components);
+      inspector->addObject(components);
+      inspector->reOrder(components, editingGroup);
+   }
+
+   groupIdx++;
+
+   U32 compCount = getComponentCount();
+   //Now, add the component groups
+   for (U32 c = 0; c < compCount; ++c)
+   {
+      Component* comp = getComponent(c);
+
+      String compName;
+      if (comp->getFriendlyName() != StringTable->EmptyString())
+         compName = comp->getFriendlyName();
+      else
+         compName = comp->getComponentName();
+
+      StringBuilder captionString;
+      captionString.format("%s [%i]", compName.c_str(), comp->getId());
+
+      GuiInspectorGroup* compGroup = new GuiInspectorComponentGroup(captionString.data(), inspector, comp);
+      if (compGroup != NULL)
+      {
+         compGroup->registerObject();
+         inspector->insertInspectorGroup(groupIdx, compGroup);
+         inspector->addObject(compGroup);
+         inspector->reOrder(compGroup, editingGroup);
+
+         groupIdx++;
+      }
+   }
+
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      Component* comp = mComponents[i];
+      comp->onInspect();
+   }*/
 }
 
 void Entity::onEndInspect()
 {
+   /*for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      Component* comp = mComponents[i];
+      comp->onEndInspect();
+   }
 
+   GuiTreeViewCtrl* editorTree = dynamic_cast<GuiTreeViewCtrl*>(Sim::findObject("EditorTree"));
+   if (!editorTree)
+      return;
+
+   S32 componentItemIdx = editorTree->findItemByName("Components");
+
+   editorTree->removeItem(componentItemIdx, false);*/
 }
 #endif
 
