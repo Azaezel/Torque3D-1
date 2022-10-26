@@ -1,10 +1,13 @@
 #include "directorManager.h"
 #include "game/3D/rendering/renderMeshComponent.h"
+#include "scene/sceneRenderState.h"
 
 DirectorManager* DirectorManager::smDirectorManager = nullptr;
+SceneRenderState* DirectorManager::sceneRenderState = nullptr;
 
 DirectorManager::DirectorManager()
 {
+   
 }
 
 DirectorManager::~DirectorManager()

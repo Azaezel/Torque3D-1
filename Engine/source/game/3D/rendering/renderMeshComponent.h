@@ -26,7 +26,7 @@ public:
    COMP_REGISTER_SIGNALS(RenderMeshComponent);
    //
    //
-   virtual ComponentInstance createInstance(ComponentObject* owner) const;
+   virtual ComponentInstance* createInstance(ComponentObject* owner);
 };
 
 //
@@ -36,7 +36,7 @@ class RenderMeshComponentInstance : public ComponentInstance
    friend RenderMeshDirector;
 
 private:
-   static Vector<RenderMeshComponentInstance> sComponentInstanceList;
+   static Vector<RenderMeshComponentInstance*> sComponentInstanceList;
 
 public:
    RenderMeshComponentInstance() { mComponentData = nullptr; mOwner = nullptr; }

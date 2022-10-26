@@ -96,7 +96,7 @@ void Entity::onPostAdd()
    mNetworkedComponents.clear();
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      if (mComponents[i].getComponentData().isNetworked())
+      if (mComponents[i]->getComponentData().isNetworked())
       {
          NetworkedComponent netComp;
          netComp.componentIndex = i;
@@ -696,8 +696,8 @@ U32 Entity::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
       {
          if (mNetworkedComponents[i].updateState == NetworkedComponent::Adding)
          {
-            const char* className = mComponents[mNetworkedComponents[i].componentIndex].getComponentData().getClassName();
-            stream->writeString(className, strlen(className));
+            Component* comp = mComponents[mNetworkedComponents[i].componentIndex]->getComponentDataPtr();
+            stream->writeRangedU32(comp->getId(), DataBlockObjectIdFirst, DataBlockObjectIdLast);
 
             mNetworkedComponents[i].updateState = NetworkedComponent::Updating;
          }
@@ -763,7 +763,7 @@ U32 Entity::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
          {
             stream->writeInt(i, 8);
 
-            mNetworkedComponents[i].updateMaskBits = mComponents[mNetworkedComponents[i].componentIndex].packUpdate(conn, mNetworkedComponents[i].updateMaskBits, stream);
+            mNetworkedComponents[i].updateMaskBits = mComponents[mNetworkedComponents[i].componentIndex]->packUpdate(conn, mNetworkedComponents[i].updateMaskBits, stream);
 
             if (mNetworkedComponents[i].updateMaskBits != 0)
                forceUpdate = true;
@@ -875,21 +875,12 @@ void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
 
       for (U32 i = 0; i < addedComponentCount; i++)
       {
-         char className[256] = "";
-         stream->readString(className);
+         S32 compId = stream->readRangedU32(DataBlockObjectIdFirst, DataBlockObjectIdLast);
 
-         //Change to components, so iterate our list and create any new components
-         // Well, looks like we have to create a new object.
-         const char* componentType = className;
-
-         ConsoleObject* object = ConsoleObject::create(componentType);
-
-         // Finally, set currentNewObject to point to the new one.
-         Component* newComponent = dynamic_cast<Component*>(object);
-
-         if (newComponent)
+         Component* comp;
+         if (Sim::findObject(compId, comp))
          {
-            addComponent(newComponent);
+            addComponent(comp);
          }
       }
    }
@@ -909,7 +900,7 @@ void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
       {
          U32 updateComponentIndex = stream->readInt(8);
 
-         mComponents[updateComponentIndex].unpackUpdate(conn, stream);
+         mComponents[updateComponentIndex]->unpackUpdate(conn, stream);
       }
    }
 
@@ -1082,13 +1073,67 @@ void Entity::removeObject(SimObject* object)
    Parent::removeObject(object);
 }
 
+bool Entity::addComponent(Component* comp)
+{
+   if (comp == NULL)
+      return false;
+
+   ComponentInstance* compInst = comp->createInstance(this);
+   compInst->setIsServerObject(isServerObject());
+
+   mComponents.push_back(compInst);
+
+   if (comp->isNetworked())
+   {
+      NetworkedComponent netComp;
+      netComp.componentIndex = mComponents.size() - 1;
+      netComp.updateState = NetworkedComponent::Adding;
+      netComp.updateMaskBits = -1;
+
+      mNetworkedComponents.push_back(netComp);
+
+      setMaskBits(AddComponentsMask);
+      setMaskBits(ComponentsUpdateMask);
+   }
+
+   comp->addComponent(this); //trips the notify system
+
+   return true;
+}
+
+bool Entity::removeComponent(Component* comp)
+{
+   if (comp == NULL)
+      return false;
+
+   ComponentInstance* compInst = getComponentInstanceByData(comp);
+
+   if (compInst == nullptr)
+      return false;
+
+   if (mComponents.remove(compInst))
+   {
+      //AssertFatal(comp->isProperlyAdded(), "Don't know how but a component is not registered w/ the sim");
+
+      //setComponentsDirty();
+
+      comp->removeComponent(this);
+
+      compInst->destroyInstance();
+
+      return true;
+   }
+
+   return false;
+}
+
 SimObject* Entity::findObjectByInternalName(StringTableEntry internalName, bool searchChildren)
 {
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      if (mComponents[i].getComponentData().getInternalName() == internalName)
+      if (mComponents[i]->getComponentData().getInternalName() == internalName)
       {
-         return mComponents[i].getComponentDataPtr();
+         return mComponents[i]->getComponentDataPtr();
       }
    }
 
@@ -1162,7 +1207,7 @@ void Entity::write(Stream& stream, U32 tabStop, U32 flags)
       for (U32 i = 0; i < mComponents.size(); i++)
       {
          writeTabs(stream, tabStop + 1);
-         dSprintf(buffer, sizeof(buffer), "new %s() {\r\n", mComponents[i].getComponentData().getClassName());
+         dSprintf(buffer, sizeof(buffer), "new %s() {\r\n", mComponents[i]->getComponentData().getClassName());
          stream.write(dStrlen(buffer), buffer);
          //bi->writeFields( stream, tabStop + 2 );
 

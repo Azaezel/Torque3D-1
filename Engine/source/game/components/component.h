@@ -60,7 +60,7 @@ public:
 
    //
    //
-   virtual ComponentInstance createInstance(ComponentObject* owner) const;
+   virtual ComponentInstance* createInstance(ComponentObject* owner);
 
    bool setupFields(ComponentInstance* bi, bool forceSetup = false) const;
 
@@ -96,7 +96,12 @@ public:
 
    const char* getDescriptionText(const char* desc);
 
-   const char* getName() const { return mTemplateName; }
+   StringTableEntry getName() const {
+      if (mTemplateName != StringTable->EmptyString())
+         return mTemplateName;
+      else
+         return Parent::getName();
+   }
 
    bool isNetworked() const { return mNetworked; }
 

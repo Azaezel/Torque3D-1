@@ -1,12 +1,15 @@
 #include "renderMeshComponent.h"
 #include "gfx/gfxDrawUtil.h"
 #include "game/Entity.h"
+#include <gfx/gfxTransformSaver.h>
+#include "scene/sceneRenderState.h"
+#include "renderInstance/renderPassManager.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(RenderMeshComponent);
 
 IMPL_COMP_REGISTER_SIGNALS(RenderMeshComponent);
 
-RenderMeshComponent::RenderMeshComponent()
+RenderMeshComponent::RenderMeshComponent() : Component()
 {
 
 }
@@ -43,11 +46,11 @@ void RenderMeshComponent::unpackData(BitStream* stream)
    Parent::unpackData(stream);
 }
 
-ComponentInstance RenderMeshComponent::createInstance(ComponentObject* owner) const
+ComponentInstance* RenderMeshComponent::createInstance(ComponentObject* owner)
 {
-   RenderMeshComponentInstance compInst = RenderMeshComponentInstance(*this, *owner);
+   RenderMeshComponentInstance* compInst = new RenderMeshComponentInstance(*this, *owner);
 
-   setupFields(&compInst, true);
+   setupFields(compInst, true);
    RenderMeshComponentInstance::sComponentInstanceList.push_back(compInst);
    
    return compInst;
@@ -56,7 +59,7 @@ ComponentInstance RenderMeshComponent::createInstance(ComponentObject* owner) co
 //==================================================================================================
 //
 //==================================================================================================
-Vector< RenderMeshComponentInstance> RenderMeshComponentInstance::sComponentInstanceList;
+Vector< RenderMeshComponentInstance*> RenderMeshComponentInstance::sComponentInstanceList;
 
 RenderMeshComponentInstance::RenderMeshComponentInstance(const RenderMeshComponent& componentData, const ComponentObject& owner)
 {
@@ -70,11 +73,22 @@ RenderMeshComponentInstance::~RenderMeshComponentInstance()
 
 void RenderMeshComponentInstance::destroyInstance()
 {
-   //RenderMeshComponentInstance::sComponentInstanceList.remove(*this);
+   RenderMeshComponentInstance::sComponentInstanceList.remove(this);
+
+   delete this;
 }
 
 void RenderMeshComponentInstance::update(const MatrixF& transform)
 {
+   SceneRenderState* state = DirectorManager::sceneRenderState;
+   if (!state)
+      return;
+
+   ObjectRenderInst* ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
+   ri->type = RenderPassManager::RIT_Editor;
+
+   GFXTransformSaver saver;
+
    GFXStateBlockDesc desc;
    desc.setZReadWrite(true, false);
    desc.setBlend(true);
@@ -85,6 +99,8 @@ void RenderMeshComponentInstance::update(const MatrixF& transform)
 
    //do the work
    GFX->getDrawUtil()->drawCube(desc, bounds, ColorI(255, 0, 0, 255));
+
+   state->getRenderPass()->addInst(ri);
 }
 
 //==================================================================================================
@@ -95,10 +111,6 @@ RenderMeshDirector::RenderMeshDirector() : Director()
    mTimingGroup = DirectorManager::Rendering;
    RenderMeshComponent::getAddedComponentSignal().notify(this, &RenderMeshDirector::registerComponent);
    RenderMeshComponent::getRemovedComponentSignal().notify(this, &RenderMeshDirector::unregisterComponent);
-
-   mValidEntriesList.clear();
-
-   bool asdas = true;
 }
 
 RenderMeshDirector::~RenderMeshDirector()

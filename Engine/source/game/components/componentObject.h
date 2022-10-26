@@ -8,7 +8,7 @@ class ComponentInstance;
 class ComponentObject
 {
 protected:
-   Vector<ComponentInstance> mComponents;
+   Vector<ComponentInstance*> mComponents;
 
    //Bit of helper data to let us track and manage the adding, removal and updating of networked components
    struct NetworkedComponent
@@ -42,15 +42,17 @@ public:
       if (index >= mComponents.size())
          return nullptr;
 
-      return &mComponents[index];
+      return mComponents[index];
    }
+
+   ComponentInstance* getComponentInstanceByData(Component* component);
 
    template <class T>
    T* getComponentInstance() {
 
       for (U32 i = 0; i < mComponents.size(); i++)
       {
-         T* compInst = dynamic_cast<T*>(&mComponents[i]);
+         T* compInst = dynamic_cast<T*>(mComponents[i]);
          if (compInst != nullptr)
          {
             return compInst;
@@ -68,8 +70,8 @@ public:
       return mComponents.size();
    }
 
-   bool addComponent(Component* component);
-   bool removeComponent(Component* component);
+   virtual bool addComponent(Component* component);
+   virtual bool removeComponent(Component* component);
 
    void setComponentsDirty();
    void setComponentDirty(Component* comp, bool forceUpdate = false);

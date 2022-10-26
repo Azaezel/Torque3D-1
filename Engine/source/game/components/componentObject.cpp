@@ -11,14 +11,16 @@ bool ComponentObject::removeComponent(Component* component)
 {
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      if (mComponents[i].getComponentData().getId() == component->getId())
+      if (mComponents[i]->getComponentData().getId() == component->getId())
       {
+         mComponents[i]->destroyInstance();
          mComponents.erase(i);
          return true;
       }
    }
 
    component->removeComponent(this);
+   
 
    return false;
 }
@@ -27,7 +29,7 @@ void ComponentObject::setComponentNetMask(ComponentInstance* comp, U32 mask)
 {
    for (U32 i = 0; i < mNetworkedComponents.size(); i++)
    {
-      U32 netCompId = mComponents[mNetworkedComponents[i].componentIndex].getComponentData().getId();
+      U32 netCompId = mComponents[mNetworkedComponents[i].componentIndex]->getComponentData().getId();
       U32 compId = comp->getComponentData().getId();
 
       if (netCompId == compId &&
@@ -75,9 +77,9 @@ void ComponentObject::setComponentDirty(Component* comp, bool forceUpdate)
 {
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      if (mComponents[i].getComponentData().getId() == comp->getId())
+      if (mComponents[i]->getComponentData().getId() == comp->getId())
       {
-         mComponents[i].setMaskBits(-1); //force general update
+         mComponents[i]->setMaskBits(-1); //force general update
          return;
       }
    }
@@ -130,35 +132,16 @@ void ComponentObject::notifyComponents(String signalFunction, String argA, Strin
 //to re-add them. Need to implement a clean clear function that will clear the local list, and only delete unused behaviors during an update.
 void ComponentObject::clearComponents(bool deleteComponents)
 {
-   if (!deleteComponents)
+   while (mComponents.size() > 0)
    {
-      while (mComponents.size() > 0)
-      {
-         removeComponent(mComponents.first().getComponentDataPtr());
-      }
-   }
-   else
-   {
-      while (mComponents.size() > 0)
-      {
-         Component* comp = mComponents.last().getComponentDataPtr();
-
-         if (comp)
-         {
-            //comp->onComponentRemove(); //in case the behavior needs to do cleanup on the owner
-
-            comp->deleteObject();
-         }
-         mComponents.pop_back();
-      }
+      removeComponent(mComponents.first()->getComponentDataPtr());
    }
 }
 
 ComponentInstance* ComponentObject::getComponent(const U32 index) const
 {
-
    if (index < mComponents.size())
-      return const_cast<ComponentInstance*>(&mComponents[index]);
+      return const_cast<ComponentInstance*>(mComponents[index]);
 
    return nullptr;
 }
@@ -167,11 +150,22 @@ ComponentInstance* ComponentObject::getComponent(StringTableEntry componentType)
 {
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      ComponentInstance* comp = const_cast<ComponentInstance*>(&mComponents[i]);
+      ComponentInstance* comp = const_cast<ComponentInstance*>(mComponents[i]);
 
       if (comp->getComponentData().getComponentType() == componentType)
          return comp;
    }
 
    return NULL;
+}
+
+ComponentInstance* ComponentObject::getComponentInstanceByData(Component* component)
+{
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      if (mComponents[i]->getComponentData().getId() == component->getId())
+         return mComponents[i];
+   }
+
+   return nullptr;
 }

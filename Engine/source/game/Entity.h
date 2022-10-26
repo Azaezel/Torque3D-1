@@ -91,6 +91,10 @@ public:
    void onRemove();
 
    //
+   virtual bool addComponent(Component* component);
+   virtual bool removeComponent(Component* component);
+
+   //
    virtual void setTransform(const MatrixF &mat);
    virtual void setRenderTransform(const MatrixF &mat);
 

@@ -20,7 +20,15 @@ ConsoleDocClass( Component,
    "@ingroup Datablocks\n"
 );
 
-Component::Component()
+Component::Component() :
+   mFriendlyName(StringTable->EmptyString()),
+   mDescription(StringTable->EmptyString()),
+   mFromResource(StringTable->EmptyString()),
+   mComponentGroup(StringTable->EmptyString()),
+   mComponentType(StringTable->EmptyString()),
+   mNetworkType(StringTable->EmptyString()),
+   mTemplateName(StringTable->EmptyString()),
+   mNetworked(false)
 {
 }
 
@@ -28,6 +36,8 @@ bool Component::onAdd()
 {
    if (!Parent::onAdd())
       return false;
+
+   addComponentField("templateName", "Name of the Component this ComponentInstance is templated from", "String", getName());
 
    return true;
 }
@@ -42,6 +52,16 @@ void Component::consoleInit()
 void Component::initPersistFields()
 {
    Parent::initPersistFields();
+
+   addField("friendlyName", TypeString, Offset(mFriendlyName, Component), "");
+   addField("description", TypeString, Offset(mDescription, Component), "");
+   addField("componentGroup", TypeString, Offset(mComponentGroup, Component), "");
+   addField("componentType", TypeString, Offset(mComponentType, Component), "");
+   
+   addField("networkType", TypeString, Offset(mNetworkType, Component), "");
+   addField("templateName", TypeString, Offset(mTemplateName, Component), "");
+
+   addField("isNetworked", TypeBool, Offset(mNetworked, Component), "");
 }
 
 //--------------------------------------------------------------------------
@@ -55,11 +75,11 @@ void Component::unpackData(BitStream* stream)
    Parent::unpackData(stream);
 }
 
-ComponentInstance Component::createInstance(ComponentObject* owner) const
+ComponentInstance* Component::createInstance(ComponentObject* owner)
 {
-   ComponentInstance compInst = ComponentInstance(*this, *owner);
+   ComponentInstance* compInst = new ComponentInstance(*this, *owner);
 
-   setupFields(&compInst, true);
+   setupFields(compInst, true);
    ComponentInstance::getComponentInstList()->push_back(compInst);
 
    //It's important to note we never actually register the ComponentInstance created.

@@ -1,6 +1,6 @@
 #include "componentInstance.h"
 
-Vector<ComponentInstance> ComponentInstance::sComponentInstanceList;
+Vector<ComponentInstance*> ComponentInstance::sComponentInstanceList;
 
 IMPLEMENT_CONOBJECT(ComponentInstance);
 
@@ -20,7 +20,8 @@ ComponentInstance::~ComponentInstance()
 
 void ComponentInstance::destroyInstance()
 {
-   //ComponentInstance::sComponentInstanceList.remove(*this);
+   ComponentInstance::sComponentInstanceList.remove(this);
+   delete this;
 }
 
 void ComponentInstance::update()

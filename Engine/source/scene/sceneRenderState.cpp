@@ -110,8 +110,10 @@ void SceneRenderState::renderObjects( SceneObject** objects, U32 numObjects )
       object->prepRenderImage( this );
    }
 
+   DirectorManager::sceneRenderState = this;
    //Run through any directors that are flagged to run during the 'Rendering' timing
    DirectorManager::get()->update(DirectorManager::TimingGroup::Rendering);
+   DirectorManager::sceneRenderState = nullptr;
 
    PROFILE_END();
 

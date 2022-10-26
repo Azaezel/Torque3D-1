@@ -17,7 +17,7 @@ class ComponentInstance : public SimObject
    friend Component;
 
 protected:
-   static Vector<ComponentInstance> sComponentInstanceList;
+   static Vector<ComponentInstance*> sComponentInstanceList;
 
    U32  mDirtyMaskBits;
    bool mIsServerObject;
@@ -98,5 +98,5 @@ public:
    ComponentField* getComponentField(const char* fieldName);
 
    //
-   static Vector<ComponentInstance>* getComponentInstList() { return &sComponentInstanceList; };
+   static Vector<ComponentInstance*>* getComponentInstList() { return &sComponentInstanceList; };
 };

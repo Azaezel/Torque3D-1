@@ -5,6 +5,8 @@
 
 #include "game/components/componentObject.h"
 
+class SceneRenderState;
+
 class DirectorManager;
 
 class Director
@@ -74,4 +76,7 @@ public:
    {
       mDirectors.remove(director);
    }*/
+
+   //This is gross and temporary
+   static SceneRenderState* sceneRenderState;
 };
