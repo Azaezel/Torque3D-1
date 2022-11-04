@@ -15,7 +15,9 @@ struct ComponentField
    StringTableEntry mFieldName;
    StringTableEntry mFieldDescription;
 
-   StringTableEntry mFieldType;
+   StringTableEntry mFieldTypeName;
+   S32 mFieldType;
+
    StringTableEntry mUserData;
 
    StringTableEntry mDefaultValue;

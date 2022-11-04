@@ -6,7 +6,9 @@
 #include "core/stream/bitStream.h"
 #include "math/mathIO.h"
 #include "core/stream/fileStream.h"
-
+#include "T3D/assets/ImageAsset.h"
+#include "T3D/assets/ShapeAsset.h"
+#include "T3D/assets/MaterialAsset.h"
 //-----------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------
@@ -124,9 +126,43 @@ void Component::addComponentField(const char* fieldName, const char* desc, const
          return;
    }
 
+   //find the field type
+   S32 fieldTypeMask = -1;
+   StringTableEntry fieldType = StringTable->insert(type);
+
+   if (fieldType == StringTable->insert("int"))
+      fieldTypeMask = TypeS32;
+   else if (fieldType == StringTable->insert("float"))
+      fieldTypeMask = TypeF32;
+   else if (fieldType == StringTable->insert("vector"))
+      fieldTypeMask = TypePoint3F;
+   else if (fieldType == StringTable->insert("material") || fieldType == StringTable->insert("TypeMaterialAssetId"))
+      fieldTypeMask = TypeMaterialAssetId;
+   else if (fieldType == StringTable->insert("image") || fieldType == StringTable->insert("TypeImageAssetId"))
+      fieldTypeMask = TypeImageAssetId;
+   else if (fieldType == StringTable->insert("shape") || fieldType == StringTable->insert("TypeShapeAssetId"))
+      fieldTypeMask = TypeShapeAssetId;
+   else if (fieldType == StringTable->insert("bool"))
+      fieldTypeMask = TypeBool;
+   else if (fieldType == StringTable->insert("object"))
+      fieldTypeMask = TypeSimObjectPtr;
+   else if (fieldType == StringTable->insert("string"))
+      fieldTypeMask = TypeString;
+   else if (fieldType == StringTable->insert("colorI"))
+      fieldTypeMask = TypeColorI;
+   else if (fieldType == StringTable->insert("colorF"))
+      fieldTypeMask = TypeColorF;
+   else if (fieldType == StringTable->insert("ease"))
+      fieldTypeMask = TypeEaseF;
+   else
+      fieldTypeMask = -1;
+
    ComponentField field;
    field.mFieldName = stFieldName;
-   field.mFieldType = StringTable->insert(type ? type : "");
+
+   field.mFieldTypeName = fieldType;
+   field.mFieldType = fieldTypeMask;
+
    field.mUserData = StringTable->insert(userData ? userData : "");
    field.mDefaultValue = StringTable->insert(defaultValue ? defaultValue : "");
    field.mFieldDescription = getDescriptionText(desc);
