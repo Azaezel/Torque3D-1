@@ -4,6 +4,7 @@
 #include <gfx/gfxTransformSaver.h>
 #include "scene/sceneRenderState.h"
 #include "renderInstance/renderPassManager.h"
+#include "materials/baseMatInstance.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(RenderMeshComponent);
 
@@ -78,7 +79,7 @@ void RenderMeshComponentInstance::destroyInstance()
    delete this;
 }
 
-void RenderMeshComponentInstance::update(const MatrixF& transform)
+void RenderMeshComponentInstance::update(const MatrixF& _transform)
 {
    SceneRenderState* state = DirectorManager::sceneRenderState;
    if (!state)
@@ -87,6 +88,15 @@ void RenderMeshComponentInstance::update(const MatrixF& transform)
    ObjectRenderInst* ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
    ri->type = RenderPassManager::RIT_Editor;
 
+   transform = _transform;
+
+   //do the work
+   ri->renderDelegate.bind(this, &RenderMeshComponentInstance::drawDebug);
+   state->getRenderPass()->addInst(ri);
+}
+
+void RenderMeshComponentInstance::drawDebug(ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance*)
+{
    GFXTransformSaver saver;
 
    GFXStateBlockDesc desc;
@@ -97,10 +107,7 @@ void RenderMeshComponentInstance::update(const MatrixF& transform)
 
    bounds.setCenter(transform.getPosition());
 
-   //do the work
    GFX->getDrawUtil()->drawCube(desc, bounds, ColorI(255, 0, 0, 255));
-
-   state->getRenderPass()->addInst(ri);
 }
 
 //==================================================================================================

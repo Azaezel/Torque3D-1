@@ -152,6 +152,8 @@ bool GuiInspectorComponentGroup::inspectGroup()
          fieldTypeId = TypeCommand;
       else if (field->mFieldType == StringTable->insert("filename"))
          fieldTypeId = TypeStringFilename;
+      else
+         fieldTypeId = TypeStringFilename;
 
       GuiInspectorField *fieldGui = constructField(fieldTypeId);
       if (fieldGui == NULL)

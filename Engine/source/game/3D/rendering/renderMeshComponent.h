@@ -29,6 +29,9 @@ public:
    virtual ComponentInstance* createInstance(ComponentObject* owner);
 };
 
+class ObjectRenderInst;
+class BaseMatInstance;
+
 //
 class RenderMeshComponentInstance : public ComponentInstance
 {
@@ -38,6 +41,8 @@ class RenderMeshComponentInstance : public ComponentInstance
 private:
    static Vector<RenderMeshComponentInstance*> sComponentInstanceList;
 
+   MatrixF transform;
+
 public:
    RenderMeshComponentInstance() { mComponentData = nullptr; mOwner = nullptr; }
    RenderMeshComponentInstance(const RenderMeshComponent& componentData, const ComponentObject& owner);
@@ -46,6 +51,8 @@ public:
    virtual void destroyInstance();
 
    virtual void update(const MatrixF& transform);
+
+   void drawDebug(ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance*);
 };
 
 //
