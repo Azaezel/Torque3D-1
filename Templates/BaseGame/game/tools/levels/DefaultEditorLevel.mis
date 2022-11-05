@@ -59,6 +59,12 @@ new Scene(EditorTemplateLevel) {
    };
    new Entity() {
       _component0 = "TestCubeRenderComponent";
+
+   };
+   new Entity() {
+      position = "2.27998 -7.99243 7.99376";
+      _component0 = "TestRenderComponent	ShapeAsset	Prototyping:ConePrimitive_shape";
+
    };
 };
 //--- OBJECT WRITE END ---

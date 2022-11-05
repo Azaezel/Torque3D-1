@@ -1239,76 +1239,42 @@ static void writeTabs(Stream& stream, U32 count)
 
 void Entity::write(Stream& stream, U32 tabStop, U32 flags)
 {
-   // Do *not* call parent on this
-
-   /*VectorPtr<ComponentObject *> &componentList = lockComponentList();
-   // export selected only?
-   if( ( flags & SelectedOnly ) && !isSelected() )
-   {
-   for( BehaviorObjectIterator i = componentList.begin(); i != componentList.end(); i++ )
-   (*i)->write(stream, tabStop, flags);
-
-   goto write_end;
-   }*/
-
-   //catch if we have any written behavior fields already in the file, and clear them. We don't need to double-up
-   //the entries for no reason.
-   /*if(getFieldDictionary())
-   {
-   //get our dynamic field count, then parse through them to see if they're a behavior or not
-
-   //reset it
-   SimFieldDictionary* fieldDictionary = getFieldDictionary();
-   SimFieldDictionaryIterator itr(fieldDictionary);
-   for (S32 i = 0; i < fieldDictionary->getNumFields(); i++)
-   {
-   if (!(*itr))
-   break;
-
-   SimFieldDictionary::Entry* entry = *itr;
-   if(strstr(entry->slotName, "_behavior"))
-   {
-   entry->slotName = "";
-   entry->value = "";
-   }
-
-   ++itr;
-   }
-   }*/
-   //all existing written behavior fields should be cleared. now write the object block
-
    writeTabs(stream, tabStop);
-
    char buffer[1024];
    dSprintf(buffer, sizeof(buffer), "new %s(%s) {\r\n", getClassName(), getName() ? getName() : "");
    stream.write(dStrlen(buffer), buffer);
    writeFields(stream, tabStop + 1);
 
-   stream.write(1, "\n");
+   //stream.write(1, "\n");
    ////first, write out our behavior objects
 
    // NOW we write the behavior fields proper
    if (mComponents.size() > 0)
    {
       // Pack out the behaviors into fields
-      for (U32 i = 0; i < mComponents.size(); i++)
+      U32 i = 0;
+      for (U32 i=0; i < mComponents.size(); i++)
       {
+         ComponentInstance* bi = mComponents[i];
+
          writeTabs(stream, tabStop + 1);
-         dSprintf(buffer, sizeof(buffer), "new %s() {\r\n", mComponents[i]->getComponentData().getClassName());
+
+         StringTableEntry compFieldData = bi->writeComponentFields();
+
+         char buffer[1024];
+         if(compFieldData != StringTable->EmptyString())
+            dSprintf(buffer, sizeof(buffer), "_component%d = \"%s\t%s", i, bi->getComponentData().getName(), compFieldData);
+         else
+            dSprintf(buffer, sizeof(buffer), "_component%d = \"%s", i, bi->getComponentData().getName());
+
          stream.write(dStrlen(buffer), buffer);
-         //bi->writeFields( stream, tabStop + 2 );
 
-         //mComponents[i]->packToStream(stream, tabStop + 2, i - 1, flags);
-
-         writeTabs(stream, tabStop + 1);
-         stream.write(4, "};\r\n");
+         stream.write(4, "\";\r\n");
       }
    }
 
    //
-   //if (size() > 0)
-   //   stream.write(2, "\r\n");
-
+   stream.write(2, "\r\n");
    for (U32 i = 0; i < size(); i++)
    {
       SimObject* child = (*this)[i];
@@ -1316,13 +1282,8 @@ void Entity::write(Stream& stream, U32 tabStop, U32 flags)
          child->write(stream, tabStop + 1, flags);
    }
 
-   //stream.write(2, "\r\n");
-
    writeTabs(stream, tabStop);
    stream.write(4, "};\r\n");
-
-   //write_end:
-   //unlockComponentList();
 }
 
 SimObject* Entity::getTamlChild(const U32 childIndex) const

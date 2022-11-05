@@ -87,6 +87,8 @@ public:
    void addComponentField(const char* fieldName, const char* desc, const char* type, const char* defaultValue = NULL, const char* userData = NULL, bool hidden = false);
    void addComponentField(ComponentField newField);
 
+   StringTableEntry writeComponentFields();
+
    inline S32 getComponentFieldCount() { return mComponentFields.size(); };
 
    /// Gets a ComponentField by its index in the mFields vector 

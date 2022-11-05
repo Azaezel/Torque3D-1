@@ -111,6 +111,7 @@ bool GuiInspectorComponentGroup::inspectGroup()
    for (AbstractClassRep::FieldList::iterator itr = fieldList.begin();
       itr != fieldList.end(); ++itr)
    {
+      break;
       AbstractClassRep::Field* field = &(*itr);
 
       if (field->type == AbstractClassRep::StartGroupFieldType)

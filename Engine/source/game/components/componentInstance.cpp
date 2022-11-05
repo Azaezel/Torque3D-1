@@ -251,6 +251,40 @@ void ComponentInstance::addComponentField(ComponentField newField)
    mComponentFields.push_back(newField);
 }
 
+StringTableEntry ComponentInstance::writeComponentFields()
+{
+   String output;
+
+   for (U32 i = 0; i < mComponentFields.size(); i++)
+   {
+      //we don't need to write the templateName field
+      if (mComponentFields[i].mFieldName == StringTable->insert("templateName"))
+         continue;
+
+      StringTableEntry fieldData = StringTable->insert(getDataField(mComponentFields[i].mFieldName, NULL));
+
+      if (fieldData == StringTable->EmptyString())
+         fieldData = mComponentFields[i].mDefaultValue;
+
+      //if we have literally no data at all on this field, skip writing it
+      if (fieldData == StringTable->EmptyString())
+         continue;
+
+      //If the data we have is identical to the component template data, no point in writing it out
+      StringTableEntry templateData = StringTable->insert(getComponentDataPtr()->getDataField(mComponentFields[i].mFieldName, NULL));
+      if (templateData == fieldData)
+         continue;
+
+      output += mComponentFields[i].mFieldName + String("\t") + fieldData;
+
+      if (i + 1 < mComponentFields.size())
+         output += "\t";
+   }
+
+   return StringTable->insert(output.c_str());
+}
+
+
 void ComponentInstance::removeBehaviorField(const char* fieldName)
 {
    for (U32 i = 0; i < mComponentFields.size(); i++)
