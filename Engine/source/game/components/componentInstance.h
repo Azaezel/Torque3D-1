@@ -14,6 +14,8 @@ struct ComponentField;
 
 class ComponentInstance : public SimObject
 {
+   typedef SimObject Parent;
+
    friend Component;
 
 protected:
@@ -36,6 +38,8 @@ public:
    ComponentInstance() { mComponentData = nullptr; mOwner = nullptr; }
    ComponentInstance(const Component& componentData, const ComponentObject& ownerEntity);
    ~ComponentInstance();
+
+   static void initPersistFields();
 
    virtual void packToStream(Stream& stream, U32 tabStop, S32 behaviorID, U32 flags = 0);
 
@@ -96,6 +100,11 @@ public:
    }
 
    ComponentField* getComponentField(const char* fieldName);
+
+   virtual void onStaticModified(const char* slotName, const char* newValue); ///< Called when a static field is modified.
+   virtual void onDynamicModified(const char* slotName, const char* newValue = NULL); ///< Called when a dynamic field is modified.
+   /// This is what we actually use to check if the modified field is one of our behavior fields. If it is, we update and make the correct callbacks
+   void checkBehaviorFieldModified(const char* slotName, const char* newValue);
 
    //
    static Vector<ComponentInstance*>* getComponentInstList() { return &sComponentInstanceList; };

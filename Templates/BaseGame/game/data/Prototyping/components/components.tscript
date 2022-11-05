@@ -6,3 +6,9 @@ datablock RenderMeshComponent(TestRenderComponent)
 {
    isNetworked = true;
 };
+
+datablock RenderMeshComponent(TestCubeRenderComponent)
+{
+   isNetworked = true;
+   shapeAsset = "Prototyping:CubePrimitive_shape";
+};

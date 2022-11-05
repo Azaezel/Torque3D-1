@@ -94,8 +94,9 @@ ComponentInstance* Component::createInstance(ComponentObject* owner)
    return compInst;
 }
 
-bool Component::setupFields(ComponentInstance* bi, bool forceSetup) const
+bool Component::setupFields(ComponentInstance* bi, bool forceSetup)
 {
+   //now any dynamic, behavior fields
    for (S32 i = 0; i < mFields.size(); ++i)
    {
       ComponentField& field = const_cast<ComponentField&>(mFields[i]);
@@ -108,7 +109,13 @@ bool Component::setupFields(ComponentInstance* bi, bool forceSetup) const
       const char* data = bi->getDataField(StringTable->insert(field.mFieldName), NULL);
 
       if (forceSetup || !dStrcmp(data, ""))
-         bi->setDataField(field.mFieldName, NULL, field.mDefaultValue);
+      {
+         const char* newData = getDataField(StringTable->insert(field.mFieldName), NULL);
+         if (!newData)
+            newData = field.mDefaultValue;
+
+         bi->setDataField(field.mFieldName, NULL, newData);
+      }
    }
 
    return true;

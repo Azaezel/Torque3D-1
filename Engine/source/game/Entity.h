@@ -131,6 +131,8 @@ public:
    virtual void   advanceTime(F32 dt);
    virtual void   interpolateTick(F32 delta);
 
+   void addComponents();
+
    //
    // Networking
    //

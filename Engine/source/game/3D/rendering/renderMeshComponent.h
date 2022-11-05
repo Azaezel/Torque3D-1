@@ -6,11 +6,16 @@
 #include "game/directors/directorManager.h"
 //#include "game/3D/transforms/transform3DComponent.h"
 
+#include "T3D/assets/ShapeAsset.h"
+
 class RenderMeshDirector;
 
 class RenderMeshComponent : public Component
 {
    typedef Component Parent;
+
+private:
+   void onShapeChange() {}
 
 public:
    RenderMeshComponent();
@@ -35,6 +40,8 @@ class BaseMatInstance;
 //
 class RenderMeshComponentInstance : public ComponentInstance
 {
+   typedef ComponentInstance Parent;
+
    friend RenderMeshComponent;
    friend RenderMeshDirector;
 
@@ -43,16 +50,34 @@ private:
 
    MatrixF transform;
 
+   TSShapeInstance* mShapeInstance;
+
+   void onShapeChange() {}
+   DECLARE_SHAPEASSET(RenderMeshComponentInstance, Shape, onShapeChange);
+   DECLARE_ASSET_SETGET(RenderMeshComponentInstance, Shape);
+
 public:
+   DECLARE_CONOBJECT(RenderMeshComponentInstance);
+
    RenderMeshComponentInstance() { mComponentData = nullptr; mOwner = nullptr; }
    RenderMeshComponentInstance(const RenderMeshComponent& componentData, const ComponentObject& owner);
    ~RenderMeshComponentInstance();
+
+   static void initPersistFields();
 
    virtual void destroyInstance();
 
    virtual void update(const MatrixF& transform);
 
    void drawDebug(ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance*);
+
+   //
+   virtual U32 packUpdate(NetConnection* con, U32 mask, BitStream* stream);
+   virtual void unpackUpdate(NetConnection* con, BitStream* stream);
+
+   //
+   void updateShape();
+   void setupShape();
 };
 
 //

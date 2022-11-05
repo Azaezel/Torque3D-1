@@ -107,15 +107,15 @@ bool GuiInspectorComponentGroup::inspectGroup()
    ComponentInstance* compInst = ownerObj->getComponentInstanceByData(const_cast<Component*>(mTargetComponent));
 
    //first, relevent static fields
-   AbstractClassRep::FieldList& fieldList = mTargetComponent->getClassRep()->mFieldList;
+   AbstractClassRep::FieldList& fieldList = compInst->getClassRep()->mFieldList;
    for (AbstractClassRep::FieldList::iterator itr = fieldList.begin();
       itr != fieldList.end(); ++itr)
    {
-      break;
       AbstractClassRep::Field* field = &(*itr);
+
       if (field->type == AbstractClassRep::StartGroupFieldType)
       {
-         // If we're dealing with general fields, always set grabItems to true (to skip them)
+         // If we're dealing with general fields, always set grabItems to true (to skip them)d
          if (bNoGroup == true)
             bGrabItems = true;
          else if (dStricmp(field->pGroupname, mCaption) == 0)

@@ -64,7 +64,7 @@ public:
    //
    virtual ComponentInstance* createInstance(ComponentObject* owner);
 
-   bool setupFields(ComponentInstance* bi, bool forceSetup = false) const;
+   bool setupFields(ComponentInstance* bi, bool forceSetup = false);
 
    //
    /// @name Adding Named Fields

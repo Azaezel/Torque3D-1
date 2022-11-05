@@ -58,6 +58,7 @@ new Scene(EditorTemplateLevel) {
          dirtyGameObject = "0";
    };
    new Entity() {
+      _component0 = "TestCubeRenderComponent";
    };
 };
 //--- OBJECT WRITE END ---

@@ -29,4 +29,4 @@
    {\
       static RemoveComponentSignal removedComponentSignal;\
       return removedComponentSignal;\
-   }\
+   }

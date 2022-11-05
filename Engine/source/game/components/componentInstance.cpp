@@ -28,6 +28,11 @@ void ComponentInstance::destroyInstance()
    delete this;
 }
 
+void ComponentInstance::initPersistFields()
+{
+   Parent::initPersistFields();
+}
+
 void ComponentInstance::update()
 {
 }
@@ -230,6 +235,8 @@ void ComponentInstance::addComponentField(const char* fieldName, const char* des
    field.mHidden = hidden;
 
    mComponentFields.push_back(field);
+
+
 }
 
 void ComponentInstance::addComponentField(ComponentField newField)
@@ -255,6 +262,64 @@ void ComponentInstance::removeBehaviorField(const char* fieldName)
    }
 
    setDataField(fieldName, NULL, "");
+}
+
+void ComponentInstance::onStaticModified(const char* slotName, const char* newValue)
+{
+   Parent::onStaticModified(slotName, newValue);
+
+   //If we don't have an owner yet, then this is probably the initial setup, so we don't need the console callbacks yet.
+   if (!mOwner)
+      return;
+
+   //onDataSet.trigger(this, slotName, newValue);
+
+   checkBehaviorFieldModified(slotName, newValue);
+}
+
+void ComponentInstance::onDynamicModified(const char* slotName, const char* newValue)
+{
+   Parent::onDynamicModified(slotName, newValue);
+
+   //If we don't have an owner yet, then this is probably the initial setup, so we don't need the console callbacks yet.
+   if (!mOwner)
+      return;
+
+   checkBehaviorFieldModified(slotName, newValue);
+}
+
+void ComponentInstance::checkBehaviorFieldModified(const char* slotName, const char* newValue)
+{
+   StringTableEntry slotNameEntry = StringTable->insert(slotName);
+   //find if it's a behavior field
+   for (int i = 0; i < getComponentFieldCount(); i++)
+   {
+      ComponentField* field = getComponentField(i);
+      if (field->mFieldName == slotNameEntry)
+      {
+         setMaskBits(-1); //ensure the update bumps through
+
+         //we have a match, do the script callback that we updated a field
+         if (isMethod("onInspectorUpdate"))
+            Con::executef(this, "onInspectorUpdate", slotName);
+
+         /*BehaviorFieldInterface *bInterface = mOwner->getInterface<BehaviorFieldInterface)();
+
+         BehaviorInterface *bInterface = dynamic_cast<BehaviorFieldInterface*>(mOwner->getInterface(NULL, "behaviorFieldUpdate", NULL));
+
+         if(bInterface)
+         {
+         BehaviorFieldInterface *bInterface = dynamic_cast<BehaviorFieldInterface*>(bInterface)
+         bInterface->onFieldChange(slotName, newValue);
+         }*/
+
+         //Lastly, notify up to our owner's parent(s). If one is a prefab, we inform it it's now dirty
+         /*Prefab* p = Prefab::getPrefabByChild(mOwner);
+         if (p)
+            p->setDirty();
+         return;*/
+      }
+   }
 }
 
 void ComponentInstance::packToStream(Stream& stream, U32 tabStop, S32 behaviorID, U32 flags /* = 0  */)

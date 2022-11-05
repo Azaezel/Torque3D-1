@@ -55,6 +55,8 @@ bool Entity::onAdd()
 
    addToScene();
 
+   addComponents();
+
    //Make sure we get positioned
    if (isServerObject())
    {
@@ -80,6 +82,91 @@ void Entity::onRemove()
    onDataSet.removeAll();
 
    Parent::onRemove();
+}
+
+void Entity::addComponents()
+{
+   const char* bField = "";
+   const char* sField = "";
+
+   // Check for data fields which contain packed behaviors, and instantiate them
+   // As a side note, this is the most obfuscated conditional block I think I've ever written   
+   for (int i = 0; dStrcmp(bField = getDataField(StringTable->insert(avar("_component%d", i)), NULL), "") != 0; i++)
+   {
+      AssertFatal((StringUnit::getUnitCount(bField, "\t") - 1) % 2 == 0, "Fields should always be in sets of two!");
+
+      // Grab the template name, make sure the sim knows about it or we are hosed anyway
+      StringTableEntry templateName = StringTable->insert(StringUnit::getUnit(bField, 0, "\t"));
+      Component* tpl = dynamic_cast<Component*>(Sim::findObject(templateName));
+      if (tpl == NULL)
+      {
+         // If anyone wants to know, let them.
+         /*if (isMethod("onBehaviorMissing"))
+            Con::executef(this, "onBehaviorMissing", templateName);
+         else
+            Con::warnf("ComponentObject::addBehaviors - Missing Behavior %s", templateName);*/
+
+         // Skip it, it's invalid.
+         setDataField(StringTable->insert(avar("_component%d", i)), NULL, "");
+
+         continue;
+      }
+
+      // create instance
+      if (!addComponent(tpl))
+         continue;
+
+      ComponentInstance* inst = mComponents[mComponents.size() - 1];
+
+      // Sub loop to set up the fields with the values that got written out
+      S32 index = 1;
+      while (index < StringUnit::getUnitCount(bField, "\t"))
+      {
+         StringTableEntry slotName = StringTable->insert(StringUnit::getUnit(bField, index++, "\t"));
+         const char* slotValue = StringUnit::getUnit(bField, index++, "\t");
+
+         //check if it's a regular behavior field, or one of our special instanced fields
+         if (!tpl->getComponentField(slotName))
+            inst->addComponentField(slotName, slotValue);
+         else
+            inst->setDataField(slotName, NULL, slotValue);
+      }
+
+      //check for sub fields to this
+      for (int sfi = 1; dStrcmp(sField = getDataField(StringTable->insert(avar("_component%d_%d", i, sfi)), NULL), "") != 0; sfi++)
+      {
+         S32 sindex = 0;
+         while (sindex < StringUnit::getUnitCount(sField, "\t"))
+         {
+            StringTableEntry slotName = StringTable->insert(StringUnit::getUnit(sField, sindex++, "\t"));
+            const char* slotValue = StringUnit::getUnit(sField, sindex++, "\t");
+
+            //check if it's a regular behavior field, or one of our special instanced fields
+            if (!tpl->getComponentField(slotName))
+               inst->addComponentField(slotName, slotValue);
+            else
+               inst->setDataField(slotName, NULL, slotValue);
+         }
+
+         setDataField(StringTable->insert(avar("_component%d_%d", i, sfi)), NULL, "");
+      }
+
+      //clear the dynamic fields of the behaviors so they're not cluttering the insepctor
+      setDataField(StringTable->insert(avar("_component%d", i)), NULL, "");
+   }
+
+   //Callback for letting scripts know we're done loading our behaviors
+   //if (isServerObject())
+   //   Con::executef(this, "onBehaviorsLoaded");
+
+   //Now alert the behaviors they've been added for their callback
+   /*for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      if (isServerObject()) {
+         if (mComponents[i]->isMethod("onAdd"))
+            Con::executef(mComponents[i], "onAdd");
+      }
+   }*/
 }
 
 //
