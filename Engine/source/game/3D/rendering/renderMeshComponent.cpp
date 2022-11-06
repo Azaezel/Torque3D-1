@@ -252,7 +252,7 @@ void RenderMeshComponentInstance::unpackUpdate(NetConnection* con, BitStream* st
 //==================================================================================================
 RenderMeshDirector::RenderMeshDirector() : Director()
 {
-   mTimingGroup = DirectorManager::Rendering;
+   mTimingGroup = DirectorManager::TimingGroup::Rendering;
    RenderMeshComponent::getAddedComponentSignal().notify(this, &RenderMeshDirector::registerComponent);
    RenderMeshComponent::getRemovedComponentSignal().notify(this, &RenderMeshDirector::unregisterComponent);
 }

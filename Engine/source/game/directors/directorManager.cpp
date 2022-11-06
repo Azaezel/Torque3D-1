@@ -7,7 +7,6 @@ SceneRenderState* DirectorManager::sceneRenderState = nullptr;
 
 DirectorManager::DirectorManager()
 {
-   
 }
 
 DirectorManager::~DirectorManager()
@@ -25,33 +24,20 @@ void DirectorManager::update(TimingGroup currentTiming)
 {
    for (U32 i = 0; i < mDirectors.size(); i++)
    {
+      //If the director's timing group matches, we run the update
       if (mDirectors[i]->mTimingGroup == currentTiming)
       {
-         //RenderMeshDirector* renderDir = dynamic_cast<RenderMeshDirector*>(mDirectors[i]);
-         //if(renderDir)
          mDirectors[i]->update();
       }
    }
 }
 
-/*void DirectorManager::registerComponent(ComponentObject* owner, const Component& comp)
-{
-   for (U32 i = 0; i < mDirectors.size(); i++)
-   {
-      mDirectors[i].registerComponent(owner, comp);
-   }
-}
-
-void DirectorManager::unregisterComponent(ComponentObject* owner, const Component& comp)
-{
-
-}*/
 //
 //
 //
 Director::Director()
 {
-   mTimingGroup = 0;
+   mTimingGroup = DirectorManager::TimingGroup::Sim;
 }
 Director::~Director()
 {

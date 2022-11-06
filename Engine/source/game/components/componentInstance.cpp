@@ -192,6 +192,7 @@ void ComponentInstance::addComponentField(const char* fieldName, const char* des
    else
       fieldTypeMask = -1;
 
+   //Setup the actual field
    ComponentField field;
    field.mFieldName = stFieldName;
 
@@ -203,11 +204,13 @@ void ComponentInstance::addComponentField(const char* fieldName, const char* des
 
    field.mHidden = hidden;
 
+   //Save it off
    mComponentFields.push_back(field);
 }
 
 void ComponentInstance::addComponentField(ComponentField newField)
 {
+   //Check if we have an existing field with the same name
    for (U32 i = 0; i < mComponentFields.size(); i++)
    {
       //if we have a match on an existing component field, we don't need to add another one.
@@ -215,6 +218,7 @@ void ComponentInstance::addComponentField(ComponentField newField)
          return;
    }
 
+   //Save it off
    mComponentFields.push_back(newField);
 }
 
@@ -230,6 +234,7 @@ StringTableEntry ComponentInstance::writeComponentFields()
 
       StringTableEntry fieldData = StringTable->insert(getDataField(mComponentFields[i].mFieldName, NULL));
 
+      //If the data we have for that field is blank, use the default value
       if (fieldData == StringTable->EmptyString())
          fieldData = mComponentFields[i].mDefaultValue;
 
@@ -242,6 +247,7 @@ StringTableEntry ComponentInstance::writeComponentFields()
       if (templateData == fieldData)
          continue;
 
+      //Append the string
       output += mComponentFields[i].mFieldName + String("\t") + fieldData;
 
       if (i + 1 < mComponentFields.size())
@@ -282,7 +288,8 @@ void ComponentInstance::checkComponentFieldModified(const char* slotName, const 
       ComponentField* field = getComponentField(i);
       if (field->mFieldName == slotNameEntry)
       {
-         setMaskBits(-1); //ensure the update bumps through
+         //ensure the update bumps through
+         setMaskBits(-1); 
 
          //we have a match, do the script callback that we updated a field
          if (isMethod("onInspectorUpdate"))
