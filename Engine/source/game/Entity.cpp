@@ -74,7 +74,7 @@ bool Entity::onAdd()
 
 void Entity::onRemove()
 {
-   clearComponents(true);
+   clearComponents();
 
    // Remove this object from the scene
    removeFromScene();
@@ -1200,10 +1200,6 @@ bool Entity::removeComponent(Component* comp)
 
    if (mComponents.remove(compInst))
    {
-      //AssertFatal(comp->isProperlyAdded(), "Don't know how but a component is not registered w/ the sim");
-
-      //setComponentsDirty();
-
       comp->removeComponent(this);
 
       compInst->destroyInstance();
@@ -1283,22 +1279,6 @@ void Entity::write(Stream& stream, U32 tabStop, U32 flags)
 
    writeTabs(stream, tabStop);
    stream.write(4, "};\r\n");
-}
-
-SimObject* Entity::getTamlChild(const U32 childIndex) const
-{
-   // Sanity!
-   AssertFatal(childIndex < getTamlChildCount(), "SimSet::getTamlChild() - Child index is out of range.");
-
-   // For when the assert is not used.
-   if (childIndex >= getTamlChildCount())
-      return NULL;
-
-   //we always order components first, child objects second
-   if (childIndex >= getComponentCount())
-      return at(childIndex - getComponentCount());
-   else
-      return getComponent(childIndex);
 }
 //
 void Entity::onCameraScopeQuery(NetConnection* connection, CameraScopeQuery* query)

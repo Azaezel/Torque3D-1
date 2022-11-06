@@ -188,24 +188,6 @@ public:
    //
    virtual void write(Stream &stream, U32 tabStop, U32 flags);
 
-   // TamlChildren
-   virtual U32 getTamlChildCount(void) const
-   {
-      U32 componentCount = getComponentCount();
-      U32 childSize = (U32)size();
-      return componentCount + childSize;
-   }
-
-   virtual SimObject* getTamlChild(const U32 childIndex) const;
-
-   virtual void addTamlChild(SimObject* pSimObject)
-   {
-      // Sanity!
-      AssertFatal(pSimObject != NULL, "SimSet::addTamlChild() - Cannot add a NULL child object.");
-
-      addObject(pSimObject);
-   }
-   
    //
    // Editing
    //

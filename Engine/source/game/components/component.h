@@ -98,10 +98,6 @@ public:
    //We lean into this to register associated directors at startup time so they're always ready and registered to the DirectorManager
    static void consoleInit();
 
-   //Normal networking boilerplate
-   virtual void packData  (BitStream* stream);
-   virtual void unpackData(BitStream* stream);
-
    /// <summary>
    /// This sets up some common, boilerplate signal calls that hook into the Director notifications
    /// Namely, when a component is added or removed, the signals will inform the associated director
@@ -118,9 +114,7 @@ public:
    /// <returns>The created ComponentInstance</returns>
    virtual ComponentInstance* createInstance(ComponentObject* owner);
 
-   /// @name Fields
-   /// @{
-   
+#pragma region Field Management
    /// <summary>
    /// This function sets up the component fields on a componentInstance
    /// When called, it will iterate over the componentFields and duplicate
@@ -167,9 +161,20 @@ public:
    /// <param name="fieldName">The name of the field in the mField vector we're looking for</param>
    /// <returns>Pointer to the ComponentField found at the index</returns>
    ComponentField* getComponentField(const char* fieldName);
+#pragma endregion
 
-   /// @}
+#pragma region Networking
+   virtual void packData(BitStream* stream);
+   virtual void unpackData(BitStream* stream);
 
+   /// <summary>
+   /// Returns if the component is marked to be networked or not.
+   /// Specifically, this is used to indicate to owner ComponentObjects to handle the networking process
+   /// for the component and its derived instances
+   /// </summary>
+   /// <returns>A boolean via the var mNetworked</returns>
+   bool isNetworked() const { return mNetworked; }
+#pragma endregion
 
    /// <summary>
    /// Gets the type of the component. Used as a group or categorization of the type, ie "Render" or "Physics"
@@ -179,23 +184,10 @@ public:
    const char* getComponentType() const { return mComponentType; }
 
    /// <summary>
-   /// Returns if the component is marked to be networked or not.
-   /// Specifically, this is used to indicate to owner ComponentObjects to handle the networking process
-   /// for the component and its derived instances
-   /// </summary>
-   /// <returns>A boolean via the var mNetworked</returns>
-   bool isNetworked() const { return mNetworked; }
-
-
-   /// @name Description
-   /// @{
-   /// <summary>
    /// A utility function that processes a string to be formatted in a way that can be easily packed into the mDescription field for the component
    /// </summary>
    /// <param name="desc">The string description to be processed</param>
    /// <returns>The final, processed string description</returns>
    const char* getDescriptionText(const char* desc);
-
-   /// @}
 };
 

@@ -1,5 +1,6 @@
 #include "componentObject.h"
 
+#pragma region Add/Remove Functions
 bool ComponentObject::addComponent(Component* component)
 {
    mComponents.push_back(component->createInstance(this));
@@ -20,12 +21,49 @@ bool ComponentObject::removeComponent(Component* component)
    }
 
    component->removeComponent(this);
-   
 
    return false;
 }
 
-void ComponentObject::setComponentNetMask(ComponentInstance* comp, U32 mask)
+void ComponentObject::clearComponents()
+{
+   while (mComponents.size() > 0)
+   {
+      removeComponent(mComponents.first()->getComponentDataPtr());
+   }
+}
+#pragma endregion
+
+
+#pragma region ComponentInstance Management
+ComponentInstance* ComponentObject::getComponentInstance(StringTableEntry componentType)
+{
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      //Check the template component's type. If it matches we're good
+      if (mComponents[i]->getComponentData().getComponentType() == componentType)
+         return mComponents[i];
+   }
+
+   return NULL;
+}
+
+ComponentInstance* ComponentObject::getComponentInstanceByData(Component* component)
+{
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      //Check if the id of the template component matches the passed in component
+      if (mComponents[i]->getComponentData().getId() == component->getId())
+         return mComponents[i];
+   }
+
+   return nullptr;
+}
+#pragma endregion
+
+
+#pragma region Network Handling
+void ComponentObject::setComponentNetMask(ComponentInstance* comp, const U32& mask)
 {
    for (U32 i = 0; i < mNetworkedComponents.size(); i++)
    {
@@ -45,69 +83,28 @@ void ComponentObject::setComponentNetMask(ComponentInstance* comp, U32 mask)
 
 void ComponentObject::setComponentsDirty()
 {
-   /*if (mToLoadComponents.empty())
-      mStartComponentUpdate = true;
-
-   //we need to build a list of behaviors that need to be pushed across the network
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      // We can do this because both are in the string table
-      Component *comp = mComponents[i];
-
-      if (comp->isNetworked())
-      {
-         bool unique = true;
-         for (U32 i = 0; i < mToLoadComponents.size(); i++)
-         {
-            if (mToLoadComponents[i]->getId() == comp->getId())
-            {
-               unique = false;
-               break;
-            }
-         }
-         if (unique)
-            mToLoadComponents.push_back(comp);
-      }
+      //force general update
+      mComponents[i]->setMaskBits(-1); 
    }
-
-   setMaskBits(ComponentsMask);*/
 }
 
-void ComponentObject::setComponentDirty(Component* comp, bool forceUpdate)
+void ComponentObject::setComponentDirty(Component* comp)
 {
    for (U32 i = 0; i < mComponents.size(); i++)
    {
+      //If the pass-in and template component's id's match, mark the instance's bits
       if (mComponents[i]->getComponentData().getId() == comp->getId())
       {
-         mComponents[i]->setMaskBits(-1); //force general update
+         //force general update
+         mComponents[i]->setMaskBits(-1); 
          return;
       }
    }
-
-   //if (!found)
-   //   return;
-
-   //if(mToLoadComponents.empty())
-   //	mStartComponentUpdate = true;
-
-   /*if (comp->isNetworked() || forceUpdate)
-   {
-      bool unique = true;
-      for (U32 i = 0; i < mToLoadComponents.size(); i++)
-      {
-         if (mToLoadComponents[i]->getId() == comp->getId())
-         {
-            unique = false;
-            break;
-         }
-      }
-      if (unique)
-         mToLoadComponents.push_back(comp);
-   }
-
-   setMaskBits(ComponentsMask);*/
-
 }
+#pragma endregion
+
 
 void ComponentObject::notifyComponents(String signalFunction, String argA, String argB, String argC, String argD, String argE)
 {
@@ -122,50 +119,4 @@ void ComponentObject::notifyComponents(String signalFunction, String argA, Strin
             Con::executef(comp, signalFunction, argA, argB, argC, argD, argE);
       }
    }*/
-}
-
-//////////////////////////////////////////////////////////////////////////
-//NOTE:
-//The actor class calls this and flags the deletion of the behaviors to false so that behaviors that should no longer be attached during
-//a network update will indeed be removed from the object. The reason it doesn't delete them is because when clearing the local behavior
-//list, it would delete them, purging the ghost, and causing a crash when the unpack update tried to fetch any existing behaviors' ghosts
-//to re-add them. Need to implement a clean clear function that will clear the local list, and only delete unused behaviors during an update.
-void ComponentObject::clearComponents(bool deleteComponents)
-{
-   while (mComponents.size() > 0)
-   {
-      removeComponent(mComponents.first()->getComponentDataPtr());
-   }
-}
-
-ComponentInstance* ComponentObject::getComponent(const U32 index) const
-{
-   if (index < mComponents.size())
-      return const_cast<ComponentInstance*>(mComponents[index]);
-
-   return nullptr;
-}
-
-ComponentInstance* ComponentObject::getComponent(StringTableEntry componentType)
-{
-   for (U32 i = 0; i < mComponents.size(); i++)
-   {
-      ComponentInstance* comp = const_cast<ComponentInstance*>(mComponents[i]);
-
-      if (comp->getComponentData().getComponentType() == componentType)
-         return comp;
-   }
-
-   return NULL;
-}
-
-ComponentInstance* ComponentObject::getComponentInstanceByData(Component* component)
-{
-   for (U32 i = 0; i < mComponents.size(); i++)
-   {
-      if (mComponents[i]->getComponentData().getId() == component->getId())
-         return mComponents[i];
-   }
-
-   return nullptr;
 }

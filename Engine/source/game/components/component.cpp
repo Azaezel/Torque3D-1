@@ -57,17 +57,6 @@ void Component::initPersistFields()
    addField("isNetworked", TypeBool, Offset(mNetworked, Component), "Indicates if this component should be networked down to the client or not");
 }
 
-//--------------------------------------------------------------------------
-void Component::packData(BitStream* stream)
-{
-   Parent::packData(stream);
-}
-
-void Component::unpackData(BitStream* stream)
-{
-   Parent::unpackData(stream);
-}
-
 ComponentInstance* Component::createInstance(ComponentObject* owner)
 {
    ComponentInstance* compInst = new ComponentInstance(*this, *owner);
@@ -89,6 +78,7 @@ ComponentInstance* Component::createInstance(ComponentObject* owner)
    return compInst;
 }
 
+#pragma region Field Management
 bool Component::setupFields(ComponentInstance* componentInstance, bool forceSetup)
 {
    for (S32 i = 0; i < mFields.size(); ++i)
@@ -118,8 +108,6 @@ bool Component::setupFields(ComponentInstance* componentInstance, bool forceSetu
 
    return true;
 }
-
-//////////////////////////////////////////////////////////////////////////
 
 void Component::addComponentField(const char* fieldName, const char* desc, const char* type, const char* defaultValue /* = NULL */, const char* userData /* = NULL */, /*const char* dependency /* = NULL *//*,*/ bool hidden /* = false */)
 {
@@ -189,7 +177,21 @@ ComponentField* Component::getComponentField(const char* fieldName)
 
    return NULL;
 }
-//////////////////////////////////////////////////////////////////////////
+#pragma endregion
+
+
+#pragma region Networking
+void Component::packData(BitStream* stream)
+{
+   Parent::packData(stream);
+}
+
+void Component::unpackData(BitStream* stream)
+{
+   Parent::unpackData(stream);
+}
+#pragma endregion
+
 
 const char* Component::getDescriptionText(const char* desc)
 {

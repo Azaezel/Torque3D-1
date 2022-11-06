@@ -50,6 +50,7 @@ public:
 /// Directors with that timing to themselves perform their update work.
 /// This keeps the core engine update sequencing simple and puts the burden of the work on the Directors, allowing the rest of the engine to be cleaner and
 /// simpler to process through.
+/// 
 /// Directors are registered to the Manager generally at initialization time, via ConsoleInit function invokes, so the Directors are registered and ready before
 /// anything in the engine actually attempts to do work.
 /// </summary>
