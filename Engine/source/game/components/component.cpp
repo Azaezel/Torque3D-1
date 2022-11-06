@@ -1,10 +1,10 @@
-#include "platform/platform.h"
 #include "component.h"
 
+#include "platform/platform.h"
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
 #include "core/stream/bitStream.h"
-#include "math/mathIO.h"
+
 #include "core/stream/fileStream.h"
 #include "T3D/assets/ImageAsset.h"
 #include "T3D/assets/ShapeAsset.h"
@@ -18,18 +18,14 @@ IMPLEMENT_CO_DATABLOCK_V1(Component);
 IMPL_COMP_REGISTER_SIGNALS(Component);
 
 ConsoleDocClass( Component,
-   "@brief \n"
+   "@brief Component is a datablock-based class of object. It's used as a template for associated ComponentInstances\n"
    "@ingroup Datablocks\n"
 );
 
 Component::Component() :
    mFriendlyName(StringTable->EmptyString()),
    mDescription(StringTable->EmptyString()),
-   mFromResource(StringTable->EmptyString()),
-   mComponentGroup(StringTable->EmptyString()),
    mComponentType(StringTable->EmptyString()),
-   mNetworkType(StringTable->EmptyString()),
-   mTemplateName(StringTable->EmptyString()),
    mNetworked(false)
 {
 }
@@ -39,6 +35,8 @@ bool Component::onAdd()
    if (!Parent::onAdd())
       return false;
 
+   //All componentInstances need the template name, so it's done as a componentField here. This way it's always
+   //set up on the created instances, and it's derived from the component's name as per the default field being the getName()
    addComponentField("templateName", "Name of the Component this ComponentInstance is templated from", "String", getName());
 
    return true;
@@ -47,23 +45,16 @@ bool Component::onAdd()
 void Component::consoleInit()
 {
    Parent::consoleInit();
-
-   //DirectorManager::get()->addDirector(ComponentDirector());
 }
 
 void Component::initPersistFields()
 {
    Parent::initPersistFields();
 
-   addField("friendlyName", TypeString, Offset(mFriendlyName, Component), "");
-   addField("description", TypeString, Offset(mDescription, Component), "");
-   addField("componentGroup", TypeString, Offset(mComponentGroup, Component), "");
-   addField("componentType", TypeString, Offset(mComponentType, Component), "");
-   
-   addField("networkType", TypeString, Offset(mNetworkType, Component), "");
-   addField("templateName", TypeString, Offset(mTemplateName, Component), "");
-
-   addField("isNetworked", TypeBool, Offset(mNetworked, Component), "");
+   addField("friendlyName", TypeString, Offset(mFriendlyName, Component), "This is the human-friendly name. Mainly just used for editor interface stuff");
+   addField("description", TypeString, Offset(mDescription, Component), "Description of the component");
+   addField("componentType", TypeString, Offset(mComponentType, Component), "The category group this component fits into. For organizational purposes in the editor, ie \"Render\" or \"Physics\"");
+   addField("isNetworked", TypeBool, Offset(mNetworked, Component), "Indicates if this component should be networked down to the client or not");
 }
 
 //--------------------------------------------------------------------------
@@ -82,6 +73,9 @@ ComponentInstance* Component::createInstance(ComponentObject* owner)
    ComponentInstance* compInst = new ComponentInstance(*this, *owner);
 
    setupFields(compInst, true);
+
+   //Now we register the component to the static list that contains all the ComponentInstances(of the explicit class)
+   //This gives us a memory-coherent list to iterate over when doing work on components, improving cache coherency
    ComponentInstance::getComponentInstList()->push_back(compInst);
 
    //It's important to note we never actually register the ComponentInstance created.
@@ -91,30 +85,34 @@ ComponentInstance* Component::createInstance(ComponentObject* owner)
    //worry about the console touching the Instance while something else is working it in a thread
    //It's safely held in our static list above, so we never have to worry about it going out of scope or cleaned up
    //when we don't want it to be
+
    return compInst;
 }
 
-bool Component::setupFields(ComponentInstance* bi, bool forceSetup)
+bool Component::setupFields(ComponentInstance* componentInstance, bool forceSetup)
 {
-   //now any dynamic, behavior fields
    for (S32 i = 0; i < mFields.size(); ++i)
    {
       ComponentField& field = const_cast<ComponentField&>(mFields[i]);
 
-      bi->addComponentField(field);
+      //Add the field from us to the compInstance
+      componentInstance->addComponentField(field);
 
       //check if this field already has data or not
-      //if it's blank, we're good to continue setting it.
-      //bi->getClassRep()->findField(
-      const char* data = bi->getDataField(StringTable->insert(field.mFieldName), NULL);
+      //if it's blank or we're going to force it, we're good to continue setting it.
+      const char* data = componentInstance->getDataField(StringTable->insert(field.mFieldName), NULL);
 
       if (forceSetup || !dStrcmp(data, ""))
       {
+         //Now we check to see if the component has existing data
+         //If so, this indicates the field was overridden and we want to use that data
+         //If not, then we'll use the default value from the componentField define
          const char* newData = getDataField(StringTable->insert(field.mFieldName), NULL);
          if (!newData)
             newData = field.mDefaultValue;
 
-         bi->setDataField(field.mFieldName, NULL, newData);
+         //Now set the instance's field data
+         componentInstance->setDataField(field.mFieldName, NULL, newData);
       }
    }
 
@@ -173,8 +171,6 @@ void Component::addComponentField(const char* fieldName, const char* desc, const
    field.mUserData = StringTable->insert(userData ? userData : "");
    field.mDefaultValue = StringTable->insert(defaultValue ? defaultValue : "");
    field.mFieldDescription = getDescriptionText(desc);
-
-   field.mGroup = mComponentGroup;
 
    field.mHidden = hidden;
 
@@ -238,25 +234,4 @@ const char* Component::getDescriptionText(const char* desc)
    //ResourceManager->closeStream(stream);
 
    return newDesc;
-}
-
-void Component::beginFieldGroup(const char* groupName)
-{
-   if (dStrcmp(mComponentGroup, ""))
-   {
-      Con::errorf("Component: attempting to begin new field group with a group already begun!");
-      return;
-   }
-
-   mComponentGroup = StringTable->insert(groupName);
-}
-
-void Component::endFieldGroup()
-{
-   mComponentGroup = StringTable->insert("");
-}
-
-void Component::addDependency(StringTableEntry name)
-{
-   mDependencies.push_back_unique(name);
 }

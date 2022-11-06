@@ -86,8 +86,6 @@ bool GuiInspectorComponentGroup::inspectGroup()
    // to prevent crazy resizing, we'll just freeze our stack for a sec..
    mStack->freeze(true);
 
-   bool bNoGroup = false;
-
    bool bNewItems = false;
    bool bMakingArray = false;
    GuiStackControl *pArrayStack = NULL;
@@ -107,7 +105,7 @@ bool GuiInspectorComponentGroup::inspectGroup()
    ComponentInstance* compInst = ownerObj->getComponentInstanceByData(const_cast<Component*>(mTargetComponent));
 
    //first, relevent static fields
-   AbstractClassRep::FieldList& fieldList = compInst->getClassRep()->mFieldList;
+   /*AbstractClassRep::FieldList& fieldList = compInst->getClassRep()->mFieldList;
    for (AbstractClassRep::FieldList::iterator itr = fieldList.begin();
       itr != fieldList.end(); ++itr)
    {
@@ -141,7 +139,7 @@ bool GuiInspectorComponentGroup::inspectGroup()
          || field->pFieldname == StringTable->insert("internalName"))
          continue;
 
-      if (/*(bGrabItems == true || (bNoGroup == true && bGrabItems == false)) &&*/ itr->type != AbstractClassRep::DeprecatedFieldType)
+      if (/*(bGrabItems == true || (bNoGroup == true && bGrabItems == false)) &&*//* itr->type != AbstractClassRep::DeprecatedFieldType)
       {
          if (bNoGroup == true && bGrabItems == true)
             continue;
@@ -360,7 +358,7 @@ bool GuiInspectorComponentGroup::inspectGroup()
             }
          }
       }
-   }
+   }*/
 
    for (U32 i = 0; i < compInst->getComponentFieldCount(); i++)
    {

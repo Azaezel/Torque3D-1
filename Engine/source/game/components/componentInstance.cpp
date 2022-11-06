@@ -8,18 +8,17 @@ Vector<ComponentInstance*> ComponentInstance::sComponentInstanceList;
 
 IMPLEMENT_CONOBJECT(ComponentInstance);
 
-ComponentInstance::ComponentInstance(const Component& componentData, const ComponentObject& owner)
+ComponentInstance::ComponentInstance(const Component& componentData, const ComponentObject& owner) :
+   mIsServerObject(true),
+   mDirtyMaskBits(0),
+   mEnabled(true)
 {
    mComponentData = &componentData;
    mOwner = &owner;
-
-   mIsServerObject = true;
-   mDirtyMaskBits = 0;
 }
 
 ComponentInstance::~ComponentInstance()
 {
-   //ComponentInstance::sComponentInstanceList.clear();
 }
 
 void ComponentInstance::destroyInstance()
@@ -37,16 +36,13 @@ void ComponentInstance::update()
 {
 }
 
-void ComponentInstance::updateDelta(F32 dt)
-{
-}
-
 void ComponentInstance::setMaskBits(U32 orMask)
 {
    AssertFatal(orMask != 0, "Invalid net mask bits set.");
 
    if (mOwner)
    {
+      //We have a valid owner, so tell it that it needs to be marked dirty for network updates for components
       (const_cast<ComponentObject*>(mOwner))->setComponentNetMask(this, orMask);
    }
 }
@@ -155,28 +151,6 @@ void ComponentInstance::unpackUpdate(NetConnection* con, BitStream* stream)
    }*/
 }
 
-void ComponentInstance::addComponentField(const char* fieldName, const char* value)
-{
-   //if this field already exists, just update it.
-   /*for(U32 i=0; i < mComponentFields.size(); i++)
-   {
-      if(!dStrcmp(mComponentFields[i].mFieldName, fieldName)){
-         mComponentFields[i].mDefaultValue = StringTable->insert(value);
-         setDataField( mComponentFields[i].mFieldName, NULL, mComponentFields[i].mDefaultValue );
-         return;
-      }
-   }
-
-   //Otherwise, set the field up, and store it
-   behaviorFields field;
-   field.mFieldName = StringTable->insert(fieldName);
-   field.mDefaultValue = StringTable->insert(value);
-
-   mComponentFields.push_back(field);
-
-   setDataField( field.mFieldName, NULL, field.mDefaultValue );*/
-}
-
 void ComponentInstance::addComponentField(const char* fieldName, const char* desc, const char* type, const char* defaultValue /* = NULL */, const char* userData /* = NULL */, /*const char* dependency /* = NULL *//*,*/ bool hidden /* = false */)
 {
    StringTableEntry stFieldName = StringTable->insert(fieldName);
@@ -226,17 +200,10 @@ void ComponentInstance::addComponentField(const char* fieldName, const char* des
 
    field.mUserData = StringTable->insert(userData ? userData : "");
    field.mDefaultValue = StringTable->insert(defaultValue ? defaultValue : "");
-   //field.mFieldDescription = getDescriptionText(desc);
-
-   //field.mDependency = StringTable->insert(dependency ? dependency : "");
-
-   field.mGroup = mComponentGroup;
 
    field.mHidden = hidden;
 
    mComponentFields.push_back(field);
-
-
 }
 
 void ComponentInstance::addComponentField(ComponentField newField)
@@ -284,20 +251,6 @@ StringTableEntry ComponentInstance::writeComponentFields()
    return StringTable->insert(output.c_str());
 }
 
-
-void ComponentInstance::removeBehaviorField(const char* fieldName)
-{
-   for (U32 i = 0; i < mComponentFields.size(); i++)
-   {
-      if (!dStrcmp(mComponentFields[i].mFieldName, fieldName)) {
-         mComponentFields.erase(i);
-         return;
-      }
-   }
-
-   setDataField(fieldName, NULL, "");
-}
-
 void ComponentInstance::onStaticModified(const char* slotName, const char* newValue)
 {
    Parent::onStaticModified(slotName, newValue);
@@ -306,9 +259,7 @@ void ComponentInstance::onStaticModified(const char* slotName, const char* newVa
    if (!mOwner)
       return;
 
-   //onDataSet.trigger(this, slotName, newValue);
-
-   checkBehaviorFieldModified(slotName, newValue);
+   checkComponentFieldModified(slotName, newValue);
 }
 
 void ComponentInstance::onDynamicModified(const char* slotName, const char* newValue)
@@ -319,10 +270,10 @@ void ComponentInstance::onDynamicModified(const char* slotName, const char* newV
    if (!mOwner)
       return;
 
-   checkBehaviorFieldModified(slotName, newValue);
+   checkComponentFieldModified(slotName, newValue);
 }
 
-void ComponentInstance::checkBehaviorFieldModified(const char* slotName, const char* newValue)
+void ComponentInstance::checkComponentFieldModified(const char* slotName, const char* newValue)
 {
    StringTableEntry slotNameEntry = StringTable->insert(slotName);
    //find if it's a behavior field
@@ -354,11 +305,4 @@ void ComponentInstance::checkBehaviorFieldModified(const char* slotName, const c
          return;*/
       }
    }
-}
-
-void ComponentInstance::packToStream(Stream& stream, U32 tabStop, S32 behaviorID, U32 flags /* = 0  */)
-{
-   char buffer[1024];
-
-   writeFields(stream, tabStop);
 }

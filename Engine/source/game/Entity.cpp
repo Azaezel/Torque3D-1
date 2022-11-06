@@ -126,9 +126,9 @@ void Entity::addComponents()
          const char* slotValue = StringUnit::getUnit(bField, index++, "\t");
 
          //check if it's a regular behavior field, or one of our special instanced fields
-         if (!tpl->getComponentField(slotName))
-            inst->addComponentField(slotName, slotValue);
-         else
+         //if (!tpl->getComponentField(slotName))
+         //   inst->addComponentField(slotName, slotValue);
+         //else
             inst->setDataField(slotName, NULL, slotValue);
       }
 
@@ -142,9 +142,9 @@ void Entity::addComponents()
             const char* slotValue = StringUnit::getUnit(sField, sindex++, "\t");
 
             //check if it's a regular behavior field, or one of our special instanced fields
-            if (!tpl->getComponentField(slotName))
-               inst->addComponentField(slotName, slotValue);
-            else
+            //if (!tpl->getComponentField(slotName))
+            //   inst->addComponentField(slotName, slotValue);
+            //else
                inst->setDataField(slotName, NULL, slotValue);
          }
 
@@ -1037,7 +1037,7 @@ void Entity::onMount(SceneObject* obj, S32 node)
    deleteNotify(obj);
 
    // Are we mounting to a GameBase object?
-   Entity* entityObj = dynamic_cast<Entity*>(obj);
+   //Entity* entityObj = dynamic_cast<Entity*>(obj);
 
    //if (entityObj && entityObj->getControlObject() != this)
    //   processAfter(entityObj);
@@ -1054,7 +1054,7 @@ void Entity::onUnmount(SceneObject* obj, S32 node)
 {
    clearNotify(obj);
 
-   Entity* entityObj = dynamic_cast<Entity*>(obj);
+   //Entity* entityObj = dynamic_cast<Entity*>(obj);
 
    //if (entityObj && entityObj->getControlObject() != this)
    //   clearProcessAfter();
@@ -1240,9 +1240,9 @@ static void writeTabs(Stream& stream, U32 count)
 void Entity::write(Stream& stream, U32 tabStop, U32 flags)
 {
    writeTabs(stream, tabStop);
-   char buffer[1024];
-   dSprintf(buffer, sizeof(buffer), "new %s(%s) {\r\n", getClassName(), getName() ? getName() : "");
-   stream.write(dStrlen(buffer), buffer);
+   char objectBuffer[1024];
+   dSprintf(objectBuffer, sizeof(objectBuffer), "new %s(%s) {\r\n", getClassName(), getName() ? getName() : "");
+   stream.write(dStrlen(objectBuffer), objectBuffer);
    writeFields(stream, tabStop + 1);
 
    //stream.write(1, "\n");
@@ -1252,7 +1252,6 @@ void Entity::write(Stream& stream, U32 tabStop, U32 flags)
    if (mComponents.size() > 0)
    {
       // Pack out the behaviors into fields
-      U32 i = 0;
       for (U32 i=0; i < mComponents.size(); i++)
       {
          ComponentInstance* bi = mComponents[i];
@@ -1261,13 +1260,13 @@ void Entity::write(Stream& stream, U32 tabStop, U32 flags)
 
          StringTableEntry compFieldData = bi->writeComponentFields();
 
-         char buffer[1024];
+         char fieldBuffer[1024];
          if(compFieldData != StringTable->EmptyString())
-            dSprintf(buffer, sizeof(buffer), "_component%d = \"%s\t%s", i, bi->getComponentData().getName(), compFieldData);
+            dSprintf(fieldBuffer, sizeof(fieldBuffer), "_component%d = \"%s\t%s", i, bi->getComponentData().getName(), compFieldData);
          else
-            dSprintf(buffer, sizeof(buffer), "_component%d = \"%s", i, bi->getComponentData().getName());
+            dSprintf(fieldBuffer, sizeof(fieldBuffer), "_component%d = \"%s", i, bi->getComponentData().getName());
 
-         stream.write(dStrlen(buffer), buffer);
+         stream.write(dStrlen(fieldBuffer), fieldBuffer);
 
          stream.write(4, "\";\r\n");
       }

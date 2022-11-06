@@ -48,6 +48,9 @@ class RenderMeshComponentInstance : public ComponentInstance
 private:
    static Vector<RenderMeshComponentInstance*> sComponentInstanceList;
 
+   /// <summary>
+   /// This is purely as a temporary variable for testing/validation purposes
+   /// </summary>
    MatrixF transform;
 
    TSShapeInstance* mShapeInstance;
@@ -59,7 +62,16 @@ private:
 public:
    DECLARE_CONOBJECT(RenderMeshComponentInstance);
 
+   /// <summary>
+   /// Obligatory default constructor
+   /// </summary>
    RenderMeshComponentInstance() { mComponentData = nullptr; mOwner = nullptr; }
+   /// <summary>
+   /// The main constructor actually utilized by DOCs
+   /// This will assign the template componentData and owner ComponentObject for this componentInstance
+   /// </summary>
+   /// <param name="componentData">Template Component</param>
+   /// <param name="owner">Owner ComopnentObject</param>
    RenderMeshComponentInstance(const RenderMeshComponent& componentData, const ComponentObject& owner);
    ~RenderMeshComponentInstance();
 
