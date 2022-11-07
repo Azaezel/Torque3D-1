@@ -166,17 +166,20 @@ void RenderMeshComponentInstance::update(const MatrixF& _transform)
    if (!state)
       return;
 
+   //We'll do a renderDelegate call to drawDebug() here when the editor is open
+   //so we can visualize that the componentInstance is drawing, even if we don't have a valid
+   //shape instance
    ObjectRenderInst* ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
    ri->type = RenderPassManager::RIT_Editor;
-
-   transform = _transform;
-
-   //do the work
    ri->renderDelegate.bind(this, &RenderMeshComponentInstance::drawDebug);
    state->getRenderPass()->addInst(ri);
 
+   //Check if we have a valid shapeInstance
    if (!mEnabled || !mOwner || !mShapeInstance)
       return;
+
+   //We do, so we can do the work to draw the actual mesh
+   transform = _transform;
 
    Point3F cameraOffset;
    transform.getColumn(3, &cameraOffset);
@@ -201,26 +204,10 @@ void RenderMeshComponentInstance::update(const MatrixF& _transform)
    rdata.setFadeOverride(1.0f);
    rdata.setOriginSort(false);
 
-   // We might have some forward lit materials
-   // so pass down a query to gather lights.
-   //LightQuery query;
-  // query.init(mOwner->getWorldSphere());
-   //rdata.setLightQuery(&query);
-
-  /* if (mOwner->isMounted())
-   {
-      MatrixF wrldPos = mOwner->getWorldTransform();
-      Point3F wrldPosPos = wrldPos.getPosition();
-
-      Point3F mntPs = mat.getPosition();
-      EulerF mntRt = RotationF(mat).asEulerF();
-
-      bool tr = true;
-   }*/
-
    //mat.scale(objScale);
    GFX->setWorldMatrix(transform);
 
+   //Now we tell the shapeInstance to actually draw
    mShapeInstance->render(rdata);
 }
 
