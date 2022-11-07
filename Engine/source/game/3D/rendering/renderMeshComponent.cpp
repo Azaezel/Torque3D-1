@@ -19,6 +19,7 @@ bool RenderMeshComponent::onAdd()
    if (!Parent::onAdd())
       return false;
 
+   //Registers a component field to the field name 'shapeAsset', which via the init persist fields in the Instance, hooks back into the instance's Shape asset stuff
    addComponentField("ShapeAsset", "The Shape Asset to be rendered by this component", "TypeShapeAssetId");
 
    return true;
@@ -28,6 +29,7 @@ void RenderMeshComponent::consoleInit()
 {
    Parent::consoleInit();
 
+   //We'll register the RenderMeshDirector to the DirectorManager, so it's ready to go at runtime
    DirectorManager::get()->mDirectors.push_back(new RenderMeshDirector());
 }
 
@@ -68,6 +70,7 @@ RenderMeshComponentInstance::RenderMeshComponentInstance(const RenderMeshCompone
    mComponentData = &componentData;
    mOwner = &owner;
 
+   //Init the shape asset
    INIT_ASSET(Shape);
 
    mShapeInstance = nullptr;
@@ -81,14 +84,19 @@ void RenderMeshComponentInstance::initPersistFields()
 {
    Parent::initPersistFields();
 
+   //As noted above, we set up the init persist fields here for the shape asset field, which shares a name back with the componentField. This creates a nice truncated list
+   //of component fields that still tie back against the main instance fields and thus the internal vars. This lets us interop with the inspector even though the instances
+   //are not registered/script-aware objects
    INITPERSISTFIELD_SHAPEASSET(Shape, RenderMeshComponentInstance, "");
 }
 
 void RenderMeshComponentInstance::updateShape()
 {
+   //If no asset, bail
    if (mShapeAsset.isNull())
       return;
 
+   //Clear any existing shape instances
    if (mShapeInstance)
       SAFE_DELETE(mShapeInstance);
    mShape = NULL;
@@ -98,10 +106,12 @@ void RenderMeshComponentInstance::updateShape()
 
    if (!mShape)
    {
+      //Something went wrong. Bail.
       Con::errorf("RenderMeshComponentInstance::updateShape() - Unable to load shape: %s", mShapeAsset.getAssetId());
       return;
    }
 
+   //set up the shape instance
    setupShape();
 
    //Do this on both the server and client
@@ -142,6 +152,7 @@ void RenderMeshComponentInstance::setupShape()
 {
    mShapeInstance = new TSShapeInstance(mShapeAsset->getShape(), true);
 }
+
 void RenderMeshComponentInstance::destroyInstance()
 {
    RenderMeshComponentInstance::sComponentInstanceList.remove(this);
@@ -252,7 +263,12 @@ void RenderMeshComponentInstance::unpackUpdate(NetConnection* con, BitStream* st
 //==================================================================================================
 RenderMeshDirector::RenderMeshDirector() : Director()
 {
+   //Establish the timing we'll need
    mTimingGroup = DirectorManager::TimingGroup::Rendering;
+
+   //Here, we listen to the RenderMeshComponent's add and remove signaling.
+   //If a RenderMeshComponent(or in other directors, any other components we care about) are added/removed
+   //we can process the component and it's owner to track valid entries the director actually cares about
    RenderMeshComponent::getAddedComponentSignal().notify(this, &RenderMeshDirector::registerComponent);
    RenderMeshComponent::getRemovedComponentSignal().notify(this, &RenderMeshDirector::unregisterComponent);
 }
@@ -264,17 +280,24 @@ RenderMeshDirector::~RenderMeshDirector()
 
 void RenderMeshDirector::registerComponent(ComponentObject* owner, const Component& comp)
 {
+   //We have a valid component we care about added to a ComponentObject
+   //So lets create a ref and add it to the list if it's valid
+   //Because this is called whenever a component this director cares about is added
+   //We can only worry about Objects that match to ALL requirements. Otherwise, we can
+   //completely ignore it for this director's purposes
    RenderMeshEntityRef ref;
    ref.owner = owner;
    ref.mesh = owner->getComponentInstance<RenderMeshComponentInstance>();
    //ref.transform = owner->getComponentInstance<Transform3DComponentInstance>();
 
+   //If all valid, we finally add it
    if(ref.isValid())
       mValidEntriesList.push_back(ref);
 }
 
 void RenderMeshDirector::unregisterComponent(ComponentObject* owner, const Component& comp)
 {
+   //A component's been removed, so track down the entry and remove it from our valid list
    for (U32 i = 0; i < mValidEntriesList.size(); i++)
    {
       if (mValidEntriesList[i].owner == owner)
@@ -287,15 +310,23 @@ void RenderMeshDirector::unregisterComponent(ComponentObject* owner, const Compo
 
 void RenderMeshDirector::update()
 {
+   //Now we loop over all the valid entries we've got and go to work
    for (U32 i = 0; i < mValidEntriesList.size(); i++)
    {
       RenderMeshEntityRef& ref = mValidEntriesList[i];
 
+      //This needs to be done more cleanly, but for rendering, we need to know if we're
+      //on the client or not. If we aren't, no point in continuing
       Entity* ownerEntity = static_cast<Entity*>(ref.owner);
       bool isClient = ownerEntity->isClientObject();
       if (!isClient)
          continue;
 
+      //All good, so we'll pass in the stuff the component needs to do it's work, and let it crunch.
+      //In other directors, we may have structs to pack complex data for the components to work off of.
+      //The reson we do this is to keep the work the components do compartmentalized.
+      //This keeps it more cache friendly, and also threadsafe when we don't have to worry about the components
+      //needing to reach out to any other objects while they work.
       ref.mesh->update(/*ref.transform->getWorldTransform()*/ownerEntity->getTransform());
    }
 }

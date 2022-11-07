@@ -164,7 +164,15 @@ public:
 #pragma endregion
 
 #pragma region Networking
+   /// <summary>
+   /// Packs and special handled data we need to transit to the client when the datablocks are transmitted
+   /// </summary>
+   /// <param name="stream"></param>
    virtual void packData(BitStream* stream);
+   /// <summary>
+   /// Unpacks special-handled data sent to the client during the datablock transmission
+   /// </summary>
+   /// <param name="stream"></param>
    virtual void unpackData(BitStream* stream);
 
    /// <summary>

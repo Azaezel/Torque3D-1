@@ -40,6 +40,10 @@ public:
    /// The primary update function of this Director. It will process through it's valid componentInstance set(s) and indicate to them to do their work.
    /// One can thread the workload of these updates in here, and resolve all active thread tasks before the end of the update function call to ensure
    /// the core of the engine update sequencing is still threadsafe and coherent step-to-step
+   /// ----
+   /// Importantly, the Director removes the need for components to have to talk directly to one another. The Director manages data flow bewteen all components
+   /// it manages during an update to ensure the data is efficiently used, and it lets components be safely compartmentalized, simplifying them and making them
+   /// further threadsafe
    /// </summary>
    virtual void update() {};
 };

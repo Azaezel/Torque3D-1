@@ -70,60 +70,16 @@ DefineEngineMethod(Entity, setBox, void,
    object->setObjectBox(Box3F(-box, box));
 }
 
-
-/*DefineEngineMethod(Entity, callOnComponents, void, (const char* functionName), ,
-   "Get the number of static fields on the object.\n"
-   "@return The number of static fields defined on the object.")
+DefineEngineMethod(Entity, addComponent, bool, (Component* toAddComponent), (nullAsType<Component*>()),
+   "@brief Add a component to the entity\n\n")
 {
-   object->callOnComponents(functionName);
+   return object->addComponent(toAddComponent);
 }
 
-ConsoleMethod(Entity, callMethod, void, 3, 64, "(methodName, argi) Calls script defined method\n"
-   "@param methodName The method's name as a string\n"
-   "@param argi Any arguments to pass to the method\n"
-   "@return No return value"
-   "@note %obj.callMethod( %methodName, %arg1, %arg2, ... );\n")
-
+DefineEngineMethod(Entity, removeComponent, bool, (Component* toRemoveComponent), (nullAsType<Component*>()),
+   "@brief Remove a component from the entity\n")
 {
-   object->callMethodArgList(argc - 1, argv + 2);
-}
-
-ConsoleMethod(Entity, addComponents, void, 2, 2, "() - Add all fielded behaviors\n"
-   "@return No return value")
-{
-   object->addComponents();
-}*/
-
-DefineEngineMethod(Entity, addComponent, bool, (Component* comp), ,
-   "@brief Add a behavior to the object\n"
-   "@param bi The behavior instance to add"
-   "@return (bool success) Whether or not the behavior was successfully added")
-{
-   if (comp != NULL)
-   {
-      bool success = object->addComponent(comp);
-
-      if (success)
-      {
-         //Placed here so we can differentiate against adding a new behavior during runtime, or when we load all
-         //fielded behaviors on mission load. This way, we can ensure that we only call the callback
-         //once everything is loaded. This avoids any problems with looking for behaviors that haven't been added yet, etc.
-         if (comp->isMethod("onBehaviorAdd"))
-            Con::executef(comp, "onBehaviorAdd");
-
-         return true;
-      }
-   }
-
-   return false;
-}
-
-DefineEngineMethod(Entity, removeComponent, bool, (Component* comp, bool deleteComponent), (true),
-   "@param bi The behavior instance to remove\n"
-   "@param deleteBehavior Whether or not to delete the behavior\n"
-   "@return (bool success) Whether the behavior was successfully removed")
-{
-   return object->removeComponent(comp, deleteComponent);
+   return object->removeComponent(toRemoveComponent);
 }
 
 DefineEngineMethod(Entity, clearComponents, void, (), , "Clear all behavior instances\n"
@@ -137,41 +93,15 @@ DefineEngineMethod(Entity, getComponentByIndex, Component*, (S32 index), ,
    "@param index The index of the behavior to get\n"
    "@return (ComponentInstance bi) The behavior instance you requested")
 {
-   return object->getComponent(index);
+   return object->getComponentInstance(index)->getComponentDataPtr();
 }
 
 DefineEngineMethod(Entity, getComponent, Component*, (String componentName), (""),
    "Get the number of static fields on the object.\n"
    "@return The number of static fields defined on the object.")
 {
-   return object->getComponent(componentName);
+   return object->getComponentInstance(componentName)->getComponentDataPtr();
 }
-
-/*ConsoleMethod(Entity, getBehaviorByType, S32, 3, 3, "(string BehaviorTemplateName) - gets a behavior\n"
-   "@param BehaviorTemplateName The name of the template of the behavior instance you want\n"
-   "@return (ComponentInstance bi) The behavior instance you requested")
-{
-   ComponentInstance *bInstance = object->getComponentByType(StringTable->insert(argv[2]));
-
-   return (bInstance != NULL) ? bInstance->getId() : 0;
-}*/
-
-/*ConsoleMethod(Entity, reOrder, bool, 3, 3, "(ComponentInstance inst, [int desiredIndex = 0])\n"
-   "@param inst The behavior instance you want to reorder\n"
-   "@param desiredIndex The index you want the behavior instance to be reordered to\n"
-   "@return (bool success) Whether or not the behavior instance was successfully reordered")
-{
-   Component *inst = dynamic_cast<Component *>(Sim::findObject(argv[1]));
-
-   if (inst == NULL)
-      return false;
-
-   U32 idx = 0;
-   if (argc > 2)
-      idx = dAtoi(argv[2]);
-
-   return object->reOrder(inst, idx);
-}*/
 
 DefineEngineMethod(Entity, getComponentCount, S32, (), ,
    "@brief Get the count of behaviors on an object\n"

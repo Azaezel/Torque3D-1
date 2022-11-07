@@ -1,12 +1,6 @@
 #include "Entity.h"
-
 #include "math/mathIO.h"
-#include "scene/sceneRenderState.h"
 #include "core/stream/bitStream.h"
-#include "materials/sceneData.h"
-#include "gfx/gfxDebugEvent.h"
-#include "gfx/gfxTransformSaver.h"
-#include "renderInstance/renderPassManager.h"
 
 // Client prediction
 static F32 sMinWarpTicks = 0.5f;       // Fraction of tick at which instant warp occurs
@@ -55,7 +49,7 @@ bool Entity::onAdd()
 
    addToScene();
 
-   addComponents();
+   loadComponents();
 
    //Make sure we get positioned
    if (isServerObject())
@@ -82,91 +76,6 @@ void Entity::onRemove()
    onDataSet.removeAll();
 
    Parent::onRemove();
-}
-
-void Entity::addComponents()
-{
-   const char* bField = "";
-   const char* sField = "";
-
-   // Check for data fields which contain packed behaviors, and instantiate them
-   // As a side note, this is the most obfuscated conditional block I think I've ever written   
-   for (int i = 0; dStrcmp(bField = getDataField(StringTable->insert(avar("_component%d", i)), NULL), "") != 0; i++)
-   {
-      AssertFatal((StringUnit::getUnitCount(bField, "\t") - 1) % 2 == 0, "Fields should always be in sets of two!");
-
-      // Grab the template name, make sure the sim knows about it or we are hosed anyway
-      StringTableEntry templateName = StringTable->insert(StringUnit::getUnit(bField, 0, "\t"));
-      Component* tpl = dynamic_cast<Component*>(Sim::findObject(templateName));
-      if (tpl == NULL)
-      {
-         // If anyone wants to know, let them.
-         /*if (isMethod("onBehaviorMissing"))
-            Con::executef(this, "onBehaviorMissing", templateName);
-         else
-            Con::warnf("ComponentObject::addBehaviors - Missing Behavior %s", templateName);*/
-
-         // Skip it, it's invalid.
-         setDataField(StringTable->insert(avar("_component%d", i)), NULL, "");
-
-         continue;
-      }
-
-      // create instance
-      if (!addComponent(tpl))
-         continue;
-
-      ComponentInstance* inst = mComponents[mComponents.size() - 1];
-
-      // Sub loop to set up the fields with the values that got written out
-      S32 index = 1;
-      while (index < StringUnit::getUnitCount(bField, "\t"))
-      {
-         StringTableEntry slotName = StringTable->insert(StringUnit::getUnit(bField, index++, "\t"));
-         const char* slotValue = StringUnit::getUnit(bField, index++, "\t");
-
-         //check if it's a regular behavior field, or one of our special instanced fields
-         //if (!tpl->getComponentField(slotName))
-         //   inst->addComponentField(slotName, slotValue);
-         //else
-            inst->setDataField(slotName, NULL, slotValue);
-      }
-
-      //check for sub fields to this
-      for (int sfi = 1; dStrcmp(sField = getDataField(StringTable->insert(avar("_component%d_%d", i, sfi)), NULL), "") != 0; sfi++)
-      {
-         S32 sindex = 0;
-         while (sindex < StringUnit::getUnitCount(sField, "\t"))
-         {
-            StringTableEntry slotName = StringTable->insert(StringUnit::getUnit(sField, sindex++, "\t"));
-            const char* slotValue = StringUnit::getUnit(sField, sindex++, "\t");
-
-            //check if it's a regular behavior field, or one of our special instanced fields
-            //if (!tpl->getComponentField(slotName))
-            //   inst->addComponentField(slotName, slotValue);
-            //else
-               inst->setDataField(slotName, NULL, slotValue);
-         }
-
-         setDataField(StringTable->insert(avar("_component%d_%d", i, sfi)), NULL, "");
-      }
-
-      //clear the dynamic fields of the behaviors so they're not cluttering the insepctor
-      setDataField(StringTable->insert(avar("_component%d", i)), NULL, "");
-   }
-
-   //Callback for letting scripts know we're done loading our behaviors
-   //if (isServerObject())
-   //   Con::executef(this, "onBehaviorsLoaded");
-
-   //Now alert the behaviors they've been added for their callback
-   /*for (U32 i = 0; i < mComponents.size(); i++)
-   {
-      if (isServerObject()) {
-         if (mComponents[i]->isMethod("onAdd"))
-            Con::executef(mComponents[i], "onAdd");
-      }
-   }*/
 }
 
 //
@@ -218,9 +127,143 @@ void Entity::onStaticModified(const char* slotName, const char* newValue)
    onDataSet.trigger(this, slotName, newValue);
 }
 
-//
-//
-//
+#pragma region Component Handling
+bool Entity::addComponent(Component* comp)
+{
+   if (comp == NULL)
+      return false;
+
+   ComponentInstance* compInst = comp->createInstance(this);
+   compInst->setIsServerObject(isServerObject());
+
+   mComponents.push_back(compInst);
+
+   if (comp->isNetworked())
+   {
+      NetworkedComponent netComp;
+      netComp.componentIndex = mComponents.size() - 1;
+      netComp.updateState = NetworkedComponent::Adding;
+      netComp.updateMaskBits = -1;
+
+      mNetworkedComponents.push_back(netComp);
+
+      setMaskBits(AddComponentsMask);
+      setMaskBits(ComponentsUpdateMask);
+   }
+
+   comp->addComponent(this); //trips the notify system
+
+   return true;
+}
+
+bool Entity::removeComponent(Component* comp)
+{
+   if (comp == NULL)
+      return false;
+
+   ComponentInstance* compInst = getComponentInstanceByData(comp);
+
+   if (compInst == nullptr)
+      return false;
+
+   if (mComponents.remove(compInst))
+   {
+      comp->removeComponent(this);
+
+      compInst->destroyInstance();
+
+      return true;
+   }
+
+   return false;
+}
+
+void Entity::loadComponents()
+{
+   const char* bField = "";
+   const char* sField = "";
+
+   // Check for data fields which contain packed components, and instantiate them
+   for (int i = 0; dStrcmp(bField = getDataField(StringTable->insert(avar("_component%d", i)), NULL), "") != 0; i++)
+   {
+      AssertFatal((StringUnit::getUnitCount(bField, "\t") - 1) % 2 == 0, "Fields should always be in sets of two!");
+
+      // Grab the template name, make sure the sim knows about it or we are hosed anyway
+      StringTableEntry templateName = StringTable->insert(StringUnit::getUnit(bField, 0, "\t"));
+      Component* tpl = dynamic_cast<Component*>(Sim::findObject(templateName));
+      if (tpl == NULL)
+      {
+         // If anyone wants to know, let them.
+         /*if (isMethod("onBehaviorMissing"))
+            Con::executef(this, "onBehaviorMissing", templateName);
+         else
+            Con::warnf("ComponentObject::addBehaviors - Missing Behavior %s", templateName);*/
+
+            // Skip it, it's invalid.
+         setDataField(StringTable->insert(avar("_component%d", i)), NULL, "");
+
+         continue;
+      }
+
+      // create instance
+      if (!addComponent(tpl))
+         continue;
+
+      ComponentInstance* inst = mComponents[mComponents.size() - 1];
+
+      // Sub loop to set up the fields with the values that got written out
+      S32 index = 1;
+      while (index < StringUnit::getUnitCount(bField, "\t"))
+      {
+         StringTableEntry slotName = StringTable->insert(StringUnit::getUnit(bField, index++, "\t"));
+         const char* slotValue = StringUnit::getUnit(bField, index++, "\t");
+
+         //check if it's a regular behavior field, or one of our special instanced fields
+         //if (!tpl->getComponentField(slotName))
+         //   inst->addComponentField(slotName, slotValue);
+         //else
+         inst->setDataField(slotName, NULL, slotValue);
+      }
+
+      //check for sub fields to this
+      for (int sfi = 1; dStrcmp(sField = getDataField(StringTable->insert(avar("_component%d_%d", i, sfi)), NULL), "") != 0; sfi++)
+      {
+         S32 sindex = 0;
+         while (sindex < StringUnit::getUnitCount(sField, "\t"))
+         {
+            StringTableEntry slotName = StringTable->insert(StringUnit::getUnit(sField, sindex++, "\t"));
+            const char* slotValue = StringUnit::getUnit(sField, sindex++, "\t");
+
+            //check if it's a regular behavior field, or one of our special instanced fields
+            //if (!tpl->getComponentField(slotName))
+            //   inst->addComponentField(slotName, slotValue);
+            //else
+            inst->setDataField(slotName, NULL, slotValue);
+         }
+
+         setDataField(StringTable->insert(avar("_component%d_%d", i, sfi)), NULL, "");
+      }
+
+      //clear the dynamic fields of the behaviors so they're not cluttering the insepctor
+      setDataField(StringTable->insert(avar("_component%d", i)), NULL, "");
+   }
+
+   //Callback for letting scripts know we're done loading our behaviors
+   //if (isServerObject())
+   //   Con::executef(this, "onBehaviorsLoaded");
+
+   //Now alert the behaviors they've been added for their callback
+   /*for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      if (isServerObject()) {
+         if (mComponents[i]->isMethod("onAdd"))
+            Con::executef(mComponents[i], "onAdd");
+      }
+   }*/
+}
+#pragma endregion
+
+#pragma region World/Transform
 /*void Entity::setTransform(const MatrixF& mat)
 {
    // Let SceneObject handle all of the matrix manipulation
@@ -591,9 +634,30 @@ void Entity::getRenderMountTransform(F32 delta, S32 index, const MatrixF& xfm, M
    // Then let SceneObject handle it.
    Parent::getMountTransform(index, xfm, outMat);
 }
-//
-// Updating
-//
+
+void Entity::onCameraScopeQuery(NetConnection* connection, CameraScopeQuery* query)
+{
+   // Object itself is in scope.
+   Parent::onCameraScopeQuery(connection, query);
+
+   /*CameraComponent* cameraComp = getComponent<CameraComponent>(sCameraComponentType);
+   if (cameraComp != nullptr)
+   {
+      cameraComp->onCameraScopeQuery(connection, query);
+   }*/
+}
+
+void Entity::setObjectBox(const Box3F& objBox)
+{
+   mObjBox = objBox;
+   resetWorldBox();
+
+   if (isServerObject())
+      setMaskBits(BoundsMask);
+}
+#pragma endregion
+
+#pragma region Sim/Updates
 void Entity::processTick(const Move* move)
 {
    //This would presumably be behaviors execution?
@@ -741,10 +805,9 @@ void Entity::interpolateTick(F32 dt)
 
    mDelta.dt = dt;
 }
+#pragma endregion
 
-//
-// Networking
-//
+#pragma region Networking
 U32 Entity::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 {
    U32 retMask = Parent::packUpdate(conn, mask, stream);
@@ -1017,10 +1080,9 @@ void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
       linkNamespaces();
    }*/
 }
+#pragma endregion
 
-//
-// Mounting and heirarchy manipulation
-//
+#pragma region Heirarchy/Mounting
 void Entity::mountObject(SceneObject* objB, const MatrixF& txfm)
 {
    Parent::mountObject(objB, -1, txfm);
@@ -1160,56 +1222,6 @@ void Entity::removeObject(SimObject* object)
    Parent::removeObject(object);
 }
 
-bool Entity::addComponent(Component* comp)
-{
-   if (comp == NULL)
-      return false;
-
-   ComponentInstance* compInst = comp->createInstance(this);
-   compInst->setIsServerObject(isServerObject());
-
-   mComponents.push_back(compInst);
-
-   if (comp->isNetworked())
-   {
-      NetworkedComponent netComp;
-      netComp.componentIndex = mComponents.size() - 1;
-      netComp.updateState = NetworkedComponent::Adding;
-      netComp.updateMaskBits = -1;
-
-      mNetworkedComponents.push_back(netComp);
-
-      setMaskBits(AddComponentsMask);
-      setMaskBits(ComponentsUpdateMask);
-   }
-
-   comp->addComponent(this); //trips the notify system
-
-   return true;
-}
-
-bool Entity::removeComponent(Component* comp)
-{
-   if (comp == NULL)
-      return false;
-
-   ComponentInstance* compInst = getComponentInstanceByData(comp);
-
-   if (compInst == nullptr)
-      return false;
-
-   if (mComponents.remove(compInst))
-   {
-      comp->removeComponent(this);
-
-      compInst->destroyInstance();
-
-      return true;
-   }
-
-   return false;
-}
-
 SimObject* Entity::findObjectByInternalName(StringTableEntry internalName, bool searchChildren)
 {
    for (U32 i = 0; i < mComponents.size(); i++)
@@ -1222,10 +1234,9 @@ SimObject* Entity::findObjectByInternalName(StringTableEntry internalName, bool 
 
    return Parent::findObjectByInternalName(internalName, searchChildren);
 }
+#pragma endregion
 
-//
-// IO
-//
+#pragma region I/O
 static void writeTabs(Stream& stream, U32 count)
 {
    char tab[] = "   ";
@@ -1280,64 +1291,8 @@ void Entity::write(Stream& stream, U32 tabStop, U32 flags)
    writeTabs(stream, tabStop);
    stream.write(4, "};\r\n");
 }
-//
-void Entity::onCameraScopeQuery(NetConnection* connection, CameraScopeQuery* query)
-{
-   // Object itself is in scope.
-   Parent::onCameraScopeQuery(connection, query);
+#pragma endregion
 
-   /*CameraComponent* cameraComp = getComponent<CameraComponent>(sCameraComponentType);
-   if (cameraComp != nullptr)
-   {
-      cameraComp->onCameraScopeQuery(connection, query);
-   }*/
-}
-//
-void Entity::setObjectBox(const Box3F& objBox)
-{
-   mObjBox = objBox;
-   resetWorldBox();
-
-   if (isServerObject())
-      setMaskBits(BoundsMask);
-}
-
-/*void Entity::updateContainer()
-{
-   PROFILE_SCOPE(Entity_updateContainer);
-
-   // Update container drag and buoyancy properties
-   containerInfo.box = getWorldBox();
-   //containerInfo.mass = mMass;
-
-   getContainer()->findObjects(containerInfo.box, WaterObjectType | PhysicalZoneObjectType, findRouter, &containerInfo);
-
-   //mWaterCoverage = info.waterCoverage;
-   //mLiquidType    = info.liquidType;
-   //mLiquidHeight  = info.waterHeight;   
-   //setCurrentWaterObject( info.waterObject );
-
-   // This value might be useful as a datablock value,
-   // This is what allows the player to stand in shallow water (below this coverage)
-   // without jiggling from buoyancy
-   /*if (info.waterCoverage >= 0.25f)
-   {
-      // water viscosity is used as drag for in water.
-      // ShapeBaseData drag is used for drag outside of water.
-      // Combine these two components to calculate this ShapeBase object's
-      // current drag.
-      mDrag = (info.waterCoverage * info.waterViscosity) +
-         (1.0f - info.waterCoverage) * mDrag;
-      //mBuoyancy = (info.waterDensity / mDataBlock->density) * info.waterCoverage;
-   }
-
-   //mAppliedForce = info.appliedForce;
-   mGravityMod = info.gravityScale;*/
-//}
-
-//
-//
-//
 #ifdef TORQUE_TOOLS
 void Entity::onInspect(GuiInspector* inspector)
 {
@@ -1408,16 +1363,3 @@ void Entity::onEndInspect()
    editorTree->removeItem(componentItemIdx, false);*/
 }
 #endif
-
-DefineEngineMethod(Entity, addComponent, bool, (Component* toAddComponent), (nullAsType<Component*>()),
-   "@brief Add a component to the entity\n\n")
-{
-   return object->addComponent(toAddComponent);
-}
-
-DefineEngineMethod(Entity, removeComponent, bool, (Component* toRemoveComponent), (nullAsType<Component*>()),
-   "@brief Remove a component from the entity\n")
-{
-   return object->removeComponent(toRemoveComponent);
-}
-
