@@ -41,19 +41,31 @@ uniform float4    probeContribColors[MAX_PROBES];
 uniform int skylightCubemapIdx;
 uniform int SkylightDamp;
 
+//variant of https://catlikecoding.com/unity/tutorials/advanced-rendering/triplanar-mapping/
+struct TriplanarUV
+{
+	float2 x, y, z;
+};
+
+float2 GetTriplanarUV(Surface surface)
+{
+	TriplanarUV triUV;
+	float3 p = surface.P;
+	triUV.x = p.zy;
+	triUV.y = p.xz;
+	triUV.z = p.xy;
+    
+    return (triUV.x+triUV.y+triUV.z)/3; 
+}
+
 void dampen(inout Surface surface, float degree)
 {
-
-   float2 wetUV = float2((surface.N.x/surface.N.z),(surface.N.y/surface.N.z)+accumTime*(1.2-surface.roughness));
-   wetUV = lerp(float2((surface.N.x/surface.N.y),(surface.N.z/abs(surface.N.y))+accumTime*(1.2-surface.roughness)),wetUV,abs(surface.N.z)); 
-
-   wetUV += surface.P.xy;
-
+   float speed = accumTime*(1.0-(surface.roughness*surface.N.z))*degree;
+   float2 wetUV = GetTriplanarUV(surface)+float2(speed,speed);  
    float wetness = 1.0-pow(TORQUE_TEX2D(wetMap, wetUV*0.2).b,3);
-   
    surface.roughness = lerp(surface.roughness,min(surface.roughness,wetness),degree);
    surface.baseColor.rgb = lerp(surface.baseColor.rgb,saturate(surface.baseColor.rgb+wetness.xxx),degree);
-   surface.Update();
+   surface.Update(); 
 }
 
 float4 main(PFXVertToPix IN) : SV_TARGET
