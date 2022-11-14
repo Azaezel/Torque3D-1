@@ -95,6 +95,7 @@ const String ShaderGenVars::maxProbeDrawDistance("$maxProbeDrawDistance");
 
 //Skylight
 const String ShaderGenVars::skylightCubemapIdx("$inSkylightCubemapIdx");
+const String ShaderGenVars::skylightDamp("$SkylightDamp");
 
 // These are ignored by the D3D layers.
 const String ShaderGenVars::fogMap("$fogMap");

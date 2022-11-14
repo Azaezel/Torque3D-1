@@ -25,6 +25,8 @@ TORQUE_UNIFORM_SAMPLERCUBEARRAY(irradianceCubemapAR, 5);
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 6);
 uniform float4 rtParams6;
 #endif
+TORQUE_UNIFORM_SAMPLER2D(wetMap, 7);
+uniform float accumTime;
 
 uniform float4    probePosArray[MAX_PROBES];
 uniform float4    refPosArray[MAX_PROBES];
@@ -37,6 +39,22 @@ uniform float4    probeContribColors[MAX_PROBES];
 #endif
 
 uniform int skylightCubemapIdx;
+uniform int SkylightDamp;
+
+void dampen(inout Surface surface, float degree)
+{
+
+   float2 wetUV = float2((surface.N.x/surface.N.z),(surface.N.y/surface.N.z)+accumTime*(1.2-surface.roughness));
+   wetUV = lerp(float2((surface.N.x/surface.N.y),(surface.N.z/abs(surface.N.y))+accumTime*(1.2-surface.roughness)),wetUV,abs(surface.N.z)); 
+
+   wetUV += surface.P.xy;
+
+   float wetness = 1.0-pow(TORQUE_TEX2D(wetMap, wetUV*0.2).b,3);
+   
+   surface.roughness = lerp(surface.roughness,min(surface.roughness,wetness),degree);
+   surface.baseColor.rgb = lerp(surface.baseColor.rgb,saturate(surface.baseColor.rgb+wetness.xxx),degree);
+   surface.Update();
+}
 
 float4 main(PFXVertToPix IN) : SV_TARGET
 {
@@ -59,7 +77,7 @@ float4 main(PFXVertToPix IN) : SV_TARGET
    #endif
 
    float alpha = 1;
-
+   float wetAmmout = 0;
 #if SKYLIGHT_ONLY == 0
    int i = 0;
    float blendFactor[MAX_PROBES];
@@ -93,9 +111,14 @@ float4 main(PFXVertToPix IN) : SV_TARGET
          else
             contribution[i] = 0.0;
 
+         if (refScaleArray[i].w>0)
+            wetAmmout += contribution[i];
+         else
+            wetAmmout -= contribution[i];
          blendSum += contribution[i];
          blendCap = max(contribution[i],blendCap);
       }
+      if (wetAmmout<0) wetAmmout =0;
        if (probehits > 0.0)
 	   {
          invBlendSum = (probehits - blendSum)/probehits; //grab the remainder 
@@ -160,7 +183,8 @@ float4 main(PFXVertToPix IN) : SV_TARGET
       }
    }
 #endif
-
+   if (SkylightDamp>0)
+      wetAmmout += alpha;
    if(skylightCubemapIdx != -1 && alpha >= 0.001)
    {
       irradiance = lerp(irradiance,TORQUE_TEXCUBEARRAYLOD(irradianceCubemapAR, surface.R, skylightCubemapIdx, 0).xyz,alpha);
@@ -172,7 +196,7 @@ float4 main(PFXVertToPix IN) : SV_TARGET
 #elif DEBUGVIZ_DIFFCUBEMAP == 1
    return float4(irradiance, 1);
 #endif
-
+   dampen(surface, wetAmmout);
    //energy conservation
    float3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
    float3 kD = 1.0f - F;

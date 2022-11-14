@@ -303,6 +303,7 @@ singleton ShaderData( PFX_ReflectionProbeArray )
    samplerNames[4] = "$specularCubemapAR";
    samplerNames[5] = "$irradianceCubemapAR";
    samplerNames[6] = "$ssaoMask";
+   samplerNames[7] = "$wetMap";
 
    pixVersion = 2.0;
 };  

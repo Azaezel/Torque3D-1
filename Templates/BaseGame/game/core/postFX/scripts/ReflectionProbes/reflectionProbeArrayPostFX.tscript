@@ -15,6 +15,6 @@ singleton PostEffect( reflectionProbeArrayPostFX )
    texture[0] = "#deferred";
    texture[1] = "#color";
    texture[2] = "#matinfo";
-
+   textureAsset[7] = "Core_Rendering:wetMap_image";
    allowReflectPass = true;
 };

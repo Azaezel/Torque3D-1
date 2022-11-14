@@ -106,6 +106,7 @@ struct ShaderGenVars
 
    //Skylight
    const static String skylightCubemapIdx;
+   const static String skylightDamp;
    
    // Textures
    const static String fogMap;

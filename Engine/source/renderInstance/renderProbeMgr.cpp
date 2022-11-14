@@ -99,6 +99,7 @@ ProbeShaderConstants::ProbeShaderConstants()
    mProbeCountSC(NULL),
    mBRDFTextureMap(NULL),
    mSkylightCubemapIdxSC(NULL),
+   mSkylightDampSC(NULL),
    mWorldToObjArraySC(NULL),
    mMaxProbeDrawDistanceSC(NULL)
 {
@@ -136,7 +137,8 @@ void ProbeShaderConstants::init(GFXShader* shader)
 
    mBRDFTextureMap = shader->getShaderConstHandle(ShaderGenVars::BRDFTextureMap);
 
-   mSkylightCubemapIdxSC = shader->getShaderConstHandle(ShaderGenVars::skylightCubemapIdx);
+   mSkylightCubemapIdxSC = shader->getShaderConstHandle(ShaderGenVars::skylightCubemapIdx);   
+   mSkylightDampSC = shader->getShaderConstHandle(ShaderGenVars::skylightDamp);
 
    mMaxProbeDrawDistanceSC = shader->getShaderConstHandle(ShaderGenVars::maxProbeDrawDistance);
 
@@ -145,10 +147,10 @@ void ProbeShaderConstants::init(GFXShader* shader)
 
 bool ProbeShaderConstants::isValid()
 {
-   if (mProbePositionArraySC->isValid() ||
-      mProbeConfigDataArraySC->isValid() ||
-      mRefScaleArraySC->isValid() ||
-      mProbeSpecularCubemapArraySC->isValid() ||
+   if (mProbePositionArraySC->isValid() &&
+      mProbeConfigDataArraySC->isValid() &&
+      mRefScaleArraySC->isValid() &&
+      mProbeSpecularCubemapArraySC->isValid() &&
       mProbeIrradianceCubemapArraySC->isValid())
       return true;
 
@@ -169,6 +171,7 @@ RenderProbeMgr::RenderProbeMgr()
    mLastConstants(nullptr),
    mHasSkylight(false),
    mSkylightCubemapIdx(-1),
+   mSkylightDamp(true),
    mCubeMapCount(0),
    mUseHDRCaptures(true)
 {
@@ -197,6 +200,7 @@ RenderProbeMgr::RenderProbeMgr(RenderInstType riType, F32 renderOrder, F32 proce
    mEffectiveProbeCount = 0;
    mHasSkylight = false;
    mSkylightCubemapIdx = -1;
+   mSkylightDamp = true;
    mLastConstants = nullptr;
    mMipCount = 0;
    mUseHDRCaptures = true;
@@ -306,6 +310,7 @@ void RenderProbeMgr::getBestProbes(const Point3F& objPosition, ProbeDataSet* pro
       else
       {
          probeDataSet->skyLightIdx = curEntry.mCubemapIndex;
+         probeDataSet->skyLightDamp = curEntry.mProbeInfo->mCanDamp;
          mHasSkylight = true;
       }
    }
@@ -330,13 +335,13 @@ void RenderProbeMgr::getBestProbes(const Point3F& objPosition, ProbeDataSet* pro
       probeDataSet->probeWorldToObjArray[i] = p2A;
       p2A.inverse();
       probeDataSet->refScaleArray[i] = curEntry.mProbeInfo->mProbeRefScale / (p2A.getScale()*2);
+      probeDataSet->refScaleArray[i].w = curEntry.mProbeInfo->mCanDamp? 1.0 : 0.0;
 
       Point3F probePos = curEntry.mProbeInfo->mObject->getPosition();
       Point3F refPos = probePos + curEntry.mProbeInfo->mProbeRefOffset * probeDataSet->refScaleArray[i].asPoint3F();
 
       probeDataSet->probePositionArray[i] = Point4F(probePos.x, probePos.y, probePos.z, 0);
       probeDataSet->probeRefPositionArray[i] = Point4F(refPos.x, refPos.y, refPos.z, 0);
-
    }
 }
 
@@ -422,7 +427,7 @@ PostEffect* RenderProbeMgr::getProbeArrayEffect()
 
       mProbeArrayEffect->setShaderConst("$numProbes", (S32)0);
       mProbeArrayEffect->setShaderConst("$skylightCubemapIdx", (S32)-1);
-
+      mProbeArrayEffect->setShaderConst(ShaderGenVars::skylightDamp, (S32)true);
       mProbeArrayEffect->setShaderConst("$cubeMips", (float)0);
       mProbeArrayEffect->setShaderConst("$maxProbeDrawDistance", smMaxProbeDrawDistance);
 
@@ -788,6 +793,7 @@ void RenderProbeMgr::_update4ProbeConsts(const SceneData& sgData,
          GFX->setTexture(probeShaderConsts->mBRDFTextureMap->getSamplerRegister(), mBRDFTexture);
 
       shaderConsts->setSafe(probeShaderConsts->mSkylightCubemapIdxSC, (float)probeSet.skyLightIdx);
+      shaderConsts->setSafe(probeShaderConsts->mSkylightDampSC, (int)probeSet.skyLightDamp);
 
       if (probeShaderConsts->mProbeSpecularCubemapArraySC->getSamplerRegister() != -1)
          GFX->setCubeArrayTexture(probeShaderConsts->mProbeSpecularCubemapArraySC->getSamplerRegister(), mPrefilterArray);
@@ -882,6 +888,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
 
    mProbeArrayEffect->setShaderConst("$numProbes", (S32)mProbeData.effectiveProbeCount);
    mProbeArrayEffect->setShaderConst("$skylightCubemapIdx", (S32)mProbeData.skyLightIdx);
+   mProbeArrayEffect->setShaderConst(ShaderGenVars::skylightDamp, mProbeData.skyLightDamp);
 
    mProbeArrayEffect->setShaderConst("$cubeMips", (float)mPrefilterArray->getMipMapLevels());
 
