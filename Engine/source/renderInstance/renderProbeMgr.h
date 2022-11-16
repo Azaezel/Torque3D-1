@@ -98,7 +98,7 @@ struct ProbeShaderConstants
    GFXShaderConstHandle *mProbeCountSC;
 
    GFXShaderConstHandle *mBRDFTextureMap;
-
+   GFXShaderConstHandle* mWetnessTextureMap;   
    GFXShaderConstHandle *mSkylightCubemapIdxSC;
    GFXShaderConstHandle* mSkylightDampSC;
 
@@ -279,7 +279,8 @@ private:
    /// The BRDF texture used in PBR math calculations
    /// </summary>
    GFXTexHandle mBRDFTexture;
-
+   GFXTexHandle mWetnessTexture;
+   
    /// <summary>
    /// Processed best probe selection list of the current frame when rendering in deferred mode.
    /// </summary>

@@ -98,6 +98,7 @@ ProbeShaderConstants::ProbeShaderConstants()
    mProbeIrradianceCubemapArraySC(NULL),
    mProbeCountSC(NULL),
    mBRDFTextureMap(NULL),
+   mWetnessTextureMap(NULL),   
    mSkylightCubemapIdxSC(NULL),
    mSkylightDampSC(NULL),
    mWorldToObjArraySC(NULL),
@@ -136,6 +137,7 @@ void ProbeShaderConstants::init(GFXShader* shader)
    mProbeCountSC = shader->getShaderConstHandle(ShaderGenVars::probeCount);
 
    mBRDFTextureMap = shader->getShaderConstHandle(ShaderGenVars::BRDFTextureMap);
+   mWetnessTextureMap = shader->getShaderConstHandle(ShaderGenVars::WetnessTextureMap);
 
    mSkylightCubemapIdxSC = shader->getShaderConstHandle(ShaderGenVars::skylightCubemapIdx);   
    mSkylightDampSC = shader->getShaderConstHandle(ShaderGenVars::skylightDamp);
@@ -240,6 +242,12 @@ bool RenderProbeMgr::onAdd()
       return false;
    } 
 
+   String wetnessTexturePath = GFXTextureManager::getWetnessTexturePath();
+   if (!mWetnessTexture.set(wetnessTexturePath, &GFXTexturePersistentProfile, "WetnessTexture"))
+   {
+      Con::errorf("RenderProbeMgr::onAdd: Failed to load Wetness Texture");
+      return false;
+   }
    return true;
 }
 
@@ -789,8 +797,11 @@ void RenderProbeMgr::_update4ProbeConsts(const SceneData& sgData,
          shaderConsts->setSafe(probeShaderConsts->mProbeConfigDataArraySC, probeConfigAlignedArray);
       }
 
-      if (probeShaderConsts->mBRDFTextureMap->getSamplerRegister() != -1 && mBRDFTexture.isValid())
+      if (mBRDFTexture.isValid(), probeShaderConsts->mBRDFTextureMap->getSamplerRegister() != -1)
          GFX->setTexture(probeShaderConsts->mBRDFTextureMap->getSamplerRegister(), mBRDFTexture);
+
+      if (mWetnessTexture.isValid() && probeShaderConsts->mWetnessTextureMap->getSamplerRegister() != -1)
+         GFX->setTexture(probeShaderConsts->mWetnessTextureMap->getSamplerRegister(), mWetnessTexture);
 
       shaderConsts->setSafe(probeShaderConsts->mSkylightCubemapIdxSC, (float)probeSet.skyLightIdx);
       shaderConsts->setSafe(probeShaderConsts->mSkylightDampSC, (int)probeSet.skyLightDamp);
@@ -885,7 +896,8 @@ void RenderProbeMgr::render( SceneRenderState *state )
    mProbeArrayEffect->setTexture(3, mBRDFTexture);
    mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
    mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
-
+   //texture index 6 = ssao
+   mProbeArrayEffect->setTexture(7, mWetnessTexture);   
    mProbeArrayEffect->setShaderConst("$numProbes", (S32)mProbeData.effectiveProbeCount);
    mProbeArrayEffect->setShaderConst("$skylightCubemapIdx", (S32)mProbeData.skyLightIdx);
    mProbeArrayEffect->setShaderConst(ShaderGenVars::skylightDamp, mProbeData.skyLightDamp);

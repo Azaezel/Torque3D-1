@@ -25,7 +25,7 @@ TORQUE_UNIFORM_SAMPLERCUBEARRAY(irradianceCubemapAR, 5);
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 6);
 uniform float4 rtParams6;
 #endif
-TORQUE_UNIFORM_SAMPLER2D(wetMap, 7);
+TORQUE_UNIFORM_SAMPLER2D(WetnessTexture, 7);
 uniform float accumTime;
 
 uniform float4    probePosArray[MAX_PROBES];
@@ -40,33 +40,6 @@ uniform float4    probeContribColors[MAX_PROBES];
 
 uniform int skylightCubemapIdx;
 uniform int SkylightDamp;
-
-//variant of https://catlikecoding.com/unity/tutorials/advanced-rendering/triplanar-mapping/
-struct TriplanarUV
-{
-	float2 x, y, z;
-};
-
-float2 GetTriplanarUV(Surface surface)
-{
-	TriplanarUV triUV;
-	float3 p = surface.P;
-	triUV.x = p.zy;
-	triUV.y = p.xz;
-	triUV.z = p.xy;
-    
-    return (triUV.x+triUV.y+triUV.z)/3; 
-}
-
-void dampen(inout Surface surface, float degree)
-{
-   float speed = accumTime*(1.0-surface.roughness); 
-   float2 wetUV = GetTriplanarUV(surface)+float2(speed,speed);
-   float wetness = pow(TORQUE_TEX2D(wetMap, wetUV).b,5); 
-   surface.roughness = lerp(surface.roughness,0.92f*wetness,degree);
-   surface.baseColor.rgb = lerp(surface.baseColor.rgb,surface.baseColor.rgb*(2.0-wetness)/2,degree); 
-   surface.Update(); 
-}
 
 float4 main(PFXVertToPix IN) : SV_TARGET
 {
@@ -127,6 +100,7 @@ float4 main(PFXVertToPix IN) : SV_TARGET
             wetAmmout += contribution[i];
          else
             wetAmmout -= contribution[i];
+
          blendSum += contribution[i];
          blendCap = max(contribution[i],blendCap);
       }
@@ -208,7 +182,7 @@ float4 main(PFXVertToPix IN) : SV_TARGET
 #elif DEBUGVIZ_DIFFCUBEMAP == 1
    return float4(irradiance, 1);
 #endif
-   dampen(surface, wetAmmout);
+   dampen(surface,TORQUE_SAMPLER2D_MAKEARG(WetnessTexture), accumTime, wetAmmout);
    //energy conservation
    float3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
    float3 kD = 1.0f - F;

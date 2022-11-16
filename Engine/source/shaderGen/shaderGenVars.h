@@ -101,7 +101,7 @@ struct ShaderGenVars
    const static String probeCount;
 
    const static String BRDFTextureMap;
-
+   const static String WetnessTextureMap;   
    const static String maxProbeDrawDistance;
 
    //Skylight

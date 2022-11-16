@@ -371,14 +371,43 @@ float3 boxProject(float3 wsPosition, float3 wsReflectVec, float4x4 worldToObj, f
    return posonbox-refPosition;
 }
 
+//variant of https://catlikecoding.com/unity/tutorials/advanced-rendering/triplanar-mapping/
+struct TriplanarUV
+{
+	float2 x, y, z;
+};
+
+float2 GetTriplanarUV(Surface surface)
+{
+	TriplanarUV triUV;
+	float3 p = surface.P;
+	triUV.x = p.zy;
+	triUV.y = p.xz;
+	triUV.z = p.xy;
+    
+    return (triUV.x+triUV.y+triUV.z)/3; 
+}
+
+void dampen(inout Surface surface, TORQUE_SAMPLER2D(WetnessTexture), float accumTime, float degree)
+{
+   float speed = accumTime*(1.0-surface.roughness); 
+   float2 wetUV = GetTriplanarUV(surface)+float2(speed,speed);
+   float wetness = pow(TORQUE_TEX2D(WetnessTexture, wetUV).b,5); 
+   surface.roughness = lerp(surface.roughness,0.92f*wetness,degree);
+   surface.baseColor.rgb = lerp(surface.baseColor.rgb,surface.baseColor.rgb*(2.0-wetness)/2,degree); 
+   surface.baseColor.a = lerp(surface.baseColor.a,max(surface.baseColor.a,wetness),degree); 
+   surface.Update(); 
+}
+
 float4 computeForwardProbes(Surface surface,
     float cubeMips, int numProbes, float4x4 inWorldToObjArray[MAX_FORWARD_PROBES], float4 inProbeConfigData[MAX_FORWARD_PROBES], 
     float4 inProbePosArray[MAX_FORWARD_PROBES], float4 inRefScaleArray[MAX_FORWARD_PROBES], float4 inRefPosArray[MAX_FORWARD_PROBES],
-    float3 wsEyePos, float skylightCubemapIdx, TORQUE_SAMPLER2D(BRDFTexture), 
+    float3 wsEyePos, float skylightCubemapIdx, int SkylightDamp, TORQUE_SAMPLER2D(BRDFTexture), TORQUE_SAMPLER2D(WetnessTexture), float accumTime,
 	 TORQUE_SAMPLERCUBEARRAY(irradianceCubemapAR), TORQUE_SAMPLERCUBEARRAY(specularCubemapAR))
 {
    int i = 0;
    float alpha = 1;
+   float wetAmmout = 0;
    float blendFactor[MAX_FORWARD_PROBES];
    float blendSum = 0;
    float blendFacSum = 0;
@@ -407,10 +436,16 @@ float4 computeForwardProbes(Surface surface,
       else
          contribution[i] = 0.0;
 
+      if (inRefScaleArray[i].w>0)
+         wetAmmout += contribution[i];
+      else
+         wetAmmout -= contribution[i];
+         
       blendSum += contribution[i];
       blendCap = max(contribution[i],blendCap);
    }
-
+   if (wetAmmout<0) wetAmmout =0;
+   
    if (probehits > 0.0)
    {
       invBlendSum = (probehits - blendSum)/probehits; //grab the remainder 
@@ -480,6 +515,9 @@ float4 computeForwardProbes(Surface surface,
          alpha -= contrib;
       }
    }
+   
+   if (SkylightDamp>0)
+      wetAmmout += alpha;
 
    if(skylightCubemapIdx != -1 && alpha >= 0.001)
    {
@@ -487,6 +525,7 @@ float4 computeForwardProbes(Surface surface,
       specular = lerp(specular,TORQUE_TEXCUBEARRAYLOD(specularCubemapAR, surface.R, skylightCubemapIdx, lod).xyz,alpha);
    }
 
+   dampen(surface, TORQUE_SAMPLER2D_MAKEARG(WetnessTexture), accumTime, wetAmmout);
    //energy conservation
    float3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
    float3 kD = 1.0f - F;

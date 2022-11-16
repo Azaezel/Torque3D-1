@@ -303,7 +303,7 @@ singleton ShaderData( PFX_ReflectionProbeArray )
    samplerNames[4] = "$specularCubemapAR";
    samplerNames[5] = "$irradianceCubemapAR";
    samplerNames[6] = "$ssaoMask";
-   samplerNames[7] = "$wetMap";
+   samplerNames[7] = "$WetnessTexture";
 
    pixVersion = 2.0;
 };  
@@ -333,4 +333,5 @@ singleton GFXStateBlockData( PFX_ReflectionProbeArrayStateBlock )
    samplerStates[4] = SamplerClampLinear;
    samplerStates[5] = SamplerClampLinear;
    samplerStates[6] = SamplerClampPoint;
+   samplerStates[7] = SamplerWrapPoint;
 };
