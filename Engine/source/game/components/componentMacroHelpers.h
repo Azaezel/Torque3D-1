@@ -30,3 +30,7 @@
       static RemoveComponentSignal removedComponentSignal;\
       return removedComponentSignal;\
    }
+
+#define DIRECTOR_SUBSCRIBE_SIGNALS(DirectorClassName, ComponentClassName) \
+   ComponentClassName##::getAddedComponentSignal().notify(this, &##DirectorClassName##::registerComponent);\
+   ComponentClassName##::getRemovedComponentSignal().notify(this, &##DirectorClassName##::unregisterComponent);

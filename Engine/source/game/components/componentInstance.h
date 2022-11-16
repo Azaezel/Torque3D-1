@@ -103,6 +103,12 @@ public:
    const ComponentObject& getOwnerObject() { return *mOwner; }
 
    /// <summary>
+   /// Gets a const reference to the owner ComponentObject
+   /// </summary>
+   /// <returns>A constant reference to the owner ComponentObject</returns>
+   ComponentObject* getOwnerObjectPtr() { return const_cast<ComponentObject*>(mOwner); }
+
+   /// <summary>
    /// Is this componentInstance currently enabled?
    /// </summary>
    /// <returns>Boolean of is enabled</returns>

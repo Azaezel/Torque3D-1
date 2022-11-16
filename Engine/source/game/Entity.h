@@ -25,21 +25,6 @@ class Entity : public SceneObject, public ComponentObject
    // from the server version (like if it has been moved
    // or edited)
 public:
-   struct StateDelta
-   {
-      Move move;                    ///< Last move from server
-      F32 dt;                       ///< Last interpolation time
-      // Interpolation data
-      Point3F pos;
-      Point3F posVec;
-      QuatF rot[2];
-      // Warp data
-      S32 warpTicks;                ///< Number of ticks to warp
-      S32 warpCount;                ///< Current pos in warp
-      Point3F warpOffset;
-      QuatF warpRot[2];
-   };
-
    enum MaskBits
    {
       TransformMask = Parent::NextFreeMask << 0,
@@ -53,15 +38,6 @@ public:
    };
 
 protected:
-   /// <summary>
-   /// Temporary transform/example junk. Will go into a Transform Component
-   /// </summary>
-   Point3F             mPos;
-   RotationF           mRot;
-
-   StateDelta mDelta;
-   S32 mPredictionCount;            ///< Number of ticks to predict
-
    Move mLastMove;
 
 public:
@@ -141,56 +117,12 @@ public:
    /// </summary>
    /// <param name="compInst">The componentInstance to have its mask set</param>
    /// <param name="mask">The netmask bits to be set on the instance</param>
-   virtual void setComponentNetMask(ComponentInstance* comp, U32 mask) {
+   virtual void setComponentNetMask(ComponentInstance* comp, const U32& mask) {
       setMaskBits(Entity::ComponentsUpdateMask);
       CompObjParent::setComponentNetMask(comp, mask);
    }
-   StateDelta getNetworkDelta() { return mDelta; }
 
    Move& getLastMove() { return mLastMove; }
-#pragma endregion
-
-#pragma region World/Transform
-   virtual void setTransform(const MatrixF& mat);
-   virtual void setRenderTransform(const MatrixF& mat);
-
-   void setTransform(const Point3F& position, const RotationF& rotation);
-
-   void setRenderTransform(const Point3F& position, const RotationF& rotation);
-
-   virtual MatrixF getTransform();
-   virtual Point3F getPosition() const { return mPos; }
-
-   void setRotation(const RotationF& rotation) {
-      mRot = rotation;
-      setMaskBits(TransformMask);
-   };
-   RotationF getRotation() { return mRot; }
-   void setMountOffset(const Point3F& posOffset);
-   void setMountRotation(const EulerF& rotOffset);
-
-   //static bool _setEulerRotation( void *object, const char *index, const char *data );
-   static bool _setPosition(void* object, const char* index, const char* data);
-   static const char* _getPosition(void* obj, const char* data);
-
-   static bool _setRotation(void* object, const char* index, const char* data);
-   static const char* _getRotation(void* obj, const char* data);
-
-   virtual void getMountTransform(S32 index, const MatrixF& xfm, MatrixF* outMat);
-   virtual void getRenderMountTransform(F32 delta, S32 index, const MatrixF& xfm, MatrixF* outMat);
-
-   virtual void setObjectBox(const Box3F& objBox);
-
-   void resetWorldBox() { Parent::resetWorldBox(); }
-   void resetObjectBox() { Parent::resetObjectBox(); }
-   void resetRenderWorldBox() { Parent::resetRenderWorldBox(); }
-   
-   Box3F getObjectBox() { return mObjBox; }
-   MatrixF getWorldToObj() { return mWorldToObj; }
-   MatrixF getObjToWorld() { return mObjToWorld; }
-
-   virtual void getCameraTransform(F32* pos, MatrixF* mat);
-   virtual void onCameraScopeQuery(NetConnection* connection, CameraScopeQuery* query);
 #pragma endregion
 
 #pragma region Console/Fields

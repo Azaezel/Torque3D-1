@@ -43,7 +43,8 @@ void ComponentInstance::setMaskBits(U32 orMask)
    if (mOwner)
    {
       //We have a valid owner, so tell it that it needs to be marked dirty for network updates for components
-      (const_cast<ComponentObject*>(mOwner))->setComponentNetMask(this, orMask);
+      ComponentObject* ownerCompObj = (const_cast<ComponentObject*>(static_cast<const ComponentObject*>(mOwner)));
+      ownerCompObj->setComponentNetMask(this, orMask);
    }
 }
 
@@ -189,6 +190,12 @@ void ComponentInstance::addComponentField(const char* fieldName, const char* des
       fieldTypeMask = TypeColorF;
    else if (fieldType == StringTable->insert("ease"))
       fieldTypeMask = TypeEaseF;
+   else if (fieldType == StringTable->insert("position") || fieldType == StringTable->insert("TypeMatrixPosition"))
+      fieldTypeMask = TypeMatrixPosition;
+   else if (fieldType == StringTable->insert("rotation") || fieldType == StringTable->insert("TypeMatrixRotation"))
+      fieldTypeMask = TypeMatrixRotation;
+   else if (fieldType == StringTable->insert("Point3F") || fieldType == StringTable->insert("TypePoint3F"))
+      fieldTypeMask = TypePoint3F;
    else
       fieldTypeMask = -1;
 

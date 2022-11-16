@@ -1,4 +1,5 @@
 #include "Entity.h"
+#include "entity_scriptBinding.h"
 #include "math/mathIO.h"
 #include "core/stream/bitStream.h"
 
@@ -35,6 +36,10 @@ void Entity::initPersistFields()
 {
    // SceneObject already handles exposing the transform
    Parent::initPersistFields();
+
+   removeField("position");
+   removeField("rotation");
+   removeField("scale");
 }
 
 bool Entity::onAdd()
@@ -45,7 +50,7 @@ bool Entity::onAdd()
    mObjBox = Box3F(Point3F(-0.5, -0.5, -0.5), Point3F(0.5, 0.5, 0.5));
 
    resetWorldBox();
-   setObjectBox(mObjBox);
+   //setObjectBox(mObjBox);
 
    addToScene();
 
@@ -186,7 +191,8 @@ void Entity::loadComponents()
    // Check for data fields which contain packed components, and instantiate them
    for (int i = 0; dStrcmp(bField = getDataField(StringTable->insert(avar("_component%d", i)), NULL), "") != 0; i++)
    {
-      AssertFatal((StringUnit::getUnitCount(bField, "\t") - 1) % 2 == 0, "Fields should always be in sets of two!");
+      U32 fieldCount = StringUnit::getUnitCount(bField, "\t") - 1;
+      AssertFatal((fieldCount) % 2 == 0, "Fields should always be in sets of two!");
 
       // Grab the template name, make sure the sim knows about it or we are hosed anyway
       StringTableEntry templateName = StringTable->insert(StringUnit::getUnit(bField, 0, "\t"));
@@ -263,400 +269,6 @@ void Entity::loadComponents()
 }
 #pragma endregion
 
-#pragma region World/Transform
-/*void Entity::setTransform(const MatrixF& mat)
-{
-   // Let SceneObject handle all of the matrix manipulation
-   Parent::setTransform( mat );
-
-   // Dirty our network mask so that the new transform gets
-   // transmitted to the client object
-   setMaskBits( TransformMask );
-}*/
-
-bool Entity::_setPosition(void* object, const char* index, const char* data)
-{
-   Entity* so = static_cast<Entity*>(object);
-   if (so)
-   {
-      Point3F pos;
-
-      if (!dStrcmp(data, ""))
-         pos = Point3F(0, 0, 0);
-      else
-         Con::setData(TypePoint3F, &pos, 0, 1, &data);
-
-      so->setTransform(pos, so->mRot);
-   }
-   return false;
-}
-
-const char* Entity::_getPosition(void* obj, const char* data)
-{
-   Entity* so = static_cast<Entity*>(obj);
-   if (so)
-   {
-      Point3F pos = so->getPosition();
-
-      static const U32 bufSize = 256;
-      char* returnBuffer = Con::getReturnBuffer(bufSize);
-      dSprintf(returnBuffer, bufSize, "%g %g %g", pos.x, pos.y, pos.z);
-      return returnBuffer;
-   }
-   return "0 0 0";
-}
-
-bool Entity::_setRotation(void* object, const char* index, const char* data)
-{
-   Entity* so = static_cast<Entity*>(object);
-   if (so)
-   {
-      RotationF rot;
-      Con::setData(TypeRotationF, &rot, 0, 1, &data);
-
-      //so->mRot = rot;
-      //MatrixF mat = rot.asMatrixF();
-      //mat.setPosition(so->getPosition());
-      //so->setTransform(mat);
-      so->setTransform(so->getPosition(), rot);
-   }
-   return false;
-}
-
-const char* Entity::_getRotation(void* obj, const char* data)
-{
-   Entity* so = static_cast<Entity*>(obj);
-   if (so)
-   {
-      EulerF eulRot = so->mRot.asEulerF();
-
-      static const U32 bufSize = 256;
-      char* returnBuffer = Con::getReturnBuffer(bufSize);
-      dSprintf(returnBuffer, bufSize, "%g %g %g", mRadToDeg(eulRot.x), mRadToDeg(eulRot.y), mRadToDeg(eulRot.z));
-      return returnBuffer;
-   }
-   return "0 0 0";
-}
-
-void Entity::setTransform(const MatrixF& mat)
-{
-   MatrixF oldTransform = getTransform();
-
-   if (isMounted())
-   {
-      // Use transform from mounted object
-      Point3F newPos = mat.getPosition();
-      Point3F parentPos = mMount.object->getTransform().getPosition();
-
-      Point3F newOffset = newPos - parentPos;
-
-      if (!newOffset.isZero())
-      {
-         mPos = newOffset;
-      }
-
-      Point3F matEul = mat.toEuler();
-
-      if (matEul != Point3F(0, 0, 0))
-      {
-         Point3F mountEul = mMount.object->getTransform().toEuler();
-         Point3F diff = matEul - mountEul;
-
-         mRot = diff;
-      }
-      else
-      {
-         mRot = Point3F(0, 0, 0);
-      }
-
-      RotationF addRot = mRot + RotationF(mMount.object->getTransform());
-      MatrixF transf = addRot.asMatrixF();
-      transf.setPosition(mPos + mMount.object->getPosition());
-
-      Parent::setTransform(transf);
-
-      if (transf != oldTransform)
-         setMaskBits(TransformMask);
-   }
-   else
-   {
-      //Are we part of a prefab?
-      /*Prefab* p = Prefab::getPrefabByChild(this);
-      if (p)
-      {
-         //just let our prefab know we moved
-         p->childTransformUpdated(this, mat);
-      }*/
-      //else
-      {
-         //mRot.set(mat);
-         //Parent::setTransform(mat);
-
-         RotationF rot = RotationF(mat);
-
-         EulerF tempRot = rot.asEulerF(RotationF::Degrees);
-
-         Point3F pos;
-
-         mat.getColumn(3, &pos);
-
-         setTransform(pos, rot);
-      }
-   }
-}
-
-void Entity::setTransform(const Point3F& position, const RotationF& rotation)
-{
-   MatrixF oldTransform = getTransform();
-
-   if (isMounted())
-   {
-      mPos = position;
-      mRot = rotation;
-
-      RotationF addRot = mRot + RotationF(mMount.object->getTransform());
-      MatrixF transf = addRot.asMatrixF();
-      transf.setPosition(mPos + mMount.object->getPosition());
-
-      Parent::setTransform(transf);
-
-      if (transf != oldTransform)
-         setMaskBits(TransformMask);
-   }
-   else
-   {
-      /*MatrixF newMat, imat, xmat, ymat, zmat;
-      Point3F radRot = Point3F(mDegToRad(rotation.x), mDegToRad(rotation.y), mDegToRad(rotation.z));
-      xmat.set(EulerF(radRot.x, 0, 0));
-      ymat.set(EulerF(0.0f, radRot.y, 0.0f));
-      zmat.set(EulerF(0, 0, radRot.z));
-      imat.mul(zmat, xmat);
-      newMat.mul(imat, ymat);*/
-
-      MatrixF newMat = rotation.asMatrixF();
-
-      newMat.setColumn(3, position);
-
-      mPos = position;
-      mRot = rotation;
-
-      //if (isServerObject())
-      //   setMaskBits(TransformMask);
-
-      //setTransform(temp);
-
-      // This test is a bit expensive so turn it off in release.   
-#ifdef TORQUE_DEBUG
-      //AssertFatal( mat.isAffine(), "SceneObject::setTransform() - Bad transform (non affine)!" );
-#endif
-
-      //PROFILE_SCOPE(Entity_setTransform);
-
-      // Update the transforms.
-      Parent::setTransform(newMat);
-
-      /*U32 compCount = mComponents.size();
-      for (U32 i = 0; i < compCount; ++i)
-      {
-         mComponents[i]->ownerTransformSet(&newMat);
-      }*/
-
-      Point3F newPos = newMat.getPosition();
-      RotationF newRot = newMat;
-
-      Point3F oldPos = oldTransform.getPosition();
-      RotationF oldRot = oldTransform;
-
-      if (newPos != oldPos || newRot != oldRot)
-         setMaskBits(TransformMask);
-   }
-}
-
-void Entity::setRenderTransform(const MatrixF& mat)
-{
-   Parent::setRenderTransform(mat);
-}
-
-void Entity::setRenderTransform(const Point3F& position, const RotationF& rotation)
-{
-   if (isMounted())
-   {
-      mPos = position;
-      mRot = rotation;
-
-      RotationF addRot = mRot + RotationF(mMount.object->getTransform());
-      MatrixF transf = addRot.asMatrixF();
-      transf.setPosition(mPos + mMount.object->getPosition());
-
-      Parent::setRenderTransform(transf);
-   }
-   else
-   {
-      MatrixF newMat = rotation.asMatrixF();
-
-      newMat.setColumn(3, position);
-
-      mPos = position;
-      mRot = rotation;
-
-      Parent::setRenderTransform(newMat);
-
-      /*U32 compCount = mComponents.size();
-      for (U32 i = 0; i < compCount; ++i)
-      {
-         mComponents[i]->ownerTransformSet(&newMat);
-      }*/
-   }
-}
-
-MatrixF Entity::getTransform()
-{
-   if (isMounted())
-   {
-      MatrixF mat;
-
-      //Use transform from mount
-      mMount.object->getMountTransform(mMount.node, mMount.xfm, &mat);
-
-      Point3F transPos = mat.getPosition() + mPos;
-
-      mat.mul(mRot.asMatrixF());
-
-      mat.setPosition(transPos);
-
-      return mat;
-   }
-   else
-   {
-      return Parent::getTransform();
-   }
-}
-
-void Entity::setMountOffset(const Point3F& posOffset)
-{
-   if (isMounted())
-   {
-      mMount.xfm.setColumn(3, posOffset);
-      //mPos = posOffset;
-      setMaskBits(MountedMask);
-   }
-}
-
-void Entity::setMountRotation(const EulerF& rotOffset)
-{
-   if (isMounted())
-   {
-      MatrixF temp, imat, xmat, ymat, zmat;
-
-      Point3F radRot = Point3F(mDegToRad(rotOffset.x), mDegToRad(rotOffset.y), mDegToRad(rotOffset.z));
-      xmat.set(EulerF(radRot.x, 0, 0));
-      ymat.set(EulerF(0.0f, radRot.y, 0.0f));
-      zmat.set(EulerF(0, 0, radRot.z));
-
-      imat.mul(zmat, xmat);
-      temp.mul(imat, ymat);
-
-      temp.setColumn(3, mMount.xfm.getPosition());
-
-      mMount.xfm = temp;
-
-      setMaskBits(MountedMask);
-   }
-}
-//
-void Entity::getCameraTransform(F32* pos, MatrixF* mat)
-{
-   /*Component* foundComp = getComponent(sCameraComponentType);
-
-   if (foundComp != nullptr)
-   {
-      CameraComponent* cameraComp = static_cast<CameraComponent*>(foundComp);
-      cameraComp->getCameraTransform(pos, mat);
-   }*/
-}
-
-void Entity::getMountTransform(S32 index, const MatrixF& xfm, MatrixF* outMat)
-{
-   /*renderComponent* renderComp = getComponent<renderComponent>(sRenderComponentType);
-
-   if (renderComp)
-   {
-      renderComp->getShapeInstance()->animate();
-      S32 nodeCount = renderComp->getShapeInstance()->getShape()->nodes.size();
-
-      if (index >= 0 && index < nodeCount)
-      {
-         MatrixF mountTransform = renderComp->getShapeInstance()->mNodeTransforms[index];
-         mountTransform.mul(xfm);
-         const Point3F& scale = getScale();
-
-         // The position of the mount point needs to be scaled.
-         Point3F position = mountTransform.getPosition();
-         position.convolve(scale);
-         mountTransform.setPosition(position);
-
-         // Also we would like the object to be scaled to the model.
-         outMat->mul(mObjToWorld, mountTransform);
-         return;
-      }
-   }*/
-
-   // Then let SceneObject handle it.
-   Parent::getMountTransform(index, xfm, outMat);
-}
-
-void Entity::getRenderMountTransform(F32 delta, S32 index, const MatrixF& xfm, MatrixF* outMat)
-{
-   /*renderComponent* renderComp = getComponent<renderComponent>(sRenderComponentType);
-
-   if (renderComp && renderComp->getShapeInstance())
-   {
-      renderComp->getShapeInstance()->animate();
-      S32 nodeCount = renderComp->getShape()->nodes.size();
-
-      if (index >= 0 && index < nodeCount)
-      {
-         MatrixF mountTransform = renderComp->getShapeInstance()->mNodeTransforms[index];
-         mountTransform.mul(xfm);
-         const Point3F& scale = getScale();
-
-         // The position of the mount point needs to be scaled.
-         Point3F position = mountTransform.getPosition();
-         position.convolve(scale);
-         mountTransform.setPosition(position);
-
-         // Also we would like the object to be scaled to the model.
-         outMat->mul(getRenderTransform(), mountTransform);
-         return;
-      }
-   }*/
-
-   // Then let SceneObject handle it.
-   Parent::getMountTransform(index, xfm, outMat);
-}
-
-void Entity::onCameraScopeQuery(NetConnection* connection, CameraScopeQuery* query)
-{
-   // Object itself is in scope.
-   Parent::onCameraScopeQuery(connection, query);
-
-   /*CameraComponent* cameraComp = getComponent<CameraComponent>(sCameraComponentType);
-   if (cameraComp != nullptr)
-   {
-      cameraComp->onCameraScopeQuery(connection, query);
-   }*/
-}
-
-void Entity::setObjectBox(const Box3F& objBox)
-{
-   mObjBox = objBox;
-   resetWorldBox();
-
-   if (isServerObject())
-      setMaskBits(BoundsMask);
-}
-#pragma endregion
-
 #pragma region Sim/Updates
 void Entity::processTick(const Move* move)
 {
@@ -668,7 +280,7 @@ void Entity::processTick(const Move* move)
 
    if (!isHidden())
    {
-      if (mDelta.warpCount < mDelta.warpTicks)
+      /*if (mDelta.warpCount < mDelta.warpTicks)
       {
          mDelta.warpCount++;
 
@@ -712,7 +324,7 @@ void Entity::processTick(const Move* move)
                }
             }
          }
-      }
+      }*/
 
       Move prevMove = mLastMove;
 
@@ -760,7 +372,7 @@ void Entity::processTick(const Move* move)
       }
 
       // Save current rigid state interpolation
-      mDelta.posVec = getPosition();
+      /*mDelta.posVec = getPosition();
       mDelta.rot[0] = mRot.asQuatF();
 
       //Handle any script updates, which can include physics stuff
@@ -772,7 +384,7 @@ void Entity::processTick(const Move* move)
       mDelta.posVec -= getPosition();
       mDelta.rot[1] = mRot.asQuatF();
 
-      setTransform(getPosition(), mRot);
+      setTransform(getPosition(), mRot);*/
 
       //Lifetime test
       /*if (mLifetimeMS != 0)
@@ -790,7 +402,7 @@ void Entity::advanceTime(F32 dt)
 
 void Entity::interpolateTick(F32 dt)
 {
-   if (dt == 0.0f)
+   /*if (dt == 0.0f)
    {
       setRenderTransform(mDelta.pos, mDelta.rot[1]);
    }
@@ -803,7 +415,7 @@ void Entity::interpolateTick(F32 dt)
       setRenderTransform(pos, rot);
    }
 
-   mDelta.dt = dt;
+   mDelta.dt = dt;*/
 }
 #pragma endregion
 
@@ -814,12 +426,12 @@ U32 Entity::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 
    if (stream->writeFlag(mask & TransformMask))
    {
-      stream->writeCompressedPoint(mPos);
-      mathWrite(*stream, getRotation());
+      //stream->writeCompressedPoint(mPos);
+      //mathWrite(*stream, getRotation());
 
-      mDelta.move.pack(stream);
+      //mDelta.move.pack(stream);
 
-      stream->writeFlag(!(mask & NoWarpMask));
+      //stream->writeFlag(!(mask & NoWarpMask));
    }
 
    if (stream->writeFlag(mask & BoundsMask))
@@ -949,7 +561,7 @@ void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
 
    if (stream->readFlag())
    {
-      Point3F pos;
+      /*Point3F pos;
       stream->readCompressedPoint(&pos);
 
       RotationF rot;
@@ -1009,7 +621,7 @@ void Entity::unpackUpdate(NetConnection *conn, BitStream *stream)
          mDelta.rot[1] = mDelta.rot[0] = rot.asQuatF();
          mDelta.warpCount = mDelta.warpTicks = 0;
          setTransform(pos, rot);
-      }
+      }*/
    }
 
    if (stream->readFlag())
@@ -1184,7 +796,7 @@ void Entity::addObject(SimObject* object)
    }
    else
    {
-      SceneObject* so = dynamic_cast<SceneObject*>(object);
+      /*SceneObject* so = dynamic_cast<SceneObject*>(object);
       if (so)
       {
          //get the difference and build it as our offset!
@@ -1196,7 +808,7 @@ void Entity::addObject(SimObject* object)
 
          mountObject(so, offset);
          return;
-      }
+      }*/
    }
 
    Parent::addObject(object);
@@ -1207,10 +819,10 @@ void Entity::removeObject(SimObject* object)
    Entity* e = dynamic_cast<Entity*>(object);
    if (e)
    {
-      mPos = mPos + e->getPosition();
+      /*mPos = mPos + e->getPosition();
       mRot = mRot + e->getRotation();
       unmountObject(e);
-      setMaskBits(TransformMask);
+      setMaskBits(TransformMask);*/
    }
    else
    {
@@ -1226,9 +838,9 @@ SimObject* Entity::findObjectByInternalName(StringTableEntry internalName, bool 
 {
    for (U32 i = 0; i < mComponents.size(); i++)
    {
-      if (mComponents[i]->getComponentData().getInternalName() == internalName)
+      if (mComponents[i]->getComponentData().getName() == internalName)
       {
-         return mComponents[i]->getComponentDataPtr();
+         return mComponents[i];
       }
    }
 

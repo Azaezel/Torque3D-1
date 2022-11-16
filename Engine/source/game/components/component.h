@@ -197,5 +197,23 @@ public:
    /// <param name="desc">The string description to be processed</param>
    /// <returns>The final, processed string description</returns>
    const char* getDescriptionText(const char* desc);
+
+#pragma region ConsoleMethod Passthrough
+protected:
+   /// Internal callMethod : Actually does component notification and script method execution
+   ///  @attention This method does some magic to the argc argv to make Con::execute act properly
+   ///   as such it's internal and should not be exposed or used except by this class
+   virtual const char* _callMethod(U32 argc, ConsoleValue argv[], bool callThis = true);
+
+public:
+   /// Call Method format string
+   const char* callMethod(S32 argc, const char* methodName, ...);
+
+   /// Call Method
+   virtual const char* callMethodArgList(U32 argc, ConsoleValue argv[], bool callThis = true);
+
+   // query for console method data
+   virtual bool handlesConsoleMethod(const char* fname, S32* routingId);
+#pragma endregion ConsoleMethod Passthrough
 };
 

@@ -30,7 +30,7 @@ DefineEngineMethod(Entity, setMountOffset, void,
    "@param txfm (optional) mount offset transform\n"
    "@return true if successful, false if failed (objB is not valid)")
 {
-   object->setMountOffset(posOffset);
+   //object->setMountOffset(posOffset);
 }
 
 DefineEngineMethod(Entity, setMountRotation, void,
@@ -42,7 +42,7 @@ DefineEngineMethod(Entity, setMountRotation, void,
    "@param txfm (optional) mount offset transform\n"
    "@return true if successful, false if failed (objB is not valid)")
 {
-   object->setMountRotation(rotOffset);
+   //object->setMountRotation(rotOffset);
 }
 
 DefineEngineMethod(Entity, getMountTransform, TransformF, (), ,
@@ -67,7 +67,7 @@ DefineEngineMethod(Entity, setBox, void,
    "@param txfm (optional) mount offset transform\n"
    "@return true if successful, false if failed (objB is not valid)")
 {
-   object->setObjectBox(Box3F(-box, box));
+   //object->setObjectBox(Box3F(-box, box));
 }
 
 DefineEngineMethod(Entity, addComponent, bool, (Component* toAddComponent), (nullAsType<Component*>()),

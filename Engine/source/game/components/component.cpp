@@ -37,7 +37,7 @@ bool Component::onAdd()
 
    //All componentInstances need the template name, so it's done as a componentField here. This way it's always
    //set up on the created instances, and it's derived from the component's name as per the default field being the getName()
-   addComponentField("templateName", "Name of the Component this ComponentInstance is templated from", "String", getName());
+   //addComponentField("templateName", "Name of the Component this ComponentInstance is templated from", "String", getName());
 
    return true;
 }
@@ -61,19 +61,17 @@ ComponentInstance* Component::createInstance(ComponentObject* owner)
 {
    ComponentInstance* compInst = new ComponentInstance(*this, *owner);
 
+   if (!compInst->registerObject())
+   {
+      Con::errorf("Component::createInstance() - failed to create instance");
+      return nullptr;
+   }
+
    setupFields(compInst, true);
 
    //Now we register the component to the static list that contains all the ComponentInstances(of the explicit class)
    //This gives us a memory-coherent list to iterate over when doing work on components, improving cache coherency
    ComponentInstance::getComponentInstList()->push_back(compInst);
-
-   //It's important to note we never actually register the ComponentInstance created.
-   //This gives us access to the normal SimObject boilerplate, like being able to keep tabs on fields for the object
-   //but never directly integrates the object against the console.
-   //This keeps it sufficiently functional, but detached, and thread-safe as we don't have to
-   //worry about the console touching the Instance while something else is working it in a thread
-   //It's safely held in our static list above, so we never have to worry about it going out of scope or cleaned up
-   //when we don't want it to be
 
    return compInst;
 }
@@ -98,7 +96,7 @@ bool Component::setupFields(ComponentInstance* componentInstance, bool forceSetu
          //If so, this indicates the field was overridden and we want to use that data
          //If not, then we'll use the default value from the componentField define
          const char* newData = getDataField(StringTable->insert(field.mFieldName), NULL);
-         if (!newData)
+         if (!newData || !newData[0])
             newData = field.mDefaultValue;
 
          //Now set the instance's field data
@@ -147,6 +145,12 @@ void Component::addComponentField(const char* fieldName, const char* desc, const
       fieldTypeMask = TypeColorF;
    else if (fieldType == StringTable->insert("ease"))
       fieldTypeMask = TypeEaseF;
+   else if (fieldType == StringTable->insert("position") || fieldType == StringTable->insert("TypeMatrixPosition"))
+      fieldTypeMask = TypeMatrixPosition;
+   else if (fieldType == StringTable->insert("rotation") || fieldType == StringTable->insert("TypeMatrixRotation"))
+      fieldTypeMask = TypeMatrixRotation;
+   else if(fieldType == StringTable->insert("Point3F") || fieldType == StringTable->insert("TypePoint3F"))
+      fieldTypeMask = TypePoint3F;
    else
       fieldTypeMask = -1;
 
@@ -237,3 +241,95 @@ const char* Component::getDescriptionText(const char* desc)
 
    return newDesc;
 }
+
+
+#pragma region CallMethod Passthrough
+bool Component::handlesConsoleMethod(const char* fname, S32* routingId)
+{
+   // CodeReview: Host object is now given priority over components for method
+   // redirection. [6/23/2007 Pat]
+
+   // On this object?
+   if (isMethod(fname))
+   {
+      *routingId = -1; // -1 denotes method on object
+      return true;
+   }
+
+   // on this objects components?
+   /*for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      ComponentInstance* pComponent = mComponents[i];
+      if (pComponent != NULL && pComponent->isMethod(fname))
+      {
+         *routingId = -2; // -2 denotes method on component
+         return true;
+      }
+   }*/
+
+   return false;
+}
+
+const char* Component::callMethod(S32 argc, const char* methodName, ...)
+{
+   ConsoleValue argv[128];
+   methodName = StringTable->insert(methodName);
+
+   argc++;
+
+   va_list args;
+   va_start(args, methodName);
+   for (S32 i = 0; i < argc; i++)
+      argv[i + 2].setString(va_arg(args, const char*));
+   va_end(args);
+
+   // FIXME: the following seems a little excessive. I wonder why it's needed?
+   argv[0].setString(methodName);
+   argv[1].setString(methodName);
+   argv[2].setString(methodName);
+
+   return callMethodArgList(argc, argv);
+}
+
+const char* Component::callMethodArgList(U32 argc, ConsoleValue argv[], bool callThis /* = true  */)
+{
+   return _callMethod(argc, argv, callThis);
+}
+
+// Call all components that implement methodName giving them a chance to operate
+// Components are called in reverse order of addition
+const char* Component::_callMethod(U32 argc, ConsoleValue argv[], bool callThis /* = true  */)
+{
+   // Set Owner
+   SimObject* pThis = dynamic_cast<SimObject*>(this);
+   AssertFatal(pThis, "DynamicConsoleMethodComponent::callMethod : this should always exist!");
+
+   if (pThis == NULL)
+   {
+      char* empty = Con::getReturnBuffer(4);
+      empty[0] = 0;
+
+      return empty;
+   }
+
+   const char* cbName = StringTable->insert(argv[0]);
+
+   /*if (getComponentCount() > 0)
+   {
+      for (U32 i = 0; i < mComponents.size(); i++)
+      {
+         ComponentInstance* pComponent = mComponents[i];
+
+         if (pComponent->isEnabled())
+            Con::execute(pComponent, argc, argv);
+      }
+   }*/
+
+   // Set Owner Field
+   const char* result = "";
+   if (callThis)
+      result = Con::execute(pThis, argc, argv, true); // true - exec method onThisOnly, not on DCMCs
+
+   return result;
+}
+#pragma endregion CallMethod Passthrough

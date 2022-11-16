@@ -23,6 +23,8 @@
 #include "gui/worldEditor/worldEditorSelection.h"
 #include "gui/worldEditor/worldEditor.h"
 #include "scene/sceneObject.h"
+#include <game/Entity.h>
+#include <game/3D/transforms/transform3DComponent.h>
 
 IMPLEMENT_CONOBJECT( WorldEditorSelection );
 
@@ -202,24 +204,49 @@ void WorldEditorSelection::updateCentroid()
    //
    for( SimSet::iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* obj = dynamic_cast<SceneObject*>( *iter );
-      if( !obj )
-         continue;
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            const MatrixF& mat = transComp->getTransform();
+            Point3F wPos;
+            mat.getColumn(3, &wPos);
 
-      const MatrixF & mat = obj->getTransform();
-      Point3F wPos;
-      mat.getColumn(3, &wPos);
+            //
+            mCentroid += wPos;
 
-      //
-      mCentroid += wPos;
+            //
+            const Box3F& bounds = transComp->getWorldBox();
+            mBoxBounds.minExtents.setMin(bounds.minExtents);
+            mBoxBounds.maxExtents.setMax(bounds.maxExtents);
+         }
+         else
+            mContainsGlobalBounds = true;
+      }
+      else
+      {
+         SceneObject* obj = dynamic_cast<SceneObject*>(*iter);
+         if (!obj)
+            continue;
 
-      //
-      const Box3F& bounds = obj->getWorldBox();
-      mBoxBounds.minExtents.setMin(bounds.minExtents);
-      mBoxBounds.maxExtents.setMax(bounds.maxExtents);
+         const MatrixF& mat = obj->getTransform();
+         Point3F wPos;
+         mat.getColumn(3, &wPos);
 
-      if(obj->isGlobalBounds())
-         mContainsGlobalBounds = true;
+         //
+         mCentroid += wPos;
+
+         //
+         const Box3F& bounds = obj->getWorldBox();
+         mBoxBounds.minExtents.setMin(bounds.minExtents);
+         mBoxBounds.maxExtents.setMax(bounds.maxExtents);
+
+         if (obj->isGlobalBounds())
+            mContainsGlobalBounds = true;
+      }
    }
 
    mCentroid /= (F32) size();
@@ -292,26 +319,54 @@ void WorldEditorSelection::offset( const Point3F& offset, F32 gridSnap )
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* obj = dynamic_cast<SceneObject*>( *iter );
-      if( !obj )
-         continue;
-
-      MatrixF mat = obj->getTransform();
-      Point3F wPos;
-      mat.getColumn(3, &wPos);
-
-      // adjust
-      wPos += offset;
-      
-      if( gridSnap != 0.f )
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
       {
-         wPos.x = _snapFloat(wPos.x, gridSnap);
-         wPos.y = _snapFloat(wPos.y, gridSnap);
-         wPos.z = _snapFloat(wPos.z, gridSnap);
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            MatrixF mat = transComp->getTransform();
+            Point3F wPos;
+            mat.getColumn(3, &wPos);
+
+            // adjust
+            wPos += offset;
+
+            if (gridSnap != 0.f)
+            {
+               wPos.x = _snapFloat(wPos.x, gridSnap);
+               wPos.y = _snapFloat(wPos.y, gridSnap);
+               wPos.z = _snapFloat(wPos.z, gridSnap);
+            }
+
+            mat.setColumn(3, wPos);
+            transComp->setTransform(mat);
+         }
       }
-      
-      mat.setColumn(3, wPos);
-      obj->setTransform(mat);
+      else
+      {
+         SceneObject* obj = dynamic_cast<SceneObject*>(*iter);
+         if (!obj)
+            continue;
+
+         MatrixF mat = obj->getTransform();
+         Point3F wPos;
+         mat.getColumn(3, &wPos);
+
+         // adjust
+         wPos += offset;
+
+         if (gridSnap != 0.f)
+         {
+            wPos.x = _snapFloat(wPos.x, gridSnap);
+            wPos.y = _snapFloat(wPos.y, gridSnap);
+            wPos.z = _snapFloat(wPos.z, gridSnap);
+         }
+
+         mat.setColumn(3, wPos);
+         obj->setTransform(mat);
+      }
    }
 
    mCentroidValid = false;
@@ -339,9 +394,22 @@ void WorldEditorSelection::setPosition(const Point3F & pos)
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast<SceneObject*>( *iter );
-      if( object )
-         object->setPosition(pos);
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            transComp->setPosition(pos);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (object)
+            object->setPosition(pos);
+      }
    }
 
    mCentroidValid = false;
@@ -371,13 +439,28 @@ void WorldEditorSelection::orient(const MatrixF & rot, const Point3F & center)
    // Orient all the selected objects to the given rotation
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( !object )
-         continue;
-         
-      MatrixF mat = rot;
-      mat.setPosition( object->getPosition() );
-      object->setTransform(mat);
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            MatrixF mat = rot;
+            mat.setPosition(transComp->getPosition());
+            transComp->setTransform(mat);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (!object)
+            continue;
+
+         MatrixF mat = rot;
+         mat.setPosition(object->getPosition());
+         object->setTransform(mat);
+      }
    }
 
    mCentroidValid = false;
@@ -389,9 +472,26 @@ void WorldEditorSelection::rotate(const EulerF &rot)
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( !object )
-         continue;
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            MatrixF mat = transComp->getTransform();
+
+            MatrixF transform(rot);
+            mat.mul(transform);
+
+            transComp->setTransform(mat);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (!object)
+            continue;
 
          MatrixF mat = object->getTransform();
 
@@ -399,6 +499,7 @@ void WorldEditorSelection::rotate(const EulerF &rot)
          mat.mul(transform);
 
          object->setTransform(mat);
+      }
    }
 }
 
@@ -409,66 +510,137 @@ void WorldEditorSelection::rotate(const EulerF & rot, const Point3F & center)
    // single selections will rotate around own axis, multiple about world
    if(size() == 1)
    {
-      SceneObject* object = dynamic_cast<SceneObject*>(at(0));
-      if (object)
+      Entity* entObj = dynamic_cast<Entity*>(at(0));
+      if (entObj)
       {
-         MatrixF mat = object->getTransform();
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            MatrixF mat = transComp->getTransform();
 
-         Point3F pos;
-         mat.getColumn(3, &pos);
+            Point3F pos;
+            mat.getColumn(3, &pos);
 
-         // get offset in obj space
-         Point3F offset = pos - center;
-         MatrixF wMat = object->getWorldTransform();
-         wMat.mulV(offset);
+            // get offset in obj space
+            Point3F offset = pos - center;
+            MatrixF wMat = transComp->getWorldTransform();
+            wMat.mulV(offset);
 
-         //
-         MatrixF transform(EulerF(0, 0, 0), -offset);
-         transform.mul(MatrixF(rot));
-         transform.mul(MatrixF(EulerF(0, 0, 0), offset));
-         mat.mul(transform);
+            //
+            MatrixF transform(EulerF(0, 0, 0), -offset);
+            transform.mul(MatrixF(rot));
+            transform.mul(MatrixF(EulerF(0, 0, 0), offset));
+            mat.mul(transform);
 
-         object->setTransform(mat);
+            transComp->setTransform(mat);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(at(0));
+         if (object)
+         {
+            MatrixF mat = object->getTransform();
+
+            Point3F pos;
+            mat.getColumn(3, &pos);
+
+            // get offset in obj space
+            Point3F offset = pos - center;
+            MatrixF wMat = object->getWorldTransform();
+            wMat.mulV(offset);
+
+            //
+            MatrixF transform(EulerF(0, 0, 0), -offset);
+            transform.mul(MatrixF(rot));
+            transform.mul(MatrixF(EulerF(0, 0, 0), offset));
+            mat.mul(transform);
+
+            object->setTransform(mat);
+         }
       }
    }
    else
    {
       for( iterator iter = begin(); iter != end(); ++ iter )
       {
-         SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-         if( !object )
-            continue;
-            
-         MatrixF mat = object->getTransform();
+         Entity* entObj = dynamic_cast<Entity*>(*iter);
+         if (entObj)
+         {
+            //try and run through the transform components
+            Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+            if (transComp)
+            {
+               MatrixF mat = transComp->getTransform();
 
-         Point3F pos;
-         mat.getColumn(3, &pos);
+               Point3F pos;
+               mat.getColumn(3, &pos);
 
-         // get offset in obj space
-         Point3F offset = pos - center;
+               // get offset in obj space
+               Point3F offset = pos - center;
 
-         MatrixF transform(rot);
-         Point3F wOffset;
-         transform.mulV(offset, &wOffset);
+               MatrixF transform(rot);
+               Point3F wOffset;
+               transform.mulV(offset, &wOffset);
 
-         MatrixF wMat = object->getWorldTransform();
-         wMat.mulV(offset);
+               MatrixF wMat = transComp->getWorldTransform();
+               wMat.mulV(offset);
 
-         //
-         transform.set(EulerF(0,0,0), -offset);
+               //
+               transform.set(EulerF(0, 0, 0), -offset);
 
-         mat.setColumn(3, Point3F(0,0,0));
-         wMat.setColumn(3, Point3F(0,0,0));
+               mat.setColumn(3, Point3F(0, 0, 0));
+               wMat.setColumn(3, Point3F(0, 0, 0));
 
-         transform.mul(wMat);
-         transform.mul(MatrixF(rot));
-         transform.mul(mat);
-         mat.mul(transform);
+               transform.mul(wMat);
+               transform.mul(MatrixF(rot));
+               transform.mul(mat);
+               mat.mul(transform);
 
-         mat.normalize();
-         mat.setColumn(3, wOffset + center);
+               mat.normalize();
+               mat.setColumn(3, wOffset + center);
 
-         object->setTransform(mat);
+               transComp->setTransform(mat);
+            }
+         }
+         else
+         {
+            SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+            if (!object)
+               continue;
+
+            MatrixF mat = object->getTransform();
+
+            Point3F pos;
+            mat.getColumn(3, &pos);
+
+            // get offset in obj space
+            Point3F offset = pos - center;
+
+            MatrixF transform(rot);
+            Point3F wOffset;
+            transform.mulV(offset, &wOffset);
+
+            MatrixF wMat = object->getWorldTransform();
+            wMat.mulV(offset);
+
+            //
+            transform.set(EulerF(0, 0, 0), -offset);
+
+            mat.setColumn(3, Point3F(0, 0, 0));
+            wMat.setColumn(3, Point3F(0, 0, 0));
+
+            transform.mul(wMat);
+            transform.mul(MatrixF(rot));
+            transform.mul(mat);
+            mat.mul(transform);
+
+            mat.normalize();
+            mat.setColumn(3, wOffset + center);
+
+            object->setTransform(mat);
+         }
       }
    }
 
@@ -481,18 +653,38 @@ void WorldEditorSelection::setRotate(const EulerF & rot)
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( !object )
-         continue;
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            MatrixF mat = transComp->getTransform();
+            Point3F pos;
+            mat.getColumn(3, &pos);
 
-      MatrixF mat = object->getTransform();
-      Point3F pos;
-      mat.getColumn(3, &pos);
+            MatrixF rmat(rot);
+            rmat.setPosition(pos);
 
-      MatrixF rmat(rot);
-      rmat.setPosition(pos);
+            transComp->setTransform(rmat);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (!object)
+            continue;
 
-      object->setTransform(rmat);
+         MatrixF mat = object->getTransform();
+         Point3F pos;
+         mat.getColumn(3, &pos);
+
+         MatrixF rmat(rot);
+         rmat.setPosition(pos);
+
+         object->setTransform(rmat);
+      }
    }
 }
 
@@ -502,18 +694,38 @@ void WorldEditorSelection::scale(const VectorF & scale)
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( !object )
-         continue;
-         
-      VectorF current = object->getScale();
-      current.convolve(scale);
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            VectorF current = transComp->getScale();
+            current.convolve(scale);
 
-      // clamp scale to sensible limits
-      current.setMax( Point3F( 0.01f ) );
-      current.setMin( Point3F( 1000.0f ) );
+            // clamp scale to sensible limits
+            current.setMax(Point3F(0.01f));
+            current.setMin(Point3F(1000.0f));
 
-      object->setScale(current);
+            transComp->setScale(current);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (!object)
+            continue;
+
+         VectorF current = object->getScale();
+         current.convolve(scale);
+
+         // clamp scale to sensible limits
+         current.setMax(Point3F(0.01f));
+         current.setMin(Point3F(1000.0f));
+
+         object->setScale(current);
+      }
    }
 
    mCentroidValid = false;
@@ -525,39 +737,80 @@ void WorldEditorSelection::scale(const VectorF & scale, const Point3F & center)
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( !object )
-         continue;
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            VectorF current = transComp->getScale();
+            current.convolve(scale);
 
-      VectorF current = object->getScale();
-      current.convolve(scale);
+            // clamp scale to sensible limits
+            current.setMax(Point3F(0.01f));
+            current.setMin(Point3F(1000.0f));
 
-      // clamp scale to sensible limits
-      current.setMax( Point3F( 0.01f ) );
-      current.setMin( Point3F( 1000.0f ) );
+            // Apply the scale first.  If the object's scale doesn't change with
+            // this operation then this object doesn't scale.  In this case
+            // we don't want to continue with the offset operation.
+            VectorF prevScale = transComp->getScale();
+            transComp->setScale(current);
+            if (!transComp->getScale().equal(current))
+               continue;
 
-      // Apply the scale first.  If the object's scale doesn't change with
-      // this operation then this object doesn't scale.  In this case
-      // we don't want to continue with the offset operation.
-      VectorF prevScale = object->getScale();
-      object->setScale(current);
-      if( !object->getScale().equal(current) )
-         continue;
+            // determine the actual scale factor to apply to the object offset
+            // need to account for the scale limiting above to prevent offsets
+            // being reduced to 0 which then cannot be restored by unscaling
+            VectorF adjustedScale = current / prevScale;
 
-      // determine the actual scale factor to apply to the object offset
-      // need to account for the scale limiting above to prevent offsets
-      // being reduced to 0 which then cannot be restored by unscaling
-      VectorF adjustedScale = current / prevScale;
+            MatrixF mat = transComp->getTransform();
 
-      MatrixF mat = object->getTransform();
+            Point3F pos;
+            mat.getColumn(3, &pos);
 
-      Point3F pos;
-      mat.getColumn(3, &pos);
+            Point3F offset = pos - center;
+            offset *= adjustedScale;
 
-      Point3F offset = pos - center;
-      offset *= adjustedScale;
+            transComp->setPosition(offset + center);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (!object)
+            continue;
 
-      object->setPosition(offset + center);
+         VectorF current = object->getScale();
+         current.convolve(scale);
+
+         // clamp scale to sensible limits
+         current.setMax(Point3F(0.01f));
+         current.setMin(Point3F(1000.0f));
+
+         // Apply the scale first.  If the object's scale doesn't change with
+         // this operation then this object doesn't scale.  In this case
+         // we don't want to continue with the offset operation.
+         VectorF prevScale = object->getScale();
+         object->setScale(current);
+         if (!object->getScale().equal(current))
+            continue;
+
+         // determine the actual scale factor to apply to the object offset
+         // need to account for the scale limiting above to prevent offsets
+         // being reduced to 0 which then cannot be restored by unscaling
+         VectorF adjustedScale = current / prevScale;
+
+         MatrixF mat = object->getTransform();
+
+         Point3F pos;
+         mat.getColumn(3, &pos);
+
+         Point3F offset = pos - center;
+         offset *= adjustedScale;
+
+         object->setPosition(offset + center);
+      }
    }
 }
 
@@ -567,9 +820,22 @@ void WorldEditorSelection::setScale(const VectorF & scale)
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( object )
-         object->setScale( scale );
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            transComp->setScale(scale);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (object)
+            object->setScale(scale);
+      }
    }
 
    mCentroidValid = false;
@@ -581,20 +847,42 @@ void WorldEditorSelection::setScale(const VectorF & scale, const Point3F & cente
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( !object )
-         continue;
-         
-      MatrixF mat = object->getTransform();
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            MatrixF mat = transComp->getTransform();
 
-      Point3F pos;
-      mat.getColumn(3, &pos);
+            Point3F pos;
+            mat.getColumn(3, &pos);
 
-      Point3F offset = pos - center;
-      offset *= scale;
+            Point3F offset = pos - center;
+            offset *= scale;
 
-      object->setPosition(offset + center);
-      object->setScale(scale);
+            transComp->setPosition(offset + center);
+            transComp->setScale(scale);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (!object)
+            continue;
+
+         MatrixF mat = object->getTransform();
+
+         Point3F pos;
+         mat.getColumn(3, &pos);
+
+         Point3F offset = pos - center;
+         offset *= scale;
+
+         object->setPosition(offset + center);
+         object->setScale(scale);
+      }
    }
 }
 
@@ -604,19 +892,37 @@ void WorldEditorSelection::addSize(const VectorF & newsize)
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( !object )
-         continue;
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            const Box3F& bounds = transComp->getObjBox();
+            VectorF extent = bounds.getExtents();
+            VectorF scaledextent = transComp->getScale() * extent;
 
-      if( object->isGlobalBounds() )
-         continue;
+            VectorF scale = (newsize + scaledextent) / scaledextent;
+            transComp->setScale(transComp->getScale() * scale);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (!object)
+            continue;
 
-      const Box3F& bounds = object->getObjBox();
-      VectorF extent = bounds.getExtents();
-      VectorF scaledextent = object->getScale() * extent;
+         if (object->isGlobalBounds())
+            continue;
 
-      VectorF scale = (newsize + scaledextent) / scaledextent;
-      object->setScale( object->getScale() * scale );
+         const Box3F& bounds = object->getObjBox();
+         VectorF extent = bounds.getExtents();
+         VectorF scaledextent = object->getScale() * extent;
+
+         VectorF scale = (newsize + scaledextent) / scaledextent;
+         object->setScale(object->getScale() * scale);
+      }
    }
 }
 
@@ -626,18 +932,35 @@ void WorldEditorSelection::setSize(const VectorF & newsize)
 {
    for( iterator iter = begin(); iter != end(); ++ iter )
    {
-      SceneObject* object = dynamic_cast< SceneObject* >( *iter );
-      if( !object )
-         continue;
+      Entity* entObj = dynamic_cast<Entity*>(*iter);
+      if (entObj)
+      {
+         //try and run through the transform components
+         Transform3DComponentInstance* transComp = entObj->getComponentInstance<Transform3DComponentInstance>();
+         if (transComp)
+         {
+            const Box3F& bounds = transComp->getObjBox();
+            VectorF extent = bounds.getExtents();
 
-      if( object->isGlobalBounds() )
-         continue;
+            VectorF scale = newsize / extent;
+            transComp->setScale(scale);
+         }
+      }
+      else
+      {
+         SceneObject* object = dynamic_cast<SceneObject*>(*iter);
+         if (!object)
+            continue;
 
-      const Box3F& bounds = object->getObjBox();
-      VectorF extent = bounds.getExtents();
+         if (object->isGlobalBounds())
+            continue;
 
-      VectorF scale = newsize / extent;
-      object->setScale( scale );
+         const Box3F& bounds = object->getObjBox();
+         VectorF extent = bounds.getExtents();
+
+         VectorF scale = newsize / extent;
+         object->setScale(scale);
+      }
    }
 }
 

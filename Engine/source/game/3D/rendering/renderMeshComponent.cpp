@@ -12,6 +12,7 @@ IMPL_COMP_REGISTER_SIGNALS(RenderMeshComponent);
 
 RenderMeshComponent::RenderMeshComponent() : Component()
 {
+   mNetworked = true;
 }
 
 bool RenderMeshComponent::onAdd()
@@ -51,6 +52,12 @@ void RenderMeshComponent::unpackData(BitStream* stream)
 ComponentInstance* RenderMeshComponent::createInstance(ComponentObject* owner)
 {
    RenderMeshComponentInstance* compInst = new RenderMeshComponentInstance(*this, *owner);
+
+   if (!compInst->registerObject())
+   {
+      Con::errorf("RenderMeshComponent::createInstance() - failed to create instance");
+      return nullptr;
+   }
 
    setupFields(compInst, true);
    RenderMeshComponentInstance::sComponentInstanceList.push_back(compInst);
@@ -256,8 +263,8 @@ RenderMeshDirector::RenderMeshDirector() : Director()
    //Here, we listen to the RenderMeshComponent's add and remove signaling.
    //If a RenderMeshComponent(or in other directors, any other components we care about) are added/removed
    //we can process the component and it's owner to track valid entries the director actually cares about
-   RenderMeshComponent::getAddedComponentSignal().notify(this, &RenderMeshDirector::registerComponent);
-   RenderMeshComponent::getRemovedComponentSignal().notify(this, &RenderMeshDirector::unregisterComponent);
+   DIRECTOR_SUBSCRIBE_SIGNALS(RenderMeshDirector, RenderMeshComponent);
+   DIRECTOR_SUBSCRIBE_SIGNALS(RenderMeshDirector, Transform3DComponent);
 }
 
 RenderMeshDirector::~RenderMeshDirector()
@@ -275,7 +282,7 @@ void RenderMeshDirector::registerComponent(ComponentObject* owner, const Compone
    RenderMeshEntityRef ref;
    ref.owner = owner;
    ref.mesh = owner->getComponentInstance<RenderMeshComponentInstance>();
-   //ref.transform = owner->getComponentInstance<Transform3DComponentInstance>();
+   ref.transform = owner->getComponentInstance<Transform3DComponentInstance>();
 
    //If all valid, we finally add it
    if(ref.isValid())
@@ -314,6 +321,6 @@ void RenderMeshDirector::update()
       //The reson we do this is to keep the work the components do compartmentalized.
       //This keeps it more cache friendly, and also threadsafe when we don't have to worry about the components
       //needing to reach out to any other objects while they work.
-      ref.mesh->update(/*ref.transform->getWorldTransform()*/ownerEntity->getTransform());
+      ref.mesh->update(ref.transform->getRenderTransform());
    }
 }

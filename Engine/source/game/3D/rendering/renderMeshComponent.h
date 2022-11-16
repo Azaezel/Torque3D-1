@@ -4,7 +4,7 @@
 #include "game/components/componentInstance.h"
 
 #include "game/directors/directorManager.h"
-//#include "game/3D/transforms/transform3DComponent.h"
+#include "game/3D/transforms/transform3DComponent.h"
 
 #include "T3D/assets/ShapeAsset.h"
 
@@ -155,11 +155,11 @@ class RenderMeshDirector : public Director
    {
       ComponentObject* owner;
       StrongRefPtr<RenderMeshComponentInstance> mesh;
-      //StrongRefPtr<Transform3DComponentInstance> transform;
+      StrongRefPtr<Transform3DComponentInstance> transform;
 
       bool isValid()
       {
-         if (owner != nullptr && !mesh.isNull() /* && !transform.isNull()*/)
+         if (owner != nullptr && !mesh.isNull() && !transform.isNull())
             return true;
 
          return false;
