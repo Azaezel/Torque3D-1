@@ -3189,8 +3189,8 @@ ShaderFeature::Resources ReflectionProbeFeatHLSL::getResources(const MaterialFea
 {
    Resources res;
 
-   res.numTex = 3;
-   res.numTexReg = 3;
+   res.numTex = 4;
+   res.numTexReg = 4;
 
    return res;
 }
