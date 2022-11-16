@@ -390,8 +390,12 @@ float2 GetTriplanarUV(Surface surface)
 
 void dampen(inout Surface surface, TORQUE_SAMPLER2D(WetnessTexture), float accumTime, float degree)
 {
-   float speed = accumTime*(1.0-surface.roughness); 
-   float2 wetUV = GetTriplanarUV(surface)+float2(speed,speed);
+   float speed = accumTime*(1.0-surface.roughness);
+   float grav = pow(dot(float3(0,0,1),surface.N),3);   
+   if (grav>0) grav = 1.0-grav;
+   else grav*=-1.0;
+   
+   float2 wetUV = GetTriplanarUV(surface)+float2(speed,speed)*(2.0-grav);
    float wetness = pow(TORQUE_TEX2D(WetnessTexture, wetUV).b,5); 
    surface.roughness = lerp(surface.roughness,0.92f*wetness,degree);
    surface.baseColor.rgb = lerp(surface.baseColor.rgb,surface.baseColor.rgb*(2.0-wetness)/2,degree); 
