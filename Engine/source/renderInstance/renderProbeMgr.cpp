@@ -876,6 +876,11 @@ void RenderProbeMgr::render( SceneRenderState *state )
 
    String probeCapturing = Con::getVariable("$Probes::Capturing", "0");
    mProbeArrayEffect->setShaderMacro("CAPTURING", probeCapturing);
+   
+   mProbeArrayEffect->setTexture(3, mBRDFTexture);
+   mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
+   mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
+   mProbeArrayEffect->setTexture(6, mWetnessTexture);
    //ssao mask
    if (AdvancedLightBinManager::smUseSSAOMask)
    {
@@ -885,19 +890,13 @@ void RenderProbeMgr::render( SceneRenderState *state )
       if (pTexObj)
       {
          mProbeArrayEffect->setShaderMacro("USE_SSAO_MASK");
-         mProbeArrayEffect->setTexture(6, pTexObj);
+         mProbeArrayEffect->setTexture(7, pTexObj);
       }
    }
    else
    {
-      mProbeArrayEffect->setTexture(6, GFXTexHandle(NULL)); 
+      mProbeArrayEffect->setTexture(7, GFXTexHandle(NULL));
    }
-   
-   mProbeArrayEffect->setTexture(3, mBRDFTexture);
-   mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
-   mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
-   //texture index 6 = ssao
-   mProbeArrayEffect->setTexture(7, mWetnessTexture);   
    mProbeArrayEffect->setShaderConst("$numProbes", (S32)mProbeData.effectiveProbeCount);
    mProbeArrayEffect->setShaderConst("$skylightCubemapIdx", (S32)mProbeData.skyLightIdx);
    mProbeArrayEffect->setShaderConst(ShaderGenVars::skylightDamp, mProbeData.skyLightDamp);

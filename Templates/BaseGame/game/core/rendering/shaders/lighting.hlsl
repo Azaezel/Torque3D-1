@@ -371,32 +371,20 @@ float3 boxProject(float3 wsPosition, float3 wsReflectVec, float4x4 worldToObj, f
    return posonbox-refPosition;
 }
 
-//variant of https://catlikecoding.com/unity/tutorials/advanced-rendering/triplanar-mapping/
-struct TriplanarUV
-{
-	float2 x, y, z;
-};
-
-float2 GetTriplanarUV(Surface surface)
-{
-	TriplanarUV triUV;
-	float3 p = surface.P;
-	triUV.x = p.zy;
-	triUV.y = p.xz;
-	triUV.z = p.xy;
-    
-    return (triUV.x+triUV.y+triUV.z)/3; 
-}
-
 void dampen(inout Surface surface, TORQUE_SAMPLER2D(WetnessTexture), float accumTime, float degree)
-{
-   float speed = accumTime*(1.0-surface.roughness);
-   float grav = pow(dot(float3(0,0,1),surface.N),3);   
-   if (grav>0) grav = 1.0-grav;
-   else grav*=-1.0;
+{   
+   float3 n = abs(surface.N);
+
+   float grav = 2.0-pow(dot(float3(0,0,1),surface.N),5);
    
-   float2 wetUV = GetTriplanarUV(surface)+float2(speed,speed)*(2.0-grav);
-   float wetness = pow(TORQUE_TEX2D(WetnessTexture, wetUV).b,5); 
+   float speed = accumTime*(1.0-surface.roughness);
+   float2 wetoffset = float2(speed+grav,speed); 
+      
+   float wetness = TORQUE_TEX2D(WetnessTexture, float2(surface.P.xy*0.2+wetoffset)).b; 
+   wetness = lerp(wetness,TORQUE_TEX2D(WetnessTexture,float2(surface.P.zx*0.2+wetoffset)).b,n.y);
+   wetness = lerp(wetness,TORQUE_TEX2D(WetnessTexture,float2(surface.P.zy*0.2+wetoffset)).b,n.x);
+   wetness = pow(wetness,3)*degree;
+   
    surface.roughness = lerp(surface.roughness,0.92f*wetness,degree);
    surface.baseColor.rgb = lerp(surface.baseColor.rgb,surface.baseColor.rgb*(2.0-wetness)/2,degree); 
    surface.baseColor.a = lerp(surface.baseColor.a,max(surface.baseColor.a,wetness),degree); 

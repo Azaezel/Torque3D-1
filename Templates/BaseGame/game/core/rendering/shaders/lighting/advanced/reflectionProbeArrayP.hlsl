@@ -20,12 +20,12 @@ uniform int numProbes;
 
 TORQUE_UNIFORM_SAMPLERCUBEARRAY(specularCubemapAR, 4);
 TORQUE_UNIFORM_SAMPLERCUBEARRAY(irradianceCubemapAR, 5);
+TORQUE_UNIFORM_SAMPLER2D(WetnessTexture, 6);
 
 #ifdef USE_SSAO_MASK
-TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 6);
+TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 7);
 uniform float4 rtParams6;
 #endif
-TORQUE_UNIFORM_SAMPLER2D(WetnessTexture, 7);
 uniform float accumTime;
 
 uniform float4    probePosArray[MAX_PROBES];
@@ -40,6 +40,7 @@ uniform float4    probeContribColors[MAX_PROBES];
 
 uniform int skylightCubemapIdx;
 uniform int SkylightDamp;
+
 
 float4 main(PFXVertToPix IN) : SV_TARGET
 {
