@@ -3099,16 +3099,6 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    BRDFTextureTex->texture = true;
    BRDFTextureTex->constNum = BRDFTexture->constNum;
 
-   Var* WetnessTexture = new Var("WetnessTexture", "SamplerState");
-   WetnessTexture->uniform = true;
-   WetnessTexture->sampler = true;
-   WetnessTexture->constNum = Var::getTexUnitNum();     // used as texture unit num here
-
-   Var* WetnessTextureTex = new Var("texture_WetnessTexture", "Texture2D");
-   WetnessTextureTex->uniform = true;
-   WetnessTextureTex->texture = true;
-   WetnessTextureTex->constNum = WetnessTexture->constNum;
-
    Var *specularCubemapAR = new Var("SpecularCubemapAR", "SamplerState");
    specularCubemapAR->uniform = true;
    specularCubemapAR->sampler = true;
@@ -3128,6 +3118,16 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    irradianceCubemapARTex->uniform = true;
    irradianceCubemapARTex->texture = true;
    irradianceCubemapARTex->constNum = irradianceCubemapAR->constNum;
+
+   Var* WetnessTexture = new Var("WetnessTexture", "SamplerState");
+   WetnessTexture->uniform = true;
+   WetnessTexture->sampler = true;
+   WetnessTexture->constNum = Var::getTexUnitNum();     // used as texture unit num here
+
+   Var* WetnessTextureTex = new Var("texture_WetnessTexture", "Texture2D");
+   WetnessTextureTex->uniform = true;
+   WetnessTextureTex->texture = true;
+   WetnessTextureTex->constNum = WetnessTexture->constNum;
 
    Var* surface = getSurface(componentList, meta, fd);
 
