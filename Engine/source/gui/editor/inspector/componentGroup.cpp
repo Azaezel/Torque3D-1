@@ -91,6 +91,7 @@ bool GuiInspectorComponentGroup::inspectGroup()
    GuiStackControl *pArrayStack = NULL;
    GuiRolloutCtrl *pArrayRollout = NULL;
    bool bGrabItems = false;
+   bool bNoGroup = false;
 
    //if this isn't a component, what are we even doing here?
    if (!mTargetComponent)
@@ -105,11 +106,10 @@ bool GuiInspectorComponentGroup::inspectGroup()
    ComponentInstance* compInst = ownerObj->getComponentInstanceByData(const_cast<Component*>(mTargetComponent));
 
    //first, relevent static fields
-   /*AbstractClassRep::FieldList& fieldList = compInst->getClassRep()->mFieldList;
+   AbstractClassRep::FieldList& fieldList = compInst->getClassRep()->mFieldList;
    for (AbstractClassRep::FieldList::iterator itr = fieldList.begin();
       itr != fieldList.end(); ++itr)
    {
-      break;
       AbstractClassRep::Field* field = &(*itr);
 
       if (field->type == AbstractClassRep::StartGroupFieldType)
@@ -131,6 +131,11 @@ bool GuiInspectorComponentGroup::inspectGroup()
          continue;
       }
 
+      if (StringTable->insert(field->pGroupname) == StringTable->insert("ComponentFields"))
+      {
+         bool asdfasdfsad = true;
+      }
+
       // Skip field if it has the HideInInspectors flag set.
       if (field->flag.test(AbstractClassRep::FIELD_HideInInspectors))
          continue;
@@ -139,7 +144,7 @@ bool GuiInspectorComponentGroup::inspectGroup()
          || field->pFieldname == StringTable->insert("internalName"))
          continue;
 
-      if (/*(bGrabItems == true || (bNoGroup == true && bGrabItems == false)) &&*//* itr->type != AbstractClassRep::DeprecatedFieldType)
+      if (/*(bGrabItems == true || (bNoGroup == true && bGrabItems == false)) &&*/ itr->type != AbstractClassRep::DeprecatedFieldType)
       {
          if (bNoGroup == true && bGrabItems == true)
             continue;
@@ -358,7 +363,7 @@ bool GuiInspectorComponentGroup::inspectGroup()
             }
          }
       }
-   }*/
+   }
 
    for (U32 i = 0; i < compInst->getComponentFieldCount(); i++)
    {

@@ -286,7 +286,7 @@ void RenderMeshDirector::registerComponent(ComponentObject* owner, const Compone
 
    //If all valid, we finally add it
    if(ref.isValid())
-      mValidEntriesList.push_back(ref);
+      mValidEntriesList.push_back_unique(ref);
 }
 
 void RenderMeshDirector::unregisterComponent(ComponentObject* owner, const Component& comp)

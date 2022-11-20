@@ -4,6 +4,16 @@
 #include "game/components/componentInstance.h"
 
 #include "game/directors/directorManager.h"
+#include <game/3D/transforms/transform3DComponent.h>
+
+#include "sfx/sfxSystem.h"
+#include "sfx/sfxSource.h"
+#include "sfx/sfxTrack.h"
+#include "sfx/sfxDescription.h"
+#include "T3D/sfx/sfx3DWorld.h"
+
+#include "sfx/sfxTrack.h"
+#include "sfx/sfxTypes.h"
 
 class SoundDirector;
 
@@ -60,9 +70,50 @@ class SoundComponentInstance : public ComponentInstance
    friend SoundDirector;
 
 public:
+   enum PublicConstants
+   {
+      MaxSoundThreads = 4,            ///< Should be a power of 2
+   };
 
 private:
    static Vector<SoundComponentInstance*> sComponentInstanceList;
+
+
+   /// @name Network state masks
+   /// @{
+
+   ///
+   enum SoundComponentMasks
+   {
+      SoundMaskN = Parent::NextFreeMask << 6,       ///< Extends + MaxSoundThreads bits
+   };
+
+   enum BaseMaskConstants
+   {
+      SoundMask = (SoundMaskN << MaxSoundThreads) - SoundMaskN,
+   };
+   /// @name Scripted Sound
+   /// @{
+   struct Sound {
+      bool play;                    ///< Are we playing this sound?
+      SimTime timeout;              ///< Time until we stop playing this sound.
+      SFXTrack* profile;            ///< Profile on server
+      SFXSource* sound;             ///< Sound on client
+      Sound()
+      {
+         play = false;
+         timeout = 0;
+         profile = NULL;
+         sound = NULL;
+      }
+   };
+
+   DECLARE_SOUNDASSET_ARRAY(SoundComponentInstance, Sound, MaxSoundThreads);
+   DECLARE_ASSET_ARRAY_SETGET(SoundComponentInstance, Sound);
+
+   Sound mSoundThread[MaxSoundThreads];
+
+   bool mPlay[MaxSoundThreads];
 
 public:
    DECLARE_CONOBJECT(SoundComponentInstance);
@@ -91,7 +142,7 @@ public:
    /// Called by SoundDirector when it runs, this will render our shapeInstance(if we have one)
    /// </summary>
    /// <param name="transform">The transform to render at</param>
-   virtual void update();
+   virtual void update(StrongRefPtr<Transform3DComponentInstance> transformComp);
 
    /// <summary>
    /// See ComponentInstance::packUpdate();
@@ -101,6 +152,14 @@ public:
    /// See ComponentInstance::unpackUpdate();
    /// </summary>
    virtual void unpackUpdate(NetConnection* con, BitStream* stream);
+
+   static bool _previewSound(void* object, const char* index, const char* data);
+   static bool _autoplay(void* object, const char* index, const char* data);
+
+   virtual void playAudio(U32 slotNum, SFXTrack* profile = NULL);
+   virtual void stopAudio(U32 slot);
+   virtual void updateServerAudio();
+   virtual void updateAudioState(Sound& st);
 };
 
 //
@@ -118,14 +177,21 @@ class SoundDirector : public Director
    struct SoundEntityRef
    {
       ComponentObject* owner;
-      StrongRefPtr<SoundComponentInstance> controlObj;
+      StrongRefPtr<SoundComponentInstance> soundComp;
+      StrongRefPtr<Transform3DComponentInstance> transformComp;
 
       bool isValid()
       {
-         if (owner != nullptr && !controlObj.isNull())
+         if (owner != nullptr && !soundComp.isNull())
             return true;
 
          return false;
+      }
+
+      bool operator==(const SoundEntityRef& o) const {
+         if (this->soundComp.isNull() || o.soundComp.isNull())
+            return false;
+         return o.soundComp.getPointer()->getId() == this->soundComp.getPointer()->getId();
       }
    };
 

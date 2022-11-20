@@ -36,6 +36,7 @@
 #include "T3D/gameBase/gameConnection.h"
 #include "T3D/gameBase/std/stdMoveList.h"
 #include "T3D/fx/cameraFXMgr.h"
+#include <game/directors/directorManager.h>
 
 MODULE_BEGIN( ProcessList )
 
@@ -228,6 +229,8 @@ void StdClientProcessList::onTickObject( ProcessObject *obj )
    }
    else if ( obj->isTicking() )
       obj->processTick( 0 );
+
+   DirectorManager::get()->update(DirectorManager::PostSim);
 }
 
 void StdClientProcessList::advanceObjects()
@@ -371,6 +374,8 @@ void StdServerProcessList::onTickObject( ProcessObject *pobj )
    }
    else if ( pobj->isTicking() )
       pobj->processTick( 0 );
+
+   DirectorManager::get()->update(DirectorManager::PostSim);
 }
 
 void StdServerProcessList::advanceObjects()

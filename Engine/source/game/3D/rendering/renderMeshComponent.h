@@ -164,6 +164,12 @@ class RenderMeshDirector : public Director
 
          return false;
       }
+
+      bool operator==(const RenderMeshEntityRef& o) const {
+         if (this->mesh.isNull() || o.mesh.isNull())
+            return false;
+         return o.mesh.getPointer()->getId() == this->mesh.getPointer()->getId();
+      }
    };
 
 private:
