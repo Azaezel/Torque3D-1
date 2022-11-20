@@ -15,7 +15,7 @@ class DirectorManager;
 /// And invoke the componentInstances do their work. Directors are important because they decouple the update invoke from any core system directly
 /// Simplifying the call structure, and minimize deep integrations. In particular, it means that we can work on entire sets of components(and owners) in a specific
 /// set, in a specific order. And because this happens in a controlled, isolated way, it's much easier to thread a specific update workload.
-/// 
+/// \n\n
 /// Beyond that, Directors also do the work of determining which components and owner objects are even to be updated. Instead of components or owners
 /// needing to figure out if all dependencies are met in order to work, it's on the Director to validate them, simplifying the component code and ensuring dependency
 /// chain nightmares are - if not completely resolved - significantly simplfied and work 'naturally'.
@@ -45,7 +45,13 @@ public:
    /// it manages during an update to ensure the data is efficiently used, and it lets components be safely compartmentalized, simplifying them and making them
    /// further threadsafe
    /// </summary>
-   virtual void update() {};
+   virtual void update() {}
+
+   /// <summary>
+   /// This function is invoked in the event a Director has some drawing in needs to do as part of the debugging/editing process. Not all Directors need or will
+   /// have debug draw stuffs
+   /// </summary>
+   virtual void debugDraw() {}
 };
 
 /// <summary>

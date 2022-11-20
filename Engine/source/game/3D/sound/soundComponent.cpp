@@ -2,6 +2,7 @@
 #include "soundComponent_scriptBinding.h"
 #include "gfx/gfxDrawUtil.h"
 #include "game/Entity.h"
+
 #include <gfx/gfxTransformSaver.h>
 #include "scene/sceneRenderState.h"
 #include "renderInstance/renderPassManager.h"
@@ -136,6 +137,58 @@ void SoundComponentInstance::update(StrongRefPtr<Transform3DComponentInstance> t
          SFXSource* source = mSoundThread[slotNum].sound;
          if (source)
             source->setTransform(transformComp->getTransform());
+      }
+   }
+}
+
+void SoundComponentInstance::debugDraw(StrongRefPtr<Transform3DComponentInstance> transformComp)
+{
+   if (transformComp.isValid())
+   {
+      SceneRenderState* state = DirectorManager::sceneRenderState;
+      if (!state)
+         return;
+
+      //We'll do a renderDelegate call to drawDebug() here when the editor is open
+      //so we can visualize that the componentInstance is drawing, even if we don't have a valid
+      //shape instance
+      ObjectRenderInst* ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
+      ri->type = RenderPassManager::RIT_Editor;
+
+      ri->renderDelegate.bind(this, &SoundComponentInstance::_drawDebugDelegate);
+      state->getRenderPass()->addInst(ri);
+   }
+}
+
+void SoundComponentInstance::_drawDebugDelegate(ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance*)
+{
+   GFXTransformSaver saver;
+
+   GFXStateBlockDesc desc;
+   desc.setBlend(true);
+
+   MatrixF transform = MatrixF::Identity;
+
+   Transform3DComponentInstance* transformComp = getOwnerObjectPtr()->getComponentInstance<Transform3DComponentInstance>();
+   if (transformComp)
+      transform = transformComp->getTransform();
+
+   for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
+   {
+      //if (mPreviewSound[slotNum])
+      {
+         Sound& st = mSoundThread[slotNum];
+         if (st.sound && st.sound->getDescription())
+         {
+            F32 minRad = st.sound->getDescription()->mMinDistance;
+            F32 falloffRad = st.sound->getDescription()->mMaxDistance;
+            SphereF sphere(transform.getPosition(), falloffRad);
+            if (sphere.isContained(state->getCameraPosition()))
+               desc.setCullMode(GFXCullNone);
+
+            GFX->getDrawUtil()->drawSphere(desc, minRad, transform.getPosition(), ColorI(255, 0, 255, 64));
+            GFX->getDrawUtil()->drawSphere(desc, falloffRad, transform.getPosition(), ColorI(128, 0, 128, 64));
+         }
       }
    }
 }
@@ -348,3 +401,21 @@ void SoundDirector::update()
       ref.soundComp->update(ref.transformComp);
    }
 }
+
+#ifdef TORQUE_TOOLS
+void SoundDirector::debugDraw()
+{
+   //Now we loop over all the valid entries we've got and go to work
+   for (U32 i = 0; i < mValidEntriesList.size(); i++)
+   {
+      SoundEntityRef& ref = mValidEntriesList[i];
+
+      //All good, so we'll pass in the stuff the component needs to do it's work, and let it crunch.
+      //In other directors, we may have structs to pack complex data for the components to work off of.
+      //The reson we do this is to keep the work the components do compartmentalized.
+      //This keeps it more cache friendly, and also threadsafe when we don't have to worry about the components
+      //needing to reach out to any other objects while they work.
+      ref.soundComp->debugDraw(ref.transformComp);
+   }
+}
+#endif

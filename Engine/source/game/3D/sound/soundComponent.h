@@ -59,7 +59,8 @@ public:
    virtual ComponentInstance* createInstance(ComponentObject* owner);
 };
 
-class Move;
+class ObjectRenderInst;
+class BaseMatInstance;
 
 //
 class SoundComponentInstance : public ComponentInstance
@@ -77,7 +78,6 @@ public:
 
 private:
    static Vector<SoundComponentInstance*> sComponentInstanceList;
-
 
    /// @name Network state masks
    /// @{
@@ -160,6 +160,9 @@ public:
    virtual void stopAudio(U32 slot);
    virtual void updateServerAudio();
    virtual void updateAudioState(Sound& st);
+
+   virtual void debugDraw(StrongRefPtr<Transform3DComponentInstance> transformComp);
+   void _drawDebugDelegate(ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance*);
 };
 
 //
@@ -213,4 +216,8 @@ public:
    /// In our case, this means we take the mesh ref to a SoundComponentInstance and have it render the shape
    /// </summary>
    virtual void update();
+
+#ifdef TORQUE_TOOLS
+   virtual void debugDraw();
+#endif
 };

@@ -10,6 +10,14 @@
 
 class RenderMeshDirector;
 
+/**
+This is a component that renders some junk, you know
+ - parameters:
+   - cubes: The cubes available for allocation
+   - people: The people that require cubes
+ - returns:
+   - nothing, duh?
+ */
 class RenderMeshComponent : public Component
 {
    typedef Component Parent;

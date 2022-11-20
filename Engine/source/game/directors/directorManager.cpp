@@ -29,7 +29,16 @@ void DirectorManager::update(TimingGroup currentTiming)
       {
          mDirectors[i]->update();
       }
+
+#ifdef TORQUE_TOOLS
+      if (currentTiming == Rendering)
+      {
+         mDirectors[i]->debugDraw();
+      }
+#endif
    }
+
+  
 }
 
 //
