@@ -35,7 +35,7 @@ uniform float accumTime;
 uniform vec4    probePosArray[MAX_PROBES];
 uniform vec4    refPosArray[MAX_PROBES];
 uniform mat4    worldToObjArray[MAX_PROBES];
-uniform vec4    inRefScaleArray[MAX_PROBES];
+uniform vec4    refScaleArray[MAX_PROBES];
 uniform vec4    probeConfigData[MAX_PROBES];   //r,g,b/mode,radius,atten
 
 #if DEBUGVIZ_CONTRIB
@@ -104,7 +104,7 @@ void main()
          else
             contribution[i] = 0;
 
-         if (inRefScaleArray[i].w>0)
+         if (refScaleArray[i].w>0)
             wetAmmout += contribution[i];
          else
             wetAmmout -= contribution[i];
@@ -172,7 +172,7 @@ void main()
       if (contrib > 0.0f)
       {
          int cubemapIdx = int(probeConfigData[i].a);
-         vec3 dir = boxProject(surface.P, surface.R, worldToObjArray[i], inRefScaleArray[i].xyz, refPosArray[i].xyz);
+         vec3 dir = boxProject(surface.P, surface.R, worldToObjArray[i], refScaleArray[i].xyz, refPosArray[i].xyz);
 
          irradiance += textureLod(irradianceCubemapAR, vec4(dir, cubemapIdx), 0).xyz * contrib;
          specular += textureLod(specularCubemapAR, vec4(dir, cubemapIdx), lod).xyz * contrib;

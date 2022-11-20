@@ -377,7 +377,7 @@ void dampen(inout Surface surface, TORQUE_SAMPLER2D(WetnessTexture), float accum
 
    float grav = 2.0-pow(dot(float3(0,0,1),surface.N),5);
    
-   float speed = accumTime*(1.0-surface.roughness);
+   float speed = accumTime*(1.1-surface.roughness);
    float2 wetoffset = float2(speed*grav,speed/2); 
       
    float wetness = TORQUE_TEX2D(WetnessTexture, float2(surface.P.xy*0.2+wetoffset)).b; 

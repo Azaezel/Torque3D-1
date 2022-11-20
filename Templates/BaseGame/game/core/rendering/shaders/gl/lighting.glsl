@@ -373,7 +373,7 @@ void dampen(inout Surface surface, sampler2D WetnessTexture, float accumTime, fl
 
    float grav = 2.0-pow(dot(vec3(0,0,1),surface.N),5);
    
-   float speed = accumTime*(1.0-surface.roughness);
+   float speed = accumTime*(1.1-surface.roughness);
    vec2 wetoffset = vec2(speed*grav,speed/2); 
       
    float wetness = texture(WetnessTexture, vec2(surface.P.xy*0.2+wetoffset)).b; 
