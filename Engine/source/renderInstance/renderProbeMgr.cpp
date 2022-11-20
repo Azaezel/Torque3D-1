@@ -935,7 +935,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
    mProbeArrayEffect->setShaderConst("$probePosArray", mProbeData.probePositionArray);
    mProbeArrayEffect->setShaderConst("$refPosArray", mProbeData.probeRefPositionArray);
    mProbeArrayEffect->setShaderConst("$worldToObjArray", mProbeData.probeWorldToObjArray);
-   mProbeArrayEffect->setShaderConst("$refScaleArray", mProbeData.refScaleArray);
+   mProbeArrayEffect->setShaderConst("$inRefScaleArray", mProbeData.refScaleArray);
    mProbeArrayEffect->setShaderConst("$probeConfigData", mProbeData.probeConfigArray);
    mProbeArrayEffect->setShaderConst("$maxProbeDrawDistance", smMaxProbeDrawDistance);
 

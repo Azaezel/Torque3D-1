@@ -367,14 +367,35 @@ vec3 boxProject(vec3 wsPosition, vec3 wsReflectVec, mat4 worldToObj, vec3 refSca
    return posonbox - refPosition.xyz;
 }
 
+void dampen(inout Surface surface, sampler2D WetnessTexture, float accumTime, float degree)
+{   
+   vec3 n = abs(surface.N);
+
+   float grav = 2.0-pow(dot(vec3(0,0,1),surface.N),5);
+   
+   float speed = accumTime*(1.0-surface.roughness);
+   vec2 wetoffset = vec2(speed*grav,speed/2); 
+      
+   float wetness = texture(WetnessTexture, vec2(surface.P.xy*0.2+wetoffset)).b; 
+   wetness = lerp(wetness,texture(WetnessTexture,vec2(surface.P.zx*0.2+wetoffset)).b,n.y);
+   wetness = lerp(wetness,texture(WetnessTexture,vec2(surface.P.zy*0.2+wetoffset)).b,n.x);
+   wetness = pow(wetness,3)*degree;
+   
+   surface.roughness = lerp(surface.roughness,0.92f*wetness,degree);
+   surface.baseColor.rgb = lerp(surface.baseColor.rgb,surface.baseColor.rgb*(2.0-wetness)/2,degree); 
+   surface.baseColor.a = lerp(surface.baseColor.a,max(surface.baseColor.a,wetness),degree);
+   updateSurface(surface);
+}
+
 vec4 computeForwardProbes(Surface surface,
     float cubeMips, int numProbes, mat4x4 inWorldToObjArray[MAX_FORWARD_PROBES], vec4 inProbeConfigData[MAX_FORWARD_PROBES], 
     vec4 inProbePosArray[MAX_FORWARD_PROBES], vec4 inRefScaleArray[MAX_FORWARD_PROBES], vec4 inRefPosArray[MAX_FORWARD_PROBES],
-    vec3 wsEyePos, float skylightCubemapIdx, sampler2D BRDFTexture, 
+    vec3 wsEyePos, float skylightCubemapIdx, int SkylightDamp, sampler2D BRDFTexture, sampler2D WetnessTexture, float accumTime,
 	samplerCubeArray irradianceCubemapAR, samplerCubeArray specularCubemapAR)
 {
    int i = 0;
    float alpha = 1;
+   float wetAmmout = 0;
    float blendFactor[MAX_FORWARD_PROBES];
    float blendSum = 0;
    float blendFacSum = 0;
@@ -401,9 +422,15 @@ vec4 computeForwardProbes(Surface surface,
       else
          contribution[i] = 0.0;
 
+      if (inRefScaleArray[i].w>0)
+         wetAmmout += contribution[i];
+      else
+         wetAmmout -= contribution[i];
+         
       blendSum += contribution[i];
       blendCap = max(contribution[i],blendCap);
    }
+   if (wetAmmout<0) wetAmmout =0;
 
    if (probehits > 0.0)
    {
@@ -475,12 +502,17 @@ vec4 computeForwardProbes(Surface surface,
       }
    }
 
+   if (SkylightDamp>0)
+      wetAmmout += alpha;
+      
    if(skylightCubemapIdx != -1 && alpha >= 0.001)
    {
       irradiance = mix(irradiance,textureLod(irradianceCubemapAR, vec4(surface.R, skylightCubemapIdx), 0).xyz, alpha);
       specular = mix(specular,textureLod(specularCubemapAR, vec4(surface.R, skylightCubemapIdx), lod).xyz, alpha);
    }
 
+   dampen(surface, WetnessTexture, accumTime, wetAmmout);
+   
    //energy conservation
    vec3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
    vec3 kD = 1.0f - F;

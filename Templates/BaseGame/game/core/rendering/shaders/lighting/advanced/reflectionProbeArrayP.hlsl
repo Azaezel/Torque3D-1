@@ -24,7 +24,7 @@ TORQUE_UNIFORM_SAMPLER2D(WetnessTexture, 6);
 
 #ifdef USE_SSAO_MASK
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 7);
-uniform float4 rtParams6;
+uniform float4 rtParams7;
 #endif
 uniform float accumTime;
 
@@ -40,7 +40,6 @@ uniform float4    probeContribColors[MAX_PROBES];
 
 uniform int skylightCubemapIdx;
 uniform int SkylightDamp;
-
 
 float4 main(PFXVertToPix IN) : SV_TARGET
 {
