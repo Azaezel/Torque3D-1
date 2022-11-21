@@ -85,7 +85,7 @@ void main()
    if (alpha > 0)
    {
       //Process prooooobes
-      for (i = 0; i < numProbes; ++i)
+      for (i = 0; i < numProbes; i++)
       {
          contribution[i] = 0;
 
@@ -124,7 +124,7 @@ void main()
                blendFacSum += blendFactor[i]; //running tally of results
          }
 
-         for (i = 0; i < numProbes; ++i)
+         for (i = 0; i < numProbes; i++)
          {
             //normalize, but in the range of the highest value applied
             //to preserve blend vs skylight
@@ -134,7 +134,7 @@ void main()
       
 #if DEBUGVIZ_ATTENUATION == 1
       float contribAlpha = 0;
-      for (i = 0; i < numProbes; ++i)
+      for (i = 0; i < numProbes; i++)
       {
          contribAlpha += contribution[i];
       }
@@ -145,7 +145,7 @@ void main()
 
 #if DEBUGVIZ_CONTRIB == 1
       vec3 finalContribColor = vec3(0, 0, 0);
-      for (i = 0; i < numProbes; ++i)
+      for (i = 0; i < numProbes; i++)
       {
          finalContribColor += contribution[i] * vec3(fmod(i+1,2),fmod(i+1,3),fmod(i+1,4));
       }
@@ -153,11 +153,23 @@ void main()
       return;
 #endif
    }
+   for (i = 0; i < numProbes; i++)
+   {
+      float contrib = contribution[i];
+      if (contrib > 0.0f)
+      {
+         alpha -= contrib;
+      }
+   }
 #endif
 
    vec3 irradiance = vec3(0, 0, 0);
    vec3 specular = vec3(0, 0, 0);
 
+   if (SkylightDamp>0)
+      wetAmmout += alpha;
+   dampen(surface, WetnessTexture, accumTime, wetAmmout);
+   
    // Radiance (Specular)
 #if DEBUGVIZ_SPECCUBEMAP == 0
    float lod = roughnessToMipLevel(surface.roughness, cubeMips);
@@ -166,7 +178,7 @@ void main()
 #endif
 
 #if SKYLIGHT_ONLY == 0
-   for (i = 0; i < numProbes; ++i)
+   for (i = 0; i < numProbes; i++)
    {
       float contrib = contribution[i];
       if (contrib > 0.0f)
@@ -176,21 +188,15 @@ void main()
 
          irradiance += textureLod(irradianceCubemapAR, vec4(dir, cubemapIdx), 0).xyz * contrib;
          specular += textureLod(specularCubemapAR, vec4(dir, cubemapIdx), lod).xyz * contrib;
-         alpha -= contrib;
       }
    }
 #endif
-
-   if (SkylightDamp>0)
-      wetAmmout += alpha;
       
    if (skylightCubemapIdx != -1 && alpha >= 0.001)
    {
       irradiance = lerp(irradiance,textureLod(irradianceCubemapAR, vec4(surface.R, skylightCubemapIdx), 0).xyz,alpha);
       specular = lerp(specular,textureLod(specularCubemapAR, vec4(surface.R, skylightCubemapIdx), lod).xyz,alpha);
    }
-
-   dampen(surface,WetnessTexture, accumTime, wetAmmout);
    
 #if DEBUGVIZ_SPECCUBEMAP == 1 && DEBUGVIZ_DIFFCUBEMAP == 0
    OUT_col = vec4(specular, 1);
