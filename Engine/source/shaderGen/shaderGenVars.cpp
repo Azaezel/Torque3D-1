@@ -50,6 +50,7 @@ const String ShaderGenVars::colorMultiply("$colorMultiply");
 const String ShaderGenVars::alphaTestValue("$alphaTestValue");
 const String ShaderGenVars::texMat("$texMat");
 const String ShaderGenVars::accumTime("$accumTime");
+const String ShaderGenVars::dampness("$dampness");
 const String ShaderGenVars::minnaertConstant("$minnaertConstant");
 const String ShaderGenVars::subSurfaceParams("$subSurfaceParams");
 

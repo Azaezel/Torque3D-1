@@ -156,6 +156,7 @@ protected:
    GFXShaderConstHandle *mLightDirectionSC;
    GFXShaderConstHandle *mCameraForwardSC;
    GFXShaderConstHandle *mAccumTimeSC;
+   GFXShaderConstHandle* mDampnessSC;
    GFXShaderConstHandle *mDeltaTimeSC;
    GFXShaderConstHandle *mInvCameraMatSC;
    GFXShaderConstHandle *mMatCameraToWorldSC;

@@ -328,6 +328,7 @@ Precipitation::Precipitation()
    mSplashShaderAmbientSC = NULL;
 
    mMaxVBDrops = 5000;
+   mDampness = 1.0;
 }
 
 Precipitation::~Precipitation()
@@ -364,6 +365,7 @@ void Precipitation::setTransform(const MatrixF & mat)
 //--------------------------------------------------------------------------
 
 IRangeValidator ValidNumDropsRange(1, 100000);
+FRangeValidator ValiDampnessRange(0.0f, 1.0f);
 
 void Precipitation::initPersistFields()
 {
@@ -374,6 +376,9 @@ void Precipitation::initPersistFields()
          "box at any one time.\n\n"
          "The actual number of drops in the effect depends on the current "
          "percentage, which can change over time using modifyStorm()." );
+
+      addFieldV("dampness", TypeF32, Offset(mDampness, Precipitation), &ValiDampnessRange,
+         "@brief dampness influence");
 
       addField( "boxWidth", TypeF32, Offset(mBoxWidth, Precipitation),
          "Width and depth (horizontal dimensions) of the precipitation box." );
@@ -689,6 +694,7 @@ U32 Precipitation::packUpdate(NetConnection* con, U32 mask, BitStream* stream)
 
    if (stream->writeFlag(mask & DataMask))
    {
+      stream->write(mDampness);
       stream->write(mDropSize);
       stream->write(mSplashSize);
       stream->write(mSplashMS);
@@ -756,6 +762,8 @@ void Precipitation::unpackUpdate(NetConnection* con, BitStream* stream)
    U32 oldDrops = U32(mNumDrops * mPercentage);
    if (stream->readFlag())
    {
+      stream->read(&mDampness);
+      MATMGR->setDampness(mClampF(mDampness, 0.0, 1.0));
       stream->read(&mDropSize);
       stream->read(&mSplashSize);
       stream->read(&mSplashMS);
@@ -786,7 +794,6 @@ void Precipitation::unpackUpdate(NetConnection* con, BitStream* stream)
       mUseWind = stream->readFlag();
       mFollowCam = stream->readFlag();
       mAnimateSplashes = stream->readFlag();
-
       mDropHitMask = dropHitMask | 
          ( mDropHitPlayers ? PlayerObjectType : 0 ) | 
          ( mDropHitVehicles ? VehicleObjectType : 0 );

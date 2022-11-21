@@ -31,6 +31,7 @@ uniform sampler2D ssaoMask;
 uniform vec4 rtParams7;
 #endif
 uniform float accumTime;
+uniform float dampness;
 
 uniform vec4    probePosArray[MAX_PROBES];
 uniform vec4    refPosArray[MAX_PROBES];
@@ -168,7 +169,7 @@ void main()
 
    if (SkylightDamp>0)
       wetAmmout += alpha;
-   dampen(surface, WetnessTexture, accumTime, wetAmmout);
+   dampen(surface, WetnessTexture, accumTime, wetAmmout*dampness);
    
    // Radiance (Specular)
 #if DEBUGVIZ_SPECCUBEMAP == 0

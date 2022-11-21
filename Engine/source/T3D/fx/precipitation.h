@@ -210,6 +210,8 @@ class Precipitation : public GameBase
    GFXShaderConstHandle* mSplashShaderCameraPosSC;
    GFXShaderConstHandle* mSplashShaderAmbientSC;
 
+   F32 mDampness; ///<applies wetness
+
    struct
    {
       bool valid;

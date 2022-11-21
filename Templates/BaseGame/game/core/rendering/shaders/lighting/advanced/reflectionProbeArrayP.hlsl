@@ -27,6 +27,7 @@ TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 7);
 uniform float4 rtParams7;
 #endif
 uniform float accumTime;
+uniform float dampness;
 
 uniform float4    probePosArray[MAX_PROBES];
 uniform float4    refPosArray[MAX_PROBES];
@@ -157,7 +158,7 @@ float4 main(PFXVertToPix IN) : SV_TARGET
 
    if (SkylightDamp>0)
       wetAmmout += alpha;
-   dampen(surface, TORQUE_SAMPLER2D_MAKEARG(WetnessTexture), accumTime, wetAmmout*1.0);
+   dampen(surface, TORQUE_SAMPLER2D_MAKEARG(WetnessTexture), accumTime, wetAmmout*dampness);
    
    // Radiance (Specular)
 #if DEBUGVIZ_SPECCUBEMAP == 0

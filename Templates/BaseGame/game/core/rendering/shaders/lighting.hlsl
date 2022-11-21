@@ -394,7 +394,7 @@ void dampen(inout Surface surface, TORQUE_SAMPLER2D(WetnessTexture), float accum
 float4 computeForwardProbes(Surface surface,
     float cubeMips, int numProbes, float4x4 inWorldToObjArray[MAX_FORWARD_PROBES], float4 inProbeConfigData[MAX_FORWARD_PROBES], 
     float4 inProbePosArray[MAX_FORWARD_PROBES], float4 inRefScaleArray[MAX_FORWARD_PROBES], float4 inRefPosArray[MAX_FORWARD_PROBES],
-    float3 wsEyePos, float skylightCubemapIdx, int SkylightDamp, TORQUE_SAMPLER2D(BRDFTexture), TORQUE_SAMPLER2D(WetnessTexture), float accumTime,
+    float3 wsEyePos, float skylightCubemapIdx, int SkylightDamp, TORQUE_SAMPLER2D(BRDFTexture), TORQUE_SAMPLER2D(WetnessTexture), float accumTime, float dampness,
 	 TORQUE_SAMPLERCUBEARRAY(irradianceCubemapAR), TORQUE_SAMPLERCUBEARRAY(specularCubemapAR))
 {
    int i = 0;
@@ -501,7 +501,7 @@ float4 computeForwardProbes(Surface surface,
    }
    if (SkylightDamp>0)
       wetAmmout += alpha;
-   dampen(surface, TORQUE_SAMPLER2D_MAKEARG(WetnessTexture), accumTime, wetAmmout);
+   dampen(surface, TORQUE_SAMPLER2D_MAKEARG(WetnessTexture), accumTime, wetAmmout*dampness);
    
    // Radiance (Specular)
    float lod = roughnessToMipLevel(surface.roughness, cubeMips);

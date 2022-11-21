@@ -390,7 +390,7 @@ void dampen(inout Surface surface, sampler2D WetnessTexture, float accumTime, fl
 vec4 computeForwardProbes(Surface surface,
     float cubeMips, int numProbes, mat4x4 inWorldToObjArray[MAX_FORWARD_PROBES], vec4 inProbeConfigData[MAX_FORWARD_PROBES], 
     vec4 inProbePosArray[MAX_FORWARD_PROBES], vec4 inRefScaleArray[MAX_FORWARD_PROBES], vec4 inRefPosArray[MAX_FORWARD_PROBES],
-    vec3 wsEyePos, float skylightCubemapIdx, int SkylightDamp, sampler2D BRDFTexture, sampler2D WetnessTexture, float accumTime,
+    vec3 wsEyePos, float skylightCubemapIdx, int SkylightDamp, sampler2D BRDFTexture, sampler2D WetnessTexture, float accumTime, float dampness,
 	samplerCubeArray irradianceCubemapAR, samplerCubeArray specularCubemapAR)
 {
    int i = 0;
@@ -495,7 +495,7 @@ vec4 computeForwardProbes(Surface surface,
    }
    if (SkylightDamp>0)
       wetAmmout += alpha;
-   dampen(surface, WetnessTexture, accumTime, wetAmmout);
+   dampen(surface, WetnessTexture, accumTime, wetAmmout*dampness);
       
    // Radiance (Specular)
    float lod = roughnessToMipLevel(surface.roughness, cubeMips);
