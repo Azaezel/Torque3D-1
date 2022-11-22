@@ -597,6 +597,7 @@ void Precipitation::onRemove()
 
    if (isClientObject())
       killDropList();
+   MATMGR->setDampness(mMax(MATMGR->getDampness() - mDampness, 0.0));
 }
 
 bool Precipitation::onNewDataBlock( GameBaseData *dptr, bool reload )
@@ -762,8 +763,9 @@ void Precipitation::unpackUpdate(NetConnection* con, BitStream* stream)
    U32 oldDrops = U32(mNumDrops * mPercentage);
    if (stream->readFlag())
    {
+      F32 baseDamp = mMax(MATMGR->getDampness()-mDampness,0.0f);
       stream->read(&mDampness);
-      MATMGR->setDampness(mClampF(mDampness, 0.0, 1.0));
+      MATMGR->setDampness(baseDamp+mDampness);
       stream->read(&mDropSize);
       stream->read(&mSplashSize);
       stream->read(&mSplashMS);

@@ -968,7 +968,7 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
    }
    mShaderConsts->setSafe( mAccumTimeSC, MATMGR->getTotalTime() );
    mShaderConsts->setSafe( mDeltaTimeSC, MATMGR->getDeltaTime() );
-   mShaderConsts->setSafe(mDampnessSC, MATMGR->getDampness());
+   mShaderConsts->setSafe(mDampnessSC, MATMGR->getDampnessClamped());
    
    // Now set all the constants that are dependent on the scene state.
    if ( state )

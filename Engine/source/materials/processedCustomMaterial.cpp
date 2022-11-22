@@ -320,7 +320,7 @@ bool ProcessedCustomMaterial::setupPass( SceneRenderState *state, const SceneDat
       pm->setProbeInfo(this, NULL, sgData, state, pass, shaderConsts);
 
    shaderConsts->setSafe(rpd->shaderHandles.mAccumTimeSC, MATMGR->getTotalTime());
-   shaderConsts->setSafe(rpd->shaderHandles.mDampnessSC, MATMGR->getDampness());
+   shaderConsts->setSafe(rpd->shaderHandles.mDampnessSC, MATMGR->getDampnessClamped());
    
    return true;
 }

@@ -1098,7 +1098,7 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
 
    shaderConsts->setSafe( handles->mAccumTimeSC, MATMGR->getTotalTime() );
 
-   shaderConsts->setSafe(handles->mDampnessSC, MATMGR->getDampness());
+   shaderConsts->setSafe(handles->mDampnessSC, MATMGR->getDampnessClamped());
    // If the shader constants have not been lost then
    // they contain the content from a previous render pass.
    //
