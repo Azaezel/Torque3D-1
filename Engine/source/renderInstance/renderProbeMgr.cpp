@@ -98,7 +98,9 @@ ProbeShaderConstants::ProbeShaderConstants()
    mProbeIrradianceCubemapArraySC(NULL),
    mProbeCountSC(NULL),
    mBRDFTextureMap(NULL),
+   mWetnessTextureMap(NULL),   
    mSkylightCubemapIdxSC(NULL),
+   mSkylightDampSC(NULL),
    mWorldToObjArraySC(NULL),
    mMaxProbeDrawDistanceSC(NULL)
 {
@@ -135,8 +137,10 @@ void ProbeShaderConstants::init(GFXShader* shader)
    mProbeCountSC = shader->getShaderConstHandle(ShaderGenVars::probeCount);
 
    mBRDFTextureMap = shader->getShaderConstHandle(ShaderGenVars::BRDFTextureMap);
+   mWetnessTextureMap = shader->getShaderConstHandle(ShaderGenVars::WetnessTextureMap);
 
-   mSkylightCubemapIdxSC = shader->getShaderConstHandle(ShaderGenVars::skylightCubemapIdx);
+   mSkylightCubemapIdxSC = shader->getShaderConstHandle(ShaderGenVars::skylightCubemapIdx);   
+   mSkylightDampSC = shader->getShaderConstHandle(ShaderGenVars::skylightDamp);
 
    mMaxProbeDrawDistanceSC = shader->getShaderConstHandle(ShaderGenVars::maxProbeDrawDistance);
 
@@ -145,10 +149,10 @@ void ProbeShaderConstants::init(GFXShader* shader)
 
 bool ProbeShaderConstants::isValid()
 {
-   if (mProbePositionArraySC->isValid() ||
-      mProbeConfigDataArraySC->isValid() ||
-      mRefScaleArraySC->isValid() ||
-      mProbeSpecularCubemapArraySC->isValid() ||
+   if (mProbePositionArraySC->isValid() &&
+      mProbeConfigDataArraySC->isValid() &&
+      mRefScaleArraySC->isValid() &&
+      mProbeSpecularCubemapArraySC->isValid() &&
       mProbeIrradianceCubemapArraySC->isValid())
       return true;
 
@@ -169,6 +173,7 @@ RenderProbeMgr::RenderProbeMgr()
    mLastConstants(nullptr),
    mHasSkylight(false),
    mSkylightCubemapIdx(-1),
+   mSkylightDamp(true),
    mCubeMapCount(0),
    mUseHDRCaptures(true)
 {
@@ -197,6 +202,7 @@ RenderProbeMgr::RenderProbeMgr(RenderInstType riType, F32 renderOrder, F32 proce
    mEffectiveProbeCount = 0;
    mHasSkylight = false;
    mSkylightCubemapIdx = -1;
+   mSkylightDamp = true;
    mLastConstants = nullptr;
    mMipCount = 0;
    mUseHDRCaptures = true;
@@ -223,9 +229,10 @@ bool RenderProbeMgr::onAdd()
    mIrradianceArray = GFXCubemapArrayHandle(GFX->createCubemapArray());
    mPrefilterArray = GFXCubemapArrayHandle(GFX->createCubemapArray());
 
+   U32 scaledSize = getProbeTexSize();
    //pre-allocate a few slots
-   mIrradianceArray->init(PROBE_ARRAY_SLOT_BUFFER_SIZE, RenderProbeMgr::smProbeBakeResolution, PROBE_FORMAT);
-   mPrefilterArray->init(PROBE_ARRAY_SLOT_BUFFER_SIZE, RenderProbeMgr::smProbeBakeResolution, PROBE_FORMAT);
+   mIrradianceArray->init(PROBE_ARRAY_SLOT_BUFFER_SIZE, scaledSize, PROBE_FORMAT);
+   mPrefilterArray->init(PROBE_ARRAY_SLOT_BUFFER_SIZE, scaledSize, PROBE_FORMAT);
    mCubeSlotCount = PROBE_ARRAY_SLOT_BUFFER_SIZE;
 
    String brdfTexturePath = GFXTextureManager::getBRDFTexturePath();
@@ -235,6 +242,12 @@ bool RenderProbeMgr::onAdd()
       return false;
    } 
 
+   String wetnessTexturePath = GFXTextureManager::getWetnessTexturePath();
+   if (!mWetnessTexture.set(wetnessTexturePath, &GFXTexturePersistentProfile, "WetnessTexture"))
+   {
+      Con::errorf("RenderProbeMgr::onAdd: Failed to load Wetness Texture");
+      return false;
+   }
    return true;
 }
 
@@ -305,6 +318,7 @@ void RenderProbeMgr::getBestProbes(const Point3F& objPosition, ProbeDataSet* pro
       else
       {
          probeDataSet->skyLightIdx = curEntry.mCubemapIndex;
+         probeDataSet->skyLightDamp = curEntry.mProbeInfo->mCanDamp;
          mHasSkylight = true;
       }
    }
@@ -329,13 +343,13 @@ void RenderProbeMgr::getBestProbes(const Point3F& objPosition, ProbeDataSet* pro
       probeDataSet->probeWorldToObjArray[i] = p2A;
       p2A.inverse();
       probeDataSet->refScaleArray[i] = curEntry.mProbeInfo->mProbeRefScale / (p2A.getScale()*2);
+      probeDataSet->refScaleArray[i].w = curEntry.mProbeInfo->mCanDamp? 1.0 : 0.0;
 
       Point3F probePos = curEntry.mProbeInfo->mObject->getPosition();
       Point3F refPos = probePos + curEntry.mProbeInfo->mProbeRefOffset * probeDataSet->refScaleArray[i].asPoint3F();
 
       probeDataSet->probePositionArray[i] = Point4F(probePos.x, probePos.y, probePos.z, 0);
       probeDataSet->probeRefPositionArray[i] = Point4F(refPos.x, refPos.y, refPos.z, 0);
-
    }
 }
 
@@ -362,8 +376,9 @@ void RenderProbeMgr::registerProbe(ReflectionProbe::ProbeInfo* newProbe)
       GFXCubemapArrayHandle irr = GFXCubemapArrayHandle(GFX->createCubemapArray());
       GFXCubemapArrayHandle prefilter = GFXCubemapArrayHandle(GFX->createCubemapArray());
 
-      irr->init(mCubeSlotCount + PROBE_ARRAY_SLOT_BUFFER_SIZE, RenderProbeMgr::smProbeBakeResolution, PROBE_FORMAT);
-      prefilter->init(mCubeSlotCount + PROBE_ARRAY_SLOT_BUFFER_SIZE, RenderProbeMgr::smProbeBakeResolution, PROBE_FORMAT);
+      U32 scaledSize = getProbeTexSize();
+      irr->init(mCubeSlotCount + PROBE_ARRAY_SLOT_BUFFER_SIZE, scaledSize, PROBE_FORMAT);
+      prefilter->init(mCubeSlotCount + PROBE_ARRAY_SLOT_BUFFER_SIZE, scaledSize, PROBE_FORMAT);
 
       mIrradianceArray->copyTo(irr);
       mPrefilterArray->copyTo(prefilter);
@@ -420,12 +435,24 @@ PostEffect* RenderProbeMgr::getProbeArrayEffect()
 
       mProbeArrayEffect->setShaderConst("$numProbes", (S32)0);
       mProbeArrayEffect->setShaderConst("$skylightCubemapIdx", (S32)-1);
-
+      mProbeArrayEffect->setShaderConst(ShaderGenVars::skylightDamp, (S32)true);
       mProbeArrayEffect->setShaderConst("$cubeMips", (float)0);
       mProbeArrayEffect->setShaderConst("$maxProbeDrawDistance", smMaxProbeDrawDistance);
 
    }
    return mProbeArrayEffect;
+}
+
+U32 RenderProbeMgr::getProbeTexSize()
+{
+   U32 scaledSize = RenderProbeMgr::smProbeBakeResolution;
+   U32 downscalePower = 0;// GFXTextureManager::smTextureReductionLevel;
+   if (downscalePower != 0)
+   {
+      // Otherwise apply the appropriate scale...
+      scaledSize >>= downscalePower;
+   }
+   return scaledSize;
 }
 
 void RenderProbeMgr::updateProbeTexture(ReflectionProbe::ProbeInfo* probeInfo)
@@ -434,17 +461,17 @@ void RenderProbeMgr::updateProbeTexture(ReflectionProbe::ProbeInfo* probeInfo)
    ProbeRenderInst* probe = findProbeInst(probeInfo);
    if (probe == nullptr)
       return;
-
+   U32 scaledSize = getProbeTexSize();
    //Some basic sanity checking that we have valid cubemaps to work with
    if (probeInfo->mIrradianceCubemap.isNull() || !probeInfo->mIrradianceCubemap->isInitialized() ||
-      probeInfo->mIrradianceCubemap->getSize() != RenderProbeMgr::smProbeBakeResolution)
+      probeInfo->mIrradianceCubemap->getSize() != scaledSize)
    {
       Con::errorf("RenderProbeMgr::updateProbeTexture() - tried to update a probe's texture with an invalid or uninitialized irradiance map!");
       return;
    }
 
    if (probeInfo->mPrefilterCubemap.isNull() || !probeInfo->mPrefilterCubemap->isInitialized() ||
-      probeInfo->mPrefilterCubemap->getSize() != RenderProbeMgr::smProbeBakeResolution)
+      probeInfo->mPrefilterCubemap->getSize() != scaledSize)
    {
       Con::errorf("RenderProbeMgr::updateProbeTexture() - tried to update a probe's texture with an invalid or uninitialized specular map!");
       return;
@@ -470,6 +497,21 @@ void RenderProbeMgr::reloadTextures()
    }
 }
 
+void RenderProbeMgr::preBake()
+{
+   Con::setVariable("$Probes::Capturing", "1");
+   mRenderMaximumNumOfLights = AdvancedLightBinManager::smMaximumNumOfLights;
+   mRenderUseLightFade = AdvancedLightBinManager::smUseLightFade;
+
+   AdvancedLightBinManager::smMaximumNumOfLights = -1;
+   AdvancedLightBinManager::smUseLightFade = false;
+}
+void RenderProbeMgr::postBake()
+{
+   Con::setVariable("$Probes::Capturing", "0");
+   AdvancedLightBinManager::smMaximumNumOfLights = mRenderMaximumNumOfLights;
+   AdvancedLightBinManager::smUseLightFade = mRenderUseLightFade;
+}
 void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
 {
    GFXDEBUGEVENT_SCOPE(RenderProbeMgr_Bake, ColorI::WHITE);
@@ -477,7 +519,7 @@ void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
    Con::warnf("RenderProbeMgr::bakeProbe() - Beginning bake!");
    U32 startMSTime = Platform::getRealMilliseconds();
 
-   Con::setVariable("$Probes::Capturing", "1");
+   preBake();
 
    String path = Con::getVariable("$pref::ReflectionProbes::CurrentLevelPath", "levels/");
    U32 resolution = Con::getIntVariable("$pref::ReflectionProbes::BakeResolution", 64);
@@ -598,7 +640,7 @@ void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
    if (!renderWithProbes)
       RenderProbeMgr::smRenderReflectionProbes = probeRenderState;
 
-   Con::setVariable("$Probes::Capturing", "0");
+   postBake();
 
    cubeRefl.unregisterReflector();
 
@@ -755,10 +797,14 @@ void RenderProbeMgr::_update4ProbeConsts(const SceneData& sgData,
          shaderConsts->setSafe(probeShaderConsts->mProbeConfigDataArraySC, probeConfigAlignedArray);
       }
 
-      if (probeShaderConsts->mBRDFTextureMap->getSamplerRegister() != -1 && mBRDFTexture.isValid())
+      if (mBRDFTexture.isValid(), probeShaderConsts->mBRDFTextureMap->getSamplerRegister() != -1)
          GFX->setTexture(probeShaderConsts->mBRDFTextureMap->getSamplerRegister(), mBRDFTexture);
 
+      if (mWetnessTexture.isValid() && probeShaderConsts->mWetnessTextureMap->getSamplerRegister() != -1)
+         GFX->setTexture(probeShaderConsts->mWetnessTextureMap->getSamplerRegister(), mWetnessTexture);
+
       shaderConsts->setSafe(probeShaderConsts->mSkylightCubemapIdxSC, (float)probeSet.skyLightIdx);
+      shaderConsts->setSafe(probeShaderConsts->mSkylightDampSC, (int)probeSet.skyLightDamp);
 
       if (probeShaderConsts->mProbeSpecularCubemapArraySC->getSamplerRegister() != -1)
          GFX->setCubeArrayTexture(probeShaderConsts->mProbeSpecularCubemapArraySC->getSamplerRegister(), mPrefilterArray);
@@ -798,7 +844,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
    _setupPerFrameParameters(state);
 
    // Early out if nothing to draw.
-   if ((!RenderProbeMgr::smRenderReflectionProbes && Con::getVariable("$Probes::Capturing", "0") == "0") || (!mHasSkylight && mProbeData.effectiveProbeCount == 0))
+   if ((!RenderProbeMgr::smRenderReflectionProbes && !dStrcmp(Con::getVariable("$Probes::Capturing", "0"), "1")) || (!mHasSkylight && mProbeData.effectiveProbeCount == 0))
    {
       getProbeArrayEffect()->setSkip(true);
       mActiveProbes.clear();
@@ -830,6 +876,11 @@ void RenderProbeMgr::render( SceneRenderState *state )
 
    String probeCapturing = Con::getVariable("$Probes::Capturing", "0");
    mProbeArrayEffect->setShaderMacro("CAPTURING", probeCapturing);
+   
+   mProbeArrayEffect->setTexture(3, mBRDFTexture);
+   mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
+   mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
+   mProbeArrayEffect->setTexture(6, mWetnessTexture);
    //ssao mask
    if (AdvancedLightBinManager::smUseSSAOMask)
    {
@@ -839,20 +890,16 @@ void RenderProbeMgr::render( SceneRenderState *state )
       if (pTexObj)
       {
          mProbeArrayEffect->setShaderMacro("USE_SSAO_MASK");
-         mProbeArrayEffect->setTexture(6, pTexObj);
+         mProbeArrayEffect->setTexture(7, pTexObj);
       }
    }
    else
    {
-      mProbeArrayEffect->setTexture(6, GFXTexHandle(NULL)); 
+      mProbeArrayEffect->setTexture(7, GFXTexHandle(NULL));
    }
-   
-   mProbeArrayEffect->setTexture(3, mBRDFTexture);
-   mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
-   mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
-
    mProbeArrayEffect->setShaderConst("$numProbes", (S32)mProbeData.effectiveProbeCount);
    mProbeArrayEffect->setShaderConst("$skylightCubemapIdx", (S32)mProbeData.skyLightIdx);
+   mProbeArrayEffect->setShaderConst(ShaderGenVars::skylightDamp, mProbeData.skyLightDamp);
 
    mProbeArrayEffect->setShaderConst("$cubeMips", (float)mPrefilterArray->getMipMapLevels());
 

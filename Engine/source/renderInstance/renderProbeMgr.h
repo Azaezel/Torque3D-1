@@ -98,8 +98,9 @@ struct ProbeShaderConstants
    GFXShaderConstHandle *mProbeCountSC;
 
    GFXShaderConstHandle *mBRDFTextureMap;
-
+   GFXShaderConstHandle* mWetnessTextureMap;   
    GFXShaderConstHandle *mSkylightCubemapIdxSC;
+   GFXShaderConstHandle* mSkylightDampSC;
 
    GFXShaderConstHandle* mMaxProbeDrawDistanceSC;
 
@@ -127,9 +128,8 @@ struct ProbeDataSet
    Vector<Point4F> probeConfigArray;
 
    Vector<MatrixF> probeWorldToObjArray;
-
    S32 skyLightIdx;
-
+   bool skyLightDamp;
    U32 effectiveProbeCount;
    U32 maxProbeCount;
 
@@ -141,10 +141,10 @@ struct ProbeDataSet
       probeConfigArray.setSize(0);
 
       probeWorldToObjArray.setSize(0);
-
       skyLightIdx = -1;
       effectiveProbeCount = 0;
       maxProbeCount = 0;
+      skyLightDamp = true;
    }
 
    ProbeDataSet(U32 _maxProbeCount)
@@ -212,7 +212,7 @@ private:
    /// If we have a skylight, what's the array pair index for it?
    /// </summary>
    S32             mSkylightCubemapIdx;
-
+   bool            mSkylightDamp;
    /// <summary>
    /// The 'effective' probe count. This tracks the number of probes that are actually going to be rendered
    /// </summary>
@@ -279,7 +279,8 @@ private:
    /// The BRDF texture used in PBR math calculations
    /// </summary>
    GFXTexHandle mBRDFTexture;
-
+   GFXTexHandle mWetnessTexture;
+   
    /// <summary>
    /// Processed best probe selection list of the current frame when rendering in deferred mode.
    /// </summary>
@@ -290,6 +291,11 @@ private:
    /// </summary>
    bool mUseHDRCaptures;
 
+   /// <summary>
+   /// holds the normal render state for light fade so we can capture them before and restore them after baking
+   /// </summary>
+   S32 mRenderMaximumNumOfLights;
+   bool mRenderUseLightFade;
 protected:
    /// The current active light manager.
    static RenderProbeMgr* smProbeManager;
@@ -397,7 +403,7 @@ public:
    /// </summary>
    /// <returns>the PostEffect object</returns>
    PostEffect* getProbeArrayEffect();
-
+   U32 getProbeTexSize();
    /// <summary>
    /// Finds the associated cubemap array slot for the incoming ProbeInfo and updates the array's texture(s) from it
    /// </summary>
@@ -413,7 +419,8 @@ public:
    /// Takes a reflection probe and runs the cubemap bake process on it, outputting the resulting files to disk
    /// </summary>
    void bakeProbe(ReflectionProbe* probe);
-
+   void preBake();
+   void postBake();
    /// <summary>
    /// Runs the cubemap bake on all probes in the current scene
    /// </summary>

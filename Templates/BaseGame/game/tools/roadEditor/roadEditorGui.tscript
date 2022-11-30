@@ -79,6 +79,7 @@ function RoadEditorGui::onEscapePressed( %this )
 //just in case we need it later
 function RoadEditorGui::onRoadCreation( %this )
 {
+   %this.road.MaterialAsset = "Core_GameObjects:DefaultDecalRoadMaterial";
 }
 
 function RoadEditorGui::onRoadSelected( %this, %road )
@@ -181,7 +182,7 @@ function RoadInspector::onInspectorFieldModified( %this, %object, %fieldName, %a
 
 function RoadInspector::onFieldSelected( %this, %fieldName, %fieldTypeStr, %fieldDoc )
 {
-   RoadFieldInfoControl.setText( "<font:ArialBold:14>" @ %fieldName @ "<font:ArialItalic:14> (" @ %fieldTypeStr @ ") " NL "<font:Arial:14>" @ %fieldDoc );
+   RoadFieldInfoControl.setText( "<font:Arial Bold:14>" @ %fieldName @ "<font:Arial Italic:14> (" @ %fieldTypeStr @ ") " NL "<font:Arial:14>" @ %fieldDoc );
 }
 
 function RoadTreeView::onInspect(%this, %obj)

@@ -24,6 +24,84 @@
 #include "sfx/openal/sfxALBuffer.h"
 #include "platform/async/asyncUpdate.h"
 
+//----------------------------------------------------------------------------
+// STATIC OPENAL FUNCTIONS
+//----------------------------------------------------------------------------
+void SFXALDevice::printALInfo(ALCdevice* device)
+{
+   ALCint major, minor;
+   if (device)
+   {
+      const ALCchar* devname = NULL;
+      Con::printBlankLine();
+
+      if (mOpenAL.alcIsExtensionPresent(device, "ALC_ENUMERATE_ALL_EXT") != AL_FALSE)
+      {
+         devname = mOpenAL.alcGetString(device, ALC_ALL_DEVICES_SPECIFIER);
+      }
+      else
+      {
+         devname = mOpenAL.alcGetString(device, ALC_DEVICE_SPECIFIER);
+      }
+
+      Con::printf("| Device info for: %s ", devname);
+   }
+
+   mOpenAL.alcGetIntegerv(device, ALC_MAJOR_VERSION, 1, &major);
+   mOpenAL.alcGetIntegerv(device, ALC_MINOR_VERSION, 1, &minor);
+   Con::printf("| OpenAL Version: %d.%d", major, minor);
+
+   if (device)
+   {
+      Con::printf("%s", mOpenAL.alcGetString(device, ALC_EXTENSIONS));
+
+      U32 err = mOpenAL.alcGetError(device);
+      if (err != ALC_NO_ERROR)
+         Con::errorf("SFXALDevice - Error Retrieving ALC Extensions: %s", mOpenAL.alcGetString(device, err));
+   }
+  
+}
+
+S32 SFXALDevice::getMaxSources()
+{
+   mOpenAL.alGetError();
+   
+   ALCint nummono;
+   mOpenAL.alcGetIntegerv(mDevice, ALC_MONO_SOURCES, 1, &nummono);
+   
+   if(nummono == 0)
+      nummono = getMaxSourcesOld();
+   
+   return nummono;
+}
+
+S32 SFXALDevice::getMaxSourcesOld()
+{
+   ALuint uiSource[256];
+   S32 sourceCount = 0;
+   
+   // clear errors.
+   mOpenAL.alGetError();
+   
+   for(sourceCount = 0; sourceCount < 256; sourceCount++)
+   {
+      mOpenAL.alGenSources(1,&uiSource[sourceCount]);
+      if(mOpenAL.alGetError() != AL_NO_ERROR)
+         break;
+   }
+   
+   mOpenAL.alDeleteSources(sourceCount, uiSource);
+   if(mOpenAL.alGetError() != AL_NO_ERROR)
+   {
+      for(U32 i = 0; i < 256; i++)
+      {
+         mOpenAL.alDeleteSources(1,&uiSource[i]);
+      }
+   }
+   
+   return sourceCount;
+   
+}
 
 //-----------------------------------------------------------------------------
 
@@ -53,21 +131,27 @@ SFXALDevice::SFXALDevice(  SFXProvider *provider,
 #endif
    attribs[1] = 4;
 
+   printALInfo(NULL);
+
    mDevice = mOpenAL.alcOpenDevice( name );
-   mOpenAL.alcGetError( mDevice );
+   U32 err = mOpenAL.alcGetError(mDevice);
+   if (err != ALC_NO_ERROR)
+      Con::errorf("SFXALDevice - Device Initialization Error: %s", mOpenAL.alcGetString(mDevice, err));
+
    if( mDevice ) 
    {
       mContext = mOpenAL.alcCreateContext( mDevice, attribs );
 
       if( mContext ) 
          mOpenAL.alcMakeContextCurrent( mContext );
+
 #if defined(AL_ALEXT_PROTOTYPES)
        mOpenAL.alcGetIntegerv(mDevice, ALC_MAX_AUXILIARY_SENDS, 1, &iSends);
 #endif
        U32 err = mOpenAL.alcGetError( mDevice );
       
       if( err != ALC_NO_ERROR )
-         Con::errorf( "SFXALDevice - Initialization Error: %s", mOpenAL.alcGetString( mDevice, err ) );
+         Con::errorf( "SFXALDevice - Context Initialization Error: %s", mOpenAL.alcGetString( mDevice, err ) );
    }
 
    AssertFatal( mDevice != NULL && mContext != NULL, "Failed to create OpenAL device and/or context!" );
@@ -89,6 +173,15 @@ SFXALDevice::SFXALDevice(  SFXProvider *provider,
    dMemset(effect, 0, sizeof(effect));
    uLoop = 0;
 #endif
+
+   printALInfo(mDevice);
+   
+
+   mMaxBuffers = getMaxSources();
+
+   // this should be max sources.
+   Con::printf("| Max Sources: %d", mMaxBuffers);
+
 }
 
 //-----------------------------------------------------------------------------

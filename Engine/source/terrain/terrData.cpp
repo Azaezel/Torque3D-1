@@ -220,13 +220,10 @@ TerrainBlock::TerrainBlock()
    mTerrainAssetId = StringTable->EmptyString();
 }
 
-
-extern Convex sTerrainConvexList;
-
 TerrainBlock::~TerrainBlock()
 {
    // Kill collision
-   sTerrainConvexList.nukeList();
+   mTerrainConvexList.nukeList();
 
    SAFE_DELETE(mLightMap);
    mLightMapTex = NULL;
@@ -349,7 +346,7 @@ bool TerrainBlock::_setLightMapSize( void *obj, const char *index, const char *d
 
 bool TerrainBlock::setFile( const FileName &terrFileName )
 {
-   if ( mTerrainAsset && mTerrainAsset->getTerrainFilePath() == terrFileName )
+   if ( mTerrainAsset && mTerrainAsset->getTerrainFilePath() == StringTable->insert(terrFileName) )
       return mFile != NULL;
 
    Resource<TerrainFile> file = ResourceManager::get().load( terrFileName );

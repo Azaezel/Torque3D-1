@@ -207,8 +207,9 @@ void ShapeAsset::initializeAsset()
    //Ensure our path is expando'd if it isn't already
    mFilePath = getOwned() ? expandAssetFilePath(mFileName) : mFilePath;
 
-   mConstructorFilePath = getOwned() ? expandAssetFilePath(mConstructorFilePath) : mConstructorFilePath;
-
+   mConstructorFilePath = getOwned() ? expandAssetFilePath(mConstructorFileName) : mConstructorFilePath;
+   if (!Torque::FS::IsFile(mConstructorFilePath))
+      Con::errorf("ShapeAsset::initializeAsset (%s) could not find %s!", getAssetName(), mConstructorFilePath);
    mDiffuseImposterPath = getOwned() ? expandAssetFilePath(mDiffuseImposterFileName) : mDiffuseImposterFileName;
    if (mDiffuseImposterPath == StringTable->EmptyString())
    {
@@ -357,8 +358,9 @@ bool ShapeAsset::loadShape()
       mLoadedState = BadFileReference;
       return false; //if it failed to load, bail out
    }
-
-   mShape->setupBillboardDetails(mFilePath, mDiffuseImposterPath, mNormalImposterPath);
+   // Construct billboards if not done already
+   if (GFXDevice::devicePresent())
+      mShape->setupBillboardDetails(mFilePath, mDiffuseImposterPath, mNormalImposterPath);
 
    //If they exist, grab our imposters here and bind them to our shapeAsset
 
@@ -749,11 +751,21 @@ GuiControl* GuiInspectorTypeShapeAssetPtr::constructEditControl()
 
    // Change filespec
    char szBuffer[512];
-   dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"ShapeAsset\", \"AssetBrowser.changeAsset\", %s, %s);",
-      mInspector->getIdString(), mCaption);
-   mBrowseButton->setField("Command", szBuffer);
+   if (mInspector->getInspectObject() != nullptr)
+   {
+      dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"ShapeAsset\", \"AssetBrowser.changeAsset\", %s, %s);",
+         mInspector->getIdString(), mCaption);
+      mBrowseButton->setField("Command", szBuffer);
 
-   setDataField(StringTable->insert("targetObject"), NULL, mInspector->getInspectObject()->getIdString());
+      setDataField(StringTable->insert("targetObject"), NULL, mInspector->getInspectObject()->getIdString());
+   }
+   else
+   {
+      //if we don't have a target object, we'll be manipulating the desination value directly
+      dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"ShapeAsset\", \"AssetBrowser.changeAsset\", %s, \"%s\");",
+         mInspector->getIdString(), mVariableName);
+      mBrowseButton->setField("Command", szBuffer);
+   }
 
    // Create "Open in ShapeEditor" button
    mShapeEdButton = new GuiBitmapButtonCtrl();

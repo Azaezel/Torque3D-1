@@ -492,6 +492,7 @@ PostEffect::PostEffect()
       mLightDirectionSC( NULL ),
       mCameraForwardSC( NULL ),
       mAccumTimeSC( NULL ),
+      mDampnessSC(NULL),   
       mDeltaTimeSC( NULL ),
       mInvCameraMatSC( NULL ),
       mMatCameraToWorldSC( NULL),
@@ -751,7 +752,7 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
       mRTSizeSC = mShader->getShaderConstHandle( "$targetSize" );
       mOneOverRTSizeSC = mShader->getShaderConstHandle( "$oneOverTargetSize" );
-
+      mRTRatioSC = mShader->getShaderConstHandle("$targetRatio");
       for (U32 i = 0; i < NumTextures; i++)
       {
          mTexSizeSC[i] = mShader->getShaderConstHandle(String::ToString("$texSize%d", i));
@@ -785,6 +786,8 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
       mCameraForwardSC = mShader->getShaderConstHandle( "$camForward" );
 
       mAccumTimeSC = mShader->getShaderConstHandle( "$accumTime" );
+      mDampnessSC = mShader->getShaderConstHandle("$dampness");
+      
       mDeltaTimeSC = mShader->getShaderConstHandle( "$deltaTime" );
 
       mInvCameraMatSC = mShader->getShaderConstHandle( "$invCameraMat" );
@@ -815,7 +818,11 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
       mShaderConsts->set( mOneOverRTSizeSC, oneOverTargetSize );
    }
-
+   if (mRTRatioSC->isValid())
+   {
+      const Point2I& resolution = GFX->getActiveRenderTarget()->getSize();
+      mShaderConsts->set(mRTRatioSC, (F32)resolution.x/ (F32)resolution.y);
+   }
    // Set up additional textures
    Point2F texSizeConst;
    for( U32 i = 0; i < NumTextures; i++ )
@@ -961,7 +968,8 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
    }
    mShaderConsts->setSafe( mAccumTimeSC, MATMGR->getTotalTime() );
    mShaderConsts->setSafe( mDeltaTimeSC, MATMGR->getDeltaTime() );
-
+   mShaderConsts->setSafe(mDampnessSC, MATMGR->getDampnessClamped());
+   
    // Now set all the constants that are dependent on the scene state.
    if ( state )
    {
