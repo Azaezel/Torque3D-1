@@ -55,14 +55,14 @@ function getNextTileBounds(%rot,%scale)
     %rotatedScale.x = mRound(mAbs(%rotatedScale.x));
     %rotatedScale.y = mRound(mAbs(%rotatedScale.y));
     %rotatedScale.z = mRound(mAbs(%rotatedScale.z));
-    %rotatedScale = VectorScale(%rotatedScale,0.5);
+    //%rotatedScale = VectorScale(%rotatedScale,0.5);
     //echo("in:("@%scale @"["@ %rot @"]) out:"@ %rotatedScale);
     return %rotatedScale;
 }
 
 function vectorLongest(%vec)
 {
-    return getMaxF(%vec.x,%vec.y);
+    return getMaxF(getMaxF(%vec.x,%vec.y),%vec.z);
 }
 
 function findGap(%startPos, %startRot, %scale)
@@ -70,13 +70,34 @@ function findGap(%startPos, %startRot, %scale)
     %nextBounds = getNextTileBounds(getWord(%startRot,3), %scale);
     %wallwidth = "0.1 0.1 0.1";
     %degRot = getRotationForwardVector(%startRot);
-    %newPos = vectorAdd(%startPos,VectorScale(%degRot,vectorLongest(%nextBounds)));
-    %boxRad = VectorSub(%nextBounds, %wallwidth);
-    //echo("centroid:"@ %newPos @"["@ getWord(%startRot,3) @"] area tested:"@ %boxRad );
-    %isEmpty = containerBoxEmpty($TypeMasks::StaticObjectType,%newPos,%boxRad.x,%boxRad.y,%boxRad.z,false);
+    %centroid = vectorAdd(%startPos,VectorMul(%degRot,vectorAdd(VectorScale(%nextBounds,0.5),%wallwidth)));
+    %boxRad = VectorSub(VectorScale(%nextBounds,0.5), %wallwidth);
+    //echo("centroid:"@ %centroid @"["@ getWord(%startRot,3) @"] area tested:"@ %boxRad );
+    %isEmpty = containerBoxEmpty($TypeMasks::StaticObjectType,%centroid,%boxRad.x,%boxRad.y,%boxRad.z,false);
     if (%isEmpty)
-        expandMazebox(%newPos,%nextBounds);
+    {
+        expandMazebox(%centroid,%nextBounds);
+        createZoning(%startPos,%startRot,%centroid,%nextBounds);
+    }
     return %isEmpty;
+}
+
+function createZoning(%pos, %rot, %centroid, %box)
+{
+    %portal = new portal()
+    { 
+        position = %pos;
+        scale = "5 1 5";
+        rotation = %rot;
+    };
+    zoneGroup.add(%portal);
+    
+    %zone = new zone()
+    { 
+        position = %centroid;
+        scale = %box;
+    };
+    zoneGroup.add(%zone);
 }
 
 function expandMazebox(%pos,%box)
@@ -87,7 +108,7 @@ function expandMazebox(%pos,%box)
     
     $mazeMin.x = getMinF($mazeMin.x, %pos.x-%box.x);
     $mazeMin.y = getMinF($mazeMin.y, %pos.y-%box.y);
-    $mazeMin.z = getMinF($mazeMin.z, %pos.z-%box.z);
+    $mazeMin.z = getMinF($mazeMin.z, %pos.z-%box.z);    
 }
 
 function scrambleExits(%exits)
@@ -254,7 +275,7 @@ function expandRooms(%nodeObj, %count)
         %curExit = "exit" @ getWord(%exitList,%i);
         //need to give things time to spawn to test against
         mazeScheduler.nextTimeSlot += %i;
-        schedule(mazeScheduler.nextTimeSlot,mazeScheduler,"placeRoom", %nodeObj, %curExit, %count-$scheduledExpansion);
+        schedule(mazeScheduler.nextTimeSlot,mazeScheduler,"placeRoom", %nodeObj, %curExit, %count-1);
     }
 }
 
@@ -286,6 +307,7 @@ function genNavmesh()
     }
     theNavMesh.position = vectorScale(VectorAdd($mazeMax,$mazeMin),0.5);
     theNavMesh.scale = vectorSub($mazeMax,$mazeMin);
+    getScene(0).add(theNavMesh);
     theNavMesh.build();
     onMazeDone();
 }
@@ -300,7 +322,12 @@ function resetMaze()
         mazeScheduler.delete();
     }        
     new scriptObject(mazeScheduler){};
-    
+    if (isObject(zoneGroup))
+    {
+        zoneGroup.delete();
+    }
+    new simGroup(zoneGroup){};
+    getScene(0).add(zoneGroup);
     if (!isObject(placedTiles))
     {
         new ArrayObject(placedTiles){};
