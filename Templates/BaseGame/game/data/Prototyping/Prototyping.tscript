@@ -68,7 +68,7 @@ function vectorLongest(%vec)
 function findGap(%startPos, %startRot, %scale)
 {
     %nextBounds = getNextTileBounds(getWord(%startRot,3), %scale);
-    %wallwidth = "0.001 0.001 0.001";
+    %wallwidth = "0.1 0.1 0.1";
     %degRot = getRotationForwardVector(%startRot);
     %newPos = vectorAdd(%startPos,VectorScale(%degRot,vectorLongest(%nextBounds)));
     %boxRad = VectorSub(%nextBounds, %wallwidth);
@@ -153,9 +153,13 @@ function placeRoom(%nodeObj, %curExit, %count)
     %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
     
     //pick a tile from the potential list
-    %tilenum = getrandom(8)+1;
-    %tilenum = findRoomSize(%tilenum,%exitPos,%rot);
+    //bias for corridors
+    %roomtype = getRandom(10);
+    if (%roomtype==1) %roomRange = 8;
+    else %roomRange = 1;
     
+    %tilenum = getrandom(%roomRange)+1;
+    %tilenum = findRoomSize(%tilenum,%exitPos,%rot);
     if (%tilenum>0)
     {
         if (%count >1) //have we run out the clock on placeable tiles?
@@ -216,7 +220,7 @@ function RoomPlaced(%nodeObj, %count)
 
     if ( %hasExit == true)
     {
-        expandRooms(%nodeObj, %count-1);
+        expandRooms(%nodeObj, %count);
     }
     if ($scheduledExpansion <=0)
         schedule(32,mazeScheduler,"onMazeFilled");
@@ -250,7 +254,7 @@ function expandRooms(%nodeObj, %count)
         %curExit = "exit" @ getWord(%exitList,%i);
         //need to give things time to spawn to test against
         mazeScheduler.nextTimeSlot += %i;
-        schedule(mazeScheduler.nextTimeSlot,mazeScheduler,"placeRoom", %nodeObj, %curExit, %count);
+        schedule(mazeScheduler.nextTimeSlot,mazeScheduler,"placeRoom", %nodeObj, %curExit, %count-$scheduledExpansion);
     }
 }
 
