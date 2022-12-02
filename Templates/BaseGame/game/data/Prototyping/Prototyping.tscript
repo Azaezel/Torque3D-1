@@ -62,7 +62,7 @@ function getNextTileBounds(%rot,%scale)
 
 function vectorLongest(%vec)
 {
-    return getMaxF(getMaxF(%vec.x,%vec.y),%vec.z);
+    return getMaxF(%vec.x,%vec.y);
 }
 
 function findGap(%startPos, %startRot, %scale)
@@ -171,7 +171,7 @@ function placeRoom(%nodeObj, %curExit, %count)
         }
         else
         {
-            if ($goalPlaced == false) //if we've hit max, go ahead and place our goal tile (assumes smallest size)
+            if (!isObject(mazeGoal)) //if we've hit max, go ahead and place our goal tile (assumes smallest size)
             {
                 %mazNode = new Prefab(mazeGoal)
                 { 
@@ -181,7 +181,6 @@ function placeRoom(%nodeObj, %curExit, %count)
                 };
                 getScene(0).add(%mazNode);
                 placedTiles.push_back(%mazNode);
-                $goalPlaced = true;
                 RoomPlaced(%mazNode, %count);
             }
             else
@@ -208,17 +207,19 @@ function placeRoom(%nodeObj, %curExit, %count)
 function RoomPlaced(%nodeObj, %count)
 {
     $scheduledExpansion--;
-    %noExit = false;
+    %hasExit = true;
     
     if (%nodeObj.fileName $= "data/Prototyping/prefabs/tileBlock.prefab")
-        %noExit = false;
+        %hasExit = false;
     if (%nodeObj.fileName $= "data/Prototyping/prefabs/tileGoal.prefab")
-        %noExit = false;
+        %hasExit = false;
 
-    if ( %noExit == false)
+    if ( %hasExit == true)
     {
         expandRooms(%nodeObj, %count-1);
     }
+    if ($scheduledExpansion <=0)
+        schedule(32,mazeScheduler,"onMazeFilled");
 }
 
 function expandRooms(%nodeObj, %count)
@@ -251,16 +252,21 @@ function expandRooms(%nodeObj, %count)
         mazeScheduler.nextTimeSlot += %i;
         schedule(mazeScheduler.nextTimeSlot,mazeScheduler,"placeRoom", %nodeObj, %curExit, %count);
     }
-    if ($scheduledExpansion <=0)
-        onMazeFilled();
 }
 
 function onMazeFilled()
 {
-    if ($goalPlaced)
+    if (isObject(mazeGoal))
+    {
+        error("Failed Maze attempts:" @ $mazeGenFails);
         genNavmesh();
+        $mazeGenFails=0;
+    }
     else
+    {
+        $mazeGenFails++;
         createMaze($mazeDepth);
+    }
 }
 
 function genNavmesh()
@@ -269,6 +275,8 @@ function genNavmesh()
     {
         %newMesh = new NavMesh(theNavMesh)
         {
+            position = "0 0 0";
+            scale = "1 1 1";
         };
         getScene(0).add(%newMesh);
     }
@@ -281,7 +289,6 @@ function genNavmesh()
 function resetMaze()
 {
     //reset global tracking vars
-    $goalPlaced = false;
     $scheduledExpansion=0;
     
     if (isObject(mazeScheduler))
