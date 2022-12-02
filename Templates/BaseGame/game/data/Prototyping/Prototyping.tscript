@@ -76,8 +76,8 @@ function findGap(%startPos, %startRot, %scale)
     %isEmpty = containerBoxEmpty($TypeMasks::StaticObjectType,%centroid,%boxRad.x,%boxRad.y,%boxRad.z,false);
     if (%isEmpty)
     {
-        expandMazebox(%centroid,%nextBounds);
-        createZoning(%startPos,%startRot,%centroid,%nextBounds);
+        expandMazebox(%centroid,VectorScale(%boxRad,2));
+        createZoning(%startPos,%startRot,%centroid,VectorScale(%boxRad,2));
     }
     return %isEmpty;
 }
