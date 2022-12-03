@@ -84,20 +84,20 @@ function findGap(%startPos, %startRot, %scale)
 
 function createZoning(%pos, %rot, %centroid, %box)
 {
-    %portal = new portal()
+    $curPortal = new portal()
     { 
         position = %pos;
         scale = "5 1 5";
         rotation = %rot;
     };
-    zoneGroup.add(%portal);
+    zoneGroup.add($curPortal);
     
-    %zone = new zone()
+    $curZone = new zone()
     { 
         position = %centroid;
         scale = %box;
     };
-    zoneGroup.add(%zone);
+    zoneGroup.add($curZone);
 }
 
 function expandMazebox(%pos,%box)
@@ -175,7 +175,7 @@ function placeRoom(%nodeObj, %curExit, %count)
     
     //pick a tile from the potential list
     //bias for corridors
-    %roomtype = getRandom(10);
+    %roomtype = getRandom(5);
     if (%roomtype==1) %roomRange = 8;
     else %roomRange = 1;
     
@@ -227,10 +227,14 @@ function placeRoom(%nodeObj, %curExit, %count)
         placedTiles.push_back(%mazNode);
     }
     RoomPlaced(%mazNode, %count);
+    if (%tilenum>0) return 1;
+    return 0;
 }
 
 function RoomPlaced(%nodeObj, %count)
 {
+    %nodeObj.portal = $curPortal;
+    %nodeObj.zone = $curZone;
     $scheduledExpansion--;
     %hasExit = true;
     
@@ -244,7 +248,10 @@ function RoomPlaced(%nodeObj, %count)
         expandRooms(%nodeObj, %count);
     }
     if ($scheduledExpansion <=0)
-        schedule(32,mazeScheduler,"onMazeFilled");
+    {
+        cancel(mazeScheduler.finish);
+        mazeScheduler.finish = schedule(32,mazeScheduler,"onMazeFilled");
+    }
 }
 
 function expandRooms(%nodeObj, %count)
@@ -268,22 +275,48 @@ function expandRooms(%nodeObj, %count)
     }
     %exitList = trim(%exitList);
     %exitList = scrambleExits(%exitList);
-    
+    %sucesses = 0;
     for (%i=0;%i<%exitCount;%i++)
     {
         $scheduledExpansion++;
         %curExit = "exit" @ getWord(%exitList,%i);
-        //need to give things time to spawn to test against
-        mazeScheduler.nextTimeSlot += %i;
-        schedule(mazeScheduler.nextTimeSlot,mazeScheduler,"placeRoom", %nodeObj, %curExit, %count-1);
+        %sucesses += placeRoom(%nodeObj, %curExit, %count-1);
     }
+    %nodeObj.exitCount = %exitCount;
+    
+    %eraseCount = 1;
+    if (%sucesses == 0 && %exitCount>1)
+    {
+        placedTiles.moveLast();
+        while (placedTiles.getCurrent() != 0)
+        {
+            placedTiles.movePrev();
+            %objID = placedTiles.getKey(placedTiles.getCurrent());
+            if (%objID.exitCount >1)
+                break;
+            %eraseCount++;
+        }
+        
+        for (%i = 0;%i<=%eraseCount; %i++)
+        {
+            placedTiles.moveLast();
+            %objID = placedTiles.getKey(placedTiles.getCurrent());
+            %objID.delete();
+            if (isObject(%objID.portal)) %objID.portal.delete();
+            if (isObject(%objID.zone)) %objID.zone.delete();
+            placedTiles.pop_back();
+        }
+        %objID = placedTiles.getKey(placedTiles.getCurrent());
+        mazeScheduler.nextRun = schedule(32*%eraseCount,mazeScheduler,"expandRooms",%objID, %count+%eraseCount);
+    }    
 }
 
 function onMazeFilled()
 {
     if (isObject(mazeGoal))
     {
-        error("Failed Maze attempts:" @ $mazeGenFails);
+        if ($mazeGenFails>0)
+            error("Failed Maze attempts:" @ $mazeGenFails);
         genNavmesh();
         $mazeGenFails=0;
     }
@@ -334,7 +367,7 @@ function resetMaze()
     }
     else
     {
-        placedTiles.setCurrent(placedTiles.count()-1);
+        placedTiles.moveLast();
         while (placedTiles.count()>0)
         {
             %objID = placedTiles.getKey(placedTiles.getCurrent());
