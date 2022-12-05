@@ -392,6 +392,7 @@ function resetMaze()
 
 function onMazeDone()
 {
+    Core_ClientServer.GetEventManager().postEvent( "mapLoadComplete" );
     echo("Maze Ready");
 }
 

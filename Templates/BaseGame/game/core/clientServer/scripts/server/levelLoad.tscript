@@ -115,6 +115,8 @@ function loadMissionStage2()
       }
    }
 
+   callOnModules("onLoadMap");
+   
    if( $Server::LoadFailMsg !$= "" )
    {
       // Inform clients that are already connected
