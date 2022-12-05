@@ -132,7 +132,15 @@ function findRoomSize(%tilenum,%exitPos,%rot)
     // check if we have an empty gap for the tile, picking a smaller one to try if that fails
     // todo: better size-tracking logic
     %okay = false;
-    if (%tilenum == 9) //magic numbers are magic. fix meh.
+    if (%tilenum == 10) //magic numbers are magic. fix meh.
+    {
+        if (!findGap(%exitPos, %rot, "50 50 30"))
+        {
+            %tilenum -=1;
+            return findRoomSize(%tilenum,%exitPos,%rot);
+        }
+    }
+    else if (%tilenum == 9) //magic numbers are magic. fix meh.
     {
         if (!findGap(%exitPos, %rot, "20 20 5"))
         {
@@ -176,7 +184,7 @@ function placeRoom(%nodeObj, %curExit, %count)
     //pick a tile from the potential list
     //bias for corridors
     %roomtype = getRandom(5);
-    if (%roomtype==1) %roomRange = 8;
+    if (%roomtype==1) %roomRange = 9;
     else %roomRange = 1;
     
     %tilenum = getrandom(%roomRange)+1;
