@@ -12,6 +12,15 @@
 // When a local game is started - a listen server - via calling StartGame() a server is created and then the client is
 // connected to it via createAndConnectToLocalServer().
 
+function Core_ClientServer::onLoadMap(%this)
+{
+    %this.finishMapLoad();
+}
+
+function Core_ClientServer::finishMapLoad()
+{
+    Core_ClientServer.GetEventManager().postEvent( "mapLoadComplete" );
+}
 
 function Core_ClientServerListener::onMapLoadComplete(%this)
 {
