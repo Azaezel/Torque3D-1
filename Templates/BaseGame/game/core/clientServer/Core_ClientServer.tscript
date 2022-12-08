@@ -17,8 +17,6 @@ function Core_ClientServerListener::onMapLoadComplete(%this)
 {
     error("onMapLoadComplete");
     $moduleLoadedDone++;
-    //TODO:
-    //trip a second seperated portion of loadMissionStage2 before players join
     %numModsNeedingLoaded = 0;
     %modulesList = ModuleDatabase.findModules();
     for(%i=0; %i < getWordCount(%modulesList); %i++)
@@ -29,7 +27,7 @@ function Core_ClientServerListener::onMapLoadComplete(%this)
     }
     if ($moduleLoadedDone == %numModsNeedingLoaded)
     {
-        error("all modules loaded");    
+        loadMissionStage3();  
     }
 }
 
@@ -58,6 +56,7 @@ function Core_ClientServer::onCreate( %this )
    %this.listener = new ScriptMsgListener() {class = Core_ClientServerListener;}; 
    %this.GetEventManager().subscribe( %this.listener, "mapLoadComplete" ); 
 }
+
 
 function Core_ClientServer::onDestroy( %this )
 {

@@ -401,7 +401,7 @@ function Prototyping::finishMapLoad()
 }
 function Prototyping::onLoadMap(%this)
 {
-    createMaze(10);
+    createMaze(40);
 }
 function createMaze(%tileDepth)
 {

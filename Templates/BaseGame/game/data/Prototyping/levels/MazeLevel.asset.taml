@@ -1,0 +1,10 @@
+<LevelAsset
+    AssetName="MazeLevel"
+    AssetDescription="A simple proccedural level players can walk around in."
+    LevelFile="@assetFile=MazeLevel.mis"
+    LevelName="Maze Level"
+    PostFXPresetFile="@assetFile=MazeLevel.postfxpreset.tscript"
+    DecalsFile="@assetFile=MazeLevel.mis.decals"
+    ForestFile="@assetFile=MazeLevel.forest"
+    NavmeshFile="@assetFile=MazeLevel.nav"
+    VersionId="1"/>

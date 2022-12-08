@@ -114,8 +114,6 @@ function loadMissionStage2()
          $Server::LoadFailMsg = "No Scene found in level \"" @ %file @ "\".";
       }
    }
-
-   callOnModules("onLoadMap");
    
    if( $Server::LoadFailMsg !$= "" )
    {
@@ -128,7 +126,14 @@ function loadMissionStage2()
    // Set mission name.
    if( isObject( theLevelInfo ) )
       $Server::MissionName = theLevelInfo.levelName;
+   $moduleLoadedDone = 0;
+   callOnModules("onLoadMap");
 
+}
+
+function loadMissionStage3() 
+{
+   echo("*** Stage 3 load");
    
    %hasGameMode = callGamemodeFunction("onCreateGame");
    
@@ -145,8 +150,8 @@ function loadMissionStage2()
 
    // Go ahead and launch the game
    %hasGameMode = callGamemodeFunction("onMissionStart");
+   
 }
-
 function endMission()
 {
    if (!isObject( getScene(0) ))
