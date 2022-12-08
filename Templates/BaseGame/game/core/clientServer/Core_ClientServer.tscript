@@ -18,9 +18,19 @@ function Core_ClientServerListener::onMapLoadComplete(%this)
     error("onMapLoadComplete");
     $moduleLoadedDone++;
     //TODO:
-    //determine number of modules (that can trigger the event?)
-    //if $moduleLoadedDone>= numMods
     //trip a second seperated portion of loadMissionStage2 before players join
+    %numModsNeedingLoaded = 0;
+    %modulesList = ModuleDatabase.findModules();
+    for(%i=0; %i < getWordCount(%modulesList); %i++)
+    {
+        %module = getWord(%modulesList, %i);
+        if (%module.ModuleId.isMethod("finishMapLoad"))
+            %numModsNeedingLoaded++;
+    }
+    if ($moduleLoadedDone == %numModsNeedingLoaded)
+    {
+        error("all modules loaded");    
+    }
 }
 
 function Core_ClientServer::onCreate( %this )

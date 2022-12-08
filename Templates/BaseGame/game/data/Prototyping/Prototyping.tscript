@@ -392,11 +392,17 @@ function resetMaze()
 
 function onMazeDone()
 {
-    Core_ClientServer.GetEventManager().postEvent( "mapLoadComplete" );
+    Prototyping.finishMapLoad();
     echo("Maze Ready");
 }
-
-//createMaze(10)
+function Prototyping::finishMapLoad()
+{
+    Core_ClientServer.GetEventManager().postEvent( "mapLoadComplete" );
+}
+function Prototyping::onLoadMap(%this)
+{
+    createMaze(10);
+}
 function createMaze(%tileDepth)
 {
     $mazeDepth = %tileDepth;
