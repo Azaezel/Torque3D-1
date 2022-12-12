@@ -331,7 +331,10 @@ function onMazeFilled()
     else
     {
         $mazeGenFails++;
-        createMaze($mazeDepth);
+        if ($mazeGenFails>$mazeDepth)
+            onMazeFailed();
+        else
+            createMaze($mazeDepth);
     }
 }
 
@@ -399,6 +402,17 @@ function Prototyping::finishMapLoad()
 {
     Core_ClientServer.GetEventManager().postEvent( "mapLoadComplete" );
 }
+
+function onMazeFailed()
+{
+    Prototyping.FailMapLoad();
+}
+
+function Prototyping::FailMapLoad()
+{
+    Core_ClientServer.GetEventManager().postEvent( "mapLoadFail" );
+}
+
 function Prototyping::onLoadMap(%this)
 {
     createMaze(40);

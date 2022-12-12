@@ -24,7 +24,6 @@ function Core_ClientServer::finishMapLoad()
 
 function Core_ClientServerListener::onMapLoadComplete(%this)
 {
-    error("onMapLoadComplete");
     $moduleLoadedDone++;
     %numModsNeedingLoaded = 0;
     %modulesList = ModuleDatabase.findModules();
@@ -38,6 +37,27 @@ function Core_ClientServerListener::onMapLoadComplete(%this)
     {
         loadMissionStage3();  
     }
+}
+
+function Core_ClientServerListener::onmapLoadFail(%this)
+{   
+    $moduleLoadedFailed++;
+    echo("onmapLoadFail!");
+    if ($moduleLoadedFailed>1) return; // yeah, we know
+    //loadMissionStage3(); 
+        
+    $Server::LoadFailMsg = "Failed to load map!";
+    // Inform clients that are already connected
+    
+    for (%clientIndex = 0; %clientIndex < ClientGroup.getCount(); %clientIndex++)
+    {
+        %cl = ClientGroup.getObject( %clientIndex );
+        messageClient(%cl, 'MsgLoadFailed', $Server::LoadFailMsg);
+        %cl.endMission();
+        %cl.resetGhosting();
+        %cl.clearPaths();
+    }
+    destroyServer();
 }
 
 function Core_ClientServer::onCreate( %this )
@@ -62,8 +82,10 @@ function Core_ClientServer::onCreate( %this )
       initClient();
    }
    %this.GetEventManager().registerEvent("mapLoadComplete");
+   %this.GetEventManager().registerEvent("mapLoadFail");
    %this.listener = new ScriptMsgListener() {class = Core_ClientServerListener;}; 
    %this.GetEventManager().subscribe( %this.listener, "mapLoadComplete" ); 
+   %this.GetEventManager().subscribe( %this.listener, "mapLoadFail" ); 
 }
 
 
