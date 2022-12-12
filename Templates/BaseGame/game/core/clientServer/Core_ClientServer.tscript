@@ -39,12 +39,17 @@ function Core_ClientServerListener::onMapLoadComplete(%this)
     }
 }
 
-function Core_ClientServerListener::onmapLoadFail(%this)
+function Core_ClientServerListener::onmapLoadFail(%this, %isFine)
 {   
+    if (%isFine) 
+    {
+        %this.onMapLoadComplete();
+        return;
+    }
+    
     $moduleLoadedFailed++;
     echo("onmapLoadFail!");
     if ($moduleLoadedFailed>1) return; // yeah, we know
-    //loadMissionStage3(); 
         
     $Server::LoadFailMsg = "Failed to load map!";
     // Inform clients that are already connected
@@ -52,7 +57,7 @@ function Core_ClientServerListener::onmapLoadFail(%this)
     for (%clientIndex = 0; %clientIndex < ClientGroup.getCount(); %clientIndex++)
     {
         %cl = ClientGroup.getObject( %clientIndex );
-        messageClient(%cl, 'MsgLoadFailed', $Server::LoadFailMsg);
+        %cl.onConnectionDropped($Server::LoadFailMsg);
         %cl.endMission();
         %cl.resetGhosting();
         %cl.clearPaths();
