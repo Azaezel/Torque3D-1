@@ -342,7 +342,7 @@ function onMazeFilled()
     {
         $mazeGenFails++;
         if ($mazeGenFails>$mazeDepth)
-            onMazeFailed();
+            Prototyping.FailMapLoad(false);
         else
             createMaze($mazeDepth);
     }
@@ -363,7 +363,7 @@ function genNavmesh()
     theNavMesh.scale = vectorSub($mazeMax,$mazeMin);
     getScene(0).add(theNavMesh);
     theNavMesh.build();
-    onMazeDone();
+    Prototyping.finishMapLoad()();
 }
 
 function resetMaze()
@@ -403,13 +403,13 @@ function resetMaze()
         theNavMesh.cancelBuild();
 }
 
-function onMazeDone()
+function Prototyping::finishMapLoad(%this)
 {
     Core_ClientServer.finishMapLoad();
     echo("Maze Ready");
 }
 
-function onMazeFailed()
+function Prototyping::FailMapLoad(%this,%isFine)
 {
     Core_ClientServer.FailMapLoad("Prototyping", true);
 }
