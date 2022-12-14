@@ -188,6 +188,7 @@ function findRoomSize(%roomtype,%exitPos,%rot)
     return %tile;
 }
 
+
 function placeRoom(%nodeObj, %curExit, %count)
 {
     %frameMesh = %nodeObj.getChildGroup()-->frame;
@@ -363,7 +364,7 @@ function genNavmesh()
     theNavMesh.scale = vectorSub($mazeMax,$mazeMin);
     getScene(0).add(theNavMesh);
     theNavMesh.build();
-    Prototyping.finishMapLoad()();
+    Prototyping.finishMapLoad();
 }
 
 function resetMaze()
