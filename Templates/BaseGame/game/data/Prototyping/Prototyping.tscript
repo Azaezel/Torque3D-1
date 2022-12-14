@@ -127,49 +127,65 @@ function scrambleExits(%exits)
     return %exits;
 }
 
-function findRoomSize(%tilenum,%exitPos,%rot)
+function getRoomList()
+{
+    if (isObject(RoomList)) return;
+    
+    new arrayobject(RoomList);
+    
+    new arrayobject(sizeListA);
+        sizeListA.bounds = "5 5 5";
+        sizeListA.add(0, "tile1");
+        sizeListA.add(1, "tile2");
+        sizeListA.add(2, "tile3");
+        sizeListA.add(3, "tile4");
+        sizeListA.add(4, "tile5");
+    RoomList.add(0,sizeListA);
+    
+    new arrayobject(sizeListB);
+        sizeListB.bounds = "5 10 20";
+        sizeListB.add(0, "tile6");
+        sizeListB.add(1, "tile7");
+    RoomList.add(1,sizeListB);
+    
+    new arrayobject(sizeListC);
+        sizeListC.bounds = "10 10 20";
+        sizeListC.add(0, "tile8");
+    RoomList.add(2,sizeListC);
+    
+    new arrayobject(sizeListD);
+        sizeListD.bounds = "20 20 20";
+        sizeListD.add(0, "tile9");
+    RoomList.add(3,sizeListD);    
+    
+    new arrayobject(sizeListE);
+        sizeListE.bounds = "50 50 30";
+        sizeListE.add(0, "tile10");
+    RoomList.add(4,sizeListE);
+}
+
+function pickTile(%exitPos,%rot)
+{
+    //pick a tile from the potential list
+    //bias for corridors
+    %roomtype = 0;
+    if (getRandom(10) == 1)
+        %roomtype = getRandom(RoomList.count()-1);
+    %tile = findRoomSize(%roomtype,%exitPos,%rot);
+    return %tile;
+}
+
+function findRoomSize(%roomtype,%exitPos,%rot)
 {
     // check if we have an empty gap for the tile, picking a smaller one to try if that fails
-    // todo: better size-tracking logic
+    if (%roomtype<0) return "";
+    
     %okay = false;
-    if (%tilenum == 10) //magic numbers are magic. fix meh.
-    {
-        if (!findGap(%exitPos, %rot, "50 50 30"))
-        {
-            %tilenum -=1;
-            return findRoomSize(%tilenum,%exitPos,%rot);
-        }
-    }
-    else if (%tilenum == 9) //magic numbers are magic. fix meh.
-    {
-        if (!findGap(%exitPos, %rot, "20 20 5"))
-        {
-            %tilenum -=1;
-            return findRoomSize(%tilenum,%exitPos,%rot);
-        }
-    }
-    else if (%tilenum == 8) //magic numbers are magic. fix meh.
-    {
-        if (!findGap(%exitPos, %rot, "10 10 20"))
-        {
-            %tilenum -=1;
-            return findRoomSize(%tilenum,%exitPos,%rot);
-        }
-    }
-    else if (%tilenum>5) //magic numbers are magic. fix meh.
-    {
-        if (!findGap(%exitPos, %rot, "5 10 20"))
-        {
-            %tilenum -=2;
-            return findRoomSize(%tilenum,%exitPos,%rot);
-        }
-    }
-    else if (!findGap(%exitPos, %rot, "5 5 5"))
-    {
-        %tilenum = 0;
-        //echo("fully blocked!");
-    }
-    return %tilenum;
+    %roomTypeList = RoomList.getValue(%roomtype);
+    if (!findGap(%exitPos, %rot, %roomTypeList.bounds))
+        return findRoomSize(%roomtype-1,%exitPos,%rot);
+    %tile = %roomTypeList.getValue(getRandom(%roomTypeList.count()-1));
+    return %tile;
 }
 
 function placeRoom(%nodeObj, %curExit, %count)
@@ -181,21 +197,15 @@ function placeRoom(%nodeObj, %curExit, %count)
     %exitPos = getWords(%exitTrans,0,2);             
     %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
     
-    //pick a tile from the potential list
-    //bias for corridors
-    %roomtype = getRandom(5);
-    if (%roomtype==1) %roomRange = 9;
-    else %roomRange = 1;
+    %tile = pickTile(%exitPos,%rot); 
     
-    %tilenum = getrandom(%roomRange)+1;
-    %tilenum = findRoomSize(%tilenum,%exitPos,%rot);
-    if (%tilenum>0)
+    if (%tile !$= "")
     {
         if (%count >1) //have we run out the clock on placeable tiles?
         {
             %mazNode = new Prefab()
             { 
-                fileName = "data/Prototyping/prefabs/tile"@ %tilenum @".prefab";
+                fileName = "data/Prototyping/prefabs/"@ %tile @".prefab";
                 position = %exitPos;
                 rotation = %rot;
             };
@@ -218,12 +228,12 @@ function placeRoom(%nodeObj, %curExit, %count)
             }
             else
             {
-                %tilenum = 0;
+                %tile = "";
             }
         }
     }
     
-    if (%tilenum == 0) //are we completely blocked?
+    if (%tile $= "") //are we completely blocked?
     {
         %mazNode = new Prefab()
         { 
@@ -235,7 +245,7 @@ function placeRoom(%nodeObj, %curExit, %count)
         placedTiles.push_back(%mazNode);
     }
     RoomPlaced(%mazNode, %count);
-    if (%tilenum>0) return 1;
+    if (%tile !$= "") return 1;
     return 0;
 }
 
@@ -395,30 +405,23 @@ function resetMaze()
 
 function onMazeDone()
 {
-    Prototyping.finishMapLoad();
+    Core_ClientServer.finishMapLoad();
     echo("Maze Ready");
-}
-function Prototyping::finishMapLoad()
-{
-    Core_ClientServer.GetEventManager().postEvent( "mapLoadComplete" );
 }
 
 function onMazeFailed()
 {
-    Prototyping.FailMapLoad();
-}
-
-function Prototyping::FailMapLoad()
-{
-    Core_ClientServer.GetEventManager().postEvent( "mapLoadFail", false );
+    Core_ClientServer.FailMapLoad("Prototyping", true);
 }
 
 function Prototyping::onLoadMap(%this)
 {
-    createMaze(40);
+    createMaze(10);
 }
+
 function createMaze(%tileDepth)
 {
+    getRoomList();
     $mazeDepth = %tileDepth;
     if (%tileDepth == 0) %tileDepth =50;
     resetMaze();
