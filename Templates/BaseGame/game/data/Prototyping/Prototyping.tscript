@@ -180,7 +180,6 @@ function findRoomSize(%roomtype,%exitPos,%rot)
     // check if we have an empty gap for the tile, picking a smaller one to try if that fails
     if (%roomtype<0) return "";
     
-    %okay = false;
     %roomTypeList = RoomList.getValue(%roomtype);
     if (!findGap(%exitPos, %rot, %roomTypeList.bounds))
         return findRoomSize(%roomtype-1,%exitPos,%rot);
@@ -304,7 +303,7 @@ function expandRooms(%nodeObj, %count)
     %nodeObj.exitCount = %exitCount;
     
     %eraseCount = 1;
-    if (%sucesses == 0 && %exitCount>1)
+    if (%sucesses == 0 && %exitCount>1 && !isObject(mazeGoal))
     {
         placedTiles.moveLast();
         while (placedTiles.getCurrent() != 0)
@@ -320,9 +319,9 @@ function expandRooms(%nodeObj, %count)
         {
             placedTiles.moveLast();
             %objID = placedTiles.getKey(placedTiles.getCurrent());
-            %objID.delete();
             if (isObject(%objID.portal)) %objID.portal.delete();
             if (isObject(%objID.zone)) %objID.zone.delete();
+            %objID.delete();
             placedTiles.pop_back();
         }
         %objID = placedTiles.getKey(placedTiles.getCurrent());
