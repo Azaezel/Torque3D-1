@@ -423,7 +423,7 @@ PlayerData::PlayerData()
    boxHeadFrontPercentage = 1;
 
    for (S32 i = 0; i < MaxSounds; i++)
-      INIT_ASSET_ARRAY(PlayerSound, i);
+      INIT_SOUNDASSET_ARRAY(PlayerSound, i);
 
    footPuffEmitter = NULL;
    footPuffID = 0;
@@ -1271,7 +1271,7 @@ void PlayerData::packData(BitStream* stream)
    stream->write(minLateralImpactSpeed);
 
    for (U32 i = 0; i < MaxSounds; i++)
-      PACKDATA_ASSET_ARRAY(PlayerSound, i);
+      PACKDATA_SOUNDASSET_ARRAY(PlayerSound, i);
 
    mathWrite(*stream, boxSize);
    mathWrite(*stream, crouchBoxSize);
@@ -1452,7 +1452,7 @@ void PlayerData::unpackData(BitStream* stream)
    stream->read(&minLateralImpactSpeed);
 
    for (U32 i = 0; i < MaxSounds; i++)
-      UNPACKDATA_ASSET_ARRAY(PlayerSound, i);
+      UNPACKDATA_SOUNDASSET_ARRAY(PlayerSound, i);
 
    mathRead(*stream, &boxSize);
    mathRead(*stream, &crouchBoxSize);

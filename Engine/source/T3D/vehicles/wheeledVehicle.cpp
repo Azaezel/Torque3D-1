@@ -312,7 +312,7 @@ WheeledVehicleData::WheeledVehicleData()
    wheelCount = 0;
    dMemset(&wheel, 0, sizeof(wheel));
    for (S32 i = 0; i < MaxSounds; i++)
-      INIT_ASSET_ARRAY(WheeledVehicleSounds, i);
+      INIT_SOUNDASSET_ARRAY(WheeledVehicleSounds, i);
 }
 
 
@@ -483,7 +483,7 @@ void WheeledVehicleData::packData(BitStream* stream)
 
    for (S32 i = 0; i < MaxSounds; i++)
    {
-      PACKDATA_ASSET_ARRAY(WheeledVehicleSounds, i);
+      PACKDATA_SOUNDASSET_ARRAY(WheeledVehicleSounds, i);
    }
 
    stream->write(maxWheelSpeed);
@@ -502,7 +502,7 @@ void WheeledVehicleData::unpackData(BitStream* stream)
 
    for (S32 i = 0; i < MaxSounds; i++)
    {
-      UNPACKDATA_ASSET_ARRAY(WheeledVehicleSounds, i);
+      UNPACKDATA_SOUNDASSET_ARRAY(WheeledVehicleSounds, i);
    }
 
    stream->read(&maxWheelSpeed);
