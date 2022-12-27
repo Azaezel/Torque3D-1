@@ -294,10 +294,10 @@ DefineEnumType(wheelSoundsEnum);
 
 ImplementEnumType(wheelSoundsEnum, "enum types.\n"
    "@ingroup WheeledVehicleData\n\n")
-   {WheeledVehicleData::JetSound,          "JetSound", "..." },
-   {WheeledVehicleData::EngineSound,       "EngineSound", "..." },
-   {WheeledVehicleData::SquealSound,       "SquealSound", "..." },
-   {WheeledVehicleData::WheelImpactSound,  "WheelImpactSound", "..." },
+   { wheelSoundsEnum::JetSound,          "JetSound", "..." },
+   { wheelSoundsEnum::EngineSound,       "EngineSound", "..." },
+   { wheelSoundsEnum::SquealSound,       "SquealSound", "..." },
+   { wheelSoundsEnum::WheelImpactSound,  "WheelImpactSound", "..." },
 EndImplementEnumType;
 
 WheeledVehicleData::WheeledVehicleData()

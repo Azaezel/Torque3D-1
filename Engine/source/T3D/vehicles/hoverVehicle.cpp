@@ -73,9 +73,9 @@ DefineEnumType(hoverSoundsEnum);
 
 ImplementEnumType(hoverSoundsEnum, "enum types.\n"
    "@ingroup HoverVehicleData\n\n")
-   { HoverVehicleData::JetSound,       "JetSound", "..." },
-   { HoverVehicleData::EngineSound,    "EngineSound", "..." },
-   { HoverVehicleData::FloatSound,     "FloatSound", "..." },
+   { hoverSoundsEnum::JetSound,       "JetSound", "..." },
+   { hoverSoundsEnum::EngineSound,    "EngineSound", "..." },
+   { hoverSoundsEnum::FloatSound,     "FloatSound", "..." },
 EndImplementEnumType;
 
 namespace {

@@ -207,6 +207,27 @@ TriggerObjectType  |
 CorpseObjectType;
 
 
+typedef RigidShapeData::Body::Sounds bodySounds;
+DefineEnumType(bodySounds);
+
+ImplementEnumType(bodySounds, "enum types.\n"
+   "@ingroup VehicleData\n\n")
+   { bodySounds::SoftImpactSound, "SoftImpactSound", "..." },
+   { bodySounds::HardImpactSound,  "HardImpactSound", "..." },
+EndImplementEnumType;
+
+typedef RigidShapeData::Sounds waterSounds;
+DefineEnumType(waterSounds);
+
+ImplementEnumType(waterSounds, "enum types.\n"
+   "@ingroup RigidShapeData\n\n")
+   { waterSounds::ExitWater, "ExitWater", "..." },
+   { waterSounds::ImpactSoft,    "ImpactSoft", "..." },
+   { waterSounds::ImpactMedium,  "ImpactMedium", "..." },
+   { waterSounds::ImpactHard,    "ImpactHard", "..." },
+   { waterSounds::Wake,          "Wake", "..." },
+EndImplementEnumType;
+
 //----------------------------------------------------------------------------
 
 RigidShapeData::RigidShapeData()
@@ -301,7 +322,7 @@ bool RigidShapeData::preload(bool server, String &errorStr)
    if (!server) {
       for (S32 i = 0; i < Body::MaxSounds; i++)
       {
-         if (mBodySounds[i])
+         if (getBodySounds(i) != StringTable->EmptyString())
          {
             _setBodySounds(getBodySounds(i), i);
          }
@@ -309,7 +330,7 @@ bool RigidShapeData::preload(bool server, String &errorStr)
 
       for (S32 j = 0; j < Sounds::MaxSounds; j++)
       {
-         if (mWaterSounds[j])
+         if (getWaterSounds(j) != StringTable->EmptyString())
          {
             _setWaterSounds(getWaterSounds(j), j);
          }
@@ -391,8 +412,9 @@ void RigidShapeData::packData(BitStream* stream)
    stream->write(cameraLag);
    stream->write(cameraDecay);
    stream->write(cameraOffset);
-
-   stream->write( dustHeight );
+   
+   stream->write(triggerDustHeight);
+   stream->write(dustHeight);
 
    stream->write(exitSplashSoundVel);
    stream->write(softSplashSoundVel);
@@ -455,6 +477,7 @@ void RigidShapeData::unpackData(BitStream* stream)
    stream->read(&cameraDecay);
    stream->read(&cameraOffset);
 
+   stream->read(&triggerDustHeight);
    stream->read( &dustHeight );
 
    stream->read(&exitSplashSoundVel);
@@ -539,14 +562,14 @@ void RigidShapeData::initPersistFields()
    
    addGroup( "Sounds" );
 
-      INITPERSISTFIELD_SOUNDASSET_ARRAY(BodySounds, Body::Sounds::MaxSounds, RigidShapeData, "Sounds for body.");
+      INITPERSISTFIELD_SOUNDASSET_ENUMED(BodySounds, bodySounds, Body::Sounds::MaxSounds, RigidShapeData, "Sounds for body.");
 
       addField("exitSplashSoundVelocity", TypeF32,       Offset(exitSplashSoundVel, RigidShapeData), "The minimum velocity at which the exit splash sound will be played when emerging from water.\n");
       addField("softSplashSoundVelocity", TypeF32,       Offset(softSplashSoundVel, RigidShapeData),"The minimum velocity at which the soft splash sound will be played when impacting water.\n");
       addField("mediumSplashSoundVelocity", TypeF32,     Offset(medSplashSoundVel, RigidShapeData), "The minimum velocity at which the medium splash sound will be played when impacting water.\n");
       addField("hardSplashSoundVelocity", TypeF32,       Offset(hardSplashSoundVel, RigidShapeData), "The minimum velocity at which the hard splash sound will be played when impacting water.\n");
       
-      INITPERSISTFIELD_SOUNDASSET_ARRAY(WaterSounds, Sounds::MaxSounds, RigidShapeData, "Sounds for interacting with water.");
+      INITPERSISTFIELD_SOUNDASSET_ENUMED(WaterSounds, waterSounds, Sounds::MaxSounds, RigidShapeData, "Sounds for interacting with water.");
 
    endGroup( "Sounds" );
    
