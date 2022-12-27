@@ -289,15 +289,15 @@ ConsoleDocClass( WheeledVehicleData,
    "@ingroup Vehicles\n"
 );
 
-typedef WheeledVehicleData::Sounds wheelSoundsEnum;
-DefineEnumType(wheelSoundsEnum);
+typedef WheeledVehicleData::Sounds WheeledVehicleSoundsEnum;
+DefineEnumType(WheeledVehicleSoundsEnum);
 
-ImplementEnumType(wheelSoundsEnum, "enum types.\n"
+ImplementEnumType(WheeledVehicleSoundsEnum, "enum types.\n"
    "@ingroup WheeledVehicleData\n\n")
-   { wheelSoundsEnum::JetSound,          "JetSound", "..." },
-   { wheelSoundsEnum::EngineSound,       "EngineSound", "..." },
-   { wheelSoundsEnum::SquealSound,       "SquealSound", "..." },
-   { wheelSoundsEnum::WheelImpactSound,  "WheelImpactSound", "..." },
+   { WheeledVehicleSoundsEnum::JetSound,          "JetSound", "..." },
+   { WheeledVehicleSoundsEnum::EngineSound,       "EngineSound", "..." },
+   { WheeledVehicleSoundsEnum::SquealSound,       "SquealSound", "..." },
+   { WheeledVehicleSoundsEnum::WheelImpactSound,  "WheelImpactSound", "..." },
 EndImplementEnumType;
 
 WheeledVehicleData::WheeledVehicleData()
@@ -448,7 +448,7 @@ bool WheeledVehicleData::mirrorWheel(Wheel* we)
 
 void WheeledVehicleData::initPersistFields()
 {
-   INITPERSISTFIELD_SOUNDASSET_ENUMED(WheeledVehicleSounds, wheelSoundsEnum, MaxSounds, WheeledVehicleData, "Sounds related to wheeled vehicle.");
+   INITPERSISTFIELD_SOUNDASSET_ENUMED(WheeledVehicleSounds, WheeledVehicleSoundsEnum, MaxSounds, WheeledVehicleData, "Sounds related to wheeled vehicle.");
 
    addField("tireEmitter",TYPEID< ParticleEmitterData >(), Offset(tireEmitter, WheeledVehicleData),
       "ParticleEmitterData datablock used to generate particles from each wheel "

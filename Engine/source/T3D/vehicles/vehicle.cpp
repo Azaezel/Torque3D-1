@@ -130,61 +130,20 @@ VehicleData::VehicleData()
    shadowEnable = true;
    shadowSize = 256;
    shadowProjectionDistance = 14.0f;
-
-
-   body.friction = 0;
-   body.restitution = 1;
-
-   minImpactSpeed = 25;
-   softImpactSpeed = 25;
-   hardImpactSpeed = 50;
-   minRollSpeed = 0;
    maxSteeringAngle = M_PI_F/4.0f; // 45 deg.
-
-   cameraRoll = true;
-   cameraLag = 0;
-   cameraDecay = 0;
-   cameraOffset = 0;
-
-   minDrag = 0;
-   maxDrag = 0;
-   integration = 1;
-   collisionTol = 0.1f;
-   contactTol = 0.1f;
-   massCenter.set(0,0,0);
-   massBox.set(0,0,0);
-
-   drag = 0.7f;
-   density = 4;
-
    jetForce = 500;
    jetEnergyDrain =  0.8f;
    minJetEnergy = 1;
-
    steeringReturn = 0.0f;
    steeringReturnSpeedScale = 0.01f;
    powerSteering = false;
-
-   dustEmitter = NULL;
-   dustID = 0;
-   triggerDustHeight = 3.0;
-   dustHeight = 1.0;
 
    dMemset( damageEmitterList, 0, sizeof( damageEmitterList ) );
    dMemset( damageEmitterOffset, 0, sizeof( damageEmitterOffset ) );
    dMemset( damageEmitterIDList, 0, sizeof( damageEmitterIDList ) );
    dMemset( damageLevelTolerance, 0, sizeof( damageLevelTolerance ) );
-   dMemset( splashEmitterList, 0, sizeof( splashEmitterList ) );
-   dMemset( splashEmitterIDList, 0, sizeof( splashEmitterIDList ) );
 
    numDmgEmitterAreas = 0;
-
-   splashFreqMod = 300.0;
-   splashVelEpsilon = 0.50;
-   exitSplashSoundVel = 2.0;
-   softSplashSoundVel = 1.0;
-   medSplashSoundVel = 2.0;
-   hardSplashSoundVel = 3.0;
 
    collDamageThresholdVel = 20;
    collDamageMultiplier = 0.05f;
