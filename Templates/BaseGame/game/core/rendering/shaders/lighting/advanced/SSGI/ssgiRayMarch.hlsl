@@ -17,7 +17,14 @@ uniform float2 oneOverTargetSize;
 
 float screenEdgeFade(float2 screenPos)
 {
-  return 1.0-length(screenPos.xy); // eventually we'll wanna do a box fade
+  const float cb_fadeEnd =10.0;
+  const float cb_fadeStart = 9.0;
+  const float fadeDiffRcp = 1.0f / (cb_fadeEnd  - cb_fadeStart);
+  float2 boundary = abs(screenPos*10.0 - float2(0.5f, 0.5f)/10.0 );
+  float fadeOnBorder = 1.0f - saturate((boundary.x - cb_fadeStart) * fadeDiffRcp);
+  fadeOnBorder *= 1.0f - saturate((boundary.y - cb_fadeStart) * fadeDiffRcp);
+  fadeOnBorder = smoothstep(0.0f, 1.0f, fadeOnBorder);
+  return fadeOnBorder;
 }
 
 float4 RayMarch(float3 dir, float3 screenPos, float stepSize, int stepCount)
