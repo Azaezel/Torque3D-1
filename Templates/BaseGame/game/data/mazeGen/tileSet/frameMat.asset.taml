@@ -7,7 +7,9 @@
         mapTo="frameMat">
         <Material.Stages>
             <Stages_beginarray
-                DiffuseMapAsset="mazeGen:tileWork_frameMat_A_image"/>
+                DiffuseMapAsset="mazeGen:tileWork_frameMat_A_image"
+                NormalMapAsset="mazeGen:frameMat_n_image"
+                ORMConfigMapAsset="mazeGen:frameMat_orm_image"/>
         </Material.Stages>
     </Material>
 </MaterialAsset>
