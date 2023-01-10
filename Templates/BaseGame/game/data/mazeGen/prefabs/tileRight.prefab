@@ -1,0 +1,11 @@
+//--- OBJECT WRITE BEGIN ---
+$ThisPrefab = new SimGroup() {
+
+   new TSStatic() {
+      ShapeAsset = "mazeGen:tileRight_shape";
+      internalName = "frame";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+   };
+};
+//--- OBJECT WRITE END ---

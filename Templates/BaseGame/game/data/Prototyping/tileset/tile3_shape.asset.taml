@@ -1,5 +1,0 @@
-<ShapeAsset
-    AssetName="tile3_shape"
-    fileName="@assetFile=tile3.dae"
-    constuctorFileName="@assetFile=tile3.tscript"
-    materialSlot0="@asset=Prototyping:tileset_corridor"/>

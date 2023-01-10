@@ -1,0 +1,13 @@
+<MaterialAsset
+    AssetName="frameMat"
+    materialDefinitionName="frameMat"
+    imageMap0="@asset=mazeGen:tileWork_frameMat_A_image">
+    <Material
+        Name="frameMat"
+        mapTo="frameMat">
+        <Material.Stages>
+            <Stages_beginarray
+                DiffuseMapAsset="mazeGen:tileWork_frameMat_A_image"/>
+        </Material.Stages>
+    </Material>
+</MaterialAsset>

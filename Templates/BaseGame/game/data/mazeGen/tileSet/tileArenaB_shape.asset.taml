@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="tileArenaB_shape"
+    fileName="@assetFile=tileArenaB.dae"
+    constuctorFileName="@assetFile=tileArenaB.tscript"
+    materialSlot0="@asset=mazeGen:tileSet_frameMat"/>

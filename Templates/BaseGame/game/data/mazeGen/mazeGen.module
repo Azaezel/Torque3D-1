@@ -1,0 +1,11 @@
+<ModuleDefinition
+    ModuleId="mazeGen"
+    VersionId="1"
+    Group="Game"
+    scriptFile="mazeGen.tscript"
+    CreateFunction="onCreate"
+    DestroyFunction="onDestroy">
+    <DeclaredAssets
+        Extension="asset.taml"
+        Recurse="true"/>
+</ModuleDefinition>

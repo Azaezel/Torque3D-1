@@ -73,7 +73,6 @@ new Scene(ExampleLevel) {
          outdoorWeight = "1";
          dataBlock = "SpawnSphereMarker";
          position = "0 0 10";
-         rotation = "0 0 0 0";
       };
    };
 };

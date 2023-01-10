@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="tileCrossRoomArc_shape"
+    fileName="@assetFile=tileCrossRoomArc.dae"
+    constuctorFileName="@assetFile=tileCrossRoomArc.tscript"
+    materialSlot0="@asset=mazeGen:tileSet_frameMat"/>
