@@ -49,7 +49,7 @@ function mazeGen::onDestroyClientConnection(%this)
 {
 }
 
-function getNextTileBounds(%rot,%scale)
+function mazeGen::getNextTileBounds(%this, %rot, %scale)
 {
     %rotatedScale = VectorRot(%scale,mDegToRad(%rot));
     %rotatedScale.x = mRound(mAbs(%rotatedScale.x));
@@ -60,9 +60,9 @@ function getNextTileBounds(%rot,%scale)
     return %rotatedScale;
 }
 
-function findGap(%startPos, %startRot, %scale)
+function mazeGen::findGap(%this, %startPos, %startRot, %scale)
 {
-    %nextBounds = getNextTileBounds(getWord(%startRot,3), %scale);
+    %nextBounds = %this.getNextTileBounds(getWord(%startRot,3), %scale);
     %wallwidth = "1 1 1";
     %degRot = getRotationForwardVector(%startRot);
     %centroid = vectorAdd(%startPos,VectorMul(%degRot,vectorAdd(VectorScale(%nextBounds,0.5),%wallwidth)));
@@ -71,46 +71,48 @@ function findGap(%startPos, %startRot, %scale)
     %isEmpty = containerBoxEmpty($TypeMasks::StaticObjectType,%centroid,%boxRad.x,%boxRad.y,%boxRad.z,false);
     if (%isEmpty)
     {
-        expandMazebox(%centroid,VectorScale(%boxRad,2));
-        createZoning(%startPos,%startRot,%centroid,VectorScale(%boxRad,2));
+        %this.expandMazebox(%centroid,VectorScale(%boxRad,2));
+        %this.createZoning(%startPos,%startRot,%centroid,VectorScale(%boxRad,2));
     }
     return %isEmpty;
 }
 
-function createZoning(%pos, %rot, %centroid, %box)
+function mazeGen::createZoning(%this, %pos, %rot, %centroid, %box)
 {
-    $curPortal = new portal()
+    %portalDim = RoomList.getValue(0).bounds;
+    %portalDim = setword(%portalDim, 1, "5");
+    %this.curPortal = new portal()
     { 
         position = %pos;
-        scale = "30 3 30";
+        scale = %portalDim;
         rotation = %rot;
     };
-    zoneGroup.add($curPortal);
+    zoneGroup.add(%this.curPortal);
     
-    $curZone = new zone()
+    %this.curZone = new zone()
     { 
         position = %centroid;
         scale = %box;
     };
-    zoneGroup.add($curZone);
+    zoneGroup.add(%this.curZone);
 }
 
-function expandMazebox(%pos,%box)
+function mazeGen::expandMazebox(%this, %pos,%box)
 {
-    $mazeMax.x = getMaxF($mazeMax.x, %pos.x+%box.x);
-    $mazeMax.y = getMaxF($mazeMax.y, %pos.y+%box.y);
-    $mazeMax.z = getMaxF($mazeMax.z, %pos.z+%box.z);
+    %this.mazeMax.x = getMaxF(%this.mazeMax.x, %pos.x+%box.x);
+    %this.mazeMax.y = getMaxF(%this.mazeMax.y, %pos.y+%box.y);
+    %this.mazeMax.z = getMaxF(%this.mazeMax.z, %pos.z+%box.z);
     
-    $mazeMin.x = getMinF($mazeMin.x, %pos.x-%box.x);
-    $mazeMin.y = getMinF($mazeMin.y, %pos.y-%box.y);
-    $mazeMin.z = getMinF($mazeMin.z, %pos.z-%box.z);    
+    %this.mazeMin.x = getMinF(%this.mazeMin.x, %pos.x-%box.x);
+    %this.mazeMin.y = getMinF(%this.mazeMin.y, %pos.y-%box.y);
+    %this.mazeMin.z = getMinF(%this.mazeMin.z, %pos.z-%box.z);    
 }
 
-function scrambleExits(%exits)
+function mazeGen::scrambleExits(%this, %exits)
 {
-    %count = getWordCount(%exits);
+    %exitCount = getWordCount(%exits);
 
-    for (%i=%count-1;%i>0;%i--)
+    for (%i=%exitCount-1;%i>0;%i--)
     {
         %swapTo = getrandom(%i);
         %original = getWord(%exits,%i);
@@ -122,7 +124,7 @@ function scrambleExits(%exits)
     return %exits;
 }
 
-function getRoomList()
+function mazeGen::getRoomList(%this)
 {
     if (isObject(RoomList)) return;
     
@@ -169,17 +171,18 @@ function getRoomList()
     RoomList.add(5,arenaList);
 }
 
-function pickTile(%exitPos,%rot)
+function mazeGen::pickTile(%this, %exitPos, %rot)
 {
     //pick a tile from the potential list
     //bias for corridors
     %roomtype = 0;
-    %completionPCT = $curTileCount/$mazeDepth;
-    %nextEevntPCT = $eventRoomsSpawned/getMaxF($eventRooms,1);
+    %completionPCT = (%this.mazeDepth-%this.countDown)/%this.mazeDepth;
+    %nextEevntPCT = %this.eventRoomsSpawned/getMaxF(%this.eventRooms,1);
     
     if (%completionPCT>%nextEevntPCT)
     {
         error("ratio: "@ %completionPCT SPC %nextEevntPCT);
+        %this.countDown++;
         %roomtype = RoomList.count()-1;
     }
     else
@@ -188,28 +191,28 @@ function pickTile(%exitPos,%rot)
             %roomtype = getRandom(RoomList.count()-2);
     }
     
-    %tile = findRoomSize(%roomtype,%exitPos,%rot);
+    %tile = %this.findRoomSize(%roomtype,%exitPos,%rot);
     return %tile;
 }
 
-function findRoomSize(%roomtype,%exitPos,%rot)
+function mazeGen::findRoomSize(%this, %roomtype, %exitPos, %rot)
 {
     // check if we have an empty gap for the tile, picking a smaller one to try if that fails
     if (%roomtype<0) return "";
     
     %roomTypeList = RoomList.getValue(%roomtype);
-    if (!findGap(%exitPos, %rot, %roomTypeList.bounds))
-        return findRoomSize(%roomtype-1,%exitPos,%rot);
+    if (!%this.findGap(%exitPos, %rot, %roomTypeList.bounds))
+        return %this.findRoomSize(%roomtype-1,%exitPos,%rot);
     %tile = %roomTypeList.getValue(getRandom(%roomTypeList.count()-1));
     if (%roomtype == RoomList.count()-1)
     {
-        $eventRoomsSpawned++;
+        %this.eventRoomsSpawned++;
     }
     return %tile;
 }
 
 
-function placeRoom(%nodeObj, %curExit, %count)
+function mazeGen::placeRoom(%this, %nodeObj, %curExit)
 {
     %frameMesh = %nodeObj.getChildGroup()-->frame;
     //get where the next tile is to be placed, and in what orientation
@@ -218,11 +221,11 @@ function placeRoom(%nodeObj, %curExit, %count)
     %exitPos = getWords(%exitTrans,0,2);             
     %rot  = getWords(%exitTrans,3,5) SPC mRound(mRadToDeg(getWord(%exitTrans,6)));
     
-    %tile = pickTile(%exitPos,%rot); 
+    %tile = %this.pickTile(%exitPos,%rot); 
     
     if (%tile !$= "")
     {
-        if (%count >1) //have we run out the clock on placeable tiles?
+        if (%this.countDown >1) //have we run out the clock on placeable tiles?
         {
             %mazNode = new Prefab()
             { 
@@ -245,7 +248,7 @@ function placeRoom(%nodeObj, %curExit, %count)
                 };
                 getScene(0).add(%mazNode);
                 placedTiles.push_back(%mazNode);
-                RoomPlaced(%mazNode, %count);
+                %this.RoomPlaced(%mazNode);
             }
             else
             {
@@ -265,41 +268,40 @@ function placeRoom(%nodeObj, %curExit, %count)
         getScene(0).add(%mazNode);
         placedTiles.push_back(%mazNode);
     }
-    RoomPlaced(%mazNode, %count);
+    %this.RoomPlaced(%mazNode);
     if (%tile !$= "") return 1;
     return 0;
 }
 
-function RoomPlaced(%nodeObj, %count)
+function mazeGen::RoomPlaced(%this, %nodeObj)
 {
-    %nodeObj.portal = $curPortal;
-    %nodeObj.zone = $curZone;
-    $scheduledExpansion--;
+    %nodeObj.portal = %this.curPortal;
+    %nodeObj.zone = %this.curZone;
+    %this.scheduledExpansion--;
+    %this.countDown-=1;
     %hasExit = true;
     
     if (%nodeObj.fileName $= "data/mazeGen/prefabs/tileWall.prefab")
         %hasExit = false;
     if (%nodeObj.fileName $= "data/mazeGen/prefabs/tileGoal.prefab")
         %hasExit = false;
-        
-    $curTileCount = getMaxF($curTileCount,$mazeDepth-%count);
     
     if ( %hasExit == true)
     {
-        expandRooms(%nodeObj, %count);
+        %this.expandRooms(%nodeObj);
     }
-    if ($scheduledExpansion <=0)
+    if (%this.scheduledExpansion <=0)
     {
         cancel(mazeScheduler.finish);
-        mazeScheduler.finish = schedule(32,mazeScheduler,"onMazeFilled");
+        mazeScheduler.finish = %this.schedule(32,"onMazeFilled");
     }
 }
 
-function expandRooms(%nodeObj, %count)
+function mazeGen::expandRooms(%this, %nodeObj)
 {
     if (!isObject(%nodeObj)) return;
-    if (%count <=0) return;
-    //warn("node depth remaing: ", %count);
+    if (%this.countDown <0) return;
+    //warn("node depth remaing: ", %this.countDown);
     %frameMesh = %nodeObj.getChildGroup()-->frame;
     if (!isObject(%frameMesh))
     {
@@ -315,13 +317,13 @@ function expandRooms(%nodeObj, %count)
         %exitList = %exitList SPC %exitCount;
     }
     %exitList = trim(%exitList);
-    %exitList = scrambleExits(%exitList);
+    %exitList = %this.scrambleExits(%exitList);
     %sucesses = 0;
     for (%i=0;%i<%exitCount;%i++)
     {
-        $scheduledExpansion++;
+        %this.scheduledExpansion++;
         %curExit = "exit" @ getWord(%exitList,%i);
-        %sucesses += placeRoom(%nodeObj, %curExit, %count-1);
+        %sucesses += %this.placeRoom(%nodeObj, %curExit);
     }
     %nodeObj.exitCount = %exitCount;
     
@@ -348,31 +350,32 @@ function expandRooms(%nodeObj, %count)
             placedTiles.pop_back();
         }
         %objID = placedTiles.getKey(placedTiles.getCurrent());
-        mazeScheduler.nextRun = schedule(320*%eraseCount,mazeScheduler,"expandRooms",%objID, %count+%eraseCount);
+        %this.countDown+=%eraseCount;
+        mazeScheduler.nextRun = %this.schedule(320*%eraseCount,"expandRooms",%objID );
     }    
 }
 
-function onMazeFilled()
+function mazeGen::onMazeFilled(%this)
 {
     if (isObject(mazeGoal))
     {
-        if ($mazeGenFails>0)
-            error("Failed Maze attempts:" @ $mazeGenFails);
-        genNavmesh();
-        $mazeGenFails=0;
-        error("event rooms placed:" @$eventRoomsSpawned);
+        if (%this.mazeGenFails>0)
+            error("Failed Maze attempts:" @ %this.mazeGenFails);
+        %this.genNavmesh();
+        %this.mazeGenFails=0;
+        error("event rooms placed:" @%this.eventRoomsSpawned);
     }
     else
     {
-        $mazeGenFails++;
-        if ($mazeGenFails>$mazeDepth)
-            mazeGen.FailMapLoad(false);
+        %this.mazeGenFails++;
+        if (%this.mazeGenFails>%this.mazeDepth)
+            %this.FailMapLoad(false);
         else
-            createMaze($mazeDepth,$eventRooms);
+            %this.createMaze(%this.mazeDepth,%this.eventRooms);
     }
 }
 
-function genNavmesh()
+function mazeGen::genNavmesh(%this)
 {
     if (!isObject(theNavMesh))
     {
@@ -383,18 +386,18 @@ function genNavmesh()
         };
         getScene(0).add(%newMesh);
     }
-    theNavMesh.position = vectorScale(VectorAdd($mazeMax,$mazeMin),0.5);
-    theNavMesh.scale = vectorSub($mazeMax,$mazeMin);
+    theNavMesh.position = vectorScale(VectorAdd(%this.mazeMax,%this.mazeMin),0.5);
+    theNavMesh.scale = vectorSub(%this.mazeMax,%this.mazeMin);
     getScene(0).add(theNavMesh);
     theNavMesh.build();
-    mazeGen.finishMapLoad();
+    %this.finishMapLoad();
 }
 
-function resetMaze()
+function mazeGen::resetMaze(%this)
 {
     //reset global tracking vars
-    $scheduledExpansion=0;
-    $eventRoomsSpawned = 0;
+    %this.scheduledExpansion=0;
+    %this.eventRoomsSpawned = 0;
     
     if (isObject(mazeScheduler))
     {
@@ -422,8 +425,8 @@ function resetMaze()
         }
     }
     
-    $mazeMax = "1 1 1";
-    $mazeMin = "-1 -1 -1";
+    %this.mazeMax = "1 1 1";
+    %this.mazeMin = "-1 -1 -1";
     if (isObject(theNavMesh))
         theNavMesh.cancelBuild();
 }
@@ -441,20 +444,22 @@ function mazeGen::FailMapLoad(%this,%isFine)
 
 function mazeGen::onLoadMap(%this)
 {
-    createMaze(3,1);
+    //mazeGen.createMaze(5,1);
+    %this.createMaze(5,1);
 }
 
-function createMaze(%tileDepth, %poi)
+function mazeGen::createMaze(%this, %tileDepth, %poi)
 {
-    getRoomList();
-    $mazeDepth = %tileDepth;
-    $eventRooms = %poi;
+    %this.getRoomList();
+    %this.mazeDepth = %tileDepth;
+    %this.eventRooms = %poi;
     if (%tileDepth == 0) %tileDepth =50;
-    resetMaze();
+    %this.resetMaze();
     %mazeStart = new Prefab(mazeStart) {
         fileName = "data/mazeGen/prefabs/tileStart.prefab";
     };
     placedTiles.push_back(%mazeStart);
     getScene(0).add(%mazeStart);
-    expandRooms(%mazeStart, %tileDepth*(%poi+1));
+    %this.countDown = %tileDepth*(%poi+1);
+    %this.expandRooms(%mazeStart);
 }
