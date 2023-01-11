@@ -176,6 +176,10 @@ function mazeGen::pickTile(%this, %exitPos, %rot)
     //pick a tile from the potential list
     //bias for corridors
     %roomtype = 0;
+    
+    if (%this.countDown <1)
+        return "";
+        
     %completionPCT = (%this.mazeDepth-%this.countDown)/%this.mazeDepth;
     %nextEevntPCT = %this.eventRoomsSpawned/getMaxF(%this.eventRooms,1);
     
@@ -451,7 +455,6 @@ function mazeGen::onLoadMap(%this)
 function mazeGen::createMaze(%this, %tileDepth, %poi)
 {
     %this.getRoomList();
-    %this.mazeDepth = %tileDepth;
     %this.eventRooms = %poi;
     if (%tileDepth == 0) %tileDepth =50;
     %this.resetMaze();
@@ -460,6 +463,7 @@ function mazeGen::createMaze(%this, %tileDepth, %poi)
     };
     placedTiles.push_back(%mazeStart);
     getScene(0).add(%mazeStart);
-    %this.countDown = %tileDepth*(%poi+1);
+    %this.mazeDepth = %tileDepth*(%poi+1);
+    %this.countDown = %this.mazeDepth;
     %this.expandRooms(%mazeStart);
 }
