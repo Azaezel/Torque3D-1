@@ -159,12 +159,12 @@ function mazeGen::getRoomList(%this)
     RoomList.add(3,medRoomist);
     
     new arrayobject(stackList);
-        stackList.bounds = "180 180 100";
+        stackList.bounds = "180 180 200";
         stackList.add(0, "tileStackRoom");
-    RoomList.add(5,stackList);
+    RoomList.add(4,stackList);
     
     new arrayobject(arenaList);
-        arenaList.bounds = "300 300 100";
+        arenaList.bounds = "300 300 200";
         arenaList.add(0, "tileArenaA");
         arenaList.add(1, "tileArenaB");
         arenaList.add(2, "tileArenaC");
@@ -181,11 +181,10 @@ function mazeGen::pickTile(%this, %exitPos, %rot)
         return "";
         
     %completionPCT = (%this.mazeDepth-%this.countDown)/%this.mazeDepth;
-    %nextEevntPCT = %this.eventRoomsSpawned/getMaxF(%this.eventRooms,1);
+    %nextEevntPCT = %this.eventRoomsSpawned/getMaxF(%this.eventRooms,1)+%this.eventRooms/%this.mazeDepth;
     
     if (%completionPCT>%nextEevntPCT)
     {
-        error("ratio: "@ %completionPCT SPC %nextEevntPCT);
         %this.countDown++;
         %roomtype = RoomList.count()-1;
     }
@@ -282,29 +281,39 @@ function mazeGen::RoomPlaced(%this, %nodeObj)
     %nodeObj.portal = %this.curPortal;
     %nodeObj.zone = %this.curZone;
     %this.scheduledExpansion--;
-    %this.countDown-=1;
-    %hasExit = true;
+    %hasExit = false;
     
-    if (%nodeObj.fileName $= "data/mazeGen/prefabs/tileWall.prefab")
-        %hasExit = false;
-    if (%nodeObj.fileName $= "data/mazeGen/prefabs/tileGoal.prefab")
-        %hasExit = false;
-    
+    if (%this.getExitCount(%nodeObj)>0)
+        %hasExit = true;
     if ( %hasExit == true)
     {
         %this.expandRooms(%nodeObj);
     }
-    if (%this.scheduledExpansion <=0)
+    if (%this.scheduledExpansion <=0 || (%this.countDown>(%this.mazeDepth*2)))
     {
         cancel(mazeScheduler.finish);
         mazeScheduler.finish = %this.schedule(32,"onMazeFilled");
     }
 }
 
+function mazeGen::getExitCount(%this, %nodeObj)
+{
+    %frameMesh = %nodeObj.getChildGroup()-->frame;
+    if (!isObject(%frameMesh)) return 0;
+    
+    %exitCount=0;
+    while (%frameMesh.hasNode("exit"@ %exitCount+1))
+    {
+        %exitCount++;
+    }
+    return %exitCount;
+}
+
 function mazeGen::expandRooms(%this, %nodeObj)
 {
     if (!isObject(%nodeObj)) return;
     if (%this.countDown <0) return;
+    %this.countDown-=1;
     //warn("node depth remaing: ", %this.countDown);
     %frameMesh = %nodeObj.getChildGroup()-->frame;
     if (!isObject(%frameMesh))
@@ -323,9 +332,10 @@ function mazeGen::expandRooms(%this, %nodeObj)
     %exitList = trim(%exitList);
     %exitList = %this.scrambleExits(%exitList);
     %sucesses = 0;
+    
+    %this.scheduledExpansion+=%exitCount;    
     for (%i=0;%i<%exitCount;%i++)
     {
-        %this.scheduledExpansion++;
         %curExit = "exit" @ getWord(%exitList,%i);
         %sucesses += %this.placeRoom(%nodeObj, %curExit);
     }
@@ -355,7 +365,7 @@ function mazeGen::expandRooms(%this, %nodeObj)
         }
         %objID = placedTiles.getKey(placedTiles.getCurrent());
         %this.countDown+=%eraseCount;
-        mazeScheduler.nextRun = %this.schedule(320*%eraseCount,"expandRooms",%objID );
+        mazeScheduler.nextRun = %this.schedule(32*%eraseCount,"expandRooms",%objID);
     }    
 }
 
@@ -367,15 +377,14 @@ function mazeGen::onMazeFilled(%this)
             error("Failed Maze attempts:" @ %this.mazeGenFails);
         %this.genNavmesh();
         %this.mazeGenFails=0;
-        error("event rooms placed:" @%this.eventRoomsSpawned);
     }
     else
     {
         %this.mazeGenFails++;
-        if (%this.mazeGenFails>%this.mazeDepth)
+        if (%this.mazeGenFails>%this.tileDepth)
             %this.FailMapLoad(false);
         else
-            %this.createMaze(%this.mazeDepth,%this.eventRooms);
+            %this.createMaze(%this.tileDepth,%this.eventRooms);
     }
 }
 
@@ -449,20 +458,22 @@ function mazeGen::FailMapLoad(%this,%isFine)
 function mazeGen::onLoadMap(%this)
 {
     //mazeGen.createMaze(5,1);
-    %this.createMaze(5,1);
+    %this.createMaze(5,3);
 }
 
 function mazeGen::createMaze(%this, %tileDepth, %poi)
 {
     %this.getRoomList();
     %this.eventRooms = %poi;
-    if (%tileDepth == 0) %tileDepth =50;
+    if (%tileDepth == 0) %tileDepth =5;
+    if (%poi == 0) %poi = 1;
     %this.resetMaze();
     %mazeStart = new Prefab(mazeStart) {
         fileName = "data/mazeGen/prefabs/tileStart.prefab";
     };
     placedTiles.push_back(%mazeStart);
     getScene(0).add(%mazeStart);
+    %this.tileDepth = %tileDepth;
     %this.mazeDepth = %tileDepth*(%poi+1);
     %this.countDown = %this.mazeDepth;
     %this.expandRooms(%mazeStart);
