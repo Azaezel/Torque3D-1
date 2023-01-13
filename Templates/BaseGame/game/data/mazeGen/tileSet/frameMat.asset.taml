@@ -4,12 +4,15 @@
     imageMap0="@asset=mazeGen:tileWork_frameMat_A_image">
     <Material
         Name="frameMat"
-        mapTo="frameMat">
+        mapTo="frameMat"
+        originalAssetName="frameMat">
         <Material.Stages>
             <Stages_beginarray
                 DiffuseMapAsset="mazeGen:tileWork_frameMat_A_image"
                 NormalMapAsset="mazeGen:frameMat_n_image"
-                ORMConfigMapAsset="mazeGen:frameMat_orm_image"/>
+                ORMConfigMapAsset="mazeGen:frameMat_orm_image"
+                GlowMapAsset="mazeGen:frameMat_g_image"
+                GlowMul="100"/>
         </Material.Stages>
     </Material>
 </MaterialAsset>
