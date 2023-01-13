@@ -71,7 +71,7 @@ function mazeGen::findGap(%this, %startPos, %startRot, %scale)
     %isEmpty = containerBoxEmpty($TypeMasks::StaticObjectType,%centroid,%boxRad.x,%boxRad.y,%boxRad.z,false);
     if (%isEmpty)
     {
-        %this.expandMazebox(%centroid,VectorScale(%boxRad,2));
+        %this.expandMazebox(%centroid,%boxRad);
         %this.createZoning(%startPos,%startRot,%centroid,VectorScale(%boxRad,2));
     }
     return %isEmpty;
@@ -396,6 +396,7 @@ function mazeGen::genNavmesh(%this)
         {
             position = "0 0 0";
             scale = "1 1 1";
+            tilesize = RoomList.getValue(0).bounds.x;
         };
         getScene(0).add(%newMesh);
     }
@@ -468,8 +469,17 @@ function mazeGen::createMaze(%this, %tileDepth, %poi)
     if (%tileDepth == 0) %tileDepth =5;
     if (%poi == 0) %poi = 1;
     %this.resetMaze();
+    
+    %targetPoint = "0 0" SPC RoomList.getValue(0).bounds.z;    
+    %scanTarg = ContainerRayCast("0 0 50000", "0 0 -50000", -1);
+	if (%scanTarg)
+	{
+		%targetPoint = getWords(%scanTarg,1,3);
+        %targetPoint.z += RoomList.getValue(0).bounds.z;
+    }
     %mazeStart = new Prefab(mazeStart) {
         fileName = "data/mazeGen/prefabs/tileStart.prefab";
+        position = %targetPoint;
     };
     placedTiles.push_back(%mazeStart);
     getScene(0).add(%mazeStart);
