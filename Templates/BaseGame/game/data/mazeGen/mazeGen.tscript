@@ -369,14 +369,48 @@ function mazeGen::expandRooms(%this, %nodeObj)
     }    
 }
 
+function mazeGen::createStartSpawnpoints(%this,%nodeObj)
+{
+    if (isObject(PlayerDropPoints))
+        PlayerDropPoints.delete();
+    
+    new SimGroup(PlayerDropPoints){};
+    getScene(0).add(new SimGroup("PlayerDropPoints"));  
+    
+    %playerSpawn = 0;
+    %frameMesh = %nodeObj.getChildGroup()-->frame;
+    while (%frameMesh.hasNode("playerSpawn"@ %playerSpawn++))
+    {
+        %spawnTrans = %frameMesh.getNodeTransform("playerSpawn"@ %playerSpawn);
+        %pos = getWords(%spawnTrans,0,2);             
+        %rot  = getWords(%spawnTrans,3,5) SPC mRound(mRadToDeg(getWord(%spawnTrans,6)));
+        %nuSpawn = new SpawnSphere() {
+            radius = "0.5";
+            dataBlock = "SpawnSphereMarker";
+            position = %pos;
+            rotation = %rot;
+        };
+        PlayerDropPoints.add(%nuSpawn);
+    }
+}
+
 function mazeGen::onMazeFilled(%this)
 {
     if (isObject(mazeGoal))
     {
         if (%this.mazeGenFails>0)
             error("Failed Maze attempts:" @ %this.mazeGenFails);
+            
+        for (placedTiles.moveFirst(); placedTiles.getCurrent()< placedTiles.count()-1; placedTiles.moveNext())
+        {
+            %objID = placedTiles.getKey(placedTiles.getCurrent());
+            if(%this.isMethod(%objID.getChildGroup().finishMethod))
+                %this.call(%objID.getChildGroup().finishMethod,placedTiles.getKey(placedTiles.getCurrent()));
+        }
+        
         %this.genNavmesh();
         %this.mazeGenFails=0;
+        
     }
     else
     {

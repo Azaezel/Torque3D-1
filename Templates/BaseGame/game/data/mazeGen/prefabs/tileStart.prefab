@@ -1,11 +1,12 @@
 //--- OBJECT WRITE BEGIN ---
 $ThisPrefab = new SimGroup() {
-
+   finishMethod = createStartSpawnpoints;
+   
    new TSStatic() {
       ShapeAsset = "mazeGen:tileStart_shape";
-      internalName = "frame";
       collisionType = "Visible Mesh";
       decalType = "Visible Mesh";
+      internalName = "frame";
    };
 };
 //--- OBJECT WRITE END ---

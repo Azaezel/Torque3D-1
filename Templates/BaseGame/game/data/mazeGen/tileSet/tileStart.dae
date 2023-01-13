@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 3.3.0 commit date:2022-09-06, commit time:15:39, hash:0759f671ce1f</authoring_tool>
     </contributor>
-    <created>2023-01-09T17:53:21</created>
-    <modified>2023-01-09T17:53:21</modified>
+    <created>2023-01-13T17:36:54</created>
+    <modified>2023-01-13T17:36:54</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -173,6 +173,12 @@
               </technique_common>
             </bind_material>
           </instance_geometry>
+        </node>
+        <node id="playerSpawn1" name="playerSpawn1" type="NODE">
+          <matrix sid="transform">1 0 0 12.25916 0 1 0 -26.29026 0 0 1 -1.046408 0 0 0 1</matrix>
+        </node>
+        <node id="playerSpawn2" name="playerSpawn2" type="NODE">
+          <matrix sid="transform">1 0 0 -10.49329 0 1 0 -26.29026 0 0 1 -7.660026 0 0 0 1</matrix>
         </node>
       </node>
     </visual_scene>
