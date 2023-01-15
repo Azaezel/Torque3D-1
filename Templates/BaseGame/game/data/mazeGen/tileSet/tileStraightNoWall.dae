@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 3.3.0 commit date:2022-09-06, commit time:15:39, hash:0759f671ce1f</authoring_tool>
     </contributor>
-    <created>2023-01-09T17:55:09</created>
-    <modified>2023-01-09T17:55:09</modified>
+    <created>2023-01-15T02:30:33</created>
+    <modified>2023-01-15T02:30:33</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -118,7 +118,79 @@
           </bind_material>
         </instance_geometry>
         <node id="exit1" name="exit1" type="NODE">
-          <matrix sid="transform">1 0 0 0 0 1 0 30 0 0 1 0 0 0 0 1</matrix>
+          <matrix sid="transform">1 0 0 0 0 1 0 30 0 0 1 0.05853927 0 0 0 1</matrix>
+        </node>
+        <node id="ceiling1" name="ceiling1" type="NODE">
+          <matrix sid="transform">1 -1.1746e-14 0 0 1.1746e-14 1 0 10 0 0 1 13.5 0 0 0 1</matrix>
+        </node>
+        <node id="ceilingL1" name="ceilingL1" type="NODE">
+          <matrix sid="transform">4.33126e-7 -6.40673e-14 1 -5 0 1 6.40673e-14 10 -1 0 4.33126e-7 13.5 0 0 0 1</matrix>
+        </node>
+        <node id="ceilingR1" name="ceilingR1" type="NODE">
+          <matrix sid="transform">4.33126e-7 6.40673e-14 -1 5 0 1 6.40673e-14 10 1 0 4.33126e-7 13.5 0 0 0 1</matrix>
+        </node>
+        <node id="floor1" name="floor1" type="NODE">
+          <matrix sid="transform">1 0 0 -7.5 0 1 0 5 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor2" name="floor2" type="NODE">
+          <matrix sid="transform">1 0 0 -7.5 0 1 0 10 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor3" name="floor3" type="NODE">
+          <matrix sid="transform">1 0 0 -7.5 0 1 0 15 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor4" name="floor4" type="NODE">
+          <matrix sid="transform">1 0 0 -7.5 0 1 0 20 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor5" name="floor5" type="NODE">
+          <matrix sid="transform">1 0 0 -7.5 0 1 0 25 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor6" name="floor6" type="NODE">
+          <matrix sid="transform">1 0 0 7.5 0 1 0 5 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor7" name="floor7" type="NODE">
+          <matrix sid="transform">1 0 0 7.5 0 1 0 10 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor8" name="floor8" type="NODE">
+          <matrix sid="transform">1 0 0 7.5 0 1 0 20 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor9" name="floor9" type="NODE">
+          <matrix sid="transform">1 0 0 7.5 0 1 0 25 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floor10" name="floor10" type="NODE">
+          <matrix sid="transform">1 0 0 7.5 0 1 0 15 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floorBig1" name="floorBig1" type="NODE">
+          <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floorMid1" name="floorMid1" type="NODE">
+          <matrix sid="transform">1 0 0 -2.5 0 1 0 6 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floorMid2" name="floorMid2" type="NODE">
+          <matrix sid="transform">1 0 0 2.5 0 1 0 6 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floorMid3" name="floorMid3" type="NODE">
+          <matrix sid="transform">1 0 0 -2.5 0 1 0 18 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="floorMid4" name="floorMid4" type="NODE">
+          <matrix sid="transform">1 0 0 2.5 0 1 0 18 0 0 1 -15 0 0 0 1</matrix>
+        </node>
+        <node id="wallL1" name="wallL1" type="NODE">
+          <matrix sid="transform">1 0 0 -13.5 0 1 0 10 0 0 1 7.5 0 0 0 1</matrix>
+        </node>
+        <node id="wallL2" name="wallL2" type="NODE">
+          <matrix sid="transform">1 0 0 -13.5 0 1 0 10 0 0 1 2.5 0 0 0 1</matrix>
+        </node>
+        <node id="wallL3" name="wallL3" type="NODE">
+          <matrix sid="transform">1 0 0 -13.5 0 1 0 10 0 0 1 -2.5 0 0 0 1</matrix>
+        </node>
+        <node id="wallR1" name="wallR1" type="NODE">
+          <matrix sid="transform">1 0 0 13.5 0 1 0 10 0 0 1 7.5 0 0 0 1</matrix>
+        </node>
+        <node id="wallR2" name="wallR2" type="NODE">
+          <matrix sid="transform">1 0 0 13.5 0 1 0 10 0 0 1 2.5 0 0 0 1</matrix>
+        </node>
+        <node id="wallR3" name="wallR3" type="NODE">
+          <matrix sid="transform">1 0 0 13.5 0 1 0 10 0 0 1 -2.5 0 0 0 1</matrix>
         </node>
       </node>
     </visual_scene>

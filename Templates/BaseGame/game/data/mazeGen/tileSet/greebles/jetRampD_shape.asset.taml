@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="jetRampD_shape"
+    fileName="@assetFile=jetRampD.dae"
+    constuctorFileName="@assetFile=jetRampD.tscript"
+    materialSlot0="@asset=mazeGen:greebles_frameMat"/>

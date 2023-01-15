@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="carRamp_shape"
+    fileName="@assetFile=carRamp.dae"
+    constuctorFileName="@assetFile=carRamp.tscript"
+    materialSlot0="@asset=mazeGen:greebles_frameMat"/>

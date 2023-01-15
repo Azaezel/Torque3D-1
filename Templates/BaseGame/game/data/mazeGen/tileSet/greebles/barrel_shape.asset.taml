@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="barrel_shape"
+    fileName="@assetFile=barrel.dae"
+    constuctorFileName="@assetFile=barrel.tscript"
+    materialSlot0="@asset=mazeGen:greebles_frameMat"/>

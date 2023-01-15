@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="crateC_shape"
+    fileName="@assetFile=crateC.dae"
+    constuctorFileName="@assetFile=crateC.tscript"
+    materialSlot0="@asset=mazeGen:greebles_frameMat"/>
