@@ -1,6 +1,7 @@
 //--- OBJECT WRITE BEGIN ---
 $ThisPrefab = new SimGroup() {
-
+   finishMethod = createStartSpawnpoints;
+   
    new FlyingVehicle() {
       dataBlock = "crane";
       position = "0 -15 2";
