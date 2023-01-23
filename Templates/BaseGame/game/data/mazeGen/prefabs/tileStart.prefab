@@ -1,7 +1,15 @@
 //--- OBJECT WRITE BEGIN ---
 $ThisPrefab = new SimGroup() {
-   finishMethod = createStartSpawnpoints;
-   
+
+   new FlyingVehicle() {
+      dataBlock = "crane";
+      position = "0 -15 2";
+         mountable = "1";
+   };
+   new WheeledVehicle() {
+      dataBlock = "CheetahCar";
+      position = "0 -3 -10";
+   };
    new TSStatic() {
       ShapeAsset = "mazeGen:tileStart_shape";
       collisionType = "Visible Mesh";

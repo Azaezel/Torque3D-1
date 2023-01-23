@@ -381,7 +381,7 @@ function mazeGen::createMaze(%this, %tileDepth, %poi)
 {
     %this.getRoomList();
     %this.getGreebleList();
-    %this.greebleFrequency = 1.0; //% of the time greebles are filled in
+    %this.greebleFrequency = 0.5; //% of the time greebles are filled in
     %this.eventRooms = %poi;
     if (%tileDepth == 0) %tileDepth =5;
     if (%poi == 0) %poi = 1;

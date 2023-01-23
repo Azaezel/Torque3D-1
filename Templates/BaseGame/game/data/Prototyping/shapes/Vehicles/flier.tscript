@@ -9,3 +9,23 @@ singleton TSShapeConstructor(flierdae)
    removeRedundantMats = "0";
    animFPS = "2";
 };
+
+singleton TSShapeConstructor(flier_shape)
+{
+   baseShapeAsset = "Prototyping:flier_shape";
+};
+
+function flier_shape::onLoad(%this)
+{
+   %this.addSequence("ambient", "idle", "0", "20", "1", "0");
+   %this.addSequence("ambient", "activateBot", "20", "40", "1", "0");
+   %this.setSequenceCyclic("activateBot", "0");
+   %this.setSequenceBlend("activateBot", "0", "", "0");
+   %this.addSequence("ambient", "maintainBot", "40", "60", "1", "0");
+   %this.setSequenceBlend("maintainBot", "0", "", "0");
+   %this.addSequence("ambient", "activateBack", "80", "100", "1", "0");
+   %this.setSequenceCyclic("activateBack", "0");
+   %this.setSequenceBlend("activateBack", "0", "", "0");
+   %this.addSequence("ambient", "maintainBack", "100", "120", "1", "0");
+   %this.setSequenceBlend("maintainBack", "0", "", "0");
+}
