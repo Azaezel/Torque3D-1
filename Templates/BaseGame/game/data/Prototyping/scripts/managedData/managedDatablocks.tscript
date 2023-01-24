@@ -39,7 +39,7 @@ datablock FlyingVehicleData(crane)
    dragForce = "0.01";
    originalAssetName = "crane";
    assetType = "Datablock";
-   minTrailSpeed = "0";
+   minTrailSpeed = "0.001";
    dustEmitter = "LiftoffDustEmitter";
    Explosion = "GrenadeExplosion";
    underwaterExplosion = "GrenadeLauncherWaterExplosion";
@@ -47,9 +47,8 @@ datablock FlyingVehicleData(crane)
    DebrisShapeAsset = "Prototyping:flier_shape";
    FlyingSoundsAsset[0] = "testMaps:cheetahSqueal";
    FlyingSoundsAsset[1] = "testMaps:cheetahEngine";
-   forwardJetEmitter = "CheetahTireEmitter";
-   backwardJetEmitter = "CheetahTireEmitter";
-   downJetEmitter = "CheetahTireEmitter";
-   trailEmitter = "CheetahTireEmitter";
-   dustTrailEmitter = "CheetahTireEmitter";
+   forwardJetEmitter = "DefaultEmitter";
+   backwardJetEmitter = "DefaultEmitter";
+   downJetEmitter = "DefaultEmitter";
+   trailEmitter = "DefaultEmitter";
 };
