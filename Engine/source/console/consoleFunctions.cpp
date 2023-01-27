@@ -2894,9 +2894,19 @@ const char* getDocsLink(const char* filename, U32 lineNumber)
 
 bool getDocsURL(void* obj, const char* array, const char* data)
 {
-   const char* docpage = reinterpret_cast<ConsoleObject*>(obj)->findField(StringTable->insert("docsURL"))->pFieldDocs;
-   gotoWebPage(docpage);
-   return true;
+   ConsoleObject* cObj = static_cast<ConsoleObject*>(obj);
+   if (cObj->mDocsClick)
+   {
+
+      String docpage = String(cObj->findField(StringTable->insert("docsURL"))->pFieldDocs);
+      //strip wrapper
+      docpage.replace("<a:", "");
+      docpage.replace(">docs</a>", "");
+      Con::errorf("%s", docpage.c_str());
+      gotoWebPage(docpage.c_str());
+   }
+   cObj->mDocsClick = !cObj->mDocsClick;
+   return false;
 }
 
 #endif

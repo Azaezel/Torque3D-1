@@ -17,6 +17,7 @@ void gotoWebPage(const char* address);
 
 bool getDocsURL(void* obj, const char* array, const char* data);
 const char* getDocsLink(const char* filename, U32 lineNumber);
+
 #define docsURL addGroup("Docs");\
                 addProtectedField("docsURL", TypeBool, Offset(mDocsClick, ConsoleObject), &getDocsURL, &defaultProtectedGetFn, getDocsLink(__FILE__,__LINE__), AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);\
                 endGroup("Docs")
