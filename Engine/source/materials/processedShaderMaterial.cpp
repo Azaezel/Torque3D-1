@@ -105,6 +105,7 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/)
    mOneOverRTSizeSC = shader->getShaderConstHandle( "$oneOverTargetSize" );
    mDetailBumpStrength = shader->getShaderConstHandle( "$detailBumpStrength" );
    mViewProjSC = shader->getShaderConstHandle( "$viewProj" );
+   mProjSC = shader->getShaderConstHandle("$projection");
 
    // MFT_ImposterVert
    mImposterUVs = shader->getShaderConstHandle( "$imposterUVs" );
@@ -1255,7 +1256,9 @@ void ProcessedShaderMaterial::setTransforms(const MatrixSet &matrixSet, SceneRen
       shaderConsts->set( handles->mViewToObjSC, matrixSet.getCameraToObject() );
    if ( handles->mViewProjSC->isValid() )
       shaderConsts->set( handles->mViewProjSC, matrixSet.getWorldToScreen() );
-
+   if (handles->mProjSC->isValid())
+      shaderConsts->set(handles->mProjSC, matrixSet.getCameraToScreen());
+   
    if (  handles->mCubeTransSC->isValid() &&
          ( _hasCubemap(pass) || mMaterial->mDynamicCubemap ) )
    {

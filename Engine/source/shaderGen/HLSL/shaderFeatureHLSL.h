@@ -126,6 +126,10 @@ public:
                         bool useInstancing,
                         MultiLine *meta );
 
+   Var* getModelView2Step(Vector<ShaderComponent*>& componentList,
+      bool useInstancing,
+      MultiLine* meta);
+
    ///
    Var* getWorldView(   Vector<ShaderComponent*> &componentList,                                       
                         bool useInstancing,

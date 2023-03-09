@@ -92,6 +92,7 @@ public:
    GFXShaderConstHandle *mOneOverRTSizeSC;
    GFXShaderConstHandle* mDetailBumpStrength;
    GFXShaderConstHandle* mViewProjSC;
+   GFXShaderConstHandle* mProjSC;
 
    GFXShaderConstHandle *mImposterUVs;
    GFXShaderConstHandle *mImposterLimits;
