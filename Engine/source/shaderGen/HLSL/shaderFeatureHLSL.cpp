@@ -621,33 +621,21 @@ Var* ShaderFeatureHLSL::getModelView2Step(Vector<ShaderComponent*>& componentLis
    if (modelview)
       return modelview;
 
-   Var* viewProj = (Var*)LangElement::find("viewProj");
-   if (!viewProj)
+   Var* worldViewOnly = (Var*)LangElement::find("worldViewOnly");
+   if (worldViewOnly == NULL)
    {
-      Var* projection = (Var*)LangElement::find("projection");
-      if (projection == NULL)
-      {
-         projection = new Var("projection", "float4x4");
-         projection->uniform = true;
-         projection->constSortPos = cspPrimitive;
-      }
-      Var* worldViewOnly = (Var*)LangElement::find("worldViewOnly");
-      if (worldViewOnly == NULL)
-      {
-         worldViewOnly = new Var("worldViewOnly", "float4x4");
-         worldViewOnly->uniform = true;
-         worldViewOnly->constSortPos = cspPrimitive;
-      }
-      viewProj = new Var("viewProj", "float4x4");
-      meta->addStatement(new GenOp("   @ = mul( @, @ );\r\n", new DecOp(viewProj), worldViewOnly, projection));
+      worldViewOnly = new Var("worldViewOnly", "float4x4");
+      worldViewOnly->uniform = true;
+      worldViewOnly->constSortPos = cspPrimitive;
    }
 
-   modelview = new Var("modelview", "float4x4");
 
    Var* objTrans = getObjTrans(componentList, useInstancing, meta);
    if (useInstancing)
       meta->addStatement(new GenOp("// Instancing!\r\n"));
-   meta->addStatement(new GenOp("   @ = mul( @, @ );\r\n", new DecOp(modelview), viewProj, objTrans));
+
+   modelview = new Var("modelview", "float4x4");
+   meta->addStatement(new GenOp("   @ = mul( @, @ );\r\n", new DecOp(modelview), worldViewOnly, objTrans));
    return modelview;
 }
 
@@ -1814,8 +1802,16 @@ void VertPositionHLSL::processVert( Vector<ShaderComponent*> &componentList,
 
    Var *modelview = getModelView2Step( componentList, fd.features[MFT_UseInstancing], meta );
 
-   meta->addStatement( new GenOp( "   @ = mul(@, float4(@.xyz,1));\r\n", 
-      outPosition, modelview, inPosition ) );
+   Var* projection = (Var*)LangElement::find("projection");
+   if (projection == NULL)
+   {
+      projection = new Var("projection", "float4x4");
+      projection->uniform = true;
+      projection->constSortPos = cspPrimitive;
+   }
+
+   meta->addStatement( new GenOp( "   @ = mul(@, mul(@, float4(@.xyz,1)));\r\n", 
+      outPosition, projection, modelview, inPosition ) );
 
    if (fd.materialFeatures[MFT_isBackground])
    {
