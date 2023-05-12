@@ -218,7 +218,7 @@ class TSShapeInstance
    Vector<MeshObjectInstance> mMeshObjects;
 
    /// storage space for node transforms
-   Vector<MatrixF> mNodeTransforms;
+   NodeTransforms mNodeTransforms;
 
    /// @name Reference Transform Vectors
    /// unused until first transition

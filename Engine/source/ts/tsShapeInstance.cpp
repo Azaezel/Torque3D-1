@@ -107,7 +107,7 @@ Vector<TSThread*>             TSShapeInstance::smScaleThreads(__FILE__, __LINE__
 TSShapeInstance::TSShapeInstance( const Resource<TSShape> &shape, bool loadMaterials )
 {
    VECTOR_SET_ASSOCIATION(mMeshObjects);
-   VECTOR_SET_ASSOCIATION(mNodeTransforms);
+   VECTOR_SET_ASSOCIATION(mNodeTransforms.mMatrixList);
    VECTOR_SET_ASSOCIATION(mNodeReferenceRotations);
    VECTOR_SET_ASSOCIATION(mNodeReferenceTranslations);
    VECTOR_SET_ASSOCIATION(mNodeReferenceUniformScales);
@@ -125,7 +125,7 @@ TSShapeInstance::TSShapeInstance( const Resource<TSShape> &shape, bool loadMater
 TSShapeInstance::TSShapeInstance( TSShape *shape, bool loadMaterials )
 {
    VECTOR_SET_ASSOCIATION(mMeshObjects);
-   VECTOR_SET_ASSOCIATION(mNodeTransforms);
+   VECTOR_SET_ASSOCIATION(mNodeTransforms.mMatrixList);
    VECTOR_SET_ASSOCIATION(mNodeReferenceRotations);
    VECTOR_SET_ASSOCIATION(mNodeReferenceTranslations);
    VECTOR_SET_ASSOCIATION(mNodeReferenceUniformScales);
@@ -218,7 +218,12 @@ void TSShapeInstance::initMeshObjects()
       MeshObjectInstance * objInst = &mMeshObjects[i];
 
       // hook up the object to it's node and transforms.
-      objInst->mTransforms = &mNodeTransforms;
+      //objInst->mTransforms = &(mNodeTransforms.mMatrixList);
+      //ugly! rework! - BJR
+      for (U32 i = 0; i < mNodeTransforms.mMatrixList.size(); i++)
+      {
+         const_cast<Vector<MatrixF>*>(objInst->mTransforms)->push_back(*(mNodeTransforms.GetLinkLocal(i)));
+      }
       objInst->nodeIndex = obj->nodeIndex;
 
       // set up list of meshes
@@ -400,7 +405,7 @@ void TSShapeInstance::renderDebugNodes()
    desc.setZReadWrite( false, false );
 
    for ( U32 i = 0; i < mNodeTransforms.size(); i++ )
-      drawUtil->drawTransform( desc, mNodeTransforms[i], NULL, NULL );
+      drawUtil->drawTransform( desc, *(mNodeTransforms.GetLinkLocal(i)), NULL, NULL);
 }
 
 void TSShapeInstance::listMeshes( const String &state ) const

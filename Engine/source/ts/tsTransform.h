@@ -27,6 +27,10 @@
 #include "math/mMath.h"
 #endif
 
+#ifndef _TVECTOR_H_
+#include "core/util/tVector.h"
+#endif
+
 class Stream;
 
 /// compressed quaternion class
@@ -105,5 +109,357 @@ inline void TSTransform::setMatrix( const QuatF & q, MatrixF * pDest )
 {
    q.setMatrix(pDest);
 }
+
+/// <summary>
+/// leaf class for matrix chains
+/// </summary>
+class MatrixNode
+{
+public:
+   /// <summary>
+   /// data
+   /// </summary>
+   MatrixF* mNodeTransform;
+   MatrixF* mWorldTransform;
+
+   /// <summary>
+   /// constraints
+   /// </summary>
+   struct constraint
+   {
+      Point3F mRotRange[2] = { Point3F(F32_MIN, F32_MIN, F32_MIN), Point3F(F32_MAX, F32_MAX, F32_MAX) };
+      Point3F mPosRange[2] = { Point3F(F32_MIN, F32_MIN, F32_MIN), Point3F(F32_MAX, F32_MAX, F32_MAX) };
+   } mConstraints;
+   /// <summary>
+   /// parent matrix ID
+   /// </summary>
+   U32 mParentID = -1;
+   /// <summary>
+   /// child matrix IDs
+   /// </summary>
+   Vector<U32> mBranch;
+   MatrixNode(const MatrixF* inMatrix = &MatrixF::Identity, bool relative = false, const MatrixF* basis = &MatrixF::Identity)
+   {
+      mNodeTransform = new MatrixF(inMatrix->getForwardVector(),inMatrix->getPosition());
+      MatrixF mat = *mNodeTransform;
+      if (relative)
+      {
+         mat.mul(*basis);
+      }
+      mWorldTransform = new MatrixF(mat.getForwardVector(), mat.getPosition());
+   };
+   MatrixNode(VectorF offsetRot, Point3F offsetPos, bool relative = false, const MatrixF* basis = &MatrixF::Identity)
+   {
+      mNodeTransform = new MatrixF(offsetRot, offsetPos);
+      MatrixF mat = *mNodeTransform;
+      if (relative)
+      {
+         mat.mul(*basis);
+      }
+      mWorldTransform = new MatrixF(mat.getForwardVector(), mat.getPosition());
+   };
+
+   void setConstraints(Point3F rotMin, Point3F rotMax, Point3F posMin = Point3F(F32_MIN, F32_MIN, F32_MIN), Point3F posMax = Point3F(F32_MAX, F32_MAX, F32_MAX))
+   {
+      mConstraints.mPosRange[0] = rotMin;
+      mConstraints.mRotRange[1] = rotMax;
+
+      mConstraints.mPosRange[0] = posMin;
+      mConstraints.mPosRange[1] = posMax;
+   }
+
+   void constrain()
+   {
+      Point3F rot = mNodeTransform->getForwardVector();
+      Point3F pos = mNodeTransform->getPosition();
+
+      rot.setMax(mConstraints.mPosRange[0]);
+      rot.setMin(mConstraints.mPosRange[1]);
+
+      pos.setMax(mConstraints.mPosRange[0]);
+      pos.setMin(mConstraints.mPosRange[1]);
+
+      mNodeTransform->set(rot, pos);
+   }
+
+   ~MatrixNode()
+   {
+      delete(mNodeTransform);
+      delete(mWorldTransform);
+   };
+};
+
+class NodeTransforms
+{
+public:
+   NodeTransforms() {};
+   ~NodeTransforms() { for (U32 i = 0; i < mMatrixList.size(); i++) { pop_Link(i); } };
+
+   /// <summary>
+   /// generate an array of matricies with optional offsets for translation and rotation 
+   /// </summary>
+   /// <param name="count"></param>
+   /// <param name="offsetRot"></param>
+   /// <param name="offsetPos"></param>
+   /// <param name="basis"></param>
+   /// <param name="itterative"></param>
+   NodeTransforms(U32 count, Point3F offsetRot, Point3F offsetPos, bool itterative = false, bool relative = false)
+   {
+      mMatrixList.setSize(count);
+      if (itterative)
+      {
+         push_Link(0, offsetRot, offsetPos, relative);
+         for (U32 i = 1; i < count; i++)
+            push_Link(i - 1, offsetRot, offsetPos, relative);
+      }
+      else
+      {
+         for (U32 i = 0; i < count; i++)
+            push_Link(0, offsetRot * i, offsetPos * i, relative);
+      }
+   };
+
+   /// <summary>
+   ///  generate an array of matricies with optional offsets for translation and rotation from a specified vector of points and rots
+   /// </summary>
+   /// <param name="count"></param>
+   /// <param name="offsetRot"></param>
+   /// <param name="offsetPos"></param>
+   /// <param name="itterative"></param>
+   NodeTransforms(U32 count, Vector < Point3F> offsetRot, Vector<Point3F> offsetPos, bool relative = false, bool itterative = false)
+   {
+      mMatrixList.setSize(count);
+      if (itterative)
+      {
+         push_Link(-1, offsetRot[0], offsetPos[0], relative);
+         for (U32 i = 1; i < count; i++)
+            push_Link(i - 1, offsetRot[i], offsetPos[i], relative);
+      }
+      else
+      {
+         push_Link(0, offsetRot[0], offsetPos[0], relative);
+         for (U32 i = 1; i < count; i++)
+            push_Link(0, offsetRot[i] * i, offsetPos[i] * i, relative);
+      }
+   };
+
+   /// <summary>
+   /// create a new MatrixLink and register it's associations
+   /// </summary>
+   /// <param name="parentId"></param>
+   /// <param name="offsetRot"></param>
+   /// <param name="offsetPos"></param>
+   /// <param name="basis"></param>
+   void push_Link(S32 parentId, Point3F offsetRot, Point3F offsetPos, bool relative = false)
+   {
+      MatrixF mat = MatrixF::Identity;
+      mat.set(offsetRot, offsetPos);
+      if (parentId >= 0)
+      {
+         if (relative)
+            mat = *(GetLinkLocal(parentId));
+         else
+            mat = *(GetLinkGlobal(parentId));
+      }
+      MatrixNode* link = new MatrixNode(offsetRot, offsetPos, relative, &mat);
+      mMatrixList.push_back(link); //add the new link to the overall vector
+      if (parentId > -1)
+         mMatrixList[parentId]->mBranch.push_back(mMatrixList.size()); //tell the parent node it has a new child
+   };
+
+   void push_Link(S32 parentId, MatrixF inMat, bool relative = false)
+   {
+      MatrixF mat = inMat;
+      if (parentId >= 0)
+      {
+         if (relative)
+            mat = *(GetLinkLocal(parentId));
+         else
+            mat = *(GetLinkGlobal(parentId));
+      }
+      MatrixNode* link = new MatrixNode(&inMat, relative, &mat);
+      mMatrixList.push_back(link); //add the new link to the overall vector
+
+      if (parentId > -1)
+         mMatrixList[parentId]->mBranch.push_back(mMatrixList.size()); //tell the parent node it has a new child
+   };
+
+   /// <summary>
+   /// delete a MatrixLink and free it's associations
+   /// </summary>
+   /// <param name="id"></param>
+   void pop_Link(S32 id)
+   {
+      delete(mMatrixList[id]);
+      mMatrixList.erase(id);
+   };
+
+   /// <summary>
+   /// set one link as a child of another
+   /// </summary>
+   /// <param name="id"></param>
+   /// <param name="parentID"></param>
+   /// <param name="relative">:use parent orientation?</param>
+   void setLinkParent(S32 id, S32 parentID, bool relative)
+   {
+      mMatrixList[id]->mParentID = parentID;
+      if (parentID > -1)
+      {
+         mMatrixList[parentID]->mBranch.push_back_unique(id);
+      }
+      if (relative)
+      {
+         calcLinkGlobal(id);
+         for (U32 i = 0; i < mMatrixList[id]->mBranch.size(); i++)
+         {
+            calcLinkGlobal(mMatrixList[id]->mBranch[i]);
+         }
+      }
+   };
+
+   /// <summary>
+   /// translate the location of a given node and all of it's children
+   /// </summary>
+   /// <param name="id"></param>
+   /// <param name="offsetPos"></param>
+   /// <param name="basis"></param>
+   /// <param name="itterative"></param>
+   void TranslateLink(S32 id, Point3F offsetPos, bool relative = false)
+   {
+      if (relative)
+      {
+         mMatrixList[id]->mNodeTransform->setPosition(mMatrixList[id]->mNodeTransform->getPosition() + offsetPos);
+      }
+      else
+      {
+         mMatrixList[id]->mNodeTransform->setPosition(offsetPos);
+      }
+      mMatrixList[id]->constrain();
+      calcLinkGlobal(id);
+      for (U32 i = 0; i < mMatrixList[id]->mBranch.size(); i++)
+      {
+         calcLinkGlobal(mMatrixList[id]->mBranch[i]);
+      }
+   };
+
+   /// <summary>
+   /// rotate the location of a given node and all of it's children
+   /// </summary>
+   /// <param name="id"></param>
+   /// <param name="offsetRot"></param>
+   /// <param name="basis"></param>
+   /// <param name="itterative"></param>
+   void RotateLink(S32 id, Point3F offsetRot, bool relative = false)
+   {
+      if (relative)
+      {
+         mMatrixList[id]->mNodeTransform->set(mMatrixList[id]->mNodeTransform->getForwardVector() + offsetRot, mMatrixList[id]->mNodeTransform->getPosition());
+      }
+      else
+      {
+         mMatrixList[id]->mNodeTransform->set(offsetRot, mMatrixList[id]->mNodeTransform->getPosition());
+      }
+
+      mMatrixList[id]->constrain();
+      calcLinkGlobal(id);
+      for (U32 i = 0; i < mMatrixList[id]->mBranch.size(); i++)
+      {
+         calcLinkGlobal(mMatrixList[id]->mBranch[i]);
+      }
+   };
+
+   /// <summary>
+   /// 
+   /// </summary>
+   /// <param name="id"></param>
+   /// <param name="offsetPos"></param>
+   /// <param name="offsetRot"></param>
+   /// <param name="basis"></param>
+   /// <param name="itterative"></param>
+   void OrbitLink(S32 id, Point3F offsetPos, Point3F offsetRot, bool relative = false)
+   {
+      //todo: orbital mechanics
+      mMatrixList[id]->constrain();
+      calcLinkGlobal(id);
+      for (U32 i = 0; i < mMatrixList[id]->mBranch.size(); i++)
+      {
+         calcLinkGlobal(mMatrixList[id]->mBranch[i]);
+      }
+   };
+
+   /// <summary>
+   /// get the matrix relative to ne of it's parents
+   /// </summary>
+   /// <param name="id"></param>
+   /// <param name="rootId"></param>
+   /// <returns></returns>
+   const MatrixF* GetLinkLocal(S32 id)
+   {
+      if (id < mMatrixList.size())
+      {
+         return mMatrixList[id]->mNodeTransform;
+      }
+      else
+         return &MatrixF::Identity;
+   };
+
+   void setLink(S32 id, Point3F rot, Point3F pos, Point3F scale)
+   {
+      if (id < mMatrixList.size())
+      {
+         delete(mMatrixList[id]->mNodeTransform);
+         mMatrixList[id]->mNodeTransform = new MatrixF(rot, pos);
+         mMatrixList[id]->mNodeTransform->scale(scale);
+      }
+   };
+
+   /// <summary>
+   /// calculate the matrix relative to origin
+   /// </summary>
+   /// <param name="_identity"></param>
+   void calcLinkGlobal(S32 id)
+   {
+      MatrixF mat = *(mMatrixList[id]->mNodeTransform);
+      S32 parentID = mMatrixList[id]->mParentID;
+      while (parentID < 0)
+      {
+         mat.mul(*mMatrixList[parentID]->mNodeTransform);
+         parentID = mMatrixList[parentID]->mParentID;
+      }
+      mMatrixList[id]->mWorldTransform->set(mat.getForwardVector(), mat.getPosition());
+   }
+
+   /// <summary>
+   /// get the cached matrix relative to origin
+   /// </summary>
+   /// <param name="id"></param>
+   /// <returns></returns>
+   const MatrixF* GetLinkGlobal(S32 id)
+   {
+      if (id < mMatrixList.size())
+         return mMatrixList[id]->mWorldTransform;
+      else
+         return &MatrixF::Identity;
+   };
+
+   /// <summary>
+   /// derive list from an ArrayObject of the form (rotation, position)
+   /// </summary>
+   void fromConsole() {};
+
+   /// <summary>
+   /// put results into an ArrayObject of the form (rotation, position)
+   /// </summary>
+   void toConsole() {};
+
+   /// <summary>
+   /// explicitly resize mMatrixList
+   /// </summary>
+   /// <param name="size"></param>
+   /// <returns></returns>
+   U32 setSize(U32 size) { return mMatrixList.setSize(size); };
+   S32 size() { return mMatrixList.size(); };
+   Vector<MatrixNode*> mMatrixList;
+};
 
 #endif

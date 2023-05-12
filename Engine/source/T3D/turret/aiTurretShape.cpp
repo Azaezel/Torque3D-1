@@ -871,15 +871,10 @@ void AITurretShape::_trackTarget(F32 dt)
    S32 node = mDataBlock->aimNode;
    if (node != -1)
    {
-      // Get the current position of our node
-      MatrixF* nodeTrans = &mShapeInstance->mNodeTransforms[node];
-      Point3F currentPos;
-      nodeTrans->getColumn(3, &currentPos);
-
       // Turn this into a matrix we can use to put the target
       // position into our space.
       MatrixF nodeMat(true);
-      nodeMat.setColumn(3, currentPos);
+      nodeMat.setColumn(3, mShapeInstance->mNodeTransforms.GetLinkLocal(node)->getPosition());
       mat.mul(mObjToWorld, nodeMat);
       mat.affineInverse();
    }

@@ -522,7 +522,13 @@ void PhysicsDebris::interpolateTick( F32 dt )
       return;
 
    const MatrixF &objectXfm = getRenderWorldTransform();
-   Vector<MatrixF> &nodeXfms = mShapeInstance->mNodeTransforms;
+
+   Vector<MatrixF> nodeXfms;
+   //ugly! rework! - BJR
+   for (U32 i = 0; i < mShapeInstance->mNodeTransforms.mMatrixList.size(); i++)
+   {
+      nodeXfms.push_back(*(mShapeInstance->mNodeTransforms.GetLinkLocal(i)));
+   }
 
    MatrixF globalXfm;
    MatrixF tempXfm;

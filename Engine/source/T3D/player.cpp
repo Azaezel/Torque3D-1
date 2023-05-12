@@ -5593,10 +5593,10 @@ void Player::getEyeTransform(MatrixF* mat)
    if (imageIndex >= 0)
    {
       // Get the image's eye node's position relative to the eye mount node
-      MatrixF mountTransform = image->shapeInstance[shapeIndex]->mNodeTransforms[data->eyeMountNode[shapeIndex]];
-      Point3F eyeMountNodePos = mountTransform.getPosition();
-      mountTransform = image->shapeInstance[shapeIndex]->mNodeTransforms[data->eyeNode[shapeIndex]];
-      Point3F eyeNodePos = mountTransform.getPosition() - eyeMountNodePos;
+      const MatrixF *mountTransform = image->shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(data->eyeMountNode[shapeIndex]);
+      Point3F eyeMountNodePos = mountTransform->getPosition();
+      mountTransform = image->shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(data->eyeNode[shapeIndex]);
+      Point3F eyeNodePos = mountTransform->getPosition() - eyeMountNodePos;
 
       // Now transform to the image's eye node (position only)
       MatrixF xfm(true);
@@ -5637,24 +5637,21 @@ void Player::getEyeBaseTransform(MatrixF* mat, bool includeBank)
 
    F32 *dp = pmat;
 
-   F32* sp;
+   Point3F sp;
    MatrixF eyeMat(true);
    if (mDataBlock->eyeNode != -1)
    {
-      sp = mShapeInstance->mNodeTransforms[mDataBlock->eyeNode];
+      sp = mShapeInstance->mNodeTransforms.GetLinkLocal(mDataBlock->eyeNode)->getPosition();
    }
    else
    {
-      Point3F center;
-      mObjBox.getCenter(&center);
-      eyeMat.setPosition(center);
-      sp = eyeMat;
+      mObjBox.getCenter(&sp);
    }
 
    const Point3F& scale = getScale();
-   dp[3] = sp[3] * scale.x;
-   dp[7] = sp[7] * scale.y;
-   dp[11] = sp[11] * scale.z;
+   dp[3] = sp.x * scale.x;
+   dp[7] = sp.y * scale.y;
+   dp[11] = sp.z * scale.z;
    mat->mul(getTransform(),pmat);
 }
 
@@ -5673,10 +5670,10 @@ void Player::getRenderEyeTransform(MatrixF* mat)
          if ( data.useEyeNode && isFirstPerson() && data.eyeMountNode[shapeIndex] != -1 && data.eyeNode[shapeIndex] != -1 )
          {
             // Get the eye node's position relative to the eye mount node
-            MatrixF mountTransform = image.shapeInstance[shapeIndex]->mNodeTransforms[data.eyeMountNode[shapeIndex]];
-            Point3F eyeMountNodePos = mountTransform.getPosition();
-            mountTransform = image.shapeInstance[shapeIndex]->mNodeTransforms[data.eyeNode[shapeIndex]];
-            Point3F eyeNodePos = mountTransform.getPosition() - eyeMountNodePos;
+            const MatrixF *mountTransform = image.shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(data.eyeMountNode[shapeIndex]);
+            Point3F eyeMountNodePos = mountTransform->getPosition();
+            mountTransform = image.shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(data.eyeNode[shapeIndex]);
+            Point3F eyeNodePos = mountTransform->getPosition() - eyeMountNodePos;
 
             // Now transform to the image's eye node (position only)
             MatrixF xfm(true);
@@ -5717,27 +5714,24 @@ void Player::getRenderEyeBaseTransform(MatrixF* mat, bool includeBank)
 
    F32 *dp = pmat;
 
-   F32* sp;
+   Point3F sp;
    MatrixF eyeMat(true);
    if (mDataBlock->eyeNode != -1)
    {
-      sp = mShapeInstance->mNodeTransforms[mDataBlock->eyeNode];
+      sp = mShapeInstance->mNodeTransforms.GetLinkLocal(mDataBlock->eyeNode)->getPosition();
    }
    else
    {
       // Use the center of the Player's bounding box for the eye position.
-      Point3F center;
-      mObjBox.getCenter(&center);
-      eyeMat.setPosition(center);
-      sp = eyeMat;
+      mObjBox.getCenter(&sp);
    }
 
    // Only use position of eye node, and take Player's scale
    // into account.
    const Point3F& scale = getScale();
-   dp[3] = sp[3] * scale.x;
-   dp[7] = sp[7] * scale.y;
-   dp[11] = sp[11] * scale.z;
+   dp[3] = sp.x * scale.x;
+   dp[7] = sp.y * scale.y;
+   dp[11] = sp.z * scale.z;
 
    mat->mul(getRenderTransform(), pmat);
 }
@@ -5871,7 +5865,7 @@ void Player::renderMountedImage( U32 imageSlot, TSRenderState &rstate, SceneRend
       {
          MatrixF nmat;
          getRenderEyeBaseTransform(&nmat, mDataBlock->mountedImagesBank);
-         MatrixF offsetMat = image.shapeInstance[imageShapeIndex]->mNodeTransforms[data.eyeMountNode[imageShapeIndex]];
+         MatrixF offsetMat = *(image.shapeInstance[imageShapeIndex]->mNodeTransforms.GetLinkLocal(data.eyeMountNode[imageShapeIndex]));
          offsetMat.affineInverse();
          world.mul(nmat,offsetMat);
       }

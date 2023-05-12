@@ -1869,7 +1869,7 @@ void ShapeBase::getMountTransform( S32 index, const MatrixF &xfm, MatrixF *outMa
    if ( index >= 0 && index < SceneObject::NumMountPoints) {
       S32 ni = mDataBlock->mountPointNode[index];
       if (ni != -1) {
-         MatrixF mountTransform = mShapeInstance->mNodeTransforms[ni];
+         MatrixF mountTransform = *(mShapeInstance->mNodeTransforms.GetLinkLocal(ni));
          mountTransform.mul( xfm );
          const Point3F& scale = getScale();
 
@@ -1903,8 +1903,7 @@ void ShapeBase::getImageTransform(U32 imageSlot,MatrixF* mat)
 
          getEyeBaseTransform(&nmat, mDataBlock->mountedImagesBank);
 
-         MatrixF mountTransform = image.shapeInstance[shapeIndex]->mNodeTransforms[data.eyeMountNode[shapeIndex]];
-
+         MatrixF mountTransform = *(image.shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(data.eyeMountNode[shapeIndex]));
          mat->mul(nmat, mountTransform);
       }
       else if (data.useEyeOffset && isFirstPerson()) {
@@ -1931,7 +1930,7 @@ void ShapeBase::getImageTransform(U32 imageSlot,S32 node,MatrixF* mat)
          ShapeBaseImageData& data = *image.dataBlock;
          U32 shapeIndex = getImageShapeIndex(image);
 
-         MatrixF nmat = image.shapeInstance[shapeIndex]->mNodeTransforms[node];
+         MatrixF nmat = *(image.shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(node));
          MatrixF mmat;
 
          if (data.useEyeNode && isFirstPerson() && data.eyeMountNode[shapeIndex] != -1)
@@ -1942,7 +1941,7 @@ void ShapeBase::getImageTransform(U32 imageSlot,S32 node,MatrixF* mat)
             MatrixF emat;
             getEyeBaseTransform(&emat, mDataBlock->mountedImagesBank);
 
-            MatrixF mountTransform = image.shapeInstance[shapeIndex]->mNodeTransforms[data.eyeMountNode[shapeIndex]];
+            MatrixF mountTransform = *(image.shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(data.eyeMountNode[shapeIndex]));
             mountTransform.affineInverse();
 
             mmat.mul(emat, mountTransform);
@@ -1993,7 +1992,7 @@ void ShapeBase::getRenderMountTransform( F32 delta, S32 mountPoint, const Matrix
    if ( mountPoint >= 0 && mountPoint < SceneObject::NumMountPoints) {
       S32 ni = mDataBlock->mountPointNode[mountPoint];
       if (ni != -1) {
-         MatrixF mountTransform = mShapeInstance->mNodeTransforms[ni];
+         MatrixF mountTransform = *(mShapeInstance->mNodeTransforms.GetLinkLocal(ni));
          mountTransform.mul( xfm );
          const Point3F& scale = getScale();
 
@@ -2027,7 +2026,7 @@ void ShapeBase::getRenderImageTransform( U32 imageSlot, MatrixF* mat, bool noEye
       if ( data.useEyeNode && isFirstPerson() && data.eyeMountNode[shapeIndex] != -1 ) {
          getRenderEyeBaseTransform(&nmat, mDataBlock->mountedImagesBank);
 
-         MatrixF mountTransform = image.shapeInstance[shapeIndex]->mNodeTransforms[data.eyeMountNode[shapeIndex]];
+         MatrixF mountTransform = *(image.shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(data.eyeMountNode[shapeIndex]));
 
          mat->mul(nmat, mountTransform);
       }
@@ -2057,7 +2056,7 @@ void ShapeBase::getRenderImageTransform(U32 imageSlot,S32 node,MatrixF* mat)
          ShapeBaseImageData& data = *image.dataBlock;
          U32 shapeIndex = getImageShapeIndex(image);
 
-         MatrixF nmat = image.shapeInstance[shapeIndex]->mNodeTransforms[node];
+         MatrixF nmat = *(image.shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(node));
          MatrixF mmat;
 
          if ( data.useEyeNode && isFirstPerson() && data.eyeMountNode[shapeIndex] != -1 )
@@ -2065,7 +2064,7 @@ void ShapeBase::getRenderImageTransform(U32 imageSlot,S32 node,MatrixF* mat)
             MatrixF emat;
             getRenderEyeBaseTransform(&emat, mDataBlock->mountedImagesBank);
 
-            MatrixF mountTransform = image.shapeInstance[shapeIndex]->mNodeTransforms[data.eyeMountNode[shapeIndex]];
+            MatrixF mountTransform = *(image.shapeInstance[shapeIndex]->mNodeTransforms.GetLinkLocal(data.eyeMountNode[shapeIndex]));
             mountTransform.affineInverse();
 
             mmat.mul(emat, mountTransform);
