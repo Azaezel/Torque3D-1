@@ -453,29 +453,3 @@ DefineEngineFunction(mDecToBin, const char*, (S32 n), , "convert decimal to a bi
    }
    return ret.c_str();
 }
-
-void testMatrixVec()
-{
-   RelationVec<MatrixF> tMat;
-   tMat.push_mat(-1, MatrixF());
-   MatrixF* localMatPtr = tMat.local(0);
-   localMatPtr->add(MatrixF::Identity);
-   MatrixF* globalMatPtr = tMat.global(0);
-   //expected: global is an identity matrix
-   localMatPtr->dumpMatrix("local");
-   globalMatPtr->dumpMatrix("global");
-
-   localMatPtr->setPosition(Point3F(10,0,0));
-   tMat.toGLobal();
-   localMatPtr->dumpMatrix("local");
-   globalMatPtr->dumpMatrix("global");
-
-}
-
-
-DefineEngineFunction(testMatrixVec, void, (), ,
-   "testMatrixVec\n"
-   "@ingroup Math")
-{
-   testMatrixVec();
-}

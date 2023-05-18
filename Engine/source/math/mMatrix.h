@@ -39,10 +39,6 @@
 #include "console/engineTypeInfo.h"
 #endif
 
-#ifndef _TVECTOR_H_
-#include "core/util/tVector.h"
-#endif
-
 /// 4x4 Matrix Class
 ///
 /// This runs at F32 precision.
@@ -608,71 +604,4 @@ inline void mTransformPlane(const MatrixF& mat, const Point3F& scale, const Plan
    m_matF_x_scale_x_planeF(mat, &scale.x, &plane.x, &result->x);
 }
 
-struct RelationNode
-{
-   S32 mRoot = -1;
-   Vector<S32> mBranch;
-   RelationNode(S32 root = -1): mRoot(root){};
-};
-
-template<class Transform> class RelationVec
-{
-public:
-   //initializers
-   RelationVec() {}
-   RelationVec(Transform inTransform) {}
-   //add/remove
-   void push_mat(S32 rootId, MatrixF inMat)
-   {
-      mLocal.push_back(inMat);
-      mRelation.push_back(RelationNode(rootId));
-      if (rootId > -1) mRelation[rootId].mBranch.push_back(mLocal.size());
-      setCached(false); //if we've added to the RelationVec, the cache is no longer valid
-   }
-   //reference the raw vectors in thier entrieties
-   Vector<Transform>* refLocal() { return &mLocal; };
-   Vector<Transform>* refGlobal() { return &mGlobal; };
-   Vector<RelationNode>* refRelation() { return &mRelation; };
-   //get pointers to individual elements
-   Transform* local(S32 id) { return &mLocal[id]; };
-   Transform* global(S32 id, bool recalc = false) { if (recalc || !isCached()) toGLobal(); return &mGlobal[id]; }
-   void toGLobal() { mCachedResult = false; };
-   RelationNode* relation(S32 id) { return &mRelation[id]; };
-   //for those cases where you *must* take the performance hit and do a copy
-   Transform copyLocal(S32 id) { return mLocal[id]; };
-   Transform copyGlobal(S32 id) { return mGlobal[id]; };
-   void setCached(bool cached) { mCachedResult  = cached; };
-   bool isCached() { return mCachedResult; };
-private:
-   Vector<Transform> mLocal;
-   Vector<Transform> mGlobal;
-   Vector<RelationNode> mRelation;
-   bool mCachedResult = false;
-};
-
-template<> inline void RelationVec<MatrixF>::toGLobal()
-{
-   //first, allocate a copy of local size for global space
-   if (refGlobal()->size() < refLocal()->size())
-      refGlobal()->setSize(refLocal()->size());
-
-   //next, itterate throughout the vector, multiplying matricies down the root/branch chains to shift those to worldspace
-   for (U32 id = 0; id < refLocal()->size(); id++)
-   {
-      MatrixF curMat = copyLocal(id);
-      for (U32 branchID = 0; branchID < (*refRelation())[id].mBranch.size(); branchID++)
-      {
-         RelationNode* node = &(*refRelation())[id];
-         if (node->mBranch[branchID] >= 0)
-         {
-            MatrixF childmat = copyLocal(node->mBranch[branchID]);
-            childmat.mul(curMat);
-
-         }
-
-      }
-      (*refGlobal())[id] = curMat;
-   }
-   setCached(true);
-};
 #endif //_MMATRIX_H_
