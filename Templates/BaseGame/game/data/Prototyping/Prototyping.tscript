@@ -48,3 +48,43 @@ function Prototyping::onCreateClientConnection(%this)
 function Prototyping::onDestroyClientConnection(%this)
 {
 }
+
+function testMatIO()
+{
+    %mat = new MatrixVec();
+    %mat.dump();
+    
+    %pos = "0 0 0";
+    %rot = "1 0 0 0";
+    for (%i=0;%i<5;%i++)
+    {
+        %pos.z++;
+        %mat.push(-1,%pos SPC %rot);
+    }
+    echo("test1 - translation");
+    %mat.dumpVals();
+    
+    for (%i=0;%i<5;%i++)
+    {
+        echo("mat["@ %i @"]:"@ %mat.getTranform(%i));
+        echo("pos["@ %i @"]:"@ %mat.getPosition(%i));
+        echo("rot["@ %i @"]:"@ %mat.getRotation(%i));
+    }    
+    
+    %mat2 = new MatrixVec();
+    for (%i=0;%i<5;%i++)
+    {
+        %pos = "0 0 0";
+        %rot = "1 0 0" SPC 360/5*%i;
+        %mat2.push(-1,%pos SPC %rot);
+    }   
+    echo("test2 - rotation");
+    %mat2.dumpVals();
+    
+    for (%i=0;%i<5;%i++)
+    {
+        echo("mat["@ %i @"]:"@ %mat2.getTranform(%i));
+        echo("pos["@ %i @"]:"@ %mat2.getPosition(%i));
+        echo("rot["@ %i @"]:"@ %mat2.getRotation(%i));
+    }
+}
