@@ -52,7 +52,7 @@ public:
    {
       mLocal.push_back(inMat);
       mRelation.push_back(RelationNode(rootId));
-      if (rootId > -1) mRelation[rootId].mBranch.push_back(mLocal.size());
+      if (rootId > -1) mRelation[rootId].mBranch.push_back(mLocal.size()-1);
       setCached(false); //if we've added to the RelationVec, the cache is no longer valid
    }
    void setLocal(S32 id, Transform to) { mLocal[id] = to; setCached(false); }
@@ -88,18 +88,16 @@ template<> inline void RelationVec<MatrixF>::toGLobal()
    for (U32 id = 0; id < refLocal()->size(); id++)
    {
       MatrixF curMat = copyLocal(id);
-      for (U32 branchID = 0; branchID < relation(id)->mBranch.size(); branchID++)
+      RelationNode* node = relation(id);
+
+      // multiply transforms...
+      if (node->mRoot < 0)
+         setGlobal(id,curMat);
+      else
       {
-         RelationNode* node = relation(id);
-         if (node->mBranch[branchID] >= 0)
-         {
-            MatrixF childmat = copyLocal(node->mBranch[branchID]);
-            childmat.mul(curMat);
-
-         }
-
+         curMat.mul(copyGlobal(node->mRoot), copyLocal(id));
+         setGlobal(id, curMat);
       }
-      setGlobal(id,curMat);
    }
    setCached(true);
 };
