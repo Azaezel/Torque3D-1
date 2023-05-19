@@ -54,28 +54,33 @@ function testMatIO()
     %mat = new MatrixVec();
     %mat.dump();
     
-    %pos = "0 0 0";
+    %pos = "1 0 0";
     %rot = "1 0 0 0";
-    for (%i=0;%i<5;%i++)
+    %mat.push(-1,"10 0 0" SPC %rot);
+    for (%i=0;%i<4;%i++)
     {
-        %pos.z++;
-        %mat.push(-1,%pos SPC %rot);
+        %mat.push(%i,%pos SPC %rot);
     }
     echo("test1 - translation");
     %mat.dumpVals();
     
     for (%i=0;%i<5;%i++)
     {
-        echo("mat["@ %i @"]:"@ %mat.getTranform(%i));
+        echo("mat["@ %i @"]:"@ %mat.getTransform(%i));
         echo("pos["@ %i @"]:"@ %mat.getPosition(%i));
         echo("rot["@ %i @"]:"@ %mat.getRotation(%i));
+        echo("eul["@ %i @"]:"@ %mat.getEuler(%i));
+        echo("globmat["@ %i @"]:"@ %mat.getTransform(%i,true));
+        echo("globpos["@ %i @"]:"@ %mat.getPosition(%i,true));
+        echo("globrot["@ %i @"]:"@ %mat.getRotation(%i,true));
+        echo("globeul["@ %i @"]:"@ %mat.getEuler(%i,true));
     }    
     
     %mat2 = new MatrixVec();
     for (%i=0;%i<5;%i++)
     {
         %pos = "0 0 0";
-        %rot = "1 0 0" SPC 360/5*%i;
+        %rot = "1 0 0" SPC 360/4*%i;
         %mat2.push(-1,%pos SPC %rot);
     }   
     echo("test2 - rotation");
@@ -83,8 +88,14 @@ function testMatIO()
     
     for (%i=0;%i<5;%i++)
     {
-        echo("mat["@ %i @"]:"@ %mat2.getTranform(%i));
+        echo("mat["@ %i @"]:"@ %mat2.getTransform(%i));
         echo("pos["@ %i @"]:"@ %mat2.getPosition(%i));
         echo("rot["@ %i @"]:"@ %mat2.getRotation(%i));
+        echo("eul["@ %i @"]:"@ %mat2.getEuler(%i));
+        echo("globmat["@ %i @"]:"@ %mat2.getTransform(%i,true));
+        echo("globpos["@ %i @"]:"@ %mat2.getPosition(%i,true));
+        echo("globrot["@ %i @"]:"@ %mat2.getRotation(%i,true));
+        echo("globeul["@ %i @"]:"@ %mat2.getEuler(%i,true));
+        
     }
 }
