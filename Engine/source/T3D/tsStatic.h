@@ -237,7 +237,7 @@ public:
 
    DECLARE_CONOBJECT(TSStatic);
    static void initPersistFields();
-   StringTableEntry getTypeHint() const { return (getShapeAsset()) ? getShapeAsset()->getAssetName(): StringTable->EmptyString(); }
+   virtual StringTableEntry getTypeHint() const { return (getShapeAsset()) ? getShapeAsset()->getAssetName(): StringTable->EmptyString(); }
    static void consoleInit();
    static bool _setFieldSkin(void* object, const char* index, const char* data);
    static const char* _getFieldSkin(void* object, const char* data);

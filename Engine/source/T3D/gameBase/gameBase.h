@@ -274,7 +274,7 @@ public:
 
    /// Returns the datablock for this object.
    GameBaseData* getDataBlock()  { return mDataBlock; }
-   StringTableEntry getTypeHint() { return (mDataBlock) ? mDataBlock->getName() : StringTable->EmptyString(); };
+   virtual StringTableEntry getTypeHint() { return (getDataBlock()) ? getDataBlock()->getName() : StringTable->EmptyString(); };
    /// Called when a new datablock is set. This allows subclasses to
    /// appropriately handle new datablocks.
    ///
