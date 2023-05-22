@@ -549,6 +549,9 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       /// Get the internal name of this control
       StringTableEntry getInternalName() const { return mInternalName; }
 
+      /// Get the internal name of this control
+      virtual StringTableEntry getTypeHint() const { return StringTable->EmptyString(); }
+
       /// Set the original name of this control
       void setOriginalName(const char* originalName);
 

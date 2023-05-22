@@ -425,6 +425,7 @@ U32 GuiTreeViewCtrl::Item::getDisplayTextLength()
 
       StringTableEntry name = obj->getName();
       StringTableEntry internalName = obj->getInternalName();
+      StringTableEntry typeHint = obj->getTypeHint();
       StringTableEntry className = obj->getClassName();      
 
       if( showInternalNameOnly() )
@@ -465,6 +466,11 @@ U32 GuiTreeViewCtrl::Item::getDisplayTextLength()
       {
          if( internalName && internalName[ 0 ] )
             len += dStrlen( internalName ) + 3; // ' [<internalname>]'
+      }
+      if (true) //mState.test(ShowTypeHint) )
+      {
+         if (typeHint && typeHint[0])
+            len += dStrlen(typeHint) + 3;
       }
       if( mState.test( Marked ) )
       {
