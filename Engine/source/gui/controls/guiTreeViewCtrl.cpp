@@ -502,8 +502,10 @@ void GuiTreeViewCtrl::Item::getDisplayText(U32 bufLen, char *buf)
       {
          const char* pObjName = pObject->getName();
          const char* pInternalName = pObject->getInternalName();
+         const char* pTypeHint = pObject->getTypeHint();
 
          bool hasInternalName = pInternalName && pInternalName[0];
+         bool hasTypeHint = pTypeHint && pTypeHint[0];
          bool hasObjectName = pObjName && pObjName[0];
 
          const char* pClassName = pObject->getClassName();
@@ -565,6 +567,14 @@ void GuiTreeViewCtrl::Item::getDisplayText(U32 bufLen, char *buf)
                   dSprintf(ptr, len, " *[%s]", pInternalName);
                else
                   dSprintf(ptr, len, " [%s]", pInternalName);
+            }
+            if (hasTypeHint)// && mState.test(ShowTypeHint))
+            {
+               if (mState.test(Item::Marked))
+                  dSprintf(ptr, len, " *<%s>", pTypeHint);
+               else
+                  dSprintf(ptr, len, " <%s>", pTypeHint);
+
             }
          }
       }

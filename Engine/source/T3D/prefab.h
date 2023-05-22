@@ -59,7 +59,8 @@ public:
    DECLARE_CONOBJECT(Prefab);
   
    static void initPersistFields();
-
+   StringTableEntry getTypeHint() const { return (mFilename != StringTable->EmptyString()) ? StringTable->insert(Torque::Path(mFilename).getFileName().c_str()) : StringTable->EmptyString(); }
+   
    // SimObject
    virtual bool onAdd();
    virtual void onRemove();

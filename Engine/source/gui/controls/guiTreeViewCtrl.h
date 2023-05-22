@@ -79,6 +79,7 @@ class GuiTreeViewCtrl : public GuiArrayCtrl
                ForceItemName = BIT(15),
                ForceDragTarget = BIT(16),
                DenyDrag = BIT(17),
+               ShowTypeHint = BIT(18),
             };
 
             GuiTreeViewCtrl* mParentControl;
