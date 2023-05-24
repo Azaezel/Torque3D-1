@@ -20,18 +20,15 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#pragma once
+#ifndef _RELATIONVEC_H_
+#define _RELATIONVEC_H_
 
 #ifndef _TVECTOR_H_
 #include "core/util/tVector.h"
 #endif
 
-#ifndef _MMATRIX_H_
-#include "math/mMatrix.h"
-#endif
-
-#ifndef _CONSOLEOBJECT_H_
-#include "console/simObject.h"
+#ifndef _CONSTRAINTS_H_
+#include "math/util/constraints.h"
 #endif
 
 struct RelationNode
@@ -41,21 +38,21 @@ struct RelationNode
    RelationNode(S32 root = -1) : mRoot(root) {};
 };
 
-template<class Transform> class RelationVec
+template<typename Transform, typename Dimensions> class RelationVec
 {
 public:
    //initializers
    RelationVec() {}
    RelationVec(Transform inTransform) {}
    //add/remove
-   void push(S32 rootId, MatrixF inMat)
+   void push(S32 rootId, Transform inMat)
    {
       mLocal.push_back(inMat);
       mRelation.push_back(RelationNode(rootId));
-      if (rootId > -1) mRelation[rootId].mBranch.push_back(mLocal.size()-1);
+      if (rootId > -1) mRelation[rootId].mBranch.push_back(mLocal.size() - 1);
       setCached(false); //if we've added to the RelationVec, the cache is no longer valid
    }
-   void setLocal(S32 id, Transform to) { mLocal[id] = to; setCached(false); }
+   void setLocal(S32 id, Transform to) { mLocal[id] = to; mCachedResult = false; }
    void setGlobal(S32 id, Transform to) { mGlobal[id] = to; }
    //reference the raw vectors in thier entrieties
    Vector<Transform>* refLocal() { return &mLocal; };
@@ -71,41 +68,31 @@ public:
    Transform copyGlobal(S32 id) { return mGlobal[id]; };
    void setCached(bool cached) { mCachedResult = cached; };
    bool isCached() { return mCachedResult; };
+   //base math
+   void setPosition(S32 id, Dimensions pos) { mCachedResult = false; };
+   void setRotation(S32 id, Dimensions rot) { mCachedResult = false; };
+   void setScale(S32 id, Dimensions trans) { mCachedResult = false; };
+   //incremental math
+   void translate(S32 id, Dimensions pos) { mCachedResult = false; };
+   void rotate(S32 id, U32 axis, F32 radians) { mCachedResult = false; };
+   void orbit(S32 id, U32 axis, F32 radians) { mCachedResult = false; };
+   void scale(S32 id, Dimensions rot) { mCachedResult = false; };
+   //constraints
+   Vector<Constraint<Dimensions>>* refConstraints() { return &mConstraints; };
+   void setConstraint(S32 id, Constraint<Dimensions> ranges)
+   {
+      //first, allocate a copy of local size for global space
+      if (refConstraints()->size() < refLocal()->size())
+         refConstraints()->setSize(refLocal()->size());
+      mConstraints[id] = ranges;
+      setCached(false);
+   };
+   Constraint<Dimensions> getConstraint(S32 id) { return mConstraints[id]; };
 private:
    Vector<Transform> mLocal;
    Vector<Transform> mGlobal;
    Vector<RelationNode> mRelation;
+   Vector<Constraint<Dimensions>> mConstraints;
    bool mCachedResult = false;
 };
-
-template<> inline void RelationVec<MatrixF>::toGLobal()
-{
-   //first, allocate a copy of local size for global space
-   if (refGlobal()->size() < refLocal()->size())
-      refGlobal()->setSize(refLocal()->size());
-
-   //next, itterate throughout the vector, multiplying matricies down the root/branch chains to shift those to worldspace
-   for (U32 id = 0; id < refLocal()->size(); id++)
-   {
-      MatrixF curMat = copyLocal(id);
-      RelationNode* node = relation(id);
-
-      // multiply transforms...
-      if (node->mRoot < 0)
-         setGlobal(id,curMat);
-      else
-      {
-         curMat.mul(copyGlobal(node->mRoot), copyLocal(id));
-         setGlobal(id, curMat);
-      }
-   }
-   setCached(true);
-};
-class MatrixVec : public RelationVec<MatrixF>, public SimObject
-{
-   typedef SimObject Parent;
-public:
-
-   MatrixVec() {};
-   DECLARE_CONOBJECT(MatrixVec);
-};
+#endif
