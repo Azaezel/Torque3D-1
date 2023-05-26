@@ -25,8 +25,7 @@
 #include "console/engineAPI.h"
 #include "math/mAngAxis.h"
 #include "math/mTransform.h"
-
-#include "math/util/matrixVec.h";
+#include "math/util/matrixVec.h"
 
 IMPLEMENT_CONOBJECT(MatrixVec);
 ConsoleDocClass(MatrixVec, "Matrix Relational Vector");
@@ -98,13 +97,13 @@ DefineEngineMethod(MatrixVec, getEuler, EulerF, (S32 id, bool global), (0, false
    return space->toEuler();
 }
 
-/*
-DefineEngineMethod(MatrixVec, setConstraint3D, void, (S32 id, const char* constraintString), (0, ""), "")
+
+DefineEngineMethod(MatrixVec, setConstraint3DString, void, (S32 id, const char* constraintString), (0, ""), "")
 {
    Constraint3D constraint;
    object->setConstraint(id, constraint.fromString(constraintString));
 }
-*/
+
 
 DefineEngineMethod(MatrixVec, setConstraint3D, void, (S32 id, Point3F inPosMin, Point3F inPosMax, Point3F inRotMin, Point3F inRotMax, Point3F inScaleMin, Point3F inScaleMax),, "")
 {
@@ -114,5 +113,5 @@ DefineEngineMethod(MatrixVec, setConstraint3D, void, (S32 id, Point3F inPosMin, 
 
 DefineEngineMethod(MatrixVec, getConstraint3D, const char*, (S32 id),, "")
 {
-   return object->getConstraint(id).toString().c_str();
+   return object->getConstraint(id)->toString().c_str();
 }

@@ -87,7 +87,7 @@ public:
       mConstraints[id] = ranges;
       setCached(false);
    };
-   Constraint<Dimensions> getConstraint(S32 id) { return mConstraints[id]; };
+   Constraint<Dimensions>* getConstraint(S32 id) { return &mConstraints[id]; };
 private:
    Vector<Transform> mLocal;
    Vector<Transform> mGlobal;

@@ -66,13 +66,15 @@ template<> inline Constraint3D Constraint3D::fromString(String inString)
    Vector<String> elements;
    inString.split(" ", elements);
    AssertWarn(elements.size() == 3 * MaxTypes, avar("fromString got %d entries, expected 3x%d", elements.size(), MaxTypes));
-   for (U32 i = 0; i < elements.size()/3; i+=3)
+   U32 offset = 0;
+   for (U32 i = 0; i < 3 * MaxTypes; i+=3)
    {
       Point3F range;
       range.x = dAtof(elements[i].c_str());
       range.y = dAtof(elements[i + 1].c_str());
       range.z = dAtof(elements[i + 2].c_str());
-      outval[i / 3] = range;
+      outval[offset] = range;
+      offset++;
    };
    return Constraint(outval);
 };
@@ -122,19 +124,22 @@ template<> inline void RelationVec3D::setScale(S32 id, Point3F scale)
    mCachedResult = false;
 };
 
-template<> inline void RelationVec3D::translate(S32 id, Point3F pos)
+template<> inline void RelationVec3D::translate(S32 id, Point3F posDelta)
 {
-   mLocal[id].displace(pos);
+   Point3F endPos = mClamp3D(mLocal[id].getPosition() + posDelta, getConstraint(id)->getPosRange().min, getConstraint(id)->getPosRange().max);
+   mLocal[id].setPosition(endPos);
    mCachedResult = false;
 };
 
-template<> inline void RelationVec3D::scale(S32 id, Point3F pos)
+template<> inline void RelationVec3D::scale(S32 id, Point3F scaleDelta)
 {
-   mLocal[id].scale(pos);
+   Point3F endcale = mClamp3D(mLocal[id].getScale() * scaleDelta, getConstraint(id)->getScaleRange().min, getConstraint(id)->getScaleRange().max);
+   mLocal[id].normalize();
+   mLocal[id].scale(endcale);
    mCachedResult = false;
 };
 
-template<> inline void RelationVec3D::rotate(S32 id, U32 axis, F32 radians)
+template<> inline void RelationVec3D::rotate(S32 id, U32 axis, F32 radianDelta)
 {
    Point3F pos = mLocal[id].getPosition();
    Point3F scale = mLocal[id].getScale();
@@ -146,29 +151,30 @@ template<> inline void RelationVec3D::rotate(S32 id, U32 axis, F32 radians)
    case 0:
    {
       curVec = mLocal[id].getRightVector();
-      delta = VectorF(radians, 0, 0);
+      delta = VectorF(radianDelta, 0, 0);
    }break;
    case 1:
    {
       curVec = mLocal[id].getForwardVector();
-      delta = VectorF(0, radians, 0);
+      delta = VectorF(0, radianDelta, 0);
 
    }break;
    case 2:
    {
       curVec = mLocal[id].getUpVector();
-      delta = VectorF(0, 0, radians);
+      delta = VectorF(0, 0, radianDelta);
 
    }break;
    default://bad axis
       return;
    }
-   mLocal[id].set(curVec + delta, pos);
+   Point3F endRot = mClamp3D(curVec + delta, getConstraint(id)->getRotRange().min, getConstraint(id)->getRotRange().max);
+   mLocal[id].set(endRot, pos);
    mLocal[id].scale(scale);
    mCachedResult = false;
 };
 
-template<> inline void RelationVec3D::orbit(S32 id, U32 axis, F32 radians)
+template<> inline void RelationVec3D::orbit(S32 id, U32 axis, F32 radianDelta)
 {
    VectorF curVec;
    VectorF delta;
@@ -178,24 +184,25 @@ template<> inline void RelationVec3D::orbit(S32 id, U32 axis, F32 radians)
    case 0:
    {
       curVec = mLocal[id].getRightVector();
-      delta = VectorF(radians, 0, 0);
+      delta = VectorF(radianDelta, 0, 0);
    }break;
    case 1:
    {
       curVec = mLocal[id].getForwardVector();
-      delta = VectorF(0, radians, 0);
+      delta = VectorF(0, radianDelta, 0);
 
    }break;
    case 2:
    {
       curVec = mLocal[id].getUpVector();
-      delta = VectorF(0, 0, radians);
+      delta = VectorF(0, 0, radianDelta);
 
    }break;
    default://bad axis
       return;
    }
-   MatrixF temp = MatrixF(curVec + delta);
+   Point3F endRot = mClamp3D(curVec + delta, getConstraint(id)->getRotRange().min, getConstraint(id)->getRotRange().max);
+   MatrixF temp = MatrixF(endRot);
    mLocal[id].mul(temp);
    mCachedResult = false;
 };
