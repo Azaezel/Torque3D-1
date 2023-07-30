@@ -353,6 +353,17 @@ DefineEngineFunction( mLerp, F32, ( F32 v1, F32 v2, F32 time ),,
    return mLerp( v1, v2, time );
 }
 
+DefineEngineFunction(mInvLerp, F32, (F32 v1, F32 v2, F32 point), ,
+   "Calculate the percentage of a point along a line.\n"
+   "@param v1 Interpolate From Input value."
+   "@param v2 Interpolate To Input value."
+   "@param point Point along range."
+   "@returns normalized time used to interpolate values"
+   "@ingroup Math")
+{
+   return mInvLerp(v1, v2, point);
+}
+
 DefineEngineFunction( mPi, F32, (),,
     "Return the value of PI (half-circle in radians).\n"
     "@returns The value of PI."
@@ -452,4 +463,14 @@ DefineEngineFunction(mDecToBin, const char*, (S32 n), , "convert decimal to a bi
       ret = String::ToString("%i",r) + ret;//add to the front of the stack
    }
    return ret.c_str();
+}
+
+DefineEngineFunction(mEulDegToAng, AngAxisF, (EulerF euler), , "convert euler to degrees")
+{
+   return mEulDegToAng(euler);
+}
+
+DefineEngineFunction(mAngToEul, EulerF, (AngAxisF angAx), , "convert degrees to euler")
+{
+   return mAngToEul(angAx);
 }
