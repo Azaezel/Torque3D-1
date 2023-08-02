@@ -83,11 +83,11 @@ template<> inline Constraint3D Constraint3D::fromString(String inString)
 template<> inline void RelationVec3D::toGLobal()
 {
    //first, allocate a copy of local size for global space
-   if (refGlobal()->size() < refLocal()->size())
-      refGlobal()->setSize(refLocal()->size());
+   if (mGlobal.size() < mLocal.size())
+      mGlobal.setSize(mLocal.size());
 
    //next, itterate throughout the vector, multiplying matricies down the root/branch chains to shift those to worldspace
-   for (U32 id = 0; id < refLocal()->size(); id++)
+   for (U32 id = 0; id < mLocal.size(); id++)
    {
       MatrixF curMat = copyLocal(id);
       RelationNode* node = relation(id);
@@ -101,7 +101,7 @@ template<> inline void RelationVec3D::toGLobal()
          setGlobal(id, curMat);
       }
    }
-   mCachedResult = false;
+   mCachedResult = true;
 };
 
 template<> inline void RelationVec3D::setPosition(S32 id, Point3F pos)
@@ -122,6 +122,19 @@ template<> inline void RelationVec3D::setScale(S32 id, Point3F scale)
    mLocal[id].normalize();
    mLocal[id].scale(scale);
    mCachedResult = false;
+};
+
+template<> inline Point3F RelationVec3D::getPosition(S32 id)
+{
+   return global(id)->getPosition();
+};
+template<> inline Point3F RelationVec3D::getRotation(S32 id)
+{
+   return global(id)->getForwardVector();
+};
+template<> inline Point3F RelationVec3D::getScale(S32 id)
+{
+   return global(id)->getScale();
 };
 
 template<> inline void RelationVec3D::translate(S32 id, Point3F posDelta)

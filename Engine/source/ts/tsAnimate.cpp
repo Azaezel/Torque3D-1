@@ -199,7 +199,7 @@ void TSShapeInstance::animateNodes(S32 ss)
       if (!mHandsOffNodes.test(i))
          TSTransform::setMatrix(smNodeCurrentRotations[i],smNodeCurrentTranslations[i],&smNodeLocalTransforms[i]);
       else
-         smNodeLocalTransforms[i] = mNodeTransforms[i];     // in case mNodeTransform was changed externally
+         smNodeLocalTransforms[i] = mNodeTransforms.copyLocal(i);     // in case mNodeTransform was changed externally
    }
 
    // add scale onto transforms
@@ -239,9 +239,12 @@ void TSShapeInstance::animateNodes(S32 ss)
    {
       S32 parentIdx = mShape->nodes[i].parentIndex;
       if (parentIdx < 0)
-         mNodeTransforms[i] = smNodeLocalTransforms[i];
+         mNodeTransforms.setLocal(i,smNodeLocalTransforms[i]);
       else
-         mNodeTransforms[i].mul(mNodeTransforms[parentIdx],smNodeLocalTransforms[i]);
+      {
+         mNodeTransforms.setRelation(i, parentIdx);
+         mNodeTransforms[i]->mul(*(mNodeTransforms.local(parentIdx)), smNodeLocalTransforms[i]);
+      }
    }
 }
 

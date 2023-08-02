@@ -1876,7 +1876,7 @@ void TSStatic::getNodeTransform(const char *nodeName, const MatrixF &xfm, Matrix
     const Point3F& scale = getScale();
     if (nodeIDx != -1)
     {
-       nodeTransform = mShapeInstance->mNodeTransforms[nodeIDx];
+       nodeTransform = *(mShapeInstance->mNodeTransforms[nodeIDx]);
        nodeTransform.mul(xfm);
     }
     // The position of the mount point needs to be scaled.

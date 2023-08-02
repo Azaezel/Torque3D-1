@@ -42,9 +42,23 @@ template<typename Transform, typename Dimensions> class RelationVec
 {
 public:
    //initializers
-   RelationVec() {}
+   RelationVec() { push(-1, Transform(true)); }
    RelationVec(Transform inTransform) {}
-   //add/remove
+   //add/remove/vector manipulation
+   S32 size() { return mLocal.size(); }
+   void setSize(U32 sz)
+   {
+      S32 oldSize = mLocal.size();
+      mLocal.setSize(sz);
+      mGlobal.setSize(sz);
+      mRelation.setSize(sz);
+      mConstraints.setSize(sz);
+      for (S32 fillin = oldSize; fillin < sz; fillin++)
+      {
+         mLocal[fillin] = Transform(true);
+         mCachedResult = false;
+      }
+   }
    void push(S32 rootId, Transform inMat)
    {
       mLocal.push_back(inMat);
@@ -52,17 +66,19 @@ public:
       if (rootId > -1) mRelation[rootId].mBranch.push_back(mLocal.size() - 1);
       setCached(false); //if we've added to the RelationVec, the cache is no longer valid
    }
+   RelationNode* relation(S32 id) { return &mRelation[id]; };
+   void setRelation(S32 id, S32 parent) { mRelation[id] = parent; };
    void setLocal(S32 id, Transform to) { mLocal[id] = to; mCachedResult = false; }
    void setGlobal(S32 id, Transform to) { mGlobal[id] = to; }
    //reference the raw vectors in thier entrieties
    Vector<Transform>* refLocal() { return &mLocal; };
-   Vector<Transform>* refGlobal() { return &mGlobal; };
+   Vector<Transform>* refGlobal() { toGLobal(); return &mGlobal; };
    Vector<RelationNode>* refRelation() { return &mRelation; };
    //get pointers to individual elements
    Transform* local(S32 id) { return &mLocal[id]; };
    Transform* global(S32 id, bool recalc = false) { if (recalc || !isCached()) toGLobal(); return &mGlobal[id]; }
-   void toGLobal() { mCachedResult = false; };
-   RelationNode* relation(S32 id) { return &mRelation[id]; };
+   Transform* operator[](int id) { return global(id); }
+   void toGLobal() { mCachedResult = true; };
    //for those cases where you *must* take the performance hit and do a copy
    Transform copyLocal(S32 id) { return mLocal[id]; };
    Transform copyGlobal(S32 id) { return mGlobal[id]; };
@@ -72,6 +88,9 @@ public:
    void setPosition(S32 id, Dimensions pos) { mCachedResult = false; };
    void setRotation(S32 id, Dimensions rot) { mCachedResult = false; };
    void setScale(S32 id, Dimensions trans) { mCachedResult = false; };
+   Dimensions getPosition(S32 id) { return Dimensions(); };
+   Dimensions getRotation(S32 id) { return Dimensions(); };
+   Dimensions getScale(S32 id) { return Dimensions(); };
    //incremental math
    void translate(S32 id, Dimensions pos) { mCachedResult = false; };
    void rotate(S32 id, U32 axis, F32 radians) { mCachedResult = false; };
@@ -82,17 +101,25 @@ public:
    void setConstraint(S32 id, Constraint<Dimensions> ranges)
    {
       //first, allocate a copy of local size for global space
-      if (refConstraints()->size() < refLocal()->size())
-         refConstraints()->setSize(refLocal()->size());
+      if (mConstraints.size() < mLocal.size())
+         mConstraints.setSize(mLocal.size());
       mConstraints[id] = ranges;
       setCached(false);
    };
    Constraint<Dimensions>* getConstraint(S32 id) { return &mConstraints[id]; };
+#ifdef TORQUE_DEBUG_GUARD
+   inline void setFileAssociation(const char* file,  const U32   line) { mFileAssociation = file; mLineAssociation = line; }
+#endif
 private:
    Vector<Transform> mLocal;
    Vector<Transform> mGlobal;
    Vector<RelationNode> mRelation;
    Vector<Constraint<Dimensions>> mConstraints;
    bool mCachedResult = false;
+#ifdef TORQUE_DEBUG_GUARD
+   const char* mFileAssociation = "";
+   U32 mLineAssociation = 0;
+#endif
 };
+
 #endif
