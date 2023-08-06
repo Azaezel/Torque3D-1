@@ -42,7 +42,7 @@ template<typename Transform, typename Dimensions> class RelationVec
 {
 public:
    //initializers
-   RelationVec() { push(-1, Transform(true)); }
+   RelationVec() { }
    RelationVec(Transform inTransform) {}
    //add/remove/vector manipulation
    S32 size() { return mLocal.size(); }

@@ -238,14 +238,10 @@ void TSShapeInstance::animateNodes(S32 ss)
    for (i=a; i<b; i++)
    {
       S32 parentIdx = mShape->nodes[i].parentIndex;
-      if (parentIdx < 0)
-         mNodeTransforms.setLocal(i,smNodeLocalTransforms[i]);
-      else
-      {
-         mNodeTransforms.setRelation(i, parentIdx);
-         mNodeTransforms[i]->mul(*(mNodeTransforms.local(parentIdx)), smNodeLocalTransforms[i]);
-      }
+      mNodeTransforms.setLocal(i, smNodeLocalTransforms[i]);
+      mNodeTransforms.setRelation(i, parentIdx);
    }
+   mNodeTransforms.toGLobal();
 }
 
 void TSShapeInstance::handleDefaultScale(S32 a, S32 b, TSIntegerSet & scaleBeenSet)
