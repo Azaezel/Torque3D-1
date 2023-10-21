@@ -113,7 +113,7 @@ protected:
 public:
    ImageAsset();
    virtual ~ImageAsset();
-
+   void loadImage();
    /// Set up some global script interface stuff.
    static void consoleInit();
 
@@ -159,7 +159,7 @@ protected:
    static bool setImageFileName(void* obj, StringTableEntry index, StringTableEntry data) { static_cast<ImageAsset*>(obj)->setImageFileName(data); return false; }
    static StringTableEntry getImageFileName(void* obj, StringTableEntry data) { return static_cast<ImageAsset*>(obj)->getImageFileName(); }
 
-   void loadImage();
+
 };
 
 DefineConsoleType(TypeImageAssetPtr, ImageAsset)

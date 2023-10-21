@@ -707,6 +707,7 @@ void GuiInspectorTypeImageAssetPtr::updatePreviewImage()
          ImageAsset* imgAsset = AssetDatabase.acquireAsset<ImageAsset>(previewImage);
          if (imgAsset && imgAsset->isAssetValid())
          {
+            imgAsset->loadImage();
             mPreviewImage->_setBitmap(imgAsset->getAssetId());
          }
       }

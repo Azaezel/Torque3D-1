@@ -580,6 +580,7 @@ const char* ShapeAsset::generateCachedPreviewImage(S32 resolution, String overri
       GFX->beginScene();
 
    // We need to create our own instance to render with.
+   loadShape();
    TSShapeInstance* shape = new TSShapeInstance(mShape, true);
 
    if (overrideMaterial.isNotEmpty())

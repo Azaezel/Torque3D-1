@@ -626,7 +626,12 @@ void GuiInspectorTypeMaterialAssetPtr::updatePreviewImage()
    matPreviewAssetId = "ToolsModule:" + matPreviewAssetId;
    if (AssetDatabase.isDeclaredAsset(matPreviewAssetId.c_str()))
    {
-      mPreviewImage->setBitmap(StringTable->insert(matPreviewAssetId.c_str()));
+      ImageAsset* imgAsset = AssetDatabase.acquireAsset<ImageAsset>(matPreviewAssetId);
+      if (imgAsset && imgAsset->isAssetValid())
+      {
+         imgAsset->loadImage();
+         mPreviewImage->setBitmap(StringTable->insert(matPreviewAssetId.c_str()));
+      }
    }
    else
    {
