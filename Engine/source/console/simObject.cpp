@@ -35,7 +35,6 @@
 #include "console/simPersistID.h"
 #include "console/typeValidators.h"
 #include "console/arrayObject.h"
-#include "console/codeBlock.h"
 #include "core/frameAllocator.h"
 #include "core/stream/fileStream.h"
 #include "core/fileObject.h"
@@ -43,7 +42,6 @@
 #include "gui/editor/guiInspector.h"
 
 #include "sim/netObject.h"
-#include "cinterface/cinterface.h"
 
 IMPLEMENT_CONOBJECT( SimObject );
 
@@ -562,7 +560,7 @@ void SimObject::onTamlCustomRead(TamlCustomNodes const& customNodes)
                   // Check common fields.
                   if (field)
                   {
-                     setDataField(fieldName, buf, cField->getFieldValue());
+                     setPrefixedDataField(fieldName, buf, cField->getFieldValue());
                   }
                   else
                   {
@@ -859,10 +857,6 @@ bool SimObject::isMethod( const char* methodName )
 {
    if( !methodName || !methodName[0] )
       return false;
-
-   if (CInterface::isMethod(this->getName(), methodName) || CInterface::isMethod(this->getClassName(), methodName)) {
-      return true;
-   }
 
    StringTableEntry stname = StringTable->insert( methodName );
 
@@ -2479,7 +2473,7 @@ static void sEnumCallback( EngineObject* object )
    if( !simObject )
       return;
       
-   Con::evaluatef( "%s( %i );", sEnumCallbackFunction, simObject->getId() );
+   Con::executef(sEnumCallbackFunction, simObject->getId());
 }
 
 DefineEngineFunction( debugEnumInstances, void, ( const char* className, const char* functionName ),,
@@ -2645,10 +2639,10 @@ DefineEngineMethod( SimObject, dumpMethods, ArrayObject*, (),,
       str.append( e->getPrototypeString() );
 
       str.append( '\n' );
-      if( e->mCode && e->mCode->fullPath )
-         str.append( e->mCode->fullPath );
+      if( e->mModule && e->mModule->getPath() )
+         str.append( e->mModule->getPath() );
       str.append( '\n' );
-      if( e->mCode )
+      if( e->mModule )
          str.append( String::ToString( e->mFunctionLineNumber ) );
 
       str.append( '\n' );

@@ -52,10 +52,6 @@
 #include "T3D/gameBase/processList.h"
 #endif
 
-#ifndef _SCENECONTAINER_H_
-#include "scene/sceneContainer.h"
-#endif
-
 #ifndef _GFXDEVICE_H_
 #include "gfx/gfxDevice.h"
 #endif
@@ -74,6 +70,11 @@
 #include "T3D/assets/GameObjectAsset.h"
 #endif
 
+#ifndef _SCENEQUERY_UTIL_H_
+#include "scene/sceneQueryUtil.h"
+#endif
+
+
 class SceneManager;
 class SceneRenderState;
 class SceneTraversalState;
@@ -84,10 +85,11 @@ class SceneObjectLightingPlugin;
 class Convex;
 class LightInfo;
 class SFXAmbience;
+class SceneContainer;
 
 struct ObjectRenderInst;
 struct Move;
-
+struct SceneRayHelper;
 
 /// A 3D object.
 ///
@@ -112,7 +114,7 @@ struct Move;
 ///
 /// @see http://www.garagegames.com/index.php?sec=mg&mod=resource&page=view&qid=3217
 ///      for a copy of Melv's example.
-class SceneObject : public NetObject, private SceneContainer::Link, public ProcessObject
+class SceneObject : public NetObject, public ProcessObject
 {
    public:
 
@@ -123,6 +125,7 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
       friend class SceneZoneSpaceManager;
       friend class SceneCullingState; // _getZoneRefHead
       friend class SceneObjectLink; // mSceneObjectLinks
+      friend struct SceneRayHelper;
 
       enum 
       {
@@ -222,65 +225,20 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
       /// @name Zoning
       /// @{
 
-      /// Bidirectional link between a zone manager and its objects.
-      struct ZoneRef : public SceneObjectRefBase< ZoneRef >
-      {
-         /// ID of zone.
-         U32 zone;
-      };
-
-      /// Iterator over the zones that the object is assigned to.
-      /// @note This iterator expects a clean zoning state.  It will not update the
-      ///   zoning state in case it is dirty.
-      struct ObjectZonesIterator
-      {
-            ObjectZonesIterator( SceneObject* object )
-               : mCurrent( object->_getZoneRefHead() ) {}
-
-            bool isValid() const
-            {
-               return ( mCurrent != NULL );
-            }
-            ObjectZonesIterator& operator ++()
-            {
-               AssertFatal( isValid(), "SceneObject::ObjectZonesIterator::operator++ - Invalid iterator!" );
-               mCurrent = mCurrent->nextInObj;
-               return *this;
-            }
-            U32 operator *() const
-            {
-               AssertFatal( isValid(), "SceneObject::ObjectZonesIterator::operator* - Invalid iterator!" );
-               return mCurrent->zone;
-            }
-
-         private:
-            ZoneRef* mCurrent;
-      };
-
-      friend struct ObjectZonesIterator;
-
       /// If an object moves, its zoning state needs to be updated.  This is deferred
       /// to when the state is actually needed and this flag indicates a refresh
       /// is necessary.
-      mutable bool mZoneRefDirty;
+      bool mZoneRefDirty;
 
       /// Number of zones this object is assigned to.
       /// @note If #mZoneRefDirty is set, this might be outdated.
-      mutable U32 mNumCurrZones;
+      U32 mNumCurrZones;
 
-      /// List of zones that this object is part of.
-      /// @note If #mZoneRefDirty is set, this might be outdated.
-      mutable ZoneRef* mZoneRefHead;
+      /// Handle for the zone list of this object
+      U32 mZoneListHandle;
 
       /// Refresh the zoning state of this object, if it isn't up-to-date anymore.
-      void _updateZoningState() const;
-
-      /// Return the first link in the zone list of this object.  Each link represents
-      /// a single zone that the object is assigned to.
-      ///
-      /// @note This method will return the zoning list as is.  In case the zoning state
-      ///   of the object is dirty, the list contents may be outdated.
-      ZoneRef* _getZoneRefHead() const { return mZoneRefHead; }
+      void _updateZoningState();
       
       /// @}
 
@@ -360,16 +318,14 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
       /// Container database that the object is assigned to.
       SceneContainer* mContainer;
 
+      /// Assigned container index
+      U32 mContainerIndex;
+
+      /// Lookup Info
+      SceneBinListLookup mContainerLookup;
+
       /// SceneContainer sequence key.
       U32 mContainerSeqKey;
-
-      ///
-      SceneObjectRef* mBinRefHead;
-
-      U32 mBinMinX;
-      U32 mBinMaxX;
-      U32 mBinMinY;
-      U32 mBinMaxY;
 
       /// Returns the container sequence key.
       U32 getContainerSeqKey() const { return mContainerSeqKey; }
@@ -464,7 +420,7 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
       virtual void enableCollision();
 
       /// Returns true if collisions are enabled
-      bool isCollisionEnabled() const { return mCollisionCount == 0; }
+      inline bool isCollisionEnabled() const { return mCollisionCount == 0; }
 
       /// This gets called when an object collides with this object.
       /// @param   object   Object colliding with this object
@@ -751,7 +707,7 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
       U32 getNumCurrZones() const { return mNumCurrZones; }
 
       /// Returns the nth zone containing this object.
-      U32 getCurrZone(const U32 index) const;
+      U32 getCurrZone(const U32 index);
 
       /// @}   
 
@@ -928,7 +884,9 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
    //const MatrixF& getLocalTransform() const;
    /// returns the position within parent SceneObject space (or world space if no parent)
    //Point3F getLocalPosition() const;
-   
+
+   inline U32 getRootContainerIndex() { return mContainerIndex;  }
+   inline const SceneBinListLookup getContainerLookupInfo() { return mContainerLookup; }
    
 //   virtual void onParentScaleChanged();   
 //   virtual void onParentTransformChanged();

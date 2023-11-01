@@ -24,18 +24,16 @@
 #include "console/console.h"
 #include "console/consoleInternal.h"
 #include "console/engineAPI.h"
-#include "console/ast.h"
 
 #ifndef _CONSOLFUNCTIONS_H_
 #include "console/consoleFunctions.h"
 #endif
 
-#include "cinterface/cinterface.h"
+#include "script.h"
 #include "core/strings/findMatch.h"
 #include "core/strings/stringUnit.h"
 #include "core/strings/unicode.h"
 #include "core/stream/fileStream.h"
-#include "console/compiler.h"
 #include "platform/platformInput.h"
 #include "core/util/journal/journal.h"
 #include "gfx/gfxEnums.h"
@@ -43,6 +41,7 @@
 #include "core/color.h"
 #include "math/mPoint3.h"
 #include "math/mathTypes.h"
+#include "torquescript/runtime.h"
 
 // This is a temporary hack to get tools using the library to
 // link in this module which contains no other references.
@@ -2330,63 +2329,7 @@ DefineEngineFunction( compile, bool, ( const char* fileName, bool overrideNoDSO 
    "@see exec\n"
    "@ingroup Scripting" )
 {
-   Con::expandScriptFilename( scriptFilenameBuffer, sizeof( scriptFilenameBuffer ), fileName );
-
-   // Figure out where to put DSOs
-   StringTableEntry dsoPath = Con::getDSOPath(scriptFilenameBuffer);
-   if(dsoPath && *dsoPath == 0)
-      return false;
-
-   // If the script file extention is '.ed.tscript' then compile it to a different compiled extention
-   bool isEditorScript = false;
-   const char *ext = dStrrchr( scriptFilenameBuffer, '.' );
-   if( ext && ( dStricmp( ext, "." TORQUE_SCRIPT_EXTENSION) == 0 ) )
-   {
-      const char* ext2 = ext - 3;
-      if( dStricmp( ext2, ".ed." TORQUE_SCRIPT_EXTENSION) == 0 )
-         isEditorScript = true;
-   }
-   else if( ext && ( dStricmp( ext, ".gui" ) == 0 ) )
-   {
-      const char* ext2 = ext - 3;
-      if( dStricmp( ext2, ".ed.gui" ) == 0 )
-         isEditorScript = true;
-   }
-
-   const char *filenameOnly = dStrrchr(scriptFilenameBuffer, '/');
-   if(filenameOnly)
-      ++filenameOnly;
-   else
-      filenameOnly = scriptFilenameBuffer;
- 
-   char nameBuffer[512];
-
-   if( isEditorScript )
-      dStrcpyl(nameBuffer, sizeof(nameBuffer), dsoPath, "/", filenameOnly, ".edso", NULL);
-   else
-      dStrcpyl(nameBuffer, sizeof(nameBuffer), dsoPath, "/", filenameOnly, ".dso", NULL);
-   
-   void *data = NULL;
-   U32 dataSize = 0;
-   Torque::FS::ReadFile(scriptFilenameBuffer, data, dataSize, true);
-   if(data == NULL)
-   {
-      Con::errorf(ConsoleLogEntry::Script, "compile: invalid script file %s.", scriptFilenameBuffer);
-      return false;
-   }
-
-   const char *script = static_cast<const char *>(data);
-
-#ifdef TORQUE_DEBUG
-   Con::printf("Compiling %s...", scriptFilenameBuffer);
-#endif 
-
-   CodeBlock *code = new CodeBlock();
-   code->compile(nameBuffer, scriptFilenameBuffer, script, overrideNoDSO);
-   delete code;
-   delete[] script;
-
-   return true;
+   return TorqueScript::getRuntime()->compile(fileName, overrideNoDSO);
 }
 
 //-----------------------------------------------------------------------------
@@ -2410,12 +2353,12 @@ DefineEngineFunction( exec, bool, ( const char* fileName, bool noCalls, bool jou
 
 DefineEngineFunction( eval, const char*, ( const char* consoleString ), , "eval(consoleString)" )
 {
-   ConsoleValue returnValue = Con::evaluate(consoleString, false, NULL);
+   Con::EvalResult returnValue = Con::evaluate(consoleString, false, NULL);
 
-   return Con::getReturnBuffer(returnValue.getString());
+   return Con::getReturnBuffer(returnValue.value.getString());
 }
 
-DefineEngineFunction( getVariable, const char*, ( const char* varName ), , "(string varName)\n" 
+DefineEngineFunction( getVariable, const char*, ( const char* varName ), , "(string varName)\n"
    "@brief Returns the value of the named variable or an empty string if not found.\n\n"
    "@varName Name of the variable to search for\n"
    "@return Value contained by varName, \"\" if the variable does not exist\n"
@@ -2463,10 +2406,6 @@ DefineEngineFunction( isMethod, bool, ( const char* nameSpace, const char* metho
    "@return True if the method exists, false if not\n"
    "@ingroup Scripting\n")
 {
-   if (CInterface::isMethod(nameSpace, method)) {
-      return true;
-   }
-
    Namespace* ns = Namespace::find( StringTable->insert( nameSpace ) );
    Namespace::Entry* nse = ns->lookup( StringTable->insert( method ) );
    if( !nse )
@@ -2589,15 +2528,15 @@ DefineEngineFunction( isDefined, bool, ( const char* varName, const char* varVal
    else if (name[0] == '%')
    {
       // Look up a local variable
-      if( gEvalState.getStackDepth() > 0 )
+      if( Con::getFrameStack().size() > 0 )
       {
-         Dictionary::Entry* ent = gEvalState.getCurrentFrame().lookup(name);
+         Dictionary::Entry* ent = Con::getCurrentStackFrame()->lookup(name);
 
          if (ent)
             return true;
          else if (!String::isEmpty(varValue))
          {
-            gEvalState.getCurrentFrame().setVariable(name, varValue);
+            Con::getCurrentStackFrame()->setVariable(name, varValue);
          }
       }
       else
@@ -2606,13 +2545,13 @@ DefineEngineFunction( isDefined, bool, ( const char* varName, const char* varVal
    else if (name[0] == '$')
    {
       // Look up a global value
-      Dictionary::Entry* ent = gEvalState.globalVars.lookup(name);
+      Dictionary::Entry* ent = Con::gGlobalVars.lookup(name);
 
       if (ent)
          return true;
       else if (!String::isEmpty(varValue))
       {
-         gEvalState.globalVars.setVariable(name, varValue);
+         Con::gGlobalVars.setVariable(name, varValue);
       }
    }
    else
@@ -2739,7 +2678,7 @@ DefineEngineFunction( export, void, ( const char* pattern, const char* filename,
    else
       filename = NULL;
 
-   gEvalState.globalVars.exportVariables( pattern, filename, append );
+   Con::gGlobalVars.exportVariables( pattern, filename, append );
 }
 
 //-----------------------------------------------------------------------------
@@ -2756,7 +2695,7 @@ DefineEngineFunction( deleteVariables, void, ( const char* pattern ),,
    "@see strIsMatchExpr\n"
    "@ingroup Scripting" )
 {
-   gEvalState.globalVars.deleteVariables( pattern );
+   Con::gGlobalVars.deleteVariables( pattern );
 }
 
 //-----------------------------------------------------------------------------
@@ -2769,8 +2708,8 @@ DefineEngineFunction( trace, void, ( bool enable ), ( true ),
    "@param enable New setting for script trace execution, on by default.\n"
    "@ingroup Debugging" )
 {
-   gEvalState.traceOn = enable;
-   Con::printf( "Console trace %s", gEvalState.traceOn ? "enabled." : "disabled." );
+   Con::gTraceOn = enable;
+   Con::printf( "Console trace %s", Con::gTraceOn ? "enabled." : "disabled." );
 }
 
 //-----------------------------------------------------------------------------

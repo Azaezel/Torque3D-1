@@ -126,18 +126,12 @@ SceneObject::SceneObject()
 
    mContainerSeqKey = 0;
 
-   mBinRefHead = NULL;
-
    mSceneManager = NULL;
 
+   mZoneListHandle = 0;
    mNumCurrZones = 0;
-   mZoneRefHead = NULL;
    mZoneRefDirty = false;
 
-   mBinMinX = 0xFFFFFFFF;
-   mBinMaxX = 0xFFFFFFFF;
-   mBinMinY = 0xFFFFFFFF;
-   mBinMaxY = 0xFFFFFFFF;
    mLightPlugin = NULL;
 
    mMount.object = NULL;
@@ -166,19 +160,23 @@ SceneObject::SceneObject()
    mGameObjectAssetId = StringTable->insert("");
 
    mDirtyGameObject = false;
+
+   mContainer = NULL;
+   mContainerIndex = 0;
 }
 
 //-----------------------------------------------------------------------------
 
 SceneObject::~SceneObject()
 {
-   AssertFatal( mZoneRefHead == NULL && mBinRefHead == NULL,
+   AssertFatal(mContainer == NULL,
+      "SceneObject::~SceneObject - Object still in container!");
+   AssertFatal( mZoneListHandle == NULL,
       "SceneObject::~SceneObject - Object still linked in reference lists!");
    AssertFatal( !mSceneObjectLinks,
       "SceneObject::~SceneObject() - object is still linked to SceneTrackers" );
 
    mAccuTex = NULL;
-   unlink();
 }
 
 //-----------------------------------------------------------------------------
@@ -1029,7 +1027,7 @@ void SceneObject::unpackUpdate( NetConnection* conn, BitStream* stream )
 
 //-----------------------------------------------------------------------------
 
-void SceneObject::_updateZoningState() const
+void SceneObject::_updateZoningState()
 {
    if( mZoneRefDirty )
    {
@@ -1043,21 +1041,18 @@ void SceneObject::_updateZoningState() const
 
 //-----------------------------------------------------------------------------
 
-U32 SceneObject::getCurrZone( const U32 index ) const
+U32 SceneObject::getCurrZone( const U32 index )
 {
+   SceneZoneSpaceManager* manager = getSceneManager()->getZoneManager();
    _updateZoningState();
 
    // Not the most efficient way to do this, walking the list,
    //  but it's an uncommon call...
-   ZoneRef* walk = mZoneRefHead;
-   for( U32 i = 0; i < index; ++ i )
-   {
-      walk = walk->nextInObj;
-      AssertFatal( walk != NULL, "SceneObject::_getCurrZone - Too few object refs!" );
-   }
-   AssertFatal( walk != NULL, "SceneObject::_getCurrZone - Too few object refs!" );
+   U32 numZones = 0;
+   U32* zones = NULL;
+   zones = manager->getZoneIDS(this, numZones);
 
-   return walk->zone;
+   return index < numZones ? zones[index] : 0;
 }
 
 //-----------------------------------------------------------------------------

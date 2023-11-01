@@ -28,19 +28,18 @@
 #include "console/consoleObject.h"
 #include "console/consoleParser.h"
 #include "core/stream/fileStream.h"
-#include "console/ast.h"
 #include "core/tAlgorithm.h"
 #include "console/consoleTypes.h"
 #include "console/telnetDebugger.h"
 #include "console/simBase.h"
-#include "console/compiler.h"
 #include "console/stringStack.h"
 #include "console/ICallMethod.h"
 #include "console/engineAPI.h"
 #include <stdarg.h>
+
+#include "returnBuffer.h"
 #include "platform/threads/mutex.h"
 #include "core/util/journal/journal.h"
-#include "cinterface/cinterface.h"
 #include "console/consoleValueStack.h"
 
 extern StringStack STR;
@@ -72,13 +71,10 @@ char* ConsoleValue::convertToBuffer() const
 
 const char* ConsoleValue::getConsoleData() const
 {
-   return Con::getData(type, ct->dataPtr, 0, ct->enumTable);
+   return Con::getData(ct->consoleType, ct->dataPtr, 0, ct->enumTable);
 }
 
 ConsoleDocFragment* ConsoleDocFragment::smFirst;
-ExprEvalState gEvalState;
-StmtNode *gStatementList;
-StmtNode *gAnonFunctionList;
 U32 gAnonFunctionID = 0;
 ConsoleConstructor *ConsoleConstructor::mFirst = NULL;
 bool gWarnUndefinedScriptVariables;
@@ -307,6 +303,9 @@ bool alwaysUseDebugOutput = true;
 bool useTimestamp = false;
 bool useRealTimestamp = false;
 
+static U32 initTime = Platform::getRealMilliseconds();
+static U32 startTime = initTime;
+
 ConsoleFunctionGroupBegin( Clipboard, "Miscellaneous functions to control the clipboard and clear the console.");
 
 DefineEngineFunction( cls, void, (), , "()"
@@ -327,13 +326,27 @@ DefineEngineFunction( getClipboard, const char*, (), , "()"
 };
 
 DefineEngineFunction( setClipboard, bool, (const char* text), , "(string text)"
-               "@brief Set the system clipboard.\n\n"
+            "@brief Set the system clipboard.\n\n"
             "@internal")
 {
    return Platform::setClipboard(text);
 };
 
 ConsoleFunctionGroupEnd( Clipboard );
+
+DefineEngineFunction( resetTimeStamp, void, (), , "()"
+            "@brief Reset the timestamp to 0 ms.\n\n"
+            "@ingroup Console")
+{
+   startTime = Platform::getRealMilliseconds();
+};
+
+DefineEngineFunction( getInitTime, int, (), , "()"
+            "@brief Get the initialization time in miliseconds.\n\n"
+            "@internal")
+{
+   return initTime;
+};
 
 
 void postConsoleInput( RawData data );
@@ -548,7 +561,7 @@ U32 tabComplete(char* inputBuffer, U32 cursorPos, U32 maxResultLength, bool forw
       // In the global namespace, we can complete on global vars as well as functions.
       if (inputBuffer[completionBaseStart] == '$')
       {
-         newText = gEvalState.globalVars.tabComplete(inputBuffer + completionBaseStart, completionBaseLen, forwardTab);
+         newText = gGlobalVars.tabComplete(inputBuffer + completionBaseStart, completionBaseLen, forwardTab);
       }
       else 
       {
@@ -644,13 +657,13 @@ static void _printf(ConsoleLogEntry::Level level, ConsoleLogEntry::Type type, co
 {
    if (!active)
       return;
-   Con::active = false; 
+   Con::active = false;
 
    char buffer[8192] = {};
    U32 offset = 0;
-   if( gEvalState.traceOn && gEvalState.getStackDepth() > 0 )
+   if( gTraceOn && !getFrameStack().empty())
    {
-      offset = gEvalState.getStackDepth() * 3;
+      offset = getFrameStack().size() * 3;
       for(U32 i = 0; i < offset; i++)
          buffer[i] = ' ';
    }
@@ -664,15 +677,14 @@ static void _printf(ConsoleLogEntry::Level level, ConsoleLogEntry::Type type, co
 
    if (useTimestamp)
    {
-      static U32 startTime = Platform::getRealMilliseconds();
       U32 curTime = Platform::getRealMilliseconds() - startTime;
       offset += dSprintf(buffer + offset, sizeof(buffer) - offset, "[+%4d.%03d]", U32(curTime * 0.001), curTime % 1000);
    }
 
-   if (useTimestamp || useRealTimestamp) {
+   if (useTimestamp || useRealTimestamp)
+   {
       offset += dSprintf(buffer + offset, sizeof(buffer) - offset, " ");
    }
-
 
    dVsprintf(buffer + offset, sizeof(buffer) - offset, fmt, argptr);
 
@@ -815,41 +827,25 @@ bool getVariableObjectField(const char *name, SimObject **object, const char **f
    return false;
 }
 
-Dictionary::Entry *getLocalVariableEntry(const char *name)
-{
-   name = prependPercent(name);
-   return gEvalState.getCurrentFrame().lookup(StringTable->insert(name));
-}
-
 Dictionary::Entry *getVariableEntry(const char *name)
 {
    name = prependDollar(name);
-   return gEvalState.globalVars.lookup(StringTable->insert(name));
+   return gGlobalVars.lookup(StringTable->insert(name));
 }
 
 Dictionary::Entry *addVariableEntry(const char *name)
 {
    name = prependDollar(name);
-   return gEvalState.globalVars.add(StringTable->insert(name));
+   return gGlobalVars.add(StringTable->insert(name));
 }
 
 Dictionary::Entry *getAddVariableEntry(const char *name)
 {
    name = prependDollar(name);
    StringTableEntry stName = StringTable->insert(name);
-   Dictionary::Entry *entry = gEvalState.globalVars.lookup(stName);
+   Dictionary::Entry *entry = gGlobalVars.lookup(stName);
    if (!entry)
-      entry = gEvalState.globalVars.add(stName);
-   return entry;
-}
-
-Dictionary::Entry *getAddLocalVariableEntry(const char *name)
-{
-   name = prependPercent(name);
-   StringTableEntry stName = StringTable->insert(name);
-   Dictionary::Entry *entry = gEvalState.getCurrentFrame().lookup(stName);
-   if (!entry)
-      entry = gEvalState.getCurrentFrame().add(stName);
+      entry = gGlobalVars.add(stName);
    return entry;
 }
 
@@ -865,7 +861,7 @@ void setVariable(const char *name, const char *value)
    else 
    {
       name = prependDollar(name);
-      gEvalState.globalVars.setVariable(StringTable->insert(name), value);
+      gGlobalVars.setVariable(StringTable->insert(name), value);
    }
 }
 
@@ -972,7 +968,7 @@ void stripColorChars(char* line)
    }
 }
 
-// 
+//
 const char *getObjectTokenField(const char *name)
 {
    const char *dot = dStrchr(name, '.');
@@ -1030,7 +1026,7 @@ const char *getLocalVariable(const char *name)
 {
    name = prependPercent(name);
 
-   return gEvalState.getCurrentFrame().getVariable(StringTable->insert(name));
+   return Con::getCurrentStackFrame()->getVariable(StringTable->insert(name));
 }
 
 bool getBoolVariable(const char *varName, bool def)
@@ -1083,7 +1079,7 @@ void addVariable(    const char *name,
                      void *dptr, 
                      const char* usage )
 {
-   gEvalState.globalVars.addVariable( name, type, dptr, usage );
+   gGlobalVars.addVariable( name, type, dptr, usage );
 }
 
 void addConstant(    const char *name, 
@@ -1091,24 +1087,24 @@ void addConstant(    const char *name,
                      const void *dptr, 
                      const char* usage )
 {
-   Dictionary::Entry* entry = gEvalState.globalVars.addVariable( name, type, const_cast< void* >( dptr ), usage );
+   Dictionary::Entry* entry = gGlobalVars.addVariable( name, type, const_cast< void* >( dptr ), usage );
    entry->mIsConstant = true;
 }
 
 bool removeVariable(const char *name)
 {
    name = StringTable->lookup(prependDollar(name));
-   return name!=0 && gEvalState.globalVars.removeVariable(name);
+   return name!=0 && gGlobalVars.removeVariable(name);
 }
 
 void addVariableNotify( const char *name, const NotifyDelegate &callback )
 {
-   gEvalState.globalVars.addVariableNotify( name, callback );
+   gGlobalVars.addVariableNotify( name, callback );
 }
 
 void removeVariableNotify( const char *name, const NotifyDelegate &callback )
 {
-   gEvalState.globalVars.removeVariableNotify( name, callback );
+   gGlobalVars.removeVariableNotify( name, callback );
 }
 
 //---------------------------------------------------------------------------
@@ -1190,386 +1186,12 @@ void addCommand( const char *name,BoolCallback cb,const char *usage, S32 minArgs
    Namespace::global()->addCommand( StringTable->insert(name), cb, usage, minArgs, maxArgs, isToolOnly, header );
 }
 
-bool executeFile(const char* fileName, bool noCalls, bool journalScript)
-{
-   bool journal = false;
-
-   char scriptFilenameBuffer[1024];
-   U32 execDepth = 0;
-   U32 journalDepth = 1;
-
-   execDepth++;
-   if (journalDepth >= execDepth)
-      journalDepth = execDepth + 1;
-   else
-      journal = true;
-
-   bool ret = false;
-
-   if (journalScript && !journal)
-   {
-      journal = true;
-      journalDepth = execDepth;
-   }
-
-   // Determine the filename we actually want...
-   Con::expandScriptFilename(scriptFilenameBuffer, sizeof(scriptFilenameBuffer), fileName);
-
-   // since this function expects a script file reference, if it's a .dso
-   // lets terminate the string before the dso so it will act like a .tscript
-   if (dStrEndsWith(scriptFilenameBuffer, ".dso"))
-   {
-      scriptFilenameBuffer[dStrlen(scriptFilenameBuffer) - dStrlen(".dso")] = '\0';
-   }
-
-   // Figure out where to put DSOs
-   StringTableEntry dsoPath = Con::getDSOPath(scriptFilenameBuffer);
-
-   const char *ext = dStrrchr(scriptFilenameBuffer, '.');
-
-   if (!ext)
-   {
-      // Try appending the default script extension and see if that succeeds
-
-      if (executeFile(fileName + String("." TORQUE_SCRIPT_EXTENSION), noCalls, journalScript))
-      {
-         return true;
-      }
-
-      // We need an extension!
-      Con::errorf(ConsoleLogEntry::Script, "exec: invalid script file name %s.", scriptFilenameBuffer);
-      execDepth--;
-      return false;
-   }
-
-   // Check Editor Extensions
-   bool isEditorScript = false;
-
-   // If the script file extension is '.ed.tscript' then compile it to a different compiled extension
-   if (dStricmp(ext, "." TORQUE_SCRIPT_EXTENSION) == 0)
-   {
-      const char* ext2 = ext - 3;
-      if (dStricmp(ext2, ".ed." TORQUE_SCRIPT_EXTENSION) == 0)
-         isEditorScript = true;
-   }
-   else if (dStricmp(ext, ".gui") == 0)
-   {
-      const char* ext2 = ext - 3;
-      if (dStricmp(ext2, ".ed.gui") == 0)
-         isEditorScript = true;
-   }
-
-   StringTableEntry scriptFileName = StringTable->insert(scriptFilenameBuffer);
-
-   // Is this a file we should compile? (anything in the prefs path should not be compiled)
-   StringTableEntry prefsPath = Platform::getPrefsPath();
-   bool compiled = dStricmp(ext, ".mis") && !journal && !Con::getBoolVariable("Scripts::ignoreDSOs");
-
-   // [tom, 12/5/2006] stripBasePath() fucks up if the filename is not in the exe
-   // path, current directory or prefs path. Thus, getDSOFilename() will also screw
-   // up and so this allows the scripts to still load but without a DSO.
-   if (Platform::isFullPath(Platform::stripBasePath(scriptFilenameBuffer)))
-      compiled = false;
-
-   // [tom, 11/17/2006] It seems to make sense to not compile scripts that are in the
-   // prefs directory. However, getDSOPath() can handle this situation and will put
-   // the dso along with the script to avoid name clashes with tools/game dsos.
-   if ((dsoPath && *dsoPath == 0) || (prefsPath && prefsPath[0] && dStrnicmp(scriptFileName, prefsPath, dStrlen(prefsPath)) == 0))
-      compiled = false;
-
-   // If we're in a journaling mode, then we will read the script
-   // from the journal file.
-   if (journal && Journal::IsPlaying())
-   {
-      char fileNameBuf[256];
-      bool fileRead = false;
-      U32 fileSize;
-
-      Journal::ReadString(fileNameBuf);
-      Journal::Read(&fileRead);
-
-      if (!fileRead)
-      {
-         Con::errorf(ConsoleLogEntry::Script, "Journal script read (failed) for %s", fileNameBuf);
-         execDepth--;
-         return false;
-      }
-      Journal::Read(&fileSize);
-      char *script = new char[fileSize + 1];
-      Journal::Read(fileSize, script);
-      script[fileSize] = 0;
-      Con::printf("Executing (journal-read) %s.", scriptFileName);
-      CodeBlock *newCodeBlock = new CodeBlock();
-      newCodeBlock->compileExec(scriptFileName, script, noCalls, 0);
-      delete[] script;
-      delete newCodeBlock;
-      
-      execDepth--;
-      return true;
-   }
-
-   // Ok, we let's try to load and compile the script.
-   Torque::FS::FileNodeRef scriptFile = Torque::FS::GetFileNode(scriptFileName);
-   Torque::FS::FileNodeRef dsoFile;
-
-   //    ResourceObject *rScr = gResourceManager->find(scriptFileName);
-   //    ResourceObject *rCom = NULL;
-
-   char nameBuffer[512];
-   char* script = NULL;
-   U32 version;
-
-   Stream *compiledStream = NULL;
-   Torque::Time scriptModifiedTime, dsoModifiedTime;
-
-   // Check here for .edso
-   bool edso = false;
-   if (dStricmp(ext, ".edso") == 0 && scriptFile != NULL)
-   {
-      edso = true;
-      dsoFile = scriptFile;
-      scriptFile = NULL;
-
-      dsoModifiedTime = dsoFile->getModifiedTime();
-      dStrcpy(nameBuffer, scriptFileName, 512);
-   }
-
-   // If we're supposed to be compiling this file, check to see if there's a DSO
-   if (compiled && !edso)
-   {
-      const char *filenameOnly = dStrrchr(scriptFileName, '/');
-      if (filenameOnly)
-         ++filenameOnly;
-      else
-         filenameOnly = scriptFileName;
-
-      char pathAndFilename[1024];
-      Platform::makeFullPathName(filenameOnly, pathAndFilename, sizeof(pathAndFilename), dsoPath);
-
-      if (isEditorScript)
-         dStrcpyl(nameBuffer, sizeof(nameBuffer), pathAndFilename, ".edso", NULL);
-      else
-         dStrcpyl(nameBuffer, sizeof(nameBuffer), pathAndFilename, ".dso", NULL);
-
-      dsoFile = Torque::FS::GetFileNode(nameBuffer);
-
-      if (scriptFile != NULL)
-         scriptModifiedTime = scriptFile->getModifiedTime();
-
-      if (dsoFile != NULL)
-         dsoModifiedTime = dsoFile->getModifiedTime();
-   }
-
-   // Let's do a sanity check to complain about DSOs in the future.
-   //
-   // MM:   This doesn't seem to be working correctly for now so let's just not issue
-   //    the warning until someone knows how to resolve it.
-   //
-   //if(compiled && rCom && rScr && Platform::compareFileTimes(comModifyTime, scrModifyTime) < 0)
-   //{
-   //Con::warnf("exec: Warning! Found a DSO from the future! (%s)", nameBuffer);
-   //}
-
-   // If we had a DSO, let's check to see if we should be reading from it.
-   //MGT: fixed bug with dsos not getting recompiled correctly
-   //Note: Using Nathan Martin's version from the forums since its easier to read and understand
-   if (compiled && dsoFile != NULL && (scriptFile == NULL || (dsoModifiedTime >= scriptModifiedTime)))
-   { //MGT: end
-      compiledStream = FileStream::createAndOpen(nameBuffer, Torque::FS::File::Read);
-      if (compiledStream)
-      {
-         // Check the version!
-         compiledStream->read(&version);
-         if (version != Con::DSOVersion)
-         {
-            Con::warnf("exec: Found an old DSO (%s, ver %d < %d), ignoring.", nameBuffer, version, Con::DSOVersion);
-            delete compiledStream;
-            compiledStream = NULL;
-         }
-      }
-   }
-
-   // If we're journalling, let's write some info out.
-   if (journal && Journal::IsRecording())
-      Journal::WriteString(scriptFileName);
-
-   if (scriptFile != NULL && !compiledStream)
-   {
-      // If we have source but no compiled version, then we need to compile
-      // (and journal as we do so, if that's required).
-
-      void *data;
-      U32 dataSize = 0;
-      Torque::FS::ReadFile(scriptFileName, data, dataSize, true);
-
-      if (journal && Journal::IsRecording())
-         Journal::Write(bool(data != NULL));
-
-      if (data == NULL)
-      {
-         Con::errorf(ConsoleLogEntry::Script, "exec: invalid script file %s.", scriptFileName);
-         execDepth--;
-         return false;
-      }
-      else
-      {
-         if (!dataSize)
-         {
-            execDepth--;
-            return false;
-         }
-
-         script = (char *)data;
-
-         if (journal && Journal::IsRecording())
-         {
-            Journal::Write(dataSize);
-            Journal::Write(dataSize, data);
-         }
-      }
-
-#ifndef TORQUE_NO_DSO_GENERATION
-      if (compiled)
-      {
-         // compile this baddie.
-#ifdef TORQUE_DEBUG
-         Con::printf("Compiling %s...", scriptFileName);
-#endif   
-
-         CodeBlock *code = new CodeBlock();
-         code->compile(nameBuffer, scriptFileName, script);
-         delete code;
-         code = NULL;
-
-         compiledStream = FileStream::createAndOpen(nameBuffer, Torque::FS::File::Read);
-         if (compiledStream)
-         {
-            compiledStream->read(&version);
-         }
-         else
-         {
-            // We have to exit out here, as otherwise we get double error reports.
-            delete[] script;
-            execDepth--;
-            return false;
-         }
-      }
-#endif
-   }
-   else
-   {
-      if (journal && Journal::IsRecording())
-         Journal::Write(bool(false));
-   }
-
-   if (compiledStream)
-   {
-      // Delete the script object first to limit memory used
-      // during recursive execs.
-      delete[] script;
-      script = 0;
-
-      // We're all compiled, so let's run it.
-#ifdef TORQUE_DEBUG
-      Con::printf("Loading compiled script %s.", scriptFileName);
-#endif   
-      CodeBlock *code = new CodeBlock;
-      code->read(scriptFileName, *compiledStream);
-      delete compiledStream;
-      code->exec(0, scriptFileName, NULL, 0, NULL, noCalls, NULL, 0);
-      delete code;
-      ret = true;
-   }
-   else
-      if (scriptFile)
-      {
-         // No compiled script,  let's just try executing it
-         // directly... this is either a mission file, or maybe
-         // we're on a readonly volume.
-#ifdef TORQUE_DEBUG
-         Con::printf("Executing %s.", scriptFileName);
-#endif   
-
-         CodeBlock *newCodeBlock = new CodeBlock();
-         StringTableEntry name = StringTable->insert(scriptFileName);
-
-         newCodeBlock->compileExec(name, script, noCalls, 0);
-         ret = true;
-      }
-      else
-      {
-         // Don't have anything.
-         Con::warnf(ConsoleLogEntry::Script, "Missing file: %s!", scriptFileName);
-         ret = false;
-      }
-
-   delete[] script;
-   execDepth--;
-   return ret;
-}
-
-ConsoleValue evaluate(const char* string, bool echo, const char *fileName)
-{
-   ConsoleStackFrameSaver stackSaver;
-   stackSaver.save();
-
-   if (echo)
-   {
-      if (string[0] == '%')
-         Con::printf("%s", string);
-      else
-         Con::printf("%s%s", getVariable( "$Con::Prompt" ), string);
-   }
-
-   if(fileName)
-      fileName = StringTable->insert(fileName);
-
-   CodeBlock *newCodeBlock = new CodeBlock();
-   return std::move(newCodeBlock->compileExec(fileName, string, false, fileName ? -1 : 0));
-}
-
-//------------------------------------------------------------------------------
-ConsoleValue evaluatef(const char* string, ...)
-{
-   ConsoleStackFrameSaver stackSaver;
-   stackSaver.save();
-
-   char buffer[4096];
-   va_list args;
-   va_start(args, string);
-   dVsprintf(buffer, sizeof(buffer), string, args);
-   va_end(args);
-   CodeBlock *newCodeBlock = new CodeBlock();
-   return newCodeBlock->compileExec(NULL, buffer, false, 0);
-}
-
 //------------------------------------------------------------------------------
 
 // Internal execute for global function which does not save the stack
 ConsoleValue _internalExecute(S32 argc, ConsoleValue argv[])
 {
    StringTableEntry funcName = StringTable->insert(argv[0].getString());
-   if (argc > 1)
-   {
-      const char** argv_str = static_cast<const char**>(malloc(size_t(argc) * sizeof(char*)));
-      if (argv_str)
-      {
-         for (int i = 0; i < argc - 1; i++)
-         {
-            argv_str[i] = argv[i + 1].getString();
-         }
-      }
-      bool result;
-      const char* methodRes = CInterface::CallFunction(NULL, funcName, argv_str, argc - 1, &result);
-
-      free(argv_str);
-      if (result)
-      {
-         ConsoleValue ret;
-         ret.setString(methodRes);
-         return ret;
-      }
-   }
    Namespace::Entry *ent;
    
    ent = Namespace::global()->lookup(funcName);
@@ -1582,7 +1204,7 @@ ConsoleValue _internalExecute(S32 argc, ConsoleValue argv[])
       return std::move(ConsoleValue());
    }
 
-   return std::move(ent->execute(argc, argv, &gEvalState));
+   return std::move(ent->execute(argc, argv, NULL));
 }
 
 ConsoleValue execute(S32 argc, ConsoleValue argv[])
@@ -1644,51 +1266,25 @@ static ConsoleValue _internalExecute(SimObject *object, S32 argc, ConsoleValue a
    }
 
    StringTableEntry funcName = StringTable->insert(argv[0].getString());
-   if (argc > 2)
-   {
-      const char** argv_str = static_cast<const char**>(malloc(size_t(argc - 1) * sizeof(char*)));
-      if (argv_str)
-      {
-         for (int i = 0; i < argc - 2; i++)
-         {
-            argv_str[i] = argv[i + 2].getString();
-         }
-      }
-      bool result;
-      const char* methodRes = CInterface::CallMethod(object, funcName, argv_str, argc - 2, &result);
-
-      free(argv_str);
-
-      if (result)
-      {
-         ConsoleValue val;
-         val.setString(methodRes);
-         return val;
-      }
-   }
 
    if(object->getNamespace())
    {
       U32 ident = object->getId();
-      const char* oldIdent = dStrdup(argv[1].getString());
-      
       Namespace::Entry *ent = object->getNamespace()->lookup(funcName);
 
       if(ent == NULL)
       {
          //warnf(ConsoleLogEntry::Script, "%s: undefined for object '%s' - id %d", funcName, object->getName(), object->getId());
-
          STR.clearFunctionOffset();
          return std::move(ConsoleValue());
       }
 
+      const char* oldIdent = dStrdup(argv[1].getString());
+
       // Twiddle %this argument
       argv[1].setInt(ident);
 
-      SimObject *save = gEvalState.thisObject;
-      gEvalState.thisObject = object;
-      ConsoleValue ret = std::move(ent->execute(argc, argv, &gEvalState));
-      gEvalState.thisObject = save;
+      ConsoleValue ret = std::move(ent->execute(argc, argv, object));
 
       // Twiddle it back
       argv[1].setString(oldIdent);
@@ -1760,7 +1356,6 @@ inline ConsoleValue _executef(S32 checkArgc, S32 argc, ConsoleValue *argv)
 //------------------------------------------------------------------------------
 bool isFunction(const char *fn)
 {
-   if (CInterface::isMethod(NULL, fn)) return true;
    const char *string = StringTable->lookup(fn);
    if(!string)
       return false;
@@ -1793,6 +1388,84 @@ void setLogMode(S32 newMode)
       consoleLogMode = newMode;
    }
 }
+
+//------------------------------------------------------------------------------
+
+ReturnBuffer retBuffer;
+
+char* getReturnBuffer(U32 bufferSize)
+{
+   return retBuffer.getBuffer(bufferSize);
+}
+
+char* getReturnBuffer(const char* stringToCopy)
+{
+   U32 len = dStrlen(stringToCopy) + 1;
+   char* ret = retBuffer.getBuffer(len);
+   dMemcpy(ret, stringToCopy, len);
+   return ret;
+}
+
+char* getReturnBuffer(const String& str)
+{
+   const U32 size = str.size();
+   char* ret = retBuffer.getBuffer(size);
+   dMemcpy(ret, str.c_str(), size);
+   return ret;
+}
+
+char* getReturnBuffer(const StringBuilder& str)
+{
+   char* buffer = Con::getReturnBuffer(str.length() + 1);
+   str.copy(buffer);
+   buffer[str.length()] = '\0';
+
+   return buffer;
+}
+
+char* getArgBuffer(U32 bufferSize)
+{
+   return STR.getArgBuffer(bufferSize);
+}
+
+char* getFloatArg(F64 arg)
+{
+   char* ret = STR.getArgBuffer(32);
+   dSprintf(ret, 32, "%g", arg);
+   return ret;
+}
+
+char* getIntArg(S32 arg)
+{
+   char* ret = STR.getArgBuffer(32);
+   dSprintf(ret, 32, "%d", arg);
+   return ret;
+}
+
+char* getBoolArg(bool arg)
+{
+   char* ret = STR.getArgBuffer(32);
+   dSprintf(ret, 32, "%d", arg);
+   return ret;
+}
+
+char* getStringArg(const char* arg)
+{
+   U32 len = dStrlen(arg) + 1;
+   char* ret = STR.getArgBuffer(len);
+   dMemcpy(ret, arg, len);
+   return ret;
+}
+
+char* getStringArg(const String& arg)
+{
+   const U32 size = arg.size();
+   char* ret = STR.getArgBuffer(size);
+   dMemcpy(ret, arg.c_str(), size);
+   return ret;
+}
+
+//------------------------------------------------------------------------------
 
 Namespace *lookupNamespace(const char *ns)
 {
@@ -1895,13 +1568,27 @@ bool isCurrentScriptToolScript()
 #ifndef TORQUE_TOOLS
    return false;
 #else
-   const StringTableEntry cbFullPath = CodeBlock::getCurrentCodeBlockFullPath();
+   const StringTableEntry cbFullPath = getCurrentScriptModulePath();
    if(cbFullPath == NULL)
       return false;
    const StringTableEntry exePath = Platform::getMainDotCsDir();
 
    return dStrnicmp(exePath, cbFullPath, dStrlen(exePath)) == 0;
 #endif
+}
+
+//------------------------------------------------------------------------------
+
+bool isScriptFile(const char* pFilePath)
+{
+   return (Torque::FS::IsFile(pFilePath)
+      || Torque::FS::IsFile(pFilePath + String(".dso"))
+      || Torque::FS::IsFile(pFilePath + String(".mis"))
+      || Torque::FS::IsFile(pFilePath + String(".mis.dso"))
+      || Torque::FS::IsFile(pFilePath + String(".gui"))
+      || Torque::FS::IsFile(pFilePath + String(".gui.dso"))
+      || Torque::FS::IsFile(pFilePath + String("." TORQUE_SCRIPT_EXTENSION))
+      || Torque::FS::IsFile(pFilePath + String("." TORQUE_SCRIPT_EXTENSION) + String(".dso")));
 }
 
 //------------------------------------------------------------------------------
@@ -2232,7 +1919,7 @@ bool expandPath(char* pDstPath, U32 size, const char* pSrcPath, const char* pWor
    if (leadingToken == '.')
    {
       // Fetch the code-block file-path.
-      const StringTableEntry codeblockFullPath = CodeBlock::getCurrentCodeBlockFullPath();
+      const StringTableEntry codeblockFullPath = getCurrentScriptModulePath();
 
       // Do we have a code block full path?
       if (codeblockFullPath == NULL)
@@ -2652,3 +2339,5 @@ void ConsoleStackFrameSaver::restore()
       gCallStack.popFrame();
    }
 }
+
+//------------------------------------------------------------------------------

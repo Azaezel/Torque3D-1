@@ -9,6 +9,8 @@ function AssetBrowser_editAsset::saveAsset(%this)
    
    %assetType = AssetDatabase.getAssetType(%this.editedAssetId);
    %assetDef = AssetDatabase.acquireAsset(%this.editedAssetId);
+   %assetDef.refreshAsset();
+   
    AssetBrowser.call("on" @ %assetType @ "Changed", %assetDef);
    AssetDatabase.releaseAsset(%this.editedAssetId);
 
@@ -77,8 +79,7 @@ function AssetBrowser::editAssetInfo(%this)
    
    %assetDef = AssetDatabase.acquireAsset(EditAssetPopup.assetId);
    
-   eval("AssetBrowser.tempAsset = new " @ %assetDef.getClassName() @ "();");
-   AssetBrowser.tempAsset.assignFieldsFrom(%assetDef);
+   AssetBrowser.tempAsset = %assetDef.deepClone();
    
    AssetEditInspector.inspect(AssetBrowser.tempAsset);  
    AssetBrowser_editAsset.editedAssetId = EditAssetPopup.assetId;

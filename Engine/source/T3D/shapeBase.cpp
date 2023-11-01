@@ -344,7 +344,8 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
    }
 
    S32 i;
-   if (ShapeAsset::getAssetErrCode(mShapeAsset) != ShapeAsset::Failed && ShapeAsset::getAssetErrCode(mShapeAsset) != ShapeAsset::BadFileReference)
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus == AssetBase::Ok|| assetStatus == AssetBase::UsingFallback)
    {
       if (!server && !mShape->preloadMaterialList(mShape.getPath()) && NetConnection::filesWereDownloaded())
          shapeError = true;
@@ -2302,7 +2303,7 @@ void ShapeBase::updateAudioState(SoundThread& st)
          // if asset is valid, play
          if (st.asset->isAssetValid() )
          {
-            st.sound = SFX->createSource( st.asset->getSfxProfile() , &getTransform() );
+            st.sound = SFX->createSource( st.asset->getSFXTrack() , &getTransform() );
             if ( st.sound )
                st.sound->play();
          }

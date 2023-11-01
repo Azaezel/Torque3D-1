@@ -60,7 +60,7 @@
 
 // For the TickMs define... fix this for T2D...
 #include "T3D/gameBase/processList.h"
-#include "cinterface/cinterface.h"
+#include "console/script.h"
 
 #ifdef TORQUE_ENABLE_VFS
 #include "platform/platformVFS.h"
@@ -291,6 +291,8 @@ void StandardMainLoop::init()
 
    Con::setVariable( "defaultGame", StringTable->insert("scripts") );
 
+   Con::setVariable("TorqueScriptFileExtension", TORQUE_SCRIPT_EXTENSION);
+
    Con::addVariable( "_forceAllMainThread", TypeBool, &ThreadPool::getForceAllMainThread(), "Force all work items to execute on main thread. turns this into a single-threaded system. Primarily useful to find whether malfunctions are caused by parallel execution or not.\n"
 	   "@ingroup platform" );
 
@@ -440,11 +442,6 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
    // directly because the resource system restricts
    // access to the "root" directory.
 
-   bool foundExternalMain = false;
-   CInterface::CallMain(&foundExternalMain);
-   if (foundExternalMain)
-      return true;
-
 #ifdef TORQUE_ENABLE_VFS
    Zip::ZipArchive *vfs = openEmbeddedVFSArchive();
    bool useVFS = vfs != NULL;
@@ -453,7 +450,12 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
    Stream *mainCsStream = NULL;
 
    // The working filestream.
-   FileStream str; 
+   FileStream str;
+
+#ifdef TORQUE_ENTRY_FUNCTION
+   Con::executef(TORQUE_ENTRY_FUNCTION);
+   return true;
+#endif
 
    const char *defaultScriptName = "main." TORQUE_SCRIPT_EXTENSION;
    bool useDefaultScript = true;
@@ -470,6 +472,10 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
          useVFS = false;
 #endif
          mainCsStream = &str;
+      }
+      else if (String::compare(argv[1], "SkipMainCs") == 0)
+      {
+         return true;
       }
    }
 
@@ -566,7 +572,6 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
    Platform::setMainDotCsDir(buffer);
    Platform::setCurrentDirectory(buffer);
 
-   Con::setVariable("TorqueScriptFileExtension", TORQUE_SCRIPT_EXTENSION);
    Con::evaluate(script, false, useDefaultScript ? defaultScriptName : argv[1]); 
    delete[] script;
 
