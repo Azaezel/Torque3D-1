@@ -279,7 +279,7 @@ float4 compute4Lights( Surface surface,
                      float4 inLightConfigData[4],
                      float4 inLightColor[4],
                      float4 inLightSpotDir[4],
-                     float2 lightSpotParams[4],
+                     float2 inlightSpotParams[4],
                      int hasVectorLight,
                      float4 vectorLightDirection,
                      float4 vectorLightingColor,
@@ -304,7 +304,7 @@ float4 compute4Lights( Surface surface,
       float lightBrightness = inLightConfigData[i].y;
       float lightInvSqrRange= inLightConfigData[i].a;
 
-      float3 lighting = 0.0.xxx;
+      float3 lighting = float3(0.0,0.0,0.0);
 
       [branch]
       if(dist < lightRange)
@@ -315,10 +315,10 @@ float4 compute4Lights( Surface surface,
             //get punctual light contribution   
             lighting = getPunctualLight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, shadowed);
          }
-         else //spot
+         else if(inLightConfigData[i].x == 1) //spot
          {
             //get spot light contribution   
-            lighting = getSpotlight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, inLightSpotDir[i].xyz, lightSpotParams[i].xy, shadowed);
+            lighting = getSpotlight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, inLightSpotDir[i].xyz, inlightSpotParams[i].xy, shadowed);
          }
       }
       finalLighting += lighting;
