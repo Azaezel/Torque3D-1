@@ -225,7 +225,7 @@ float getDistanceAtt( float3 unormalizedLightVector , float invSqrAttRadius )
 
 float3 evaluateStandardBRDF(Surface surface, SurfaceToLight surfaceToLight)
 {
-   //lambert diffuse
+   //disney diffuse
    float3 Fd = Fr_DisneyDiffuse(surface.f0, surface.NdotV, surfaceToLight.NdotL, surfaceToLight.NdotH, surface.linearRoughness);
     
    //GGX specular
