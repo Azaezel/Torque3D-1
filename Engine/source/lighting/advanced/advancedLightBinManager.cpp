@@ -807,9 +807,9 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          const F32 innerCone = getMin(lightInfo->getInnerConeAngle(), outerCone-0.0001f);
          const F32 outerCos = mCos(mDegToRad(outerCone / 2.0f));
          const F32 innerCos = mCos(mDegToRad(innerCone / 2.0f));
-         Point2F spotParams(outerCos,innerCos - outerCos);
+         Point2F spotParams(outerCos,mMax(innerCos - outerCos,0.001f));
 
-         F32 concentration = 1.0-(innerCone/outerCone);
+         F32 concentration = 360.0f/ outerCone;
          matParams->setSafe( lightSpotParams, spotParams );
          matParams->setSafe( lightDirection, lightInfo->getDirection());
          matParams->setSafe( lightPosition, lightInfo->getPosition());
@@ -818,7 +818,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          const F32 invSqrRadius = 1.0f / mSquared(radius);
          matParams->setSafe(lightRange, radius);
          matParams->setSafe(lightInvSqrRange, invSqrRadius);
-         matParams->setSafe(lightBrightness, lightInfo->getBrightness() * mPow(radius* concentration,1.0f/3.0f) * lightInfo->getFadeAmount() );
+         matParams->setSafe(lightBrightness, lightInfo->getBrightness() * mPow(radius* concentration,1.0f) * lightInfo->getFadeAmount() );
       }
       break;
 
@@ -830,7 +830,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          const F32 invSqrRadius = 1.0f / (radius * radius);
          matParams->setSafe( lightRange, radius);
          matParams->setSafe( lightInvSqrRange, invSqrRadius);
-         matParams->setSafe(lightBrightness, lightInfo->getBrightness()* mPow(radius,1.0f/3.0f) * lightInfo->getFadeAmount());
+         matParams->setSafe(lightBrightness, lightInfo->getBrightness()* mPow(radius, 1.0f) * lightInfo->getFadeAmount());
       }
       break;
 

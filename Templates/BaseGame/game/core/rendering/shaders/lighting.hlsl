@@ -217,8 +217,8 @@ float getDistanceAtt( float3 unormalizedLightVector , float invSqrAttRadius )
 
  float getSpotAngleAtt( float3 normalizedLightVector , float3 lightDir , float2 lightSpotParams )
  {
-   float cd = dot ( lightDir , normalizedLightVector );
-   float attenuation = saturate ( ( cd - lightSpotParams.x ) / lightSpotParams.y );
+   float cd = max(dot ( lightDir , normalizedLightVector ),0.0);
+   float attenuation = saturate(((cd - lightSpotParams.x/(cd*1.001))/lightSpotParams.y));
    // smooth the transition
    return sqr(attenuation);
 }
