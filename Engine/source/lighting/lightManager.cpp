@@ -404,7 +404,7 @@ void LightManager::_update4LightConsts(   const SceneData &sgData,
             lightConfigData[i].x = 1;
 
             const F32 outerCone = light->getOuterConeAngle();
-            const F32 innerCone = getMin(light->getInnerConeAngle(), outerCone);
+            const F32 innerCone = getMin(light->getInnerConeAngle(), outerCone-0.0001f);
             const F32 outerCos = mCos(mDegToRad(outerCone / 2.0f));
             const F32 innerCos = mCos(mDegToRad(innerCone / 2.0f));
             Point2F spotParams(outerCos, mMax(innerCos - outerCos, 0.001f));
