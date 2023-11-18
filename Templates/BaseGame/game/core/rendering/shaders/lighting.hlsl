@@ -326,7 +326,7 @@ float4 compute4Lights( Surface surface,
 
    //Vector light
    [branch]
-   if(hasVectorLight)
+   if(hasVectorLight == 1)
    {
       SurfaceToLight surfaceToVecLight = createSurfaceToLight(surface, -vectorLightDirection.xyz);
 
