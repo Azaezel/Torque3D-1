@@ -314,7 +314,7 @@ vec4 compute4Lights( Surface surface,
             //get punctual light contribution   
             lighting = getPunctualLight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, shadowed);
          }
-         else //spot
+         else if(inLightConfigData[i].x == 1) //spot
          {
             //get spot light contribution   
             lighting = getSpotlight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, inLightSpotDir[i].xyz, inlightSpotParams[i], shadowed);
