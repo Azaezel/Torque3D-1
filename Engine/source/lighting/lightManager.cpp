@@ -391,7 +391,7 @@ void LightManager::_update4LightConsts(   const SceneData &sgData,
             if (light->getType() == LightInfo::Point)
             {
                lightConfigData[i].x = 0;
-               luxTargMultiplier[i] = mPow(range,2);
+               luxTargMultiplier[i] = range;
             }
             else if (light->getType() == LightInfo::Spot)
             {
@@ -412,7 +412,7 @@ void LightManager::_update4LightConsts(   const SceneData &sgData,
                lightSpotParams[i].x = spotParams.x;
                lightSpotParams[i].y = spotParams.y;
                F32 concentration = 360.0f / outerCone;
-               luxTargMultiplier[i] = mPow(range * concentration,2);
+               luxTargMultiplier[i] = range * concentration;
             }
 
             lightConfigData[i].y = light->getBrightness() * luxTargMultiplier[i];

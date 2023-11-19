@@ -819,7 +819,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          matParams->setSafe(lightInvSqrRange, invSqrRadius);
 
          F32 concentration = 360.0f/ outerCone;
-         luxTargMultiplier = mPow(radius * concentration,2);
+         luxTargMultiplier = radius * concentration;
       }
       break;
 
@@ -831,7 +831,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          const F32 invSqrRadius = 1.0f / (radius * radius);
          matParams->setSafe( lightRange, radius);
          matParams->setSafe( lightInvSqrRange, invSqrRadius);
-         luxTargMultiplier = mPow(radius,2);
+         luxTargMultiplier =radius;
       }
       break;
 
