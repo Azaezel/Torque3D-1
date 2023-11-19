@@ -333,7 +333,7 @@ void LightManager::_update4LightConsts(   const SceneData &sgData,
       static AlignedArray<Point4F> lightSpotDirs(MAX_FORWARD_LIGHTS, sizeof(Point4F));
       static AlignedArray<Point4F> lightColors(MAX_FORWARD_LIGHTS, sizeof(Point4F));
       static AlignedArray<Point4F> lightConfigData(MAX_FORWARD_LIGHTS, sizeof(Point4F)); //type, brightness, range, invSqrRange : rgba
-      static AlignedArray<Point4F> lightSpotParams(MAX_FORWARD_LIGHTS, sizeof(Point4F));
+      static AlignedArray<Point2F> lightSpotParams(MAX_FORWARD_LIGHTS, sizeof(Point4F));
 
       dMemset(lightPositions.getBuffer(), 0, lightPositions.getBufferSize());
       dMemset(lightSpotDirs.getBuffer(), 0, lightSpotDirs.getBufferSize());
@@ -391,7 +391,7 @@ void LightManager::_update4LightConsts(   const SceneData &sgData,
             if (light->getType() == LightInfo::Point)
             {
                lightConfigData[i].x = 0;
-               luxTargMultiplier[i] = range;
+               luxTargMultiplier[i] = mPow(range,2);
             }
             else if (light->getType() == LightInfo::Spot)
             {
@@ -412,7 +412,7 @@ void LightManager::_update4LightConsts(   const SceneData &sgData,
                lightSpotParams[i].x = spotParams.x;
                lightSpotParams[i].y = spotParams.y;
                F32 concentration = 360.0f / outerCone;
-               luxTargMultiplier[i] = range * concentration;
+               luxTargMultiplier[i] = mPow(range * concentration,2);
             }
 
             lightConfigData[i].y = light->getBrightness() * luxTargMultiplier[i];

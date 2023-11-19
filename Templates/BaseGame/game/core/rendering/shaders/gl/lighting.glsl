@@ -279,7 +279,7 @@ vec4 compute4Lights( Surface surface,
                      vec4 inLightConfigData[4],
                      vec4 inLightColor[4],
                      vec4 inLightSpotDir[4],
-                     vec4 inlightSpotParams[4],
+                     vec2 inlightSpotParams[4],
                      int hasVectorLight,
                      vec4 vectorLightDirection,
                      vec4 vectorLightingColor,
@@ -317,7 +317,7 @@ vec4 compute4Lights( Surface surface,
          else //spot
          {
             //get spot light contribution   
-            lighting = getSpotlight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, inLightSpotDir[i].xyz, inlightSpotParams[i].xy, shadowed);
+            lighting = getSpotlight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, inLightSpotDir[i].xyz, inlightSpotParams[i], shadowed);
          }
       }
       finalLighting += lighting;

@@ -2255,7 +2255,7 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    inLightSpotDir->constSortPos = cspPotentialPrimitive;
 
 
-   Var * lightSpotParams = new Var( "lightSpotParams", "float4" );
+   Var * lightSpotParams = new Var( "lightSpotParams", "float2" );
    lightSpotParams->uniform = true;
    lightSpotParams->arraySize = 4;
    lightSpotParams->constSortPos = cspPotentialPrimitive;
