@@ -59,6 +59,8 @@ RenderProbeMgr *RenderProbeMgr::smProbeManager = NULL;
 // This variable is a global toggle on if reflection probes should be rendered or not
 bool RenderProbeMgr::smRenderReflectionProbes = true;
 
+bool RenderProbeMgr::smBakeReflectionProbes = false;
+
 // This variable defines the maximum draw distance of a probe.
 F32 RenderProbeMgr::smMaxProbeDrawDistance = 100;
 
@@ -500,7 +502,8 @@ void RenderProbeMgr::reloadTextures()
 
 void RenderProbeMgr::preBake()
 {
-   Con::setVariable("$Probes::Capturing", "1");
+   RenderProbeMgr::smBakeReflectionProbes = true;
+   //Con::setVariable("$Probes::Capturing", "1");
    mRenderMaximumNumOfLights = AdvancedLightBinManager::smMaximumNumOfLights;
    mRenderUseLightFade = AdvancedLightBinManager::smUseLightFade;
 
@@ -509,7 +512,8 @@ void RenderProbeMgr::preBake()
 }
 void RenderProbeMgr::postBake()
 {
-   Con::setVariable("$Probes::Capturing", "0");
+   RenderProbeMgr::smBakeReflectionProbes = false;
+   //Con::setVariable("$Probes::Capturing", "0");
    AdvancedLightBinManager::smMaximumNumOfLights = mRenderMaximumNumOfLights;
    AdvancedLightBinManager::smUseLightFade = mRenderUseLightFade;
 }
@@ -563,7 +567,7 @@ void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
    reflDesc.farDist = farPlane;
    reflDesc.detailAdjust = (F32)resolution;
    reflDesc.objectTypeMask = probe->mCaptureMask;
-
+   
    CubeReflector cubeRefl;
    cubeRefl.registerReflector(probe, &reflDesc);
 
@@ -845,7 +849,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
    _setupPerFrameParameters(state);
 
    // Early out if nothing to draw.
-   if ((!RenderProbeMgr::smRenderReflectionProbes && !dStrcmp(Con::getVariable("$Probes::Capturing", "0"), "1")) || (!mHasSkylight && mProbeData.effectiveProbeCount == 0))
+   if ((!RenderProbeMgr::smRenderReflectionProbes && RenderProbeMgr::smBakeReflectionProbes )|| (!mHasSkylight && mProbeData.effectiveProbeCount == 0))
    {
       getProbeArrayEffect()->setSkip(true);
       mActiveProbes.clear();
@@ -875,8 +879,8 @@ void RenderProbeMgr::render( SceneRenderState *state )
    String probePerFrame = Con::getVariable("$pref::MaxProbesPerFrame", "8");
    mProbeArrayEffect->setShaderMacro("MAX_PROBES", probePerFrame);
 
-   String probeCapturing = Con::getVariable("$Probes::Capturing", "0");
-   mProbeArrayEffect->setShaderMacro("CAPTURING", probeCapturing);
+   //String probeCapturing = Con::getVariable("$Probes::Capturing", "0");
+   mProbeArrayEffect->setShaderMacro("CAPTURING", RenderProbeMgr::smBakeReflectionProbes ? String("1"): String("2"));
    
    mProbeArrayEffect->setTexture(3, mBRDFTexture);
    mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);

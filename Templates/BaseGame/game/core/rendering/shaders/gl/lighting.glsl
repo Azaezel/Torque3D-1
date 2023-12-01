@@ -133,7 +133,7 @@ Surface createSurface(vec4 gbuffer0, sampler2D gbufferTex1, sampler2D gbufferTex
    surface.V = normalize(wsEyePos - surface.P);
    surface.baseColor = gbuffer1;
    surface.roughness = gbuffer2.b*0.92f+0.04f;
-   surface.metalness = gbuffer2.a;
+   surface.metalness = gbuffer2.a*0.92f+0.04f;
    surface.ao = gbuffer2.g;
    surface.matFlag = gbuffer2.r;
 
@@ -151,7 +151,7 @@ Surface createForwardSurface(vec4 baseColor, vec3 normal, vec4 pbrProperties, in
    surface.V = normalize(wsEyePos - surface.P);
    surface.baseColor = baseColor;
    surface.roughness = pbrProperties.b*0.92f+0.04f;
-   surface.metalness = pbrProperties.a;
+   surface.metalness = pbrProperties.a*0.92f+0.04f;
    surface.ao = pbrProperties.g;
    surface.matFlag = pbrProperties.r;
 

@@ -134,7 +134,7 @@ inline Surface createSurface(float4 gbuffer0, TORQUE_SAMPLER2D(gbufferTex1), TOR
 	surface.V = normalize(wsEyePos - surface.P);
 	surface.baseColor = gbuffer1;
 	surface.roughness = gbuffer2.b*0.92f+0.04f;
-	surface.metalness = gbuffer2.a;
+	surface.metalness = gbuffer2.a*0.92f+0.04f;
    surface.ao = gbuffer2.g;
    surface.matFlag = gbuffer2.r;
 
@@ -152,7 +152,7 @@ inline Surface createForwardSurface(float4 baseColor, float3 normal, float4 pbrP
    surface.V = normalize(wsEyePos - surface.P);
    surface.baseColor = baseColor;
    surface.roughness = pbrProperties.b*0.92f+0.04f;
-   surface.metalness = pbrProperties.a;
+   surface.metalness = pbrProperties.a*0.92f+0.04f;
    surface.ao = pbrProperties.g;
    surface.matFlag = pbrProperties.r;
 
