@@ -503,20 +503,27 @@ void RenderProbeMgr::reloadTextures()
 void RenderProbeMgr::preBake()
 {
    RenderProbeMgr::smBakeReflectionProbes = true;
+   GFXShader::addGlobalMacro("CAPTURING", String("1"));
+
    //Con::setVariable("$Probes::Capturing", "1");
    mRenderMaximumNumOfLights = AdvancedLightBinManager::smMaximumNumOfLights;
    mRenderUseLightFade = AdvancedLightBinManager::smUseLightFade;
 
    AdvancedLightBinManager::smMaximumNumOfLights = -1;
    AdvancedLightBinManager::smUseLightFade = false;
+   ShaderData::reloadAllShaders();
 }
+
 void RenderProbeMgr::postBake()
 {
    RenderProbeMgr::smBakeReflectionProbes = false;
+   GFXShader::addGlobalMacro("CAPTURING", String("0"));
    //Con::setVariable("$Probes::Capturing", "0");
    AdvancedLightBinManager::smMaximumNumOfLights = mRenderMaximumNumOfLights;
    AdvancedLightBinManager::smUseLightFade = mRenderUseLightFade;
+   ShaderData::reloadAllShaders();
 }
+
 void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
 {
    GFXDEBUGEVENT_SCOPE(RenderProbeMgr_Bake, ColorI::WHITE);
@@ -876,8 +883,6 @@ void RenderProbeMgr::render( SceneRenderState *state )
    String probePerFrame = Con::getVariable("$pref::MaxProbesPerFrame", "8");
    mProbeArrayEffect->setShaderMacro("MAX_PROBES", probePerFrame);
 
-   mProbeArrayEffect->setShaderMacro("CAPTURING", RenderProbeMgr::smBakeReflectionProbes ? String("1") : String("0"));
-
    mProbeArrayEffect->setTexture(3, mBRDFTexture);
    mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
    mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
@@ -939,7 +944,6 @@ void RenderProbeMgr::render( SceneRenderState *state )
    mProbeArrayEffect->setShaderConst("$refScaleArray", mProbeData.refScaleArray);
    mProbeArrayEffect->setShaderConst("$probeConfigData", mProbeData.probeConfigArray);
    mProbeArrayEffect->setShaderConst("$maxProbeDrawDistance", smMaxProbeDrawDistance);
-
    // Make sure the effect is gonna render.
    getProbeArrayEffect()->setSkip(false);
 }
