@@ -609,7 +609,6 @@ void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
    const GFXFormat oldRefFmt = REFLECTMGR->getReflectFormat();
    REFLECTMGR->setReflectFormat(reflectFormat);
 
-   mProbeArrayEffect->setShaderConst("$capturing", RenderProbeMgr::smBakeReflectionProbes? 1 : 0 );
    cubeRefl.updateReflection(reflParams, clientProbe->getTransform().getPosition() + clientProbe->mProbeRefOffset);
 
    //Now, save out the maps
@@ -877,6 +876,8 @@ void RenderProbeMgr::render( SceneRenderState *state )
    String probePerFrame = Con::getVariable("$pref::MaxProbesPerFrame", "8");
    mProbeArrayEffect->setShaderMacro("MAX_PROBES", probePerFrame);
 
+   mProbeArrayEffect->setShaderMacro("CAPTURING", RenderProbeMgr::smBakeReflectionProbes ? String("1") : String("0"));
+
    mProbeArrayEffect->setTexture(3, mBRDFTexture);
    mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
    mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
@@ -938,7 +939,6 @@ void RenderProbeMgr::render( SceneRenderState *state )
    mProbeArrayEffect->setShaderConst("$refScaleArray", mProbeData.refScaleArray);
    mProbeArrayEffect->setShaderConst("$probeConfigData", mProbeData.probeConfigArray);
    mProbeArrayEffect->setShaderConst("$maxProbeDrawDistance", smMaxProbeDrawDistance);
-   mProbeArrayEffect->setShaderConst("$capturing", RenderProbeMgr::smBakeReflectionProbes ? 1 : 0);
 
    // Make sure the effect is gonna render.
    getProbeArrayEffect()->setSkip(false);
