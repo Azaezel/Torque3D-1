@@ -524,8 +524,6 @@ void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
    Con::warnf("RenderProbeMgr::bakeProbe() - Beginning bake!");
    U32 startMSTime = Platform::getRealMilliseconds();
 
-   preBake();
-
    String path = Con::getVariable("$pref::ReflectionProbes::CurrentLevelPath", "levels/");
    U32 resolution = Con::getIntVariable("$pref::ReflectionProbes::BakeResolution", 64);
    U32 prefilterMipLevels = mLog2(F32(resolution)) + 1;
@@ -611,6 +609,7 @@ void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
    const GFXFormat oldRefFmt = REFLECTMGR->getReflectFormat();
    REFLECTMGR->setReflectFormat(reflectFormat);
 
+   mProbeArrayEffect->setShaderConst("$capturing", RenderProbeMgr::smBakeReflectionProbes? 1 : 0 );
    cubeRefl.updateReflection(reflParams, clientProbe->getTransform().getPosition() + clientProbe->mProbeRefOffset);
 
    //Now, save out the maps
@@ -645,7 +644,6 @@ void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
    if (!renderWithProbes)
       RenderProbeMgr::smRenderReflectionProbes = probeRenderState;
 
-   postBake();
 
    cubeRefl.unregisterReflector();
 
@@ -849,7 +847,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
    _setupPerFrameParameters(state);
 
    // Early out if nothing to draw.
-   if ((!RenderProbeMgr::smRenderReflectionProbes && RenderProbeMgr::smBakeReflectionProbes )|| (!mHasSkylight && mProbeData.effectiveProbeCount == 0))
+   if (!RenderProbeMgr::smRenderReflectionProbes || (!mHasSkylight && mProbeData.effectiveProbeCount == 0))
    {
       getProbeArrayEffect()->setSkip(true);
       mActiveProbes.clear();
@@ -879,9 +877,6 @@ void RenderProbeMgr::render( SceneRenderState *state )
    String probePerFrame = Con::getVariable("$pref::MaxProbesPerFrame", "8");
    mProbeArrayEffect->setShaderMacro("MAX_PROBES", probePerFrame);
 
-   //String probeCapturing = Con::getVariable("$Probes::Capturing", "0");
-   mProbeArrayEffect->setShaderMacro("CAPTURING", RenderProbeMgr::smBakeReflectionProbes ? String("1"): String("2"));
-   
    mProbeArrayEffect->setTexture(3, mBRDFTexture);
    mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
    mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
@@ -943,6 +938,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
    mProbeArrayEffect->setShaderConst("$refScaleArray", mProbeData.refScaleArray);
    mProbeArrayEffect->setShaderConst("$probeConfigData", mProbeData.probeConfigArray);
    mProbeArrayEffect->setShaderConst("$maxProbeDrawDistance", smMaxProbeDrawDistance);
+   mProbeArrayEffect->setShaderConst("$capturing", RenderProbeMgr::smBakeReflectionProbes ? 1 : 0);
 
    // Make sure the effect is gonna render.
    getProbeArrayEffect()->setSkip(false);
@@ -957,11 +953,15 @@ void RenderProbeMgr::render( SceneRenderState *state )
 DefineEngineMethod(RenderProbeMgr, bakeProbe, void, (ReflectionProbe* probe), (nullAsType< ReflectionProbe*>()),
    "@brief Bakes the cubemaps for a reflection probe\n\n.")
 {
+   object->preBake();
    if(probe != nullptr)
       object->bakeProbe(probe);
+   object->postBake();
 }
 
 DefineEngineMethod(RenderProbeMgr, bakeProbes, void, (),, "@brief Iterates over all reflection probes in the scene and bakes their cubemaps\n\n.")
 {
+   object->preBake();
    object->bakeProbes();
+   object->postBake();
 }
