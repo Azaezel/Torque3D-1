@@ -238,7 +238,7 @@ vec3 evaluateStandardBRDF(Surface surface, SurfaceToLight surfaceToLight)
    vec3 Fr = D * F * Vis;
 
 #if CAPTURING == 1
-   return mix(Fd + Fr, surface.baseColor, surface.metalness);
+   return mix(Fd + Fr, surface.baseColor.rgb, surface.metalness);
 #else
    return Fd + Fr;
 #endif

@@ -239,7 +239,7 @@ float3 evaluateStandardBRDF(Surface surface, SurfaceToLight surfaceToLight)
    float3 Fr = D * F * Vis;
 
 #if CAPTURING == 1
-    return lerp(Fd + Fr,surface.baseColor,surface.metalness);
+    return lerp(Fd + Fr,surface.baseColor.rgb,surface.metalness);
 #else
    return Fd + Fr;
 #endif
