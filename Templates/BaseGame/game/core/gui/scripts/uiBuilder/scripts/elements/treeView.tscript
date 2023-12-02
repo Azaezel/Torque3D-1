@@ -1,0 +1,38 @@
+function GuiFormBuilder::createTreeView(%base, %rootName)
+{
+   if(%rootName $= "")
+      %rootName = "Root";
+      
+   %scroll = new GuiScrollCtrl()
+   {
+      profile = ToolsGuiScrollProfile;
+      position = "0 0";
+      extent = %base.extent;
+      internalName = "scroll";  
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   
+   %stack = new GuiTreeViewCtrl()
+   {
+      profile = ToolsGuiTreeViewProfile;
+      superClass = GuiFormBuilderTreeView;
+      position = "0 0";
+      extent = %scroll.extent.x - 15 SPC %scroll.extent.y - 1; //a little bit of pad to ensure we don't accidently always force the scroll bars on
+      internalName = "tree";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+      rootName = %rootName;
+   };
+   
+   %scroll.add(%stack);
+   %base.add(%scroll);
+   
+   return %stack;
+}
+
+function GuiFormBuilderTreeView::onWake(%this)
+{
+   %this.insertItem(0, %this.rootName);
+}

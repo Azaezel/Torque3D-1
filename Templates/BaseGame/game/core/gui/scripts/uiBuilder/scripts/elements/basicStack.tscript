@@ -1,0 +1,48 @@
+function GuiFormBuilder::createStack(%base)
+{
+   %stack = new GuiStackControl()
+   {
+      profile = ToolsGuiDefaultProfile;
+      superClass = GuiFormBuilder;
+      position = "0 0";
+      extent = %base.extent;
+      internalName = "content";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+   };
+
+   %base.add(%stack);
+   
+   return %stack;
+}
+
+function GuiFormBuilder::createScrollStack(%base)
+{
+   %scroll = new GuiScrollCtrl()
+   {
+      profile = ToolsGuiScrollProfile;
+      superClass = GuiFormBuilder;
+      position = "0 0";
+      extent = %base.extent;
+      internalName = "scroll";  
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   
+   %stack = new GuiStackControl()
+   {
+      profile = ToolsGuiDefaultProfile;
+      position = "0 0";
+      extent = %scroll.extent.x - 15 SPC %scroll.extent.y - 1; //a little bit of pad to ensure we don't accidently always force the scroll bars on
+      internalName = "content";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+   };
+   
+   %scroll.add(%stack);
+   %base.add(%scroll);
+   
+   return %scroll;
+}

@@ -1,0 +1,332 @@
+function UIBuilder::Window(%title, %pos, %ext, %dockable)
+{
+   if(%pos $= "")
+      %pos = "25 25";
+   
+   if(%ext $= "")
+      %ext = "200 400";
+      
+   if(%dockable $= "")
+      %dockable = false;
+   
+   %window = new GuiWindowCtrl()
+   {
+      class = UIBuilderWindow;
+      profile = ToolsGuiWindowCollapseProfile;
+      text = %title;
+      position = %pos;
+      extent = %ext;
+      internalName = "GBFB_" @ %title;  
+      isDockable = %dockable;
+   };
+   
+   %frameset = new GuiFrameSetCtrl()
+   {
+      profile = ToolsGuiDefaultProfile;
+      class = UIBuilderFrameset;
+      position = $GUIFormBuilder::edgePad SPC 20;
+      extent = (%window.extent.x - ($GUIFormBuilder::edgePad * 2)) SPC (%window.extent.y - 20 - $GUIFormBuilder::edgePad);
+      internalName = "frameSet";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+   };
+   
+   %window.add(%frameset);
+   
+   %scroll = new GuiScrollCtrl()
+   {
+      profile = ToolsGuiScrollProfile;
+      position = "0 0";
+      extent = %frameset.extent;
+      internalName = "scroll";  
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   %frameset.add(%scroll);
+   
+   %content = new GuiStackControl()
+   {
+      profile = ToolsGuiStackControl;
+      position = "0 0";
+      extent = %frameset.extent;
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   %scroll.add(%content);
+   
+   UIBuilderStack.push_back(%content);
+   
+   return %window;
+}
+
+function UIBuilder::dockWindow(%targetWindow, %window)
+{
+   %windowContent = %window-->scroll;
+   
+   %tab = new GuiTabPageCtrl() {
+       profile = ToolsGuiTabPageProfile;
+       position = "0 0";
+       text = %window.text @ "     ";
+       horizScaling = "width";
+       vertScaling = "height";
+       fitBook=true;
+       originalWindow = %window;
+   };
+   
+   %targetBook = %targetWindow-->tabbook;
+   if(!isObject(%targetBook))
+   {
+      %frameSet = UIBuilder::FrameSet(%targetWindow.extent.x SPC %targetWindow.extent.y - 20);
+      
+      %frameSet.position = "0 20";
+      
+      %targetWindow.add(%frameSet);
+      
+      %targetWindowTab = new GuiTabPageCtrl() {
+          profile = ToolsGuiTabPageProfile;
+          text = %targetWindow.text @ "     ";
+          horizScaling = "width";
+          vertScaling = "height";
+          fitBook=true;
+          originalWindow = %targetWindow;
+      };
+      
+      %targetWindowTab.add(%targetWindow-->scroll);
+      
+      %frameSet-->tabbook.add(%targetWindowTab);
+      
+      %targetBook = %frameSet-->tabbook;
+   }
+   
+   %targetBook.add(%tab);
+   
+   %tab.add(%windowContent);
+   
+   //store and hide the original window so we can just recover it later
+   %tab.add(%window);
+   %window.pos = "-20 -20";
+   %window.extent = "5 5";
+   %window.containerTab = %tab;
+   
+   %tab.extent = %targetBook.extent;
+}
+
+function UIBuilder::undockWindow(%tab)
+{
+   %originalWindow = %tab.originalWindow;
+   if(!isObject(%originalWindow))
+   {
+      error("UIBuilder::undockWindow() - attempting to undock a tab that doesn't have an original window.");
+      return;
+   }
+
+   %tab.remove(%originalWindow);
+   
+   %originalWindow.position = Canvas.getCursorPos();
+   %originalWindow.extent = %tab.extent;
+   %windowContent = %tab.getObject(0);
+   %originalWindow.add(%windowContent);
+   %windowContent.extent = %originalWindow.extent;
+   %windowContent.position = "0 20";
+   
+   %originalWindow.text = trim(%tab.text);
+   %originalWindow.showHeader(true);
+   
+   %originalTabbook = %tab.getParent();
+   %originalTabbook.remove(%tab);
+   
+   if(%originalTabbook.getCount() == 1)
+   {
+      //if we're now down to one, convert the original window back to a window rather than a tabbook for only one tab
+      %parentWindow = %originalTabbook.getParent();
+      %parentWindowTab =  %originalTabbook.getObject(0);
+      %parentWindowContent = %parentWindowTab.getObject(0);
+      %parentWindow.add(%parentWindowContent);
+      
+      %parentWindowContent.extent = %parentWindowTab.extent;
+      %parentWindowContent.position = "0 20";
+      
+      %parentWindow.text = trim(%parentWindowTab.text);
+      %parentWindow.showHeader(true);
+      
+      %originalTabbook.delete();
+   }
+   
+   %tab.delete();
+   
+   %originalWindow.onMouseDragged();
+}
+
+function UIBuilderWindow::onMouseDragged(%this)
+{
+   if(!%this.isDockable)
+      return;
+      
+   //container it in a dnd control
+   echo("UIBuilderWindow::onMouseDragged()");
+   
+   if(!isObject(EditorDragAndDropLayer))
+   {
+      new GuiControl(EditorDragAndDropLayer)
+      {
+         position = "0 0";
+         extent = Canvas.extent;
+      };
+   }
+   
+   %cursorpos = Canvas.getCursorPos();
+   %xPos = getWord( %cursorpos, 0 );
+   %yPos = getWord( %cursorpos, 1 );
+   
+   // Create the drag control.
+   %ctrl = new GuiDragAndDropControl()
+   {
+      canSaveDynamicFields    = "0";
+      Profile                 = "GuiSolidDefaultProfile";
+      HorizSizing             = "right";
+      VertSizing              = "bottom";
+      Position                = %xPos SPC %yPos;
+      extent                  = %this.extent;
+      MinExtent               = "4 4";
+      canSave                 = "1";
+      Visible                 = "1";
+      hovertime               = "1000";
+
+      // Let the GuiDragAndDropControl delete itself on mouse-up.  When the drag is aborted,
+      // this not only deletes the drag control but also our payload.
+      deleteOnMouseUp         = true;
+      
+      useWholeCanvas = true;
+
+      // To differentiate drags, use the namespace hierarchy to classify them.
+      // This will allow a color swatch drag to tell itself apart from a file drag, for example.
+      class                   = "UIBuilderCustomLayoutDrop";
+   };
+   
+   // Add the temporary color swatch to the drag control as the payload.
+   %ctrl.add( %this );
+   
+   %this.position = "0 0";
+   
+   // Start drag by adding the drag control to the canvas and then calling startDragging().
+   //Canvas.getContent().add( %ctrl );
+   EditorDragAndDropLayer.add(%ctrl);
+   Canvas.pushDialog(EditorDragAndDropLayer);
+   
+   %ctrl.startDragging( 0, 0);
+   
+   $EditorGui::draggingWindowCtrl = %ctrl;
+   
+   Canvas.repaint();
+}
+
+/*function DockableWindowTabBook::onMouseDown(%this)
+{
+   %hoverPageNum = %this.getHoveredPage();
+
+   if(%hoverPageNum != -1)
+   {
+      $UIBuilder::isDraggingTab = true;
+      $UIBuilder::isDraggingWindow = false;
+      $UIBuilder::draggedTab = %this.getObject(%hoverPageNum);
+   }
+   else
+   {
+      $UIBuilder::isDraggingTab = false;
+      $UIBuilder::isDraggingWindow = true;
+   }
+   
+   $UIBuilder::dragStartPos = Canvas.getCursorPos();
+}
+
+function DockableWindowTabBook::onMouseUp(%this)
+{
+   echo("Ending drag!");
+   
+   $UIBuilder::isDraggingTab = false;
+   $UIBuilder::isDraggingWindow = false;
+}
+
+function DockableWindowTabBook::onMouseDragged(%this)
+{
+   if($UIBuilder::isDraggingTab)
+   {
+      %dragCurrentPos = Canvas.getCursorPos();
+      %dragDelta = VectorSub($UIBuilder::dragStartPos, %dragCurrentPos);
+      
+      if(VectorLen(%dragDelta) > 10)
+      {
+         UIBuilder::undockWindow($UIBuilder::draggedTab);
+         $UIBuilder::isDraggingTab = false;
+         $UIBuilder::isDraggingWindow = false;
+      }  
+   }
+   else if($UIBuilder::isDraggingWindow)
+   {
+      $UIBuilder::isDraggingTab = false;
+      $UIBuilder::isDraggingWindow = false;
+      echo(%this.getParent().getClassName());
+      %this.getParent().onMouseDragged();
+   }
+}
+
+function DockableWindowTabBook::onMouseMove(%this)
+{
+   if(!$UIBuilder::isDraggingTab && !$UIBuilder::isDraggingWindow)
+   {
+      %parentWindow = %this.getParent();
+      
+      %hoverPageNum = %this.getHoveredPage();
+      if(%hoverPageNum != -1)
+      {
+         %rect = %this.getTabRect(%hoverPageNum);
+         
+         if(!isObject(%parentWindow.closeTabButton))
+         {
+            %parentWindow.closeTabButton = new GuiBitmapButtonCtrl(){
+               bitmapAsset = "Core_GUI:button_image";
+               extent = 20 SPC 20;
+               command = %this @ ".closeTab(" @ %hoverPageNum @ ");";
+            };
+            
+            %parentWindow.add(%parentWindow.closeTabButton);
+         }
+         
+         %parentWindow.closeTabButton.position = %rect.x + %rect.z - 20 SPC 0;
+         %parentWindow.closeTabButton.hidden = false;
+      }
+      else
+      {
+         %parentWindow.closeTabButton.hidden = true;  
+         %parentWindow.closeTabButton.position = -10 SPC -10;
+      }
+   }
+}
+
+function DockableWindowTabBook::closeTab(%this, %tabNum)
+{
+   %tab = %this.getObject(%tabNum);
+   %this.remove(%tab);
+   
+   %tab.delete();
+   
+   %parentWindow = %this.getParent();
+   if(isObject(%parentWindow.closeTabButton))
+   {
+      %parentWindow.closeTabButton.hidden = true;  
+      %parentWindow.closeTabButton.position = -10 SPC -10;
+   }
+}
+*/
+function UIBuilderCustomLayoutDrop::onControlDragCancelled(%this)
+{
+   %window = %this.getObject(0);
+   
+   %window.position = %this.position;
+   
+   Canvas.getContent().add(%window);
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
+   $EditorGui::draggingWindowCtrl = "";
+}

@@ -1,0 +1,97 @@
+
+function testFBFunc2()
+{
+   %window = GuiFormBuilder::createWindow("Test Alt Window", "", "500 400");
+   %splitContainer = %window.createSplitContainer();
+   
+   %tree = %splitContainer-->panel1.createTreeView();
+   %book = %splitContainer-->panel2.createTabBook();
+   
+   %page = %book.createTabPage("Test Page");
+   
+   %mainStack = %page.createScrollStack();
+   
+   %rollout = %mainStack.createRollout("Test Rollout");
+   %rolloutStack = %rollout.createStack();
+   
+   %rolloutStack.createTextField("A Test Field", "AAAAAAAAA");
+   %propField = %rolloutStack.createTextPropertyField("Another Test Field", "$GUIFormBuilder::edgePad");
+   
+   %pageTwo = %book.createTabPage("Other Page");
+}
+
+function UIBuilder::test1()
+{
+   %window = UIBuilder::Window("Test Window", "50 50", "200 500", true);
+
+      UIBuilder::Rollout("Test Rollout");
+      
+         UIBuilder::TextField("A Test Field", "AAAAAAAAAAA");
+         
+      UIBuilder::End();
+      
+      UIBuilder::TextField("Indented Field", "MMMMMKAAAAAY");
+
+   UIBuilder::End();
+   
+   MainMenuGui.add(%window);
+}
+
+function UIBuilder::test2()
+{
+   %windowA = UIBuilder::Window("Test Window", "50 50", "400 600", true);
+
+      UIBuilder::Rollout("Test Rollout");
+      
+         UIBuilder::TextField("A Test Field", "AAAAAAAAAAA");
+         
+      UIBuilder::End();
+      
+      UIBuilder::TextField("Indented Field", "MMMMMKAAAAAY");
+
+   UIBuilder::End();
+   
+   MainMenuGui.add(%windowA);
+   
+   %windowB = UIBuilder::Window("Another Window", "450 50", "400 600", true);
+
+      UIBuilder::Rollout("Test Rollout");
+      
+         UIBuilder::TextField("A Test Field", "AAAAAAAAAAA");
+         
+      UIBuilder::End();
+      
+      UIBuilder::TextField("Indented Field", "MMMMMKAAAAAY");
+
+   UIBuilder::End();
+   
+   MainMenuGui.add(%windowB);
+   
+   UIBuilder::dockWindow(%windowA, %windowB);
+}
+
+function UIBuilder::test3()
+{
+   %layout = UIBuilder::FrameSet(MainMenuGui.extent);
+   UIBuilder::End();
+   
+   %windowA = UIBuilder::Window("Test Window", "50 50", "300 500", true);
+      UIBuilder::Rollout("Test Rollout A");
+      
+         UIBuilder::TextField("A Test Field", "AAAAAAAAAAA");
+         
+      UIBuilder::End();
+   UIBuilder::End();
+   
+   %windowB = UIBuilder::Window("Another Test Window", "350 50", "300 500", true);
+      UIBuilder::Rollout("Test Rollout B");
+      
+         UIBuilder::TextField("Another Field", "BBBBBBBBBBB");
+         
+      UIBuilder::End();
+   UIBuilder::End();
+   
+   MainMenuGui.add(%layout);
+   MainMenuGui.add(%windowA);
+   MainMenuGui.add(%windowB);
+}

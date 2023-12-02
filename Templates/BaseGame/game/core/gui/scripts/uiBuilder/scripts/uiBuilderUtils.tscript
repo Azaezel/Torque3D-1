@@ -1,0 +1,15 @@
+function UIBuilder::Indent()
+{
+   $UIBuilder::indentCount++;
+}
+
+function UIBuilder::EndIndent()
+{
+   $UIBuilder::indentCount--;
+}
+
+function UIBuilder::End()
+{
+   if(UIBuilderStack.count() != 0)
+      UIBuilderStack.pop_back();
+}

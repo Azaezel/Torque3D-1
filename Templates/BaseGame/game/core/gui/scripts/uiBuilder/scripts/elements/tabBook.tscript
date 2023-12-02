@@ -1,0 +1,26 @@
+function GuiFormBuilder::createTabBook(%base)
+{
+   if(isObject(%base-->content))
+      %base = %base-->content;
+      
+   %book = new GuiTabBookCtrl()
+   {
+      superClass = GuiFormBuilder;
+      class = GuiFormBuilderTabBook;
+      profile = ToolsGuiTabBookProfile;
+      position = "0 0";
+      extent = %base.extent;
+      internalName = "book";  
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+
+   %base.add(%book);
+   
+   return %book;
+}
+
+function GuiFormBuilderTabBook::setAllowReorder(%this, %canReorder)
+{
+   %this.allowReorder = %canReorder;
+}

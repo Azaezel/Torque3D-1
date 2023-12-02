@@ -1,0 +1,38 @@
+function UIBuilder::Rollout(%title)
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::Rollout() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   %rollout = new GuiRolloutCtrl()
+   {
+      caption = %title;
+      profile = GuiInspectorGroupProfile;
+      position = "0 0";
+      extent = %baseCtrl.extent.x SPC 50;
+      internalName = "rollout";  
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad;
+   };
+   
+   %content = new GuiStackControl()
+   {
+      profile = ToolsGuiStackControl;
+      position = $GUIFormBuilder::edgePad SPC 20;
+      extent = (%baseCtrl.extent.x - ($GUIFormBuilder::edgePad * 2)) SPC (%baseCtrl.extent.y - 20 - $GUIFormBuilder::edgePad);
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   
+   %rollout.add(%content);
+   
+   UIBuilderStack.push_back(%content);
+   
+   %baseCtrl.add(%rollout);
+   
+   return true;
+}

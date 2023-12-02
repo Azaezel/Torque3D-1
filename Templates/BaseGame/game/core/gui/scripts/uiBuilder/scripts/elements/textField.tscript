@@ -1,0 +1,81 @@
+function UIBuilder::TextField(%labelText, %defaultValue)
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::TextField() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   %container = new GuiControl()
+   {
+      position = 0 SPC 0;
+      extent = %baseCtrl.extent.x SPC $GUIFormBuilder::rowHeight;
+      internalName = "textFieldContainer";
+      horizSizing = "right";
+      vertSizing = "bottom";
+   };
+   
+   %label = new GuiTextCtrl()
+   {
+      profile = ToolsGuiTextProfile;
+      position = "0 0";
+      extent = (%baseCtrl.extent.x / 2) SPC $GUIFormBuilder::rowHeight;
+      text = %labelText;
+      internalName = "textFieldLabel";
+      horizSizing = "width";
+      vertSizing = "bottom";
+   };
+   %container.add(%label);
+   
+   %edit = new GuiTextEditCtrl()
+   {
+      profile = ToolsGuiTextEditProfile;
+      position = (%baseCtrl.extent.x / 2) SPC 0;
+      extent = (%baseCtrl.extent.x / 2) SPC $GUIFormBuilder::rowHeight; 
+      text = %defaultValue;
+      internalName = "textFieldEdit";
+      horizSizing = "width";
+      vertSizing = "bottom";
+   };
+   %container.add(%edit);
+   
+   %baseCtrl.add(%container);
+   
+   return true;
+}
+
+function GuiFormBuilder::createTextPropertyField(%base, %labelText, %target, %accessor)
+{
+   %targetType = "";
+   
+   if(isObject(%target) && %accessor !$= "")
+   {
+      if(%target.getClass() $= "Settings")
+      {
+         %targetType = "settings";
+         %defaultValue = %target.value(%accessor); 
+      }
+      else
+      {
+         %targetType = "object";
+         %defaultValue = %target.getField(%accessor); 
+      }
+   }
+   else if(isDefined(%target))
+   {
+      %targetType = "variable";
+      %getValueCommand = "$result = " @ %target @ ";";
+      eval(%getValueCommand);
+      %defaultValue = $result;  
+   }
+   
+   %fieldContainer = %base.createTextField(%labelText, %defaultValue);
+   %fieldContainer-->textFieldEdit.superClass = GuiFormBuilderPropertyField; //this integrates in callbacks so changes to the field apply changes to the target
+   %fieldContainer-->textFieldEdit.target = %target;
+   %fieldContainer-->textFieldEdit.targetType = %targetType;
+   %fieldContainer-->textFieldEdit.targetAccessor = %accessor;
+   
+   return %fieldContainer;
+}
