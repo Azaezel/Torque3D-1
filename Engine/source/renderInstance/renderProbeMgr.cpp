@@ -511,7 +511,16 @@ void RenderProbeMgr::preBake()
 
    AdvancedLightBinManager::smMaximumNumOfLights = -1;
    AdvancedLightBinManager::smUseLightFade = false;
+
+   //kickstart rendering
    ShaderData::reloadAllShaders();
+   LightManager* lm = LIGHTMGR;
+   if (lm)
+   {
+      SceneManager* sm = lm->getSceneManager();
+      lm->deactivate();
+      lm->activate(sm);
+   }
 }
 
 void RenderProbeMgr::postBake()
@@ -521,7 +530,16 @@ void RenderProbeMgr::postBake()
    //Con::setVariable("$Probes::Capturing", "0");
    AdvancedLightBinManager::smMaximumNumOfLights = mRenderMaximumNumOfLights;
    AdvancedLightBinManager::smUseLightFade = mRenderUseLightFade;
+
+   //kickstart rendering
    ShaderData::reloadAllShaders();
+   LightManager* lm = LIGHTMGR;
+   if (lm)
+   {
+      SceneManager* sm = lm->getSceneManager();
+      lm->deactivate();
+      lm->activate(sm);
+   }
 }
 
 void RenderProbeMgr::bakeProbe(ReflectionProbe* probe)
