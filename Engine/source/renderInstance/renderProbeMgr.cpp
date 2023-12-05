@@ -513,13 +513,15 @@ void RenderProbeMgr::preBake()
    AdvancedLightBinManager::smUseLightFade = false;
 
    //kickstart rendering
-   ShaderData::reloadAllShaders();
    LightManager* lm = LIGHTMGR;
    if (lm)
    {
       SceneManager* sm = lm->getSceneManager();
-      lm->deactivate();
-      lm->activate(sm);
+      if (sm && sm->getContainer() == &gClientContainer)
+      {
+         lm->deactivate();
+         lm->activate(sm);
+      }
    }
 }
 
@@ -532,13 +534,15 @@ void RenderProbeMgr::postBake()
    AdvancedLightBinManager::smUseLightFade = mRenderUseLightFade;
 
    //kickstart rendering
-   ShaderData::reloadAllShaders();
    LightManager* lm = LIGHTMGR;
    if (lm)
    {
       SceneManager* sm = lm->getSceneManager();
-      lm->deactivate();
-      lm->activate(sm);
+      if (sm && sm->getContainer() == &gClientContainer)
+      {
+         lm->deactivate();
+         lm->activate(sm);
+      }
    }
 }
 
