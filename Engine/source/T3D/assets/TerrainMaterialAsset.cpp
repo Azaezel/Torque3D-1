@@ -40,6 +40,7 @@
 #include "assets/assetPtr.h"
 #endif
 
+#include "console/script.h"
 #include "T3D/assets/assetImporter.h"
 
 StringTableEntry TerrainMaterialAsset::smNoTerrainMaterialAssetFallback = NULL;
@@ -182,7 +183,7 @@ void TerrainMaterialAsset::initializeAsset()
    {
       mLoadedState = EmbeddedDefinition;
    }
-   else if (Torque::FS::IsScriptFile(mScriptPath))
+   else if (Con::isScriptFile(mScriptPath))
    {
       if (!Sim::findObject(mMatDefinitionName))
       {
@@ -201,7 +202,7 @@ void TerrainMaterialAsset::initializeAsset()
       }
    }
 
-   loadMaterial();
+   load();
 }
 
 void TerrainMaterialAsset::onAssetRefresh()
@@ -214,7 +215,7 @@ void TerrainMaterialAsset::onAssetRefresh()
          return;
       }
 
-   if (Torque::FS::IsScriptFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
    {
       //Since we're refreshing, we can assume that the file we're executing WILL have an existing definition.
       //But that definition, whatever it is, is the 'correct' one, so we enable the Replace Existing behavior
@@ -231,7 +232,7 @@ void TerrainMaterialAsset::onAssetRefresh()
       Con::setVariable("$Con::redefineBehavior", redefineBehaviorPrev.c_str());
    }
 
-   loadMaterial();
+   load();
 }
 
 void TerrainMaterialAsset::setScriptFile(const char* pScriptFile)
@@ -250,7 +251,7 @@ void TerrainMaterialAsset::setScriptFile(const char* pScriptFile)
 
 //------------------------------------------------------------------------------
 
-void TerrainMaterialAsset::loadMaterial()
+U32 TerrainMaterialAsset::load()
 {
    if (mMaterialDefinition)
       mMaterialDefinition->safeDeleteObject();
@@ -286,7 +287,7 @@ void TerrainMaterialAsset::loadMaterial()
       }
 
       if(mLoadedState == Ok)
-         return;
+         return mLoadedState;
    }
    else if ((mLoadedState == ScriptLoaded || mLoadedState == DefinitionAlreadyExists) && mMatDefinitionName != StringTable->EmptyString())
    {
@@ -295,17 +296,18 @@ void TerrainMaterialAsset::loadMaterial()
       {
          Con::errorf("TerrainMaterialAsset: Unable to find the Material %s", mMatDefinitionName);
          mLoadedState = BadFileReference;
-         return;
+         return mLoadedState;
       }
 
       mMaterialDefinition = matDef;
 
       mLoadedState = Ok;
       mMaterialDefinition->setInternalName(getAssetId());
-      return;
+      return mLoadedState;
    }
 
    mLoadedState = Failed;
+   return mLoadedState;
 }
 
 //------------------------------------------------------------------------------
@@ -378,16 +380,16 @@ StringTableEntry TerrainMaterialAsset::getAssetIdByMaterialName(StringTableEntry
    U32 foundCount = AssetDatabase.findAssetType(&query, "TerrainMaterialAsset");
    if (foundCount != 0)
    {
-      for (U32 i = 0; i < foundCount; i++)
+      for (U32 i = 0; i < foundCount && materialAssetId == StringTable->EmptyString(); i++)
       {
          TerrainMaterialAsset* matAsset = AssetDatabase.acquireAsset<TerrainMaterialAsset>(query.mAssetList[i]);
-         if (matAsset && matAsset->getMaterialDefinitionName() == matName)
+         if (matAsset)
          {
-            materialAssetId = matAsset->getAssetId();
+            if (matAsset->getMaterialDefinitionName() == matName)
+               materialAssetId = matAsset->getAssetId();
+
             AssetDatabase.releaseAsset(query.mAssetList[i]);
-            break;
          }
-         AssetDatabase.releaseAsset(query.mAssetList[i]);
       }
    }
 

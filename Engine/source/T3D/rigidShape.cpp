@@ -276,7 +276,7 @@ RigidShapeData::RigidShapeData()
    for (S32 i = 0; i < Sounds::MaxSounds; i++)
       INIT_SOUNDASSET_ARRAY(WaterSounds, i);
 
-   dragForce            = 0;
+   dragForce            = 0.01f;
    vertFactor           = 0.25;
 
    dustTrailEmitter = NULL;
@@ -318,17 +318,17 @@ bool RigidShapeData::preload(bool server, String &errorStr)
    if (!server) {
       for (S32 i = 0; i < Body::MaxSounds; i++)
       {
-         if (getBodySounds(i) != StringTable->EmptyString())
+         if (!isBodySoundsValid(i))
          {
-            _setBodySounds(getBodySounds(i), i);
+            //return false; -TODO: trigger asset download
          }
       }
 
       for (S32 j = 0; j < Sounds::MaxSounds; j++)
       {
-         if (getWaterSounds(j) != StringTable->EmptyString())
+         if (!isWaterSoundsValid(j))
          {
-            _setWaterSounds(getWaterSounds(j), j);
+            //return false; -TODO: trigger asset download
          }
       }
 
@@ -354,7 +354,7 @@ bool RigidShapeData::preload(bool server, String &errorStr)
       }
    }
 
-   if (dragForce <= 0.01f) 
+   if (dragForce < 0.01f) 
    {
       Con::warnf("RigidShapeData::preload: dragForce must be at least 0.01");
       dragForce = 0.01f;
@@ -532,7 +532,7 @@ void RigidShapeData::initPersistFields()
    addGroup("Physics");
       addField("enablePhysicsRep", TypeBool, Offset(enablePhysicsRep, RigidShapeData),
          "@brief Creates a representation of the object in the physics plugin.\n");
-         ("massCenter", TypePoint3F, Offset(massCenter, RigidShapeData), "Center of mass for rigid body.");
+      addField("massCenter", TypePoint3F, Offset(massCenter, RigidShapeData), "Center of mass for rigid body.");
       addField("massBox", TypePoint3F, Offset(massBox, RigidShapeData), "Size of inertial box.");
       addField("bodyRestitution", TypeF32, Offset(body.restitution, RigidShapeData), "The percentage of kinetic energy kept by this object in a collision.");
       addField("bodyFriction", TypeF32, Offset(body.friction, RigidShapeData), "How much friction this object has. Lower values will cause the object to appear to be more slippery.");
@@ -1103,7 +1103,7 @@ void RigidShape::updatePos(F32 dt)
 
    // Update collision information based on our current pos.
    bool collided = false;
-   if (!mRigid.atRest && !mDisableMove)
+   if (!mDisableMove)
    {
       collided = updateCollision(dt);
 
@@ -1224,7 +1224,7 @@ void RigidShape::updateForces(F32 dt)
    mRigid.torque = torque;
 
    // If we're still atRest, make sure we're not accumulating anything
-   if (mRigid.atRest)
+   if ((force.lenSquared() < mDataBlock->contactTol)&& (force.lenSquared() < mDataBlock->contactTol))
       mRigid.setAtRest();
 }
 
@@ -1239,7 +1239,11 @@ bool RigidShape::updateCollision(F32 dt)
 {
    PROFILE_SCOPE(RigidShape_updateCollision);
 
-   if (mRigid.atRest || mDisableMove || (getVelocity().lenSquared() < mDataBlock->contactTol * mDataBlock->contactTol)) return false;
+   if (mDisableMove)
+   {
+      mRigid.setAtRest();
+      return false;
+   }
 
    // Update collision information
    MatrixF mat,cmat;
@@ -1687,6 +1691,8 @@ void RigidShape::consoleInit()
 void RigidShape::initPersistFields()
 {
    docsURL;
+   addField("disableMove", TypeBool, Offset(mDisableMove, RigidShape),
+      "When this flag is set, the vehicle will ignore throttle changes.");
    Parent::initPersistFields();
 }
 

@@ -125,13 +125,18 @@ ImplementEnumType(ImageAssetType,
 
 EndImplementEnumType;
 
-
+const String ImageAsset::mErrCodeStrings[] =
+{
+   "TooManyMips",
+   "UnKnown"
+};
 //-----------------------------------------------------------------------------
 ImageAsset::ImageAsset() : AssetBase(), mUseMips(true), mIsHDRImage(false), mIsValidImage(false), mImageType(Albedo)
 {
    mImageFileName = StringTable->EmptyString();
    mImagePath = StringTable->EmptyString();
    mLoadedState = AssetErrCode::NotLoaded;
+   mChangeSignal.notify(this, &ImageAsset::onAssetRefresh);
 }
 
 //-----------------------------------------------------------------------------
@@ -202,7 +207,7 @@ U32 ImageAsset::getAssetByFilename(StringTableEntry fileName, AssetPtr<ImageAsse
    {
       //acquire and bind the asset, and return it out
       imageAsset->setAssetId(query.mAssetList[0]);
-      return (*imageAsset)->mLoadedState;
+      return (*imageAsset)->load();
    }
 }
 
@@ -234,18 +239,16 @@ U32 ImageAsset::getAssetById(StringTableEntry assetId, AssetPtr<ImageAsset>* ima
 
    if (imageAsset->notNull())
    {
-      return (*imageAsset)->mLoadedState;
+      return (*imageAsset)->load();
    }
    else
    {
       if (imageAsset->isNull())
       {
-         //Well that's bad, loading the fallback failed.
-         Con::warnf("ImageAsset::getAssetById - Finding of asset with id %s failed with no fallback asset", assetId);
          return AssetErrCode::Failed;
       }
 
-      //handle noshape not being loaded itself
+      //handle fallback not being loaded itself
       if ((*imageAsset)->mLoadedState == BadFileReference)
       {
          Con::warnf("ImageAsset::getAssetById - Finding of asset with id %s failed, and fallback asset reported error of Bad File Reference.", assetId);
@@ -266,25 +269,26 @@ void ImageAsset::copyTo(SimObject* object)
    Parent::copyTo(object);
 }
 
-void ImageAsset::loadImage()
+U32 ImageAsset::load()
 {
+   if (mLoadedState == AssetErrCode::Ok) return mLoadedState;
    if (mImagePath)
    {
       if (!Torque::FS::IsFile(mImagePath))
       {
          Con::errorf("ImageAsset::initializeAsset: Attempted to load file %s but it was not valid!", mImageFileName);
          mLoadedState = BadFileReference;
-         return;
+         return mLoadedState;
       }
 
       mLoadedState = Ok;
       mIsValidImage = true;
-      mChangeSignal.trigger();
-      return;
+      return mLoadedState;
    }
    mLoadedState = BadFileReference;
 
    mIsValidImage = false;
+   return mLoadedState;
 }
 
 void ImageAsset::initializeAsset()
@@ -292,13 +296,11 @@ void ImageAsset::initializeAsset()
    ResourceManager::get().getChangedSignal().notify(this, &ImageAsset::_onResourceChanged);
 
    mImagePath = getOwned() ? expandAssetFilePath(mImageFileName) : mImagePath;
-   loadImage();
 }
 
 void ImageAsset::onAssetRefresh()
 {
    mImagePath = getOwned() ? expandAssetFilePath(mImageFileName) : mImagePath;
-   loadImage();
 }
 
 void ImageAsset::_onResourceChanged(const Torque::Path& path)
@@ -308,7 +310,7 @@ void ImageAsset::_onResourceChanged(const Torque::Path& path)
 
    refreshAsset();
 
-   //loadImage();
+   onAssetRefresh();
 }
 
 void ImageAsset::setImageFileName(const char* pScriptFile)
@@ -321,11 +323,6 @@ void ImageAsset::setImageFileName(const char* pScriptFile)
 
    // Refresh the asset.
    refreshAsset();
-}
-
-const GBitmap& ImageAsset::getImage()
-{
-   return GBitmap(); //TODO fix this
 }
 
 GFXTexHandle ImageAsset::getTexture(GFXTextureProfile* requestedProfile)

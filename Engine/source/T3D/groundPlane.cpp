@@ -157,7 +157,8 @@ bool GroundPlane::onAdd()
 
 void GroundPlane::onRemove()
 {
-   if (!mMaterialAsset.isNull())
+   U32 assetStatus = MaterialAsset::getAssetErrCode(mMaterialAsset);
+   if (assetStatus == AssetBase::Ok)
       AssetDatabase.releaseAsset(mMaterialAsset.getAssetId());
 
    //SAFE_DELETE(mMaterialInst);
@@ -442,7 +443,7 @@ void GroundPlane::createGeometry( const Frustum& frustum )
    U32 width = mCeil( ( max.x - min.x ) / mSquareSize );
    if( width > MAX_WIDTH )
    {
-      mSquareSize = mCeil( ( max.x - min.x ) / MAX_WIDTH );
+      mSquareSize = mCeil( ( max.x - min.x ) / (F32)MAX_WIDTH );
       width = MAX_WIDTH;
    }
    else if( !width )
@@ -451,7 +452,7 @@ void GroundPlane::createGeometry( const Frustum& frustum )
    U32 height = mCeil( ( max.y - min.y ) / mSquareSize );
    if( height > MAX_HEIGHT )
    {
-      mSquareSize = mCeil( ( max.y - min.y ) / MAX_HEIGHT );
+      mSquareSize = mCeil( ( max.y - min.y ) / (F32)MAX_HEIGHT );
       height = MAX_HEIGHT;
    }
    else if( !height )
@@ -593,8 +594,11 @@ void GroundPlane::generateGrid( U32 width, U32 height, F32 squareSize,
 
 void GroundPlane::getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList)
 {
-   if (!mMaterialAsset.isNull() && mMaterialAsset->getAssetId() != MaterialAsset::smNoMaterialAssetFallback)
+   U32 assetStatus = MaterialAsset::getAssetErrCode(mMaterialAsset);
+   if (assetStatus == AssetBase::Ok)
+   {
       usedAssetsList->push_back_unique(mMaterialAsset->getAssetId());
+   }
 
 }
 

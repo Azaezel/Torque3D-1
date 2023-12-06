@@ -297,19 +297,15 @@ bool LightningData::preload(bool server, String &errorStr)
    {
       for (S32 i = 0; i < MaxThunders; i++)
       {
-         _setThunderSound(getThunderSound(i), i);
-         if (isThunderSoundValid(i) && !getThunderSoundProfile(i))
+         if (!isThunderSoundValid(i))
          {
-               Con::errorf(ConsoleLogEntry::General, "LightningData::preload: Cant get an sfxProfile for thunder.");
-
+            //return false; -TODO: trigger asset download
          }
 
       }
-
-      _setStrikeSound(getStrikeSound());
-      if (isStrikeSoundValid() && !getStrikeSoundProfile())
+      if (!isStrikeSoundValid())
       {
-            Con::errorf(ConsoleLogEntry::General, "LightningData::preload: can't get sfxProfile from strike sound.");
+         //return false; -TODO: trigger asset download
       }
 
       mNumStrikeTextures = 0;
@@ -695,7 +691,7 @@ void Lightning::processEvent(LightningStrikeEvent* pEvent)
          start.z = mObjScale.z * 0.5f + getPosition().z;
          strikePoint.z += -mObjScale.z * 0.5f;
          bool rayHit = gClientContainer.castRay( start, strikePoint,
-                                      (STATIC_COLLISION_TYPEMASK | WaterObjectType),
+                                      ((U32)STATIC_COLLISION_TYPEMASK | (U32)WaterObjectType),
                                       &rayInfo);
          if( rayHit )
          {
@@ -937,7 +933,7 @@ U32 Lightning::packUpdate(NetConnection* con, U32 mask, BitStream* stream)
    U32 retMask = Parent::packUpdate(con, mask, stream);
 
    // Only write data if this is the initial packet or we've been inspected.
-   if (stream->writeFlag(mask & (InitialUpdateMask | ExtendedInfoMask)))
+   if (stream->writeFlag(mask & ((U32)InitialUpdateMask | (U32)ExtendedInfoMask)))
    {
       // Initial update
       mathWrite(*stream, getPosition());

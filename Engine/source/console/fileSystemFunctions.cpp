@@ -24,9 +24,7 @@
 #include "console/console.h"
 #include "console/consoleInternal.h"
 #include "console/engineAPI.h"
-#include "console/ast.h"
 #include "core/stream/fileStream.h"
-#include "console/compiler.h"
 #include "platform/platformInput.h"
 #include "torqueConfig.h"
 #include "core/frameAllocator.h"
@@ -97,11 +95,11 @@ static S32 buildFileList(const char* pattern, bool recurse, bool multiMatch)
    Torque::FS::FileSystemRef fs = Torque::FS::GetFileSystem(givenPath);
    //Torque::Path path = fs->mapTo(givenPath);
    Torque::Path path = givenPath;
-   
+
    // Make sure that we have a root so the correct file system can be determined when using zips
    if(givenPath.isRelative())
       path = Torque::Path::Join(Torque::FS::GetCwd(), '/', givenPath);
-   
+
    path.setFileName(String::EmptyString);
    path.setExtension(String::EmptyString);
    if(!Torque::FS::IsDirectory(path))
@@ -361,11 +359,11 @@ DefineEngineFunction(getFileCountMultiExpr, S32, ( const char* pattern, bool rec
 
 DefineEngineFunction(getFileCRC, S32, ( const char* fileName ),,
    "@brief Provides the CRC checksum of the given file.\n\n"
-   
+
    "@param fileName The path to the file.\n"
    "@return The calculated CRC checksum of the file, or -1 if the file "
    "could not be found.\n"
-   
+
    "@ingroup FileSystem")
 {
    Torque::FS::FileNodeRef fileRef = Torque::FS::GetFileNode( fileName );
@@ -381,13 +379,16 @@ DefineEngineFunction(getFileCRC, S32, ( const char* fileName ),,
 
 DefineEngineFunction(isFile, bool, ( const char* fileName ),,
    "@brief Determines if the specified file exists or not\n\n"
-   
+
    "@param fileName The path to the file.\n"
    "@return Returns true if the file was found.\n"
-   
+
    "@ingroup FileSystem")
 {
-   Torque::Path givenPath(fileName);
+   String cleanfilename(Torque::Path::CleanSeparators(fileName));
+   Con::expandScriptFilename(sgScriptFilenameBuffer, sizeof(sgScriptFilenameBuffer), cleanfilename.c_str());
+
+   Torque::Path givenPath(Torque::Path::CompressPath(sgScriptFilenameBuffer));
 
    if (givenPath.getFileName().isEmpty() && givenPath.getExtension().isNotEmpty())
    {
@@ -396,7 +397,16 @@ DefineEngineFunction(isFile, bool, ( const char* fileName ),,
       givenPath.setFileName(String(".") + givenPath.getExtension());
       givenPath.setExtension("");
    }
+   if (Torque::FS::IsFile(givenPath)) return true;
 
+   //try with script file extension
+   if (!Torque::FS::IsFile(givenPath) && givenPath.getExtension().isEmpty())
+      givenPath.setExtension(TORQUE_SCRIPT_EXTENSION);
+   if (Torque::FS::IsFile(givenPath)) return true;
+
+   //finally, try with compiled script file extension
+   if (!Torque::FS::IsFile(givenPath))
+      givenPath.setExtension(String(TORQUE_SCRIPT_EXTENSION)+String(".dso"));
    return Torque::FS::IsFile(givenPath);
 }
 
@@ -408,7 +418,7 @@ DefineEngineFunction(isScriptFile, bool, (const char* fileName), ,
 
    "@ingroup FileSystem")
 {
-   return Torque::FS::IsScriptFile(fileName);
+   return Con::isScriptFile(fileName);
 }
 
 DefineEngineFunction( IsDirectory, bool, ( const char* directory ),,
@@ -477,9 +487,7 @@ DefineEngineFunction(getDirectoryList, String, ( const char* path, S32 depth ), 
    // Append a trailing backslash if it's not present already.
    if (fullpath[dStrlen(fullpath) - 1] != '/')
    {
-      S32 pos = dStrlen(fullpath);
-      fullpath[pos] = '/';
-      fullpath[pos + 1] = '\0';
+      dStrcat(fullpath, "/\0", 1024);
    }
 
    // Dump the directories.

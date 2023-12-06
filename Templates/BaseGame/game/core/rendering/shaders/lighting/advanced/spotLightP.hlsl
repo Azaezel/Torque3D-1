@@ -85,7 +85,10 @@ float4 main(   ConvexConnectP IN ) : SV_TARGET
    //create surface
    Surface surface = createSurface( normDepth, TORQUE_SAMPLER2D_MAKEARG(colorBuffer),TORQUE_SAMPLER2D_MAKEARG(matInfoBuffer),
                                     uvScene, eyePosWorld, wsEyeRay, cameraToWorld);
-
+   if (getFlag(surface.matFlag, 2))
+   {
+      return surface.baseColor;
+   } 
    float3 L = lightPosition - surface.P;
    float dist = length(L);
    float3 lighting = 0.0.xxx;
@@ -148,10 +151,8 @@ float4 main(   ConvexConnectP IN ) : SV_TARGET
       return final;
    #endif
 
-      //get Punctual light contribution   
-      lighting = getPunctualLight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, shadow);
-      //get spot angle attenuation
-      lighting *= getSpotAngleAtt(-surfaceToLight.L, lightDirection, lightSpotParams );
+      //get spot light contribution   
+      lighting = getSpotlight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, lightDirection, lightSpotParams, shadow);
    }
    
    return float4(lighting, 0);

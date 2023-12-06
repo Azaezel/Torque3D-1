@@ -153,11 +153,9 @@ bool SFXAmbience::preload( bool server, String& errorStr )
       if( !sfxResolve( &mEnvironment, errorStr ) )
          return false;
 
-      _setSoundTrack(getSoundTrack());
-      if (!getSoundTrackProfile())
+      if (!isSoundTrackValid())
       {
-         Con::errorf("SFXAmbience::Preload() - unable to find sfxProfile for asset %s", mSoundTrackAssetId);
-         return false;
+         //return false; -TODO: trigger asset download
       }
          
       for( U32 i = 0; i < MaxStates; ++ i )

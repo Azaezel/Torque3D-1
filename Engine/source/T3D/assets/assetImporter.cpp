@@ -638,7 +638,7 @@ AssetImportObject* AssetImporter::addImportingAsset(String assetType, Torque::Pa
    U32 pos = dStrcspn(sanitizedStr, "-+*/%$&�=()[].?\\\"#,;!~<>|�^{}");
    while (pos < dStrlen(sanitizedStr))
    {
-      dStrcpy(sanitizedStr + pos, sanitizedStr + pos + 1, len - pos);
+      dStrcpy(sanitizedStr + pos, sanitizedStr + pos + 1, (dsize_t)(len - pos));
       pos = dStrcspn(sanitizedStr, "-+*/%$&�=()[].?\\\"#,;!~<>|�^{}");
    }
 
@@ -1173,7 +1173,7 @@ static bool enumColladaForImport(const char* shapePath, GuiTreeViewCtrl* tree, b
    for (S32 i = 0; i < root->getLibrary_materials_array().getCount(); i++)
    {
       const domLibrary_materials* libraryMats = root->getLibrary_materials_array()[i];
-      stats.numMaterials += libraryMats->getMaterial_array().getCount();
+      stats.numMaterials += (S32)libraryMats->getMaterial_array().getCount();
       for (S32 j = 0; j < libraryMats->getMaterial_array().getCount(); j++)
       {
          domMaterial* mat = libraryMats->getMaterial_array()[j];
@@ -1267,7 +1267,7 @@ static bool enumColladaForImport(const char* shapePath, GuiTreeViewCtrl* tree, b
    for (S32 i = 0; i < root->getLibrary_animation_clips_array().getCount(); i++)
    {
       const domLibrary_animation_clips* libraryClips = root->getLibrary_animation_clips_array()[i];
-      stats.numClips += libraryClips->getAnimation_clip_array().getCount();
+      stats.numClips += (S32)libraryClips->getAnimation_clip_array().getCount();
       for (S32 j = 0; j < libraryClips->getAnimation_clip_array().getCount(); j++)
       {
          domAnimation_clip* clip = libraryClips->getAnimation_clip_array()[j];
@@ -1903,7 +1903,7 @@ void AssetImporter::processMaterialAsset(AssetImportObject* assetItem)
 
                         //Check to see if our target module has a matching assetId for this slot already based on our trimmed mat name
                         testAssetId = targetModuleId + ":" + materialImageNoSuffix + StringUnit::getUnit(suffixList.c_str(), i, ",;\t");
-                        bool localAssetFound = false;
+                        localAssetFound = false;
 
                         if (AssetDatabase.isDeclaredAsset(testAssetId.c_str()))
                            localAssetFound = true;
@@ -2792,7 +2792,7 @@ void AssetImporter::acquireAssets(AssetImportObject* assetItem)
 
       if (AssetDatabase.isDeclaredAsset(assetId))
       {
-         AssetBase* assetDef = AssetDatabase.acquireAsset<AssetBase>(assetId);
+         AssetDatabase.acquireAsset<AssetBase>(assetId);
          AssetDatabase.releaseAsset(assetId);
       }
    }

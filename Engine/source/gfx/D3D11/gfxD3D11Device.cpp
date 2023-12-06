@@ -252,6 +252,10 @@ DXGI_SWAP_CHAIN_DESC GFXD3D11Device::setupPresentParams(const GFXVideoMode &mode
 
 void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
 {
+#ifdef TORQUE_TESTS_ENABLED
+      return;
+#endif
+
    IDXGIAdapter1* EnumAdapter;
    IDXGIFactory1* DXGIFactory;
 
@@ -280,7 +284,7 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
       SAFE_DELETE_ARRAY(str);
 
       dStrncpy(toAdd->mName, Description.c_str(), GFXAdapter::MaxAdapterNameLen);
-      dStrncat(toAdd->mName, " (D3D11)", GFXAdapter::MaxAdapterNameLen);
+      dStrncat(toAdd->mName, " (D3D11)", sizeof(toAdd->mName) - strlen(toAdd->mName) - 1);
 
       IDXGIOutput* pOutput = NULL; 
       HRESULT hr;

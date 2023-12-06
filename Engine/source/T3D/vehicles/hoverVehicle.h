@@ -74,9 +74,6 @@ class HoverVehicleData : public VehicleData
    static const char *sJetNode[MaxJetNodes];
    S32 jetNode[MaxJetNodes];
 
-
-   F32 dragForce;
-   F32 vertFactor;
    F32 floatingThrustFactor;
 
    F32 mainThrustForce;
@@ -203,6 +200,7 @@ class HoverVehicle : public Vehicle
    void advanceTime(F32 dt);
 
    DECLARE_CONOBJECT(HoverVehicle);
+   DECLARE_CATEGORY("Actor \t Controllable");
 //   static void initPersistFields();
 
    U32  packUpdate  (NetConnection *conn, U32 mask, BitStream *stream);

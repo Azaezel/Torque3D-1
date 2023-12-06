@@ -54,6 +54,7 @@
 class ImageAsset : public AssetBase
 {
    typedef AssetBase Parent;
+   typedef AssetPtr<ImageAsset> ConcreteAssetPtr;
 
 public:
    /// The different types of image use cases
@@ -74,6 +75,22 @@ public:
    };
 
    static StringTableEntry smNoImageAssetFallback;
+
+   enum ImageAssetErrCode
+   {
+      TooManyMips = AssetErrCode::Extended,
+      Extended
+   };
+
+   static const String mErrCodeStrings[U32(ImageAssetErrCode::Extended) - U32(Parent::Extended) + 1];
+   static U32 getAssetErrCode(ConcreteAssetPtr checkAsset) { if (checkAsset) return checkAsset->mLoadedState; else return 0; }
+
+   static String getAssetErrstrn(U32 errCode)
+   {
+      if (errCode < Parent::Extended) return Parent::getAssetErrstrn(errCode);
+      if (errCode > ImageAssetErrCode::Extended) return "undefined error";
+      return mErrCodeStrings[errCode - Parent::Extended];
+   };
 
 protected:
    StringTableEntry mImageFileName;
@@ -119,7 +136,6 @@ public:
 
    bool isValid() { return mIsValidImage; }
 
-   const GBitmap& getImage();
    GFXTexHandle getTexture(GFXTextureProfile* requestedProfile);
 
    StringTableEntry getImageInfo();
@@ -135,14 +151,14 @@ public:
    static U32 getAssetById(StringTableEntry assetId, AssetPtr<ImageAsset>* imageAsset);
    static U32 getAssetById(String assetId, AssetPtr<ImageAsset>* imageAsset) { return getAssetById(assetId.c_str(), imageAsset); };
 
+   U32 load();
+
 protected:
    virtual void            initializeAsset(void);
    virtual void            onAssetRefresh(void);
 
    static bool setImageFileName(void* obj, StringTableEntry index, StringTableEntry data) { static_cast<ImageAsset*>(obj)->setImageFileName(data); return false; }
    static StringTableEntry getImageFileName(void* obj, StringTableEntry data) { return static_cast<ImageAsset*>(obj)->getImageFileName(); }
-
-   void loadImage();
 };
 
 DefineConsoleType(TypeImageAssetPtr, ImageAsset)

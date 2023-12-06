@@ -1,4 +1,3 @@
-
 datablock FlyingVehicleData(crane)
 {
    ShapeAsset = "Prototyping:flier_shape";
@@ -51,4 +50,10 @@ datablock FlyingVehicleData(crane)
    backwardJetEmitter = "DefaultEmitter";
    downJetEmitter = "DefaultEmitter";
    trailEmitter = "DefaultEmitter";
+};
+
+datablock ItemData(PrototypeItemData)
+{
+   ShapeAsset = "Prototyping:TorusPrimitive_shape";
+   cameraMaxDist = "0.75";
 };

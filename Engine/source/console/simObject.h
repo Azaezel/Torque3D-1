@@ -549,6 +549,9 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       /// Get the internal name of this control
       StringTableEntry getInternalName() const { return mInternalName; }
 
+      /// type-specified slot for returning hints for the main difference between object instances
+      virtual StringTableEntry getTypeHint() const { return StringTable->EmptyString(); }
+
       /// Set the original name of this control
       void setOriginalName(const char* originalName);
 
@@ -653,7 +656,7 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       virtual void onEditorDisable(){};
 
       /// Called when the object is inspected via a GuiInspector control
-      virtual void onInspect(GuiInspector*) {};
+      virtual void onInspect(GuiInspector*);
 
       /// @}
 

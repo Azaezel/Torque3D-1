@@ -40,10 +40,18 @@
 #include "assets/assetPtr.h"
 #endif
 
+#include "console/script.h"
 #include "T3D/assets/assetImporter.h"
 
 StringTableEntry MaterialAsset::smNoMaterialAssetFallback = NULL;
 
+const String MaterialAsset::mErrCodeStrings[] =
+{
+   "ScriptLoaded",
+   "DefinitionAlreadyExists",
+   "EmbeddedDefinition",
+   "UnKnown"
+};
 //-----------------------------------------------------------------------------
 
 IMPLEMENT_CONOBJECT(MaterialAsset);
@@ -179,7 +187,7 @@ void MaterialAsset::initializeAsset()
    {
       mLoadedState = EmbeddedDefinition;
    }
-   else if (Torque::FS::IsScriptFile(mScriptPath))
+   else if (Con::isScriptFile(mScriptPath))
    {
       if (!Sim::findObject(mMatDefinitionName))
       {
@@ -198,7 +206,7 @@ void MaterialAsset::initializeAsset()
       }
    }
 
-   loadMaterial();
+   load();
 }
 
 void MaterialAsset::onAssetRefresh()
@@ -211,7 +219,7 @@ void MaterialAsset::onAssetRefresh()
       return;
    }
 
-   if (Torque::FS::IsScriptFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
    {
       //Since we're refreshing, we can assume that the file we're executing WILL have an existing definition.
       //But that definition, whatever it is, is the 'correct' one, so we enable the Replace Existing behavior
@@ -228,7 +236,7 @@ void MaterialAsset::onAssetRefresh()
       Con::setVariable("$Con::redefineBehavior", redefineBehaviorPrev.c_str());
    }
 
-   loadMaterial();
+   load();
 }
 
 void MaterialAsset::setScriptFile(const char* pScriptFile)
@@ -247,7 +255,7 @@ void MaterialAsset::setScriptFile(const char* pScriptFile)
 
 //------------------------------------------------------------------------------
 
-void MaterialAsset::loadMaterial()
+U32 MaterialAsset::load()
 {
    if (mMaterialDefinition)
    {
@@ -266,7 +274,7 @@ void MaterialAsset::loadMaterial()
                mLoadedState = Ok;
                mMaterialDefinition->setInternalName(getAssetId());
                mMaterialDefinition->reload();
-               return;
+               return mLoadedState;
             }
          }
       }
@@ -278,7 +286,7 @@ void MaterialAsset::loadMaterial()
       {
          Con::errorf("MaterialAsset: Unable to find the Material %s", mMatDefinitionName);
          mLoadedState = BadFileReference;
-         return;
+         return mLoadedState;
       }
 
       mMaterialDefinition = matDef;
@@ -286,10 +294,11 @@ void MaterialAsset::loadMaterial()
       mLoadedState = Ok;
       mMaterialDefinition->setInternalName(getAssetId());
       mMaterialDefinition->reload();
-      return;
+      return mLoadedState;
    }
 
    mLoadedState = Failed;
+   return mLoadedState;
 }
 
 //------------------------------------------------------------------------------
@@ -362,16 +371,16 @@ StringTableEntry MaterialAsset::getAssetIdByMaterialName(StringTableEntry matNam
    U32 foundCount = AssetDatabase.findAssetType(&query, "MaterialAsset");
    if (foundCount != 0)
    {
-      for (U32 i = 0; i < foundCount; i++)
+      for (U32 i = 0; i < foundCount && materialAssetId == MaterialAsset::smNoMaterialAssetFallback; i++)
       {
          MaterialAsset* matAsset = AssetDatabase.acquireAsset<MaterialAsset>(query.mAssetList[i]);
-         if (matAsset && matAsset->getMaterialDefinitionName() == matName)
+         if (matAsset)
          {
-            materialAssetId = matAsset->getAssetId();
+            if (matAsset->getMaterialDefinitionName() == matName)
+               materialAssetId = matAsset->getAssetId();
+
             AssetDatabase.releaseAsset(query.mAssetList[i]);
-            break;
          }
-         AssetDatabase.releaseAsset(query.mAssetList[i]);
       }
    }
 

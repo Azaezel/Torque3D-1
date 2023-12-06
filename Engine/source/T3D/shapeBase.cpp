@@ -344,7 +344,8 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
    }
 
    S32 i;
-   if (ShapeAsset::getAssetErrCode(mShapeAsset) != ShapeAsset::Failed && ShapeAsset::getAssetErrCode(mShapeAsset) != ShapeAsset::BadFileReference)
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus == AssetBase::Ok|| assetStatus == AssetBase::UsingFallback)
    {
       if (!server && !mShape->preloadMaterialList(mShape.getPath()) && NetConnection::filesWereDownloaded())
          shapeError = true;
@@ -2019,6 +2020,41 @@ Point3F ShapeBase::getAIRepairPoint()
 }
 
 //----------------------------------------------------------------------------
+void ShapeBase::getNodeTransform(const char* nodeName, MatrixF* outMat)
+{
+   S32 nodeIDx = mDataBlock->getShapeResource()->findNode(nodeName);
+   const MatrixF& xfm = isMounted() ? mMount.xfm : MatrixF::Identity;
+
+   MatrixF nodeTransform(xfm);
+   const Point3F& scale = getScale();
+   if (nodeIDx != -1)
+   {
+      nodeTransform = mShapeInstance->mNodeTransforms[nodeIDx];
+      nodeTransform.mul(xfm);
+   }
+   // The position of the mount point needs to be scaled.
+   Point3F position = nodeTransform.getPosition();
+   position.convolve(scale);
+   nodeTransform.setPosition(position);
+   // Also we would like the object to be scaled to the model.
+   outMat->mul(mObjToWorld, nodeTransform);
+   return;
+}
+
+void ShapeBase::getNodeVector(const char* nodeName, VectorF* vec)
+{
+   MatrixF mat;
+   getNodeTransform(nodeName, &mat);
+
+   mat.getColumn(1, vec);
+}
+
+void ShapeBase::getNodePoint(const char* nodeName, Point3F* pos)
+{
+   MatrixF mat;
+   getNodeTransform(nodeName, &mat);
+   mat.getColumn(3, pos);
+}
 
 void ShapeBase::getEyeTransform(MatrixF* mat)
 {
@@ -2267,9 +2303,12 @@ void ShapeBase::updateAudioState(SoundThread& st)
          // if asset is valid, play
          if (st.asset->isAssetValid() )
          {
-            st.sound = SFX->createSource( st.asset->getSfxProfile() , &getTransform() );
-            if ( st.sound )
-               st.sound->play();
+            if (st.asset->load() == AssetBase::Ok)
+            {
+               st.sound = SFX->createSource(st.asset->getSFXTrack(), &getTransform());
+               if (st.sound)
+                  st.sound->play();
+            }
          }
          else
             st.play = false;
@@ -5352,3 +5391,37 @@ void ShapeBase::setSelectionFlags(U8 flags)
    }  
 }
 
+DefineEngineMethod(ShapeBase, getNodeTransform, MatrixF, (const char* nodeName), ,
+   "@brief Get the node/bone transform.\n\n"
+
+   "@param node/bone name to query\n"
+   "@return the node position\n\n")
+{
+   MatrixF mat;
+   object->getNodeTransform(nodeName, &mat);
+   return mat;
+}
+
+DefineEngineMethod(ShapeBase, getNodeVector, VectorF, (const char* nodeName), ,
+   "@brief Get the node/bone vector.\n\n"
+
+   "@param node/bone name to query\n"
+   "@return the node vector\n\n")
+{
+   VectorF vec(0, 1, 0);
+   object->getNodeVector(nodeName, &vec);
+
+   return vec;
+}
+
+DefineEngineMethod(ShapeBase, getNodePoint, Point3F, (const char* nodeName), ,
+   "@brief Get the node/bone position.\n\n"
+
+   "@param node/bone name to query\n"
+   "@return the node position\n\n")
+{
+   Point3F pos(0, 0, 0);
+   object->getNodePoint(nodeName, &pos);
+
+   return pos;
+}

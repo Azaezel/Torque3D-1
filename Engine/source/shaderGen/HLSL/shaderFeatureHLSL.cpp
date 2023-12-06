@@ -1781,7 +1781,7 @@ void VertPositionHLSL::processVert( Vector<ShaderComponent*> &componentList,
 
    if (fd.materialFeatures[MFT_isBackground])
    {
-      meta->addStatement(new GenOp("   @ = @.xyww;\r\n", outPosition, outPosition));
+      meta->addStatement(new GenOp("   @.z = 0.0f;\r\n", outPosition));
    }
 
    output = meta;
@@ -2217,10 +2217,10 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    if ( fd.features[MFT_LightMap] || fd.features[MFT_ToneMap] || fd.features[MFT_VertLit] )
       return;
   
-   ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
+   //ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
 
    MultiLine *meta = new MultiLine;
-
+      
    // Now the wsPosition and wsView.
    Var *wsPosition = getInWsPosition( componentList );
    Var* worldToTangent = getInWorldToTangent(componentList);
@@ -2280,10 +2280,7 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    {
       Con::errorf("ShaderGen::RTLightingFeatHLSL()  - failed to generate surface!");
       return;
-   }   
-   Var *roughness = (Var*)LangElement::find("roughness");
-
-   Var *metalness = (Var*)LangElement::find("metalness");
+   }
 
    Var *curColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
 
@@ -3035,10 +3032,10 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    if (fd.features[MFT_LightMap] || fd.features[MFT_ToneMap] || fd.features[MFT_VertLit])
       return;
 
-   ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>(componentList[C_CONNECTOR]);
+   //ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>(componentList[C_CONNECTOR]);
 
    MultiLine *meta = new MultiLine;
-   
+      
    // Now the wsPosition and wsView.
    Var* wsPosition = getInWsPosition(componentList);
    Var* worldToTangent = getInWorldToTangent(componentList);

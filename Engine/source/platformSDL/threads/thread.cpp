@@ -23,6 +23,7 @@
 #include "platform/threads/thread.h"
 #include "platform/threads/semaphore.h"
 #include "platform/threads/mutex.h"
+#include "platform/platformIntrinsics.h"
 #include <stdlib.h>
 #include <SDL.h>
 #include <SDL_thread.h>
@@ -33,10 +34,20 @@ public:
    ThreadRunFunction       mRunFunc;
    void*                   mRunArg;
    Thread*                 mThread;
-   Semaphore               mGateway; // default count is 1
+   Semaphore               mGateway;
    SDL_threadID            mThreadID;
    SDL_Thread*             mSdlThread;
-   bool                    mDead;
+   U32                     mDead;
+
+   PlatformThreadData()
+   {
+      mRunFunc    = NULL;
+      mRunArg     = 0;
+      mThread     = 0;
+      mThreadID   = 0;
+      mSdlThread  = NULL;
+      mDead       = false;
+   }
 };
 
 ThreadManager::MainThreadId ThreadManager::smMainThreadId;
@@ -50,22 +61,19 @@ ThreadManager::MainThreadId ThreadManager::smMainThreadId;
 static int ThreadRunHandler(void * arg)
 {
    PlatformThreadData *mData = reinterpret_cast<PlatformThreadData*>(arg);
-   Thread *thread = mData->mThread;
-
    mData->mThreadID = SDL_ThreadID();
    
-   ThreadManager::addThread(thread);
-   thread->run(mData->mRunArg);
-   ThreadManager::removeThread(thread);
+   ThreadManager::addThread(mData->mThread);
+   mData->mThread->run(mData->mRunArg);
+   ThreadManager::removeThread(mData->mThread);
 
-   bool autoDelete = thread->autoDelete;
+   bool autoDelete = mData->mThread->autoDelete;
    
-   mData->mThreadID = 0;
-   mData->mDead = true;
+   dCompareAndSwap(mData->mDead, false, true);
    mData->mGateway.release();
    
    if( autoDelete )
-      delete thread;
+      delete mData->mThread;
       
    return 0;
 }

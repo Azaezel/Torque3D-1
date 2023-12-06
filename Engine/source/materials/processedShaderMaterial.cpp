@@ -230,7 +230,7 @@ bool ProcessedShaderMaterial::init( const FeatureSet &features,
    }
    if (mMaterial && mMaterial->mDiffuseMapName[0] != StringTable->EmptyString() && String(mMaterial->mDiffuseMapName[0]).startsWith("#"))
    {
-      String texTargetBufferName = String(mMaterial->mDiffuseMapName[0]).substr(1, strlen(mMaterial->mDiffuseMapName[0]) - 1);
+      String texTargetBufferName = String(mMaterial->mDiffuseMapName[0]).substr(1, (U32)strlen(mMaterial->mDiffuseMapName[0]) - 1);
       NamedTexTarget *texTarget = NamedTexTarget::find(texTargetBufferName);
       RenderPassData* rpd = getPass(0);
 
@@ -1200,7 +1200,9 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
    // Deferred Shading: Determine Material Info Flags
    S32 matInfoFlags = 
             (mMaterial->mReceiveShadows[stageNum] ? 1 : 0) | //ReceiveShadows 
-            (mMaterial->mSubSurface[stageNum] ? 1 << 2 : 0); //subsurface
+            (mMaterial->mSubSurface[stageNum] ? 1 << 2 : 0)| //subsurface
+            (mMaterial->mIgnoreLighting[stageNum] ? 1 << 3 : 0);  //IgnoreLighting 
+   
    mMaterial->mMatInfoFlags[stageNum] = matInfoFlags / 255.0f;
    shaderConsts->setSafe(handles->mMatInfoFlagsSC, mMaterial->mMatInfoFlags[stageNum]);   
    if( handles->mAccuScaleSC->isValid() )

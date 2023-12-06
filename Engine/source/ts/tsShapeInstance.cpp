@@ -294,8 +294,6 @@ void TSShapeInstance::reSkin( String newBaseName, String oldBaseName )
    if ( newBaseName.equal( oldBaseName, String::NoCase ) )
       return;
 
-   const U32 oldBaseNameLength = oldBaseName.length();
-
    // Make our own copy of the materials list from the resource if necessary
    if (ownMaterialList() == false)
       cloneMaterialList();
@@ -893,7 +891,7 @@ bool TSShapeInstance::hasAccumulation()
    for ( U32 i = 0; i < mMaterialList->size(); ++i )
    {
       BaseMatInstance* mat = mMaterialList->getMaterialInst(i);
-      if ( mat->hasAccumulation() )
+      if (mat != nullptr && mat->hasAccumulation() )
          result = true;
    }
    return result;

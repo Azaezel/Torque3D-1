@@ -41,6 +41,8 @@
             <Setting
                 name="doubleClickAction">Edit Asset</Setting>
             <Setting
+                name="LastPosExt">0 1047 2200 360</Setting>
+            <Setting
                 name="previewTileSize">1</Setting>
             <Setting
                 name="showCoreModule">1</Setting>
@@ -49,6 +51,8 @@
         </Group>
         <Group
             name="New">
+            <Setting
+                name="alwaysPromptModuleTarget">1</Setting>
             <Setting
                 name="defaultModule">ExampleModule</Setting>
         </Group>
@@ -119,7 +123,7 @@
             <Setting
                 name="documentationReference">../../../Documentation/Torque 3D - Script Manual.chm</Setting>
             <Setting
-                name="documentationURL">http://www.garagegames.com/products/torque-3d/documentation/user</Setting>
+                name="documentationURL">https://docs.torque3d.org</Setting>
         </Group>
         <Group
             name="Library">
@@ -344,7 +348,7 @@
         <Setting
             name="tabsColor">40 40 40 255</Setting>
         <Setting
-            name="tabsHLColor">180 180 180 255</Setting>
+            name="tabsHLColor">100 100 100 255</Setting>
         <Setting
             name="tabsSELColor">100 110 120 255</Setting>
         <Setting
@@ -406,9 +410,9 @@
             <Setting
                 name="documentationReference">../../../Documentation/Torque 3D - Script Manual.chm</Setting>
             <Setting
-                name="documentationURL">http://www.garagegames.com/products/torque-3d/documentation/user</Setting>
+                name="documentationURL">https://docs.torque3d.org</Setting>
             <Setting
-                name="forumURL">http://www.garagegames.com/products/torque-3d/forums</Setting>
+                name="forumURL">https://torque3d.org/</Setting>
         </Group>
         <Group
             name="Grid">

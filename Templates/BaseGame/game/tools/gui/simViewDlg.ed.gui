@@ -146,7 +146,7 @@ $guiContent = new GuiControl(simViewDlg, EditorGuiGroup) {
             Profile = "EditorTextHLRight";
             HorizSizing = "right";
             VertSizing = "bottom";
-            position = "217 35";
+            VertSizing = "bottom";
             Extent = "44 18";
             MinExtent = "8 8";
             canSave = "1";
@@ -160,7 +160,7 @@ $guiContent = new GuiControl(simViewDlg, EditorGuiGroup) {
             Profile = "EditorTextHLRight";
             HorizSizing = "right";
             VertSizing = "bottom";
-            position = "10 35";
+            HorizSizing = "right";
             Extent = "106 18";
             MinExtent = "8 8";
             canSave = "1";
@@ -174,7 +174,6 @@ $guiContent = new GuiControl(simViewDlg, EditorGuiGroup) {
             Profile = "ToolsGuiTextEditProfile";
             HorizSizing = "right";
             VertSizing = "bottom";
-            position = "121 35";
             Extent = "93 18";
             MinExtent = "8 8";
             canSave = "1";
@@ -187,13 +186,13 @@ $guiContent = new GuiControl(simViewDlg, EditorGuiGroup) {
             sinkAllKeyEvents = "0";
             password = "0";
             passwordMask = "*";
+            canSaveDynamicFields = "0";
          };
          new GuiTextCtrl() {
-            canSaveDynamicFields = "0";
             Profile = "EditorTextHLBoldRight";
             HorizSizing = "right";
             VertSizing = "bottom";
-            position = "10 8";
+            HorizSizing = "right";
             Extent = "106 18";
             MinExtent = "8 8";
             canSave = "1";
@@ -207,7 +206,6 @@ $guiContent = new GuiControl(simViewDlg, EditorGuiGroup) {
             Profile = "ToolsGuiButtonProfile";
             HorizSizing = "right";
             VertSizing = "bottom";
-            position = "321 33";
             Extent = "76 22";
             MinExtent = "8 2";
             canSave = "1";
@@ -228,7 +226,7 @@ $guiContent = new GuiControl(simViewDlg, EditorGuiGroup) {
             Profile = "EditorTextHLBoldCenter";
             HorizSizing = "right";
             VertSizing = "bottom";
-            position = "265 35";
+            HorizSizing = "right";
             Extent = "51 18";
             MinExtent = "8 8";
             canSave = "1";
@@ -242,7 +240,6 @@ $guiContent = new GuiControl(simViewDlg, EditorGuiGroup) {
             Profile = "ToolsGuiButtonProfile";
             HorizSizing = "right";
             VertSizing = "bottom";
-            position = "321 6";
             Extent = "76 22";
             MinExtent = "8 2";
             canSave = "1";
@@ -346,3 +343,13 @@ function GuiInspector::setAllGroupStateScript(%this, %obj, %groupState)
    %this.setAllGroupState(%groupState);
    %this.inspect(%obj);
 }
+
+function SimViewTreeFilter::onReturn(%this)
+{
+   %text = %this.getText();
+   if( %text $= "" )
+      %this.reset();
+   else
+      InspectTreeView.setFilterText( %text );
+}
+

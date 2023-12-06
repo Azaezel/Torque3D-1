@@ -73,7 +73,7 @@ GFXStateBlockDesc::GFXStateBlockDesc()
    zDefined = false;
    zEnable = true;
    zWriteEnable = true;
-   zFunc = GFXCmpLessEqual;
+   zFunc = GFXCmpGreaterEqual;
    zBias = 0;
    zSlopeBias = 0;
 
@@ -278,6 +278,7 @@ GFXSamplerStateDesc::GFXSamplerStateDesc()
    samplerFunc = GFXCmpNever;
    maxAnisotropy = 1;
    mipLODBias = 0.0f;
+   borderColor = ColorI::WHITE;
 }
 
 GFXSamplerStateDesc GFXSamplerStateDesc::getWrapLinear()

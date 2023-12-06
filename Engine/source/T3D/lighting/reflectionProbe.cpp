@@ -56,7 +56,7 @@
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 bool ReflectionProbe::smRenderPreviewProbes = true;
-
+static MatrixF sEditingTransformMat;
 IMPLEMENT_CO_NETOBJECT_V1(ReflectionProbe);
 
 ConsoleDocClass(ReflectionProbe,
@@ -182,6 +182,10 @@ void ReflectionProbe::initPersistFields()
    Con::addVariable("$Light::renderReflectionProbes", TypeBool, &RenderProbeMgr::smRenderReflectionProbes,
       "Toggles rendering of light frustums when the light is selected in the editor.\n\n"
       "@note Only works for shadow mapped lights.\n\n"
+      "@ingroup Lighting");
+
+   Con::addVariable("$Probes::Capturing", TypeBool, &RenderProbeMgr::smBakeReflectionProbes,
+      "Toggles probe rendering capture state.\n\n"
       "@ingroup Lighting");
 
    Con::addVariable("$Light::renderPreviewProbes", TypeBool, &ReflectionProbe::smRenderPreviewProbes,
@@ -371,10 +375,10 @@ const MatrixF& ReflectionProbe::getTransform() const
       return mObjToWorld; 
    else
    {
-      MatrixF transformMat = MatrixF::Identity;
-      transformMat.setPosition(mProbeRefOffset);
+      sEditingTransformMat = MatrixF::Identity;
+      sEditingTransformMat.setPosition(mProbeRefOffset);
 
-      return transformMat;
+      return sEditingTransformMat;
    }
 }
 
@@ -709,7 +713,7 @@ void ReflectionProbe::processStaticCubemap()
       IBLUtilities::SaveCubeMap(prefilterFileName, mPrefilterMap->mCubemap);
    }
 
-   if ((mIrridianceMap != nullptr || !mIrridianceMap->mCubemap.isNull()) && (mPrefilterMap != nullptr || !mPrefilterMap->mCubemap.isNull()))
+   if ((mIrridianceMap != nullptr && !mIrridianceMap->mCubemap.isNull()) && (mPrefilterMap != nullptr && !mPrefilterMap->mCubemap.isNull()))
    {
       mProbeInfo.mPrefilterCubemap = mPrefilterMap->mCubemap;
       mProbeInfo.mIrradianceCubemap = mIrridianceMap->mCubemap;
@@ -823,7 +827,7 @@ void ReflectionProbe::createEditorResources()
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)
 {
-   if (!mEnabled || (!RenderProbeMgr::smRenderReflectionProbes && !dStrcmp(Con::getVariable("$Probes::Capturing", "0"),"1")))
+   if (!mEnabled || (!RenderProbeMgr::smRenderReflectionProbes || RenderProbeMgr::smBakeReflectionProbes))
       return;
 
    Point3F distVec = getRenderPosition() - state->getCameraPosition();
@@ -882,6 +886,9 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
          return;
 
       BaseMatInstance* probePrevMat = mEditorShapeInst->getMaterialList()->getMaterialInst(0);
+
+      if (probePrevMat == nullptr)
+         return;
 
       setPreviewMatParameters(state, probePrevMat);
 

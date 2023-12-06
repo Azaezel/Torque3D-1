@@ -105,6 +105,7 @@ public:
 
    // The derived class should provide the following:
    DECLARE_CONOBJECT(GameBaseData);
+   DECLARE_CATEGORY("Datablock");
    GameBaseData();
    static void initPersistFields();
    bool preload(bool server, String &errorStr);
@@ -275,6 +276,8 @@ public:
    /// Returns the datablock for this object.
    GameBaseData* getDataBlock()  { return mDataBlock; }
 
+   /// returns the datablock name for this object
+   StringTableEntry getTypeHint() const override { return (mDataBlock) ? mDataBlock->getName() : StringTable->EmptyString(); };
    /// Called when a new datablock is set. This allows subclasses to
    /// appropriately handle new datablocks.
    ///
@@ -440,6 +443,7 @@ public:
    #endif
 
    DECLARE_CONOBJECT (GameBase );
+   DECLARE_CATEGORY("UNLISTED");
 
    /// @name Callbacks
    /// @{

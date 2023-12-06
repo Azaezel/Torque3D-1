@@ -35,14 +35,13 @@
 #include "console/simPersistID.h"
 #include "console/typeValidators.h"
 #include "console/arrayObject.h"
-#include "console/codeBlock.h"
 #include "core/frameAllocator.h"
 #include "core/stream/fileStream.h"
 #include "core/fileObject.h"
 #include "persistence/taml/tamlCustom.h"
+#include "gui/editor/guiInspector.h"
 
 #include "sim/netObject.h"
-#include "cinterface/cinterface.h"
 
 IMPLEMENT_CONOBJECT( SimObject );
 
@@ -561,12 +560,12 @@ void SimObject::onTamlCustomRead(TamlCustomNodes const& customNodes)
                   // Check common fields.
                   if (field)
                   {
-                     setDataField(fieldName, buf, cField->getFieldValue());
+                     setPrefixedDataField(fieldName, buf, cField->getFieldValue());
                   }
                   else
                   {
                      // Unknown name so warn.
-                     Con::warnf("SimObject::onTamlCustomRead() - Encountered an unknown custom field name of '%s'.", fieldName);
+                     //Con::warnf("SimObject::onTamlCustomRead() - Encountered an unknown custom field name of '%s'.", fieldName);
                      continue;
                   }
                }
@@ -858,10 +857,6 @@ bool SimObject::isMethod( const char* methodName )
 {
    if( !methodName || !methodName[0] )
       return false;
-
-   if (CInterface::isMethod(this->getName(), methodName) || CInterface::isMethod(this->getClassName(), methodName)) {
-      return true;
-   }
 
    StringTableEntry stname = StringTable->insert( methodName );
 
@@ -2334,7 +2329,13 @@ String SimObject::_getLogMessage(const char* fmt, va_list args) const
 // MARK: ---- API ----
 
 //-----------------------------------------------------------------------------
+void SimObject::onInspect(GuiInspector* inspector)
+{
+   if (isMethod("onInspect"))
+      Con::executef(this, "onInspect", inspector);
+}
 
+//-----------------------------------------------------------------------------
 DefineEngineMethod( SimObject, dumpGroupHierarchy, void, (),,
    "Dump the hierarchy of this object up to RootGroup to the console." )
 {
@@ -2472,7 +2473,7 @@ static void sEnumCallback( EngineObject* object )
    if( !simObject )
       return;
       
-   Con::evaluatef( "%s( %i );", sEnumCallbackFunction, simObject->getId() );
+   Con::executef(sEnumCallbackFunction, simObject->getId());
 }
 
 DefineEngineFunction( debugEnumInstances, void, ( const char* className, const char* functionName ),,
@@ -2638,10 +2639,10 @@ DefineEngineMethod( SimObject, dumpMethods, ArrayObject*, (),,
       str.append( e->getPrototypeString() );
 
       str.append( '\n' );
-      if( e->mCode && e->mCode->fullPath )
-         str.append( e->mCode->fullPath );
+      if( e->mModule && e->mModule->getPath() )
+         str.append( e->mModule->getPath() );
       str.append( '\n' );
-      if( e->mCode )
+      if( e->mModule )
          str.append( String::ToString( e->mFunctionLineNumber ) );
 
       str.append( '\n' );
@@ -2655,6 +2656,57 @@ DefineEngineMethod( SimObject, dumpMethods, ArrayObject*, (),,
    return dictionary;
 }
 
+DefineEngineMethod(SimObject, getMethodSigs, ArrayObject*, (bool commands), (false),
+   "List the methods defined on this object.\n\n"
+   "Each description is a newline-separated vector with the following elements:\n"
+   "- method prototype string.\n"
+   "- Documentation string (not including prototype).  This takes up the remainder of the vector.\n"
+   "@return An ArrayObject populated with (name,description) pairs of all methods defined on the object.")
+{
+   Namespace* ns = object->getNamespace();
+   if (!ns)
+      return 0;
+
+   ArrayObject* dictionary = new ArrayObject();
+   dictionary->registerObject();
+
+   VectorPtr<Namespace::Entry*> vec(__FILE__, __LINE__);
+   ns->getEntryList(&vec);
+   for (Vector< Namespace::Entry* >::iterator j = vec.begin(); j != vec.end(); j++)
+   {
+      Namespace::Entry* e = *j;
+
+      if (commands)
+      {
+         if ((e->mType < Namespace::Entry::ConsoleFunctionType))
+            continue;
+      }
+      else
+      {
+         if ((e->mType > Namespace::Entry::ScriptCallbackType))
+            continue;
+      }
+      StringBuilder str;
+      str.append("function ");
+      str.append(ns->getName());
+      str.append("::");
+      str.append(e->getPrototypeSig());
+      str.append('\n');
+      str.append("{");
+      String docs = e->getDocString();
+      if (!docs.isEmpty())
+      {
+         str.append("\n/*");
+         str.append(docs);
+         str.append("\n*/");
+      }
+      str.append('\n');
+      str.append("}");
+      dictionary->push_back(e->mFunctionName, str.end());
+   }
+
+   return dictionary;
+}
 //-----------------------------------------------------------------------------
 
 namespace {

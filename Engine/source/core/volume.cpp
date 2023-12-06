@@ -618,13 +618,13 @@ bool MountSystem::_dumpDirectories(DirectoryRef directory, Vector<StringTableEnt
          // So if we queried for data/ and are currently processing data/ExampleModule/datablocks we want to output
          // ExampleModule/datablocks
          Path newDirectoryPath;
-         for (U32 iteration = basePathDirectoryCount; iteration < directoryPath.getDirectoryCount(); ++iteration)
+         for (U32 subIteration = basePathDirectoryCount; subIteration < directoryPath.getDirectoryCount(); ++subIteration)
          {
-            if (iteration > basePathDirectoryCount)
+            if (subIteration > basePathDirectoryCount)
             {
                newDirectoryPath.setPath(newDirectoryPath.getPath() + "/");
             }
-            newDirectoryPath.setPath(newDirectoryPath.getPath() + directoryPath.getDirectory(iteration));
+            newDirectoryPath.setPath(newDirectoryPath.getPath() + directoryPath.getDirectory(subIteration));
          }
 
          newDirectoryPath.setFileName(directoryPath.getFileName());
@@ -1232,18 +1232,6 @@ S32 FindByPattern( const Path &inBasePath, const String &inFilePattern, bool inR
 bool IsFile(const Path &path)
 {
    return sgMountSystem.isFile(path);
-}
-
-bool IsScriptFile(const char* pFilePath)
-{
-   return (sgMountSystem.isFile(pFilePath)
-      || sgMountSystem.isFile(pFilePath + String(".dso"))
-      || sgMountSystem.isFile(pFilePath + String(".mis"))
-      || sgMountSystem.isFile(pFilePath + String(".mis.dso"))
-      || sgMountSystem.isFile(pFilePath + String(".gui"))
-      || sgMountSystem.isFile(pFilePath + String(".gui.dso"))
-      || sgMountSystem.isFile(pFilePath + String("." TORQUE_SCRIPT_EXTENSION))
-      || sgMountSystem.isFile(pFilePath + String("." TORQUE_SCRIPT_EXTENSION) + String(".dso")));
 }
 
 bool IsDirectory(const Path &path)

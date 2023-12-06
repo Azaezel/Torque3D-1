@@ -22,10 +22,15 @@
 
 #include "gui/editor/guiInspector.h"
 #include "gui/editor/inspector/group.h"
+
+#include "console/script.h"
 #include "gui/editor/inspector/dynamicField.h"
 #include "gui/editor/inspector/datablockField.h"
 #include "gui/buttons/guiIconButtonCtrl.h"
-
+#include "T3D/assets/MaterialAsset.h"
+#include "T3D/assets/ShapeAsset.h"
+#include "T3D/assets/ImageAsset.h"
+#include "T3D/assets/SoundAsset.h"
 
 IMPLEMENT_CONOBJECT(GuiInspectorGroup);
 
@@ -563,4 +568,171 @@ AbstractClassRep* GuiInspectorGroup::findCommonAncestorClass()
    }
       
    return classRep;
+}
+
+GuiInspectorField* GuiInspectorGroup::createInspectorField()
+{
+   GuiInspectorField* newField = new GuiInspectorField();
+
+   newField->init(mParent, this);
+
+   newField->setSpecialEditField(true);
+
+   if (newField->registerObject())
+   {
+      return newField;
+   }
+
+   return NULL;
+}
+
+void GuiInspectorGroup::addInspectorField(StringTableEntry name, StringTableEntry typeName, const char* description, const char* callbackName)
+{
+   S32 fieldType = -1;
+
+   if (typeName == StringTable->insert("int"))
+      fieldType = TypeS32;
+   else if (typeName == StringTable->insert("float"))
+      fieldType = TypeF32;
+   else if (typeName == StringTable->insert("vector"))
+      fieldType = TypePoint3F;
+   else if (typeName == StringTable->insert("vector2"))
+      fieldType = TypePoint2F;
+   else if (typeName == StringTable->insert("material"))
+      fieldType = TypeMaterialAssetId;
+   else if (typeName == StringTable->insert("image"))
+      fieldType = TypeImageAssetId;
+   else if (typeName == StringTable->insert("shape"))
+      fieldType = TypeShapeAssetId;
+   else if (typeName == StringTable->insert("sound"))
+      fieldType = TypeSoundAssetId;
+   else if (typeName == StringTable->insert("bool"))
+      fieldType = TypeBool;
+   else if (typeName == StringTable->insert("object"))
+      fieldType = TypeSimObjectPtr;
+   else if (typeName == StringTable->insert("string"))
+      fieldType = TypeString;
+   else if (typeName == StringTable->insert("colorI"))
+      fieldType = TypeColorI;
+   else if (typeName == StringTable->insert("colorF"))
+      fieldType = TypeColorF;
+   else if (typeName == StringTable->insert("ease"))
+      fieldType = TypeEaseF;
+   else if (typeName == StringTable->insert("command"))
+      fieldType = TypeCommand;
+   else if (typeName == StringTable->insert("filename"))
+      fieldType = TypeStringFilename;
+   else
+      fieldType = -1;
+
+   GuiInspectorField* fieldGui;
+
+   //Currently the default GuiInspectorField IS the string type, so we'll control
+   //for that type here. If it's not TypeString, we allow the normal creation process
+   //to continue
+   if (fieldType == TypeString)
+      fieldGui = new GuiInspectorField();
+   else
+      fieldGui = constructField(fieldType);
+
+   if (fieldGui == nullptr)
+   {
+      //call down into script and see if there's special handling for that type of field
+      //this allows us to have completely special-case field types implemented entirely in script
+      if (isMethod("onConstructField"))
+      {
+         //ensure our stack variable is bound if we need it
+         Con::evaluatef("%d.stack = %d;", this->getId(), mStack->getId());
+
+         Con::executef(this, "onConstructField", name, name, typeName, description, StringTable->EmptyString(), StringTable->EmptyString(), callbackName, mParent->getInspectObject(0)->getId());
+      }
+   }
+   else
+   {
+      fieldGui->init(mParent, this);
+
+      fieldGui->setSpecialEditField(true);
+      fieldGui->setTargetObject(mParent->getInspectObject(0));
+
+      StringTableEntry fieldName = StringTable->insert(name);
+
+      fieldGui->setSpecialEditVariableName(fieldName);
+      fieldGui->setSpecialEditVariableType(typeName);
+      fieldGui->setSpecialEditCallbackName(StringTable->insert(callbackName));
+
+      fieldGui->setInspectorField(NULL, fieldName);
+      fieldGui->setDocs(description);
+
+      if (fieldGui->registerObject())
+      {
+         fieldGui->setValue(mParent->getInspectObject(0)->getDataField(fieldName, NULL));
+
+         mStack->addObject(fieldGui);
+      }
+      else
+      {
+         SAFE_DELETE(fieldGui);
+      }
+   }
+}
+
+void GuiInspectorGroup::addInspectorField(GuiInspectorField* field)
+{
+   mStack->addObject(field);
+   mChildren.push_back(field);
+   mStack->updatePanes();
+}
+
+void GuiInspectorGroup::removeInspectorField(StringTableEntry name)
+{
+   for (U32 i = 0; i < mStack->size(); i++)
+   {
+      GuiInspectorField* field = dynamic_cast<GuiInspectorField*>(mStack->getObject(i));
+
+      if (field == nullptr)
+         continue;
+
+      if (field->getFieldName() == name || field->getSpecialEditVariableName() == name)
+      {
+         mStack->removeObject(field);
+         return;
+      }
+   }
+}
+
+DefineEngineMethod(GuiInspectorGroup, createInspectorField, GuiInspectorField*, (), , "createInspectorField()")
+{
+   return object->createInspectorField();
+}
+
+DefineEngineMethod(GuiInspectorGroup, addField, void, (const char* fieldName, const char* fieldTypeName, const char* description, const char* callbackName),
+   ("", "", "", ""),
+   "Adds a new Inspector field to this group.\n"
+   "@param fieldName The name of the field to add. The field will associate to a variable of the same name on the inspected object for editing purposes."
+   "@param fieldTypeName The name of the type of field it is. If it's an understood existing type, it will create it as normal. If it's an unknown type, it will attempt to call into script to create it."
+   "@param description (Optional) Description of the field."
+   "@param callbackName (Optional) Sets a special callback function to be called when this field is edited.")
+{
+   if (dStrEqual(fieldName, "") || dStrEqual(fieldTypeName, ""))
+      return;
+
+   object->addInspectorField(StringTable->insert(fieldName), StringTable->insert(fieldTypeName), description, callbackName);
+}
+
+
+DefineEngineMethod(GuiInspectorGroup, addInspectorField, void, (GuiInspectorField* field), (nullAsType<GuiInspectorField*>()), "addInspectorField( GuiInspectorFieldObject )")
+{
+   if(field)
+      object->addInspectorField(field);
+}
+
+DefineEngineMethod(GuiInspectorGroup, removeField, void, (const char* fieldName),
+   (""),
+   "Removes a Inspector field to this group of a given name.\n"
+   "@param fieldName The name of the field to be removed.")
+{
+   if (dStrEqual(fieldName, ""))
+      return;
+
+   object->removeInspectorField(StringTable->insert(fieldName));
 }

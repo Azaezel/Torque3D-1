@@ -26,11 +26,7 @@ $PostFX::HDRPostFX::enableToneMapping = 0.5;
 
 /// The tone mapping middle grey or exposure value used
 /// to adjust the overall "balance" of the image.
-///
-/// 0.18 is fairly common value.
-///
-
-$PostFX::HDRPostFX::keyValue = 0.115;
+$PostFX::HDRPostFX::keyValue = 0.5;
 
 
 //Explicit HDR Params
@@ -70,7 +66,7 @@ $PostFX::HDRPostFX::dirtIntensity = 2.0;
 $PostFX::HDRPostFX::dirtEdgeMinDist = 0.125;
 $PostFX::HDRPostFX::dirtEdgeMaxDist = 0.75;
 $PostFX::HDRPostFX::dirtEdgeMinVal = 0.05;
-$PostFX::HDRPostFX::dirtImage = "core/postFX/images/lensDirt.png";
+$PostFX::HDRPostFX::dirtImage = "Core_PostFX:lensDirt_image";
 
 // The tonemapping algo to use
 $PostFX::HDRPostFX::tonemapMode = "ACES";
@@ -347,7 +343,7 @@ function HDRPostFX::preProcess( %this )
    if(%bloomFinal.texture[1] !$= $PostFX::HDRPostFX::dirtImage)
    {
       if ($PostFX::HDRPostFX::dirtImage $= "")
-        $PostFX::HDRPostFX::dirtImage = "core/postFX/images/lensDirt.png";
+        $PostFX::HDRPostFX::dirtImage = "Core_PostFX:lensDirt_image";
       
       %bloomFinal.setTexture(1, $PostFX::HDRPostFX::dirtImage);
    }
@@ -552,10 +548,10 @@ function HDRPostFX::SetupBloomFX( %this )
      %textureName = "#" @ %mipName;
    }
    
-   for (%idx = %this.mipsCount; %idx > 0; %idx--)
+   for (%idx = %this.mipsCount - 1; %idx >= 0; %idx--)
    {
-     %nxt = "#hdrbloom_" @ (%idx - 1);
-     %mipName = "hdrbloom_up_" @ (%idx - 1);
+     %nxt = "#hdrbloom_" @ %idx;
+     %mipName = "hdrbloom_up_" @ %idx;
      
      %mipFX = new PostEffect()
      {

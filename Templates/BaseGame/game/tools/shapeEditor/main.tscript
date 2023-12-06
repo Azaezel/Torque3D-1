@@ -30,12 +30,13 @@ function initializeShapeEditor()
 
    exec("./gui/Profiles.ed." @ $TorqueScriptFileExtension);
 
+   // Order of GUI loading is important
    exec("./gui/shapeEdPreviewWindow.ed.gui");
-   exec("./gui/shapeEdAnimWindow.ed.gui");
-   exec("./gui/shapeEdAdvancedWindow.ed.gui");
    exec("./gui/ShapeEditorToolbar.ed.gui");
    exec("./gui/shapeEdSelectWindow.ed.gui");
    exec("./gui/shapeEdPropWindow.ed.gui");
+   exec("./gui/shapeEdAdvancedWindow.ed.gui");
+   exec("./gui/shapeEdAnimWindow.ed.gui");
 
    exec("./scripts/shapeEditor.ed." @ $TorqueScriptFileExtension);
    exec("./scripts/shapeEditorHints.ed." @ $TorqueScriptFileExtension);
@@ -47,12 +48,12 @@ function initializeShapeEditor()
    ShapeEdSelectWindow.setVisible(false);
    ShapeEdPropWindow.setVisible(false);
 
-   EditorGui.add(ShapeEdPreviewGui);
-   EditorGui.add(ShapeEdAnimWindow);
-   EditorGui.add(ShapeEdAdvancedWindow);
+   MainSceneTabPanel.add(ShapeEdPreviewGui);
+   MainSceneTabPanel.add(ShapeEdAnimWindow);
+   MainSceneTabPanel.add(ShapeEdAdvancedWindow);
 
-   EditorGui.add(ShapeEdSelectWindow);
-   EditorGui.add(ShapeEdPropWindow);
+   MainSceneTabPanel.add(ShapeEdSelectWindow);
+   MainSceneTabPanel.add(ShapeEdPropWindow);
 
    new ScriptObject(ShapeEditorPlugin)
    {
@@ -185,7 +186,7 @@ function ShapeEditorPlugin::open(%this, %shapeAsset)
       ShapeEdPropWindow.setVisible(true);
       ShapeEdAnimWindow.setVisible(true);
       ShapeEdAdvancedWindow.setVisible(ShapeEditorToolbar-->showAdvanced.getValue());
-      EditorGui.bringToFront(ShapeEdPreviewGui);
+      MainSceneTabPanel.bringToFront(ShapeEdPreviewGui);
 
       ToolsPaletteArray->WorldEditorMove.performClick();
       %this.map.push();

@@ -80,7 +80,11 @@ void main()
    //create surface
    Surface surface = createSurface( normDepth, colorBuffer,matInfoBuffer,
                                     uvScene, eyePosWorld, wsEyeRay, cameraToWorld);
-   
+   if (getFlag(surface.matFlag, 2))
+   { 
+      OUT_col = surface.baseColor;
+      return;
+   } 
    vec3 L = lightPosition - surface.P;
    float dist = length(L);
    vec3 lighting = vec3(0.0);
@@ -150,10 +154,8 @@ void main()
       return;
    #endif
 
-      //get Punctual light contribution   
-      lighting = getPunctualLight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, shadow);
-      //get spot angle attenuation
-      lighting *= getSpotAngleAtt(-surfaceToLight.L, lightDirection, lightSpotParams );
+      //get spot light contribution   
+      lighting = getSpotlight(surface, surfaceToLight, lightCol, lightBrightness, lightInvSqrRange, lightDirection, lightSpotParams, shadow);
    }
 
    OUT_col = vec4(lighting, 0);

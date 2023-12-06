@@ -1,7 +1,0 @@
-<GUIAsset
-    canSave="true"
-    canSaveDynamicFields="true"
-    AssetName="simViewDlg, EditorGuiGroup"
-    scriptFile="@assetFile=simViewDlg.ed.gui"
-    GUIFile="@assetFile=simViewDlg.ed.gui"
-    VersionId="1" />

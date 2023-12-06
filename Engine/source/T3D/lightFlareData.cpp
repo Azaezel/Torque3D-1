@@ -40,10 +40,10 @@
 #include "collision/collision.h"
 #include "lighting/lightManager.h"
 
-const U32 LightFlareData::LosMask = STATIC_COLLISION_TYPEMASK |
-                                    ShapeBaseObjectType |
-                                    StaticShapeObjectType |
-                                    ItemObjectType;
+const U32 LightFlareData::LosMask = (U32)STATIC_COLLISION_TYPEMASK |
+                                    (U32)ShapeBaseObjectType |
+                                    (U32)StaticShapeObjectType |
+                                    (U32)ItemObjectType;
 
 
 LightFlareState::~LightFlareState()
@@ -455,7 +455,7 @@ void LightFlareData::prepRender(SceneRenderState *state, LightFlareState *flareS
    lightPosSS *= oneOverViewportExtent;
    lightPosSS = (lightPosSS * 2.0f) - Point3F::One;
    lightPosSS.y = -lightPosSS.y;
-   lightPosSS.z = 0.0f;
+   lightPosSS.z = 1.0f;
 
    // Determine the center of the current projection so we can converge there
    Point3F centerProj(0);

@@ -391,7 +391,8 @@ bool TSStatic::_createShape()
    mAmbientThread = NULL;
    mShape = NULL;
 
-   if(!mShapeAsset.isNull())
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus == AssetBase::Ok || assetStatus == AssetBase::UsingFallback)
    {
       //Special-case handling, usually because we set noShape
       mShape = mShapeAsset->getShapeResource();
@@ -1628,8 +1629,11 @@ void TSStatic::updateMaterials()
 
 void TSStatic::getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList)
 {
-   if(!mShapeAsset.isNull() && mShapeAsset->getAssetId() != ShapeAsset::smNoShapeAssetFallback)
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus == AssetBase::Ok)
+   {
       usedAssetsList->push_back_unique(mShapeAsset->getAssetId());
+   }
 }
 
 //------------------------------------------------------------------------
@@ -1641,7 +1645,7 @@ void TSStatic::onInspect(GuiInspector* inspector)
 {
    //if (mShapeAsset == nullptr)
       return;
-
+/*
    //Put the GameObject group before everything that'd be gameobject-effecting, for orginazational purposes
    GuiInspectorGroup* materialGroup = inspector->findExistentGroup(StringTable->insert("Materials"));
    if (!materialGroup)
@@ -1709,6 +1713,7 @@ void TSStatic::onInspect(GuiInspector* inspector)
          }
       }
    }
+   */
 }
 #endif
 DefineEngineMethod(TSStatic, getTargetName, const char*, (S32 index), (0),

@@ -471,11 +471,9 @@ bool PlayerData::preload(bool server, String &errorStr)
    if (!server) {
       for (U32 i = 0; i < MaxSounds; ++i)
       {
-         _setPlayerSound(getPlayerSound(i), i);
-         if (getPlayerSound(i) != StringTable->EmptyString())
+         if (!isPlayerSoundValid(i))
          {
-            if (!getPlayerSoundProfile(i))
-               Con::errorf("PlayerData::Preload() - unable to find sfxProfile for asset %d %s", i, mPlayerSoundAssetId[i]);
+            //return false; -TODO: trigger asset download
          }
       }
    }
@@ -2271,10 +2269,14 @@ void Player::setState(ActionState state, U32 recoverTicks)
             case RecoverState: {
                if (mDataBlock->landSequenceTime > 0.0f)
                {
-                  // Use the land sequence as the basis for the recovery
-                  setActionThread(PlayerData::LandAnim, true, false, true, true);
-                  F32 timeScale = mShapeInstance->getDuration(mActionAnimation.thread) / mDataBlock->landSequenceTime;
-                  mShapeInstance->setTimeScale(mActionAnimation.thread,timeScale);
+                  PlayerData::ActionAnimation& anim = mDataBlock->actionList[PlayerData::LandAnim];
+                  if (anim.sequence != -1)
+                  {
+                     // Use the land sequence as the basis for the recovery
+                     setActionThread(PlayerData::LandAnim, true, false, true, true);
+                     F32 timeScale = mShapeInstance->getDuration(mActionAnimation.thread) / mDataBlock->landSequenceTime;
+                     mShapeInstance->setTimeScale(mActionAnimation.thread, timeScale);
+                  }
                   mRecoverDelay =  mDataBlock->landSequenceTime;
                }
                else
@@ -3935,7 +3937,7 @@ void Player::updateActionThread()
 
          if( gClientContainer.castRay( Point3F( pos.x, pos.y, pos.z + 0.01f ),
                Point3F( pos.x, pos.y, pos.z - 2.0f ),
-               STATIC_COLLISION_TYPEMASK | VehicleObjectType, &rInfo ) )
+               (U32)STATIC_COLLISION_TYPEMASK | (U32)VehicleObjectType, &rInfo ) )
          {
             Material* material = ( rInfo.material ? dynamic_cast< Material* >( rInfo.material->getMaterial() ) : 0 );
 
@@ -5560,7 +5562,7 @@ void Player::setTransform(const MatrixF& mat)
    mat.getColumn(3,&pos);
    Point3F rot(0.0f, 0.0f, -mAtan2(-vec.x,vec.y));
    setPosition(pos,rot);
-   setMaskBits(MoveMask | NoWarpMask);
+   setMaskBits((U32)MoveMask | (U32)NoWarpMask);
 }
 
 void Player::getEyeTransform(MatrixF* mat)
@@ -7071,7 +7073,7 @@ void Player:: playImpactSound()
 
       if( gClientContainer.castRay( Point3F( pos.x, pos.y, pos.z + 0.01f ),
                                     Point3F( pos.x, pos.y, pos.z - 2.0f ),
-                                    STATIC_COLLISION_TYPEMASK | VehicleObjectType,
+                                    (U32)STATIC_COLLISION_TYPEMASK | (U32)VehicleObjectType,
                                     &rInfo ) )
       {
          Material* material = ( rInfo.material ? dynamic_cast< Material* >( rInfo.material->getMaterial() ) : 0 );

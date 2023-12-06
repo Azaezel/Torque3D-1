@@ -27,6 +27,7 @@
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
 #include "collision/boxConvex.h"
+#include "console/script.h"
 
 #include "core/stream/bitStream.h"
 #include "math/mathIO.h"
@@ -554,7 +555,7 @@ void Trigger::setTransform(const MatrixF & mat)
       base.mul(mWorldToObj);
       mClippedList.setBaseTransform(base);
 
-      setMaskBits(TransformMask | ScaleMask);
+      setMaskBits((U32)TransformMask | (U32)ScaleMask);
    }
 
    testObjects();
@@ -564,7 +565,7 @@ void Trigger::onUnmount( SceneObject *obj, S32 node )
 {
     Parent::onUnmount( obj, node );
    // Make sure the client get's the final server pos.
-   setMaskBits(TransformMask | ScaleMask);
+   setMaskBits((U32)TransformMask | (U32)ScaleMask);
 }
 
 void Trigger::prepRenderImage( SceneRenderState *state )

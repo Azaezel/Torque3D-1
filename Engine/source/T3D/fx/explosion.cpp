@@ -877,15 +877,9 @@ bool ExplosionData::preload(bool server, String &errorStr)
    if( !server )
    {
 
-      if (getSound() != StringTable->EmptyString())
+      if (!isSoundValid())
       {
-         _setSound(getSound());
-
-         if (!getSoundProfile())
-         {
-            Con::errorf(ConsoleLogEntry::General, "SplashData::preload: Cant get an sfxProfile for splash.");
-            return false;
-         }
+         //return false; -TODO: trigger asset download
       }
 
       if (!particleEmitter && particleEmitterId != 0)
@@ -1409,7 +1403,7 @@ bool Explosion::explode()
       resetWorldBox();
    }
 
-   SFXProfile* sound_prof = mDataBlock->getSoundProfile();
+   SFXProfile* sound_prof = static_cast<SFXProfile*>(mDataBlock->getSoundProfile());
    if (sound_prof)
    {
       soundProfile_clone = sound_prof->cloneAndPerformSubstitutions(ss_object, ss_index);

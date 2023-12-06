@@ -117,7 +117,7 @@ ConsoleSetType(TypeShapeAssetId)
 
 //-----------------------------------------------------------------------------
 
-const String ShapeAsset::mShapeErrCodeStrings[] =
+const String ShapeAsset::mErrCodeStrings[] =
 {
    "TooManyVerts",
    "TooManyBones",
@@ -224,8 +224,6 @@ void ShapeAsset::initializeAsset()
       String normalPath = String(mFilePath) + "_imposter_normals.dds";
       mNormalImposterPath = StringTable->insert(normalPath.c_str());
    }
-
-   loadShape();
 }
 
 void ShapeAsset::setShapeFile(const char* pShapeFile)
@@ -307,11 +305,13 @@ void ShapeAsset::_onResourceChanged(const Torque::Path &path)
 
    refreshAsset();
 
-   loadShape();
+   onAssetRefresh();
 }
 
-bool ShapeAsset::loadShape()
+U32 ShapeAsset::load()
 {
+   if (mLoadedState == AssetErrCode::Ok) return mLoadedState;
+
    mMaterialAssets.clear();
    mMaterialAssetIds.clear();
 
@@ -357,7 +357,7 @@ bool ShapeAsset::loadShape()
    {
       Con::errorf("ShapeAsset::loadShape : failed to load shape file %s (%s)!", getAssetName(), mFilePath);
       mLoadedState = BadFileReference;
-      return false; //if it failed to load, bail out
+      return mLoadedState; //if it failed to load, bail out
    }
    // Construct billboards if not done already
    if (GFXDevice::devicePresent())
@@ -379,7 +379,7 @@ bool ShapeAsset::loadShape()
          mAnimationAssets[i]->getStartFrame(), mAnimationAssets[i]->getEndFrame(), mAnimationAssets[i]->getPadRotation(), mAnimationAssets[i]->getPadTransforms()))
       {
          mLoadedState = MissingAnimatons;
-         return false;
+         return mLoadedState;
       }
       if (mAnimationAssets[i]->isBlend())
          hasBlends = true;
@@ -396,12 +396,13 @@ bool ShapeAsset::loadShape()
             //First, we need to make sure the anim asset we depend on for our blend is loaded
             AssetPtr<ShapeAnimationAsset> blendAnimAsset = mAnimationAssets[i]->getBlendAnimationName();
 
-            if (blendAnimAsset.isNull())
+            U32 assetStatus = ShapeAnimationAsset::getAssetErrCode(blendAnimAsset);
+            if (assetStatus != AssetBase::Ok)
             {
                Con::errorf("ShapeAsset::initializeAsset - Unable to acquire reference animation asset %s for asset %s to blend!", mAnimationAssets[i]->getBlendAnimationName(), mAnimationAssets[i]->getAssetName());
                {
                   mLoadedState = MissingAnimatons;
-                  return false;
+                  return mLoadedState;
                }
             }
 
@@ -411,7 +412,7 @@ bool ShapeAsset::loadShape()
                Con::errorf("ShapeAnimationAsset::initializeAsset - Unable to set animation clip %s for asset %s to blend!", mAnimationAssets[i]->getAnimationName(), mAnimationAssets[i]->getAssetName());
                {
                   mLoadedState = MissingAnimatons;
-                  return false;
+                  return mLoadedState;
                }
             }
          }
@@ -421,7 +422,7 @@ bool ShapeAsset::loadShape()
    mChangeSignal.trigger();
 
    mLoadedState = Ok;
-   return true;
+   return mLoadedState;
 }
 
 //------------------------------------------------------------------------------
@@ -533,8 +534,6 @@ void ShapeAsset::onAssetRefresh(void)
    // Update.
    if(!Platform::isFullPath(mFileName))
       mFilePath = getOwned() ? expandAssetFilePath(mFileName) : mFilePath;
-
-   loadShape();
 }
 
 void ShapeAsset::SplitSequencePathAndName(String& srcPath, String& srcName)
@@ -592,9 +591,6 @@ const char* ShapeAsset::generateCachedPreviewImage(S32 resolution, String overri
    // Animate the shape once.
    shape->animate(0);
 
-   // So we don't have to change it everywhere.
-   const GFXFormat format = GFXFormatR8G8B8A8;
-
    GBitmap* imposter = NULL;
    GBitmap* imposterNrml = NULL;
 
@@ -604,8 +600,6 @@ const char* ShapeAsset::generateCachedPreviewImage(S32 resolution, String overri
    static const MatrixF bottomXfm(EulerF(M_PI_F / 2.0f, 0, 0));
 
    MatrixF angMat;
-
-   S32 mip = 0;
 
    PROFILE_START(ShapeAsset_generateCachedPreviewImage);
 
@@ -712,6 +706,7 @@ DefineEngineMethod(ShapeAsset, generateCachedPreviewImage, const char*, (S32 res
    "@param resolution Optional field for what resolution to bake the preview image at. Must be pow2\n"
    "@param overrideMaterialName Optional field for overriding the material used when rendering the shape for the bake.")
 {
+   object->load();
    return object->generateCachedPreviewImage(resolution, overrideMaterialName);
 }
 

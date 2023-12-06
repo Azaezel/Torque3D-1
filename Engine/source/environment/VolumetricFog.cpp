@@ -352,8 +352,8 @@ bool VolumetricFog::setShapeAsset(const StringTableEntry shapeAssetId)
 bool VolumetricFog::LoadShape()
 {
    GFXPrimitiveType GFXdrawTypes[] = { GFXTriangleList, GFXTriangleStrip };
-
-   if (mShapeAsset.isNull())
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus != AssetBase::Ok && assetStatus != AssetBase::UsingFallback)
    {
       Con::errorf("[VolumetricFog] Failed to load shape asset.");
       return false;
@@ -1104,7 +1104,7 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
    z_buf->attachTexture(GFXTextureTarget::Color0, mDepthBuffer);
 
    GFX->setActiveRenderTarget(z_buf);
-   GFX->clear(GFXClearStencil | GFXClearTarget , ColorI(0,0,0,0), 1.0f, 0);
+   GFX->clear(GFXClearStencil | GFXClearTarget , ColorI(0,0,0,0), 0.0f, 0);
 
    GFX->drawPrimitive(0);
    z_buf->resolve();
@@ -1112,7 +1112,7 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
    //render frontside to target mFrontBuffer
    z_buf->attachTexture(GFXTextureTarget::DepthStencil, GFXTextureTarget::sDefaultDepthStencil);
    z_buf->attachTexture(GFXTextureTarget::Color0, mFrontBuffer);
-   GFX->clear(GFXClearStencil | GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
+   GFX->clear(GFXClearStencil | GFXClearTarget, ColorI(0, 0, 0, 0), 0.0f, 0);
 
    GFX->setStateBlock(mStateblock_preF);
 
@@ -1217,9 +1217,11 @@ void VolumetricFog::InitTexture()
 {
    mIsTextured = false;
 
-   if (mTextureAsset.isNull())
+   U32 assetStatus = ImageAsset::getAssetErrCode(mTextureAsset);
+   if (assetStatus != AssetBase::Ok && assetStatus != AssetBase::UsingFallback)
+   {
       return;
-
+   }
    if (!mTexture.isNull())
    {
       mIsTextured = true;

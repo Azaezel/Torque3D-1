@@ -57,9 +57,13 @@ public:
    virtual ~Prefab();
 
    DECLARE_CONOBJECT(Prefab);
+   DECLARE_CATEGORY("Object \t Collection");
   
    static void initPersistFields();
 
+   /// returns the filename for this object
+   StringTableEntry getTypeHint() const override;
+   
    // SimObject
    virtual bool onAdd();
    virtual void onRemove();
