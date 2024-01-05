@@ -1,0 +1,36 @@
+
+datablock ParticleEmitterData(elecEM : DefaultEmitter)
+{
+   ejectionPeriodMS = "40";
+   ejectionVelocity = "0";
+   velocityVariance = "0";
+   ejectionOffset = "0";
+   thetaMax = "180";
+   particles = "elecPart";
+   blendStyle = "ADDITIVE";
+   softnessDistance = "1";
+   thetaVariance = "45";
+   Glow = "1";
+   ribbonParticles = "1";
+   ejectionOffsetVariance = "10";
+   thetaMin = "0";
+   periodVarianceMS = "30";
+   phiVariance = "45";
+};
+
+datablock ParticleEmitterData(omniFlameEM : DefaultEmitter)
+{
+   particles = "omniFlamePart";
+   thetaMax = "0";
+   ejectionPeriodMS = "1000";
+   ejectionOffset = "0";
+   ejectionOffsetVariance = "5";
+   phiVariance = "0";
+   ejectionVelocity = "0";
+   thetaMin = "0";
+   blendStyle = "NORMAL";
+   orientParticles = "0";
+   glow = "1";
+   periodVarianceMS = "999";
+   softParticles = "1";
+};

@@ -1,0 +1,17 @@
+
+singleton TSShapeConstructor(SpikeTrapdae)
+{
+   baseShapeAsset = "trapsNTriggers:SpikeTrap_shape";
+   singleDetailSize = "0";
+   neverImportMat = "DefaultMaterial	ColorEffect*";
+   flipUVCoords = "0";
+   joinIdenticalVerts = "0";
+   reverseWindingOrder = "0";
+   removeRedundantMats = "0";
+   animFPS = "2";
+};
+
+function SpikeTrapdae::onLoad(%this)
+{
+   %this.setSequenceCyclic("ambient", "0");
+}

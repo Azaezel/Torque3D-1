@@ -1,0 +1,60 @@
+
+datablock ParticleData(elecPart : DefaultParticle)
+{
+   textureAsset = "trapsNTriggers:zot_image";
+   dragCoefficient = "0";
+   gravityCoefficient = 0;
+   inheritedVelFactor = "0";
+   constantAcceleration = 0.0;
+   lifetimeMS = "500";
+   lifetimeVarianceMS = "0";
+   useInvAlpha = true;
+   spinRandomMin = "-1";
+   spinRandomMax = "0";
+   spinSpeed = "0";
+
+   colors[0] = "1 1 1 1";
+   colors[1] = "1 1 1 1";
+   colors[2] = "1 1 1 1";
+   colors[3] = "1 0.991 0.991 1";
+   
+   sizes[0] = "1.99969";
+   sizes[1] = "1.00023";
+   sizes[2] = "0.499733";
+   sizes[3] = "0";
+   
+   times[0] = 0.0;
+   times[1] = 0.247059;
+   times[2] = 0.494118;
+   times[3] = 1;
+   
+};
+
+datablock ParticleData(omniFlamePart : DefaultParticle)
+{
+   animTexTiling = "8 5";
+   textureAsset = "trapsNTriggers:omniFlame_image";
+   animTexFrames = "0 1-40";
+   framesPerSec = "40";
+   inheritedVelFactor = "0";
+   lifetimeMS = "2000";
+   lifetimeVarianceMS = "0";
+   animateTexture = "1";
+   dragCoefficient = "0";
+   spinSpeed = "0";
+   spinRandomMin = "-1";
+   spinRandomMax = "0";
+   colors[0] = "1 0.984252 0.984252 1";
+   colors[1] = "1 1 0.984252 0.629921";
+   sizes[0] = "20";
+   sizes[1] = "20";
+   sizes[2] = "0";
+   sizes[3] = "0";
+   sizes[4] = "0";
+   sizes[5] = "0";
+   sizes[6] = "0";
+   sizes[7] = "0";
+   times[1] = "1";
+   times[2] = "1";
+   colors[3] = "0.732283 1 0 0";
+};

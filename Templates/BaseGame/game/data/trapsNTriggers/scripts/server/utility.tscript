@@ -1,0 +1,9 @@
+function getPolyhedronFromShape(%obj)
+{
+   %box = %obj.getObjectBox();
+   %xlength = mAbs(getWord(%box,0) - getWord(%box,3));
+   %ylength = mAbs(getWord(%box,1) - getWord(%box,4));
+   %Zlength = mAbs(getWord(%box,2) - getWord(%box,5));
+   %polyhedron = -%xlength/2 SPC %ylength/2 SPC 0 SPC %xlength SPC 0 SPC 0 SPC 0 SPC -%ylength SPC 0 SPC 0 SPC 0 SPC %Zlength;
+	return %polyhedron;
+}

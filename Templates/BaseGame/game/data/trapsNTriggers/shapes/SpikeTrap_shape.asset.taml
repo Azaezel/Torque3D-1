@@ -1,0 +1,6 @@
+<ShapeAsset
+    AssetName="SpikeTrap_shape"
+    fileName="@assetFile=SpikeTrap.dae"
+    constuctorFileName="@assetFile=SpikeTrap.tscript"
+    materialSlot0="@asset=trapsNTriggers:FloorGray"
+    materialSlot1="@asset=trapsNTriggers:InteractiveRed"/>

@@ -1,0 +1,25 @@
+//--- OBJECT WRITE BEGIN ---
+$ThisPrefab = new SimGroup() {
+
+   new ParticleEmitterNode() {
+      emitter = "elecEM";
+      dataBlock = "DefaultEmitterNodeData";
+      position = "2.95639e-05 4.3869e-05 -0.000228882";
+         firstDataCheck = "1";
+   };
+   new Trigger() {
+      dataBlock = "EnvironmentalDamager";
+      position = "4.00543e-05 0 -2.30701";
+      scale = "10 10 10";
+         firstDataCheck = "1";
+   };
+   new VolumetricFog() {
+      scale = "10 10 10";
+      ShapeAsset = "Core_GameObjects:unit_sphere";
+      FogColor = "249 249 246 255";
+      TextureAsset = "trapsNTriggers:FogMod_heavy_image";
+      tiles = "1";
+      FadeSize = 10000;
+   };
+};
+//--- OBJECT WRITE END ---
