@@ -1,5 +1,0 @@
-<ShapeAsset
-    AssetName="tileXJunction_shape"
-    fileName="@assetFile=tileXJunction.dae"
-    constuctorFileName="@assetFile=tileXJunction.tscript"
-    materialSlot0="@asset=mazeGen:tileSet_frameMat"/>

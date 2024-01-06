@@ -1,48 +1,9 @@
-function mazeGen::getRoomList(%this)
+function mazeGen::getRoomList(%this,%roomFile)
 {
-    if (isObject(RoomList)) return;
-    
-    new arrayobject(RoomList);
-    
-    new arrayobject(corridorList);
-        corridorList.bounds = "30 30 30";
-        corridorList.add(0, "tileStraight");
-        corridorList.add(1, "tileStraightNoWall");    
-        corridorList.add(2, "tileLeft");
-        corridorList.add(3, "tileRight");
-        corridorList.add(4, "tileTJunction");
-        corridorList.add(5, "tileXJunction");
-    RoomList.add(0,corridorList);
-    
-    new arrayobject(stairList);
-        stairList.bounds = "30 60 60";
-        stairList.add(0, "tileUp");
-        stairList.add(1, "tileDown");
-    RoomList.add(1,stairList);
-    
-    new arrayobject(longList);
-        longList.bounds = "30 150 30";
-        longList.add(0, "tileLong");
-        longList.add(1, "tileLongDoors");
-    RoomList.add(2,longList);
-    
-
-    new arrayobject(medRoomist);
-        medRoomist.bounds = "180 180 30";
-        medRoomist.add(0, "tileCrossRoom");
-    RoomList.add(3,medRoomist);
-    
-    new arrayobject(stackList);
-        stackList.bounds = "180 180 200";
-        stackList.add(0, "tileStackRoom");
-    RoomList.add(4,stackList);
-    
-    new arrayobject(arenaList);
-        arenaList.bounds = "300 300 200";
-        arenaList.add(0, "tileArenaA");
-        arenaList.add(1, "tileArenaB");
-        arenaList.add(2, "tileArenaC");
-    RoomList.add(5,arenaList);
+    if (!isObject(RoomList))
+        new arrayobject(RoomList);
+    RoomList.clear();
+    exec(%roomFile);
 }
 
 function mazeGen::createStartSpawnpoints(%this,%nodeObj)

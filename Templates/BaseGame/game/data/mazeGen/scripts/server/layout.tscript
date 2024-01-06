@@ -135,7 +135,7 @@ function mazeGen::placeRoom(%this, %nodeObj, %curExit)
         {
             %mazNode = new Prefab()
             { 
-                fileName = "data/mazeGen/prefabs/"@ %tile @".prefab";
+                fileName = %tile;
                 position = %exitPos;
                 rotation = %rot;
             };
@@ -148,7 +148,7 @@ function mazeGen::placeRoom(%this, %nodeObj, %curExit)
             {
                 %mazNode = new Prefab(mazeGoal)
                 { 
-                    fileName = "data/mazeGen/prefabs/tileGoal.prefab";
+                    fileName = RoomList.goalTile;
                     position = %exitPos;
                     rotation = %rot;
                 };
@@ -167,7 +167,7 @@ function mazeGen::placeRoom(%this, %nodeObj, %curExit)
     {
         %mazNode = new Prefab()
         { 
-            fileName = "data/mazeGen/prefabs/tileWall.prefab";
+            fileName = RoomList.blockerTile;
             position = %exitPos;
             rotation = %rot;
         };
@@ -362,6 +362,7 @@ function mazeGen::resetMaze(%this)
 
 function mazeGen::finishMapLoad(%this)
 {
+    //ProbeBin.schedule(10000,"bakeProbes");
     Core_ClientServer.finishMapLoad();
     echo("Maze Ready");
 }
@@ -379,8 +380,8 @@ function mazeGen::onLoadMap(%this)
 
 function mazeGen::createMaze(%this, %tileDepth, %poi)
 {
-    %this.getRoomList();
-    %this.getGreebleList();
+    %this.getRoomList("data/scifiTiles/scripts/rooms");
+    %this.getGreebleList("data/scifiTiles/scripts/greebles");
     %this.greebleFrequency = 0.5; //% of the time greebles are filled in
     %this.eventRooms = %poi;
     if (%tileDepth == 0) %tileDepth =5;
@@ -395,7 +396,7 @@ function mazeGen::createMaze(%this, %tileDepth, %poi)
         %targetPoint.z += RoomList.getValue(0).bounds.z;
     }
     %mazeStart = new Prefab(mazeStart) {
-        fileName = "data/mazeGen/prefabs/tileStart.prefab";
+        fileName = RoomList.startTile;
         position = %targetPoint;
     };
     placedTiles.push_back(%mazeStart);

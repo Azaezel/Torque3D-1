@@ -1,5 +1,0 @@
-<ShapeAsset
-    AssetName="overpassC_shape"
-    fileName="@assetFile=overpassC.dae"
-    constuctorFileName="@assetFile=overpassC.tscript"
-    materialSlot0="@asset=mazeGen:greebles_frameMat"/>

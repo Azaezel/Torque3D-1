@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="tileCrossRoom_shape"
+    fileName="@assetFile=tileCrossRoom.dae"
+    constuctorFileName="@assetFile=tileCrossRoom.tscript"
+    materialSlot0="@asset=scifiTiles:tileSet_frameMat"/>

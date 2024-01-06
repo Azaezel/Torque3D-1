@@ -1,5 +1,0 @@
-<ShapeAsset
-    AssetName="tileLeft_shape"
-    fileName="@assetFile=tileLeft.dae"
-    constuctorFileName="@assetFile=tileLeft.tscript"
-    materialSlot0="@asset=mazeGen:tileSet_frameMat"/>

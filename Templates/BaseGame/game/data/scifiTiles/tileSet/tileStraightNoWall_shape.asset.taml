@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="tileStraightNoWall_shape"
+    fileName="@assetFile=tileStraightNoWall.dae"
+    constuctorFileName="@assetFile=tileStraightNoWall.tscript"
+    materialSlot0="@asset=scifiTiles:tileSet_frameMat"/>

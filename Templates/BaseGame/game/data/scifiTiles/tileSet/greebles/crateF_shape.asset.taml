@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="crateF_shape"
+    fileName="@assetFile=crateF.dae"
+    constuctorFileName="@assetFile=crateF.tscript"
+    materialSlot0="@asset=scifiTiles:greebles_frameMat"/>

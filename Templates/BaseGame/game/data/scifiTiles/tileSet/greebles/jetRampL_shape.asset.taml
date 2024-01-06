@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="jetRampL_shape"
+    fileName="@assetFile=jetRampL.dae"
+    constuctorFileName="@assetFile=jetRampL.tscript"
+    materialSlot0="@asset=scifiTiles:greebles_frameMat"/>

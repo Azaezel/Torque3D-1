@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="tileUp_shape"
+    fileName="@assetFile=tileUp.dae"
+    constuctorFileName="@assetFile=tileUp.tscript"
+    materialSlot0="@asset=scifiTiles:tileSet_frameMat"/>

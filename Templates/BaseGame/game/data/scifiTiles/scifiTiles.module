@@ -1,0 +1,11 @@
+<ModuleDefinition
+    ModuleId="scifiTiles"
+    VersionId="1"
+    Group="Game"
+    scriptFile="scifiTiles.tscript"
+    CreateFunction="onCreate"
+    DestroyFunction="onDestroy">
+    <DeclaredAssets
+        Extension="asset.taml"
+        Recurse="true"/>
+</ModuleDefinition>

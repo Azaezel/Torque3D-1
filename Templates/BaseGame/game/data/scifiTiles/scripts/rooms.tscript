@@ -1,0 +1,45 @@
+    RoomList.startTile = "data/scifiTiles/prefabs/tileStart.prefab";
+    RoomList.goalTile = "data/scifiTiles/prefabs/tileGoal.prefab";
+    
+    //todo: make this a list of doorblockers, or have rooms define thier own
+    RoomList.blockerTile = "data/scifiTiles/prefabs/tileWall.prefab";
+    
+    new arrayobject(corridorList);
+        corridorList.bounds = "30 30 30";
+        corridorList.add(0, "data/scifiTiles/prefabs/tileStraight.prefab");
+        corridorList.add(1, "data/scifiTiles/prefabs/tileStraightNoWall.prefab");    
+        corridorList.add(2, "data/scifiTiles/prefabs/tileLeft.prefab");
+        corridorList.add(3, "data/scifiTiles/prefabs/tileRight.prefab");
+        corridorList.add(4, "data/scifiTiles/prefabs/tileTJunction.prefab");
+        corridorList.add(5, "data/scifiTiles/prefabs/tileXJunction.prefab");
+    RoomList.add(0,corridorList);
+    
+    new arrayobject(stairList);
+        stairList.bounds = "30 60 60";
+        stairList.add(0, "data/scifiTiles/prefabs/tileUp.prefab");
+        stairList.add(1, "data/scifiTiles/prefabs/tileDown.prefab");
+    RoomList.add(1,stairList);
+    
+    new arrayobject(longList);
+        longList.bounds = "30 150 30";
+        longList.add(0, "data/scifiTiles/prefabs/tileLong.prefab");
+        longList.add(1, "data/scifiTiles/prefabs/tileLongDoors.prefab");
+    RoomList.add(2,longList);
+    
+
+    new arrayobject(medRoomist);
+        medRoomist.bounds = "180 180 30";
+        medRoomist.add(0, "data/scifiTiles/prefabs/tileCrossRoom.prefab");
+    RoomList.add(3,medRoomist);
+    
+    new arrayobject(stackList);
+        stackList.bounds = "180 180 200";
+        stackList.add(0, "data/scifiTiles/prefabs/tileStackRoom.prefab");
+    RoomList.add(4,stackList);
+    
+    new arrayobject(arenaList);
+        arenaList.bounds = "300 300 200";
+        arenaList.add(0, "data/scifiTiles/prefabs/tileArenaA.prefab");
+        arenaList.add(1, "data/scifiTiles/prefabs/tileArenaB.prefab");
+        arenaList.add(2, "data/scifiTiles/prefabs/tileArenaC.prefab");
+    RoomList.add(5,arenaList);

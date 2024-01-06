@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="tileWall_shape"
+    fileName="@assetFile=tileWall.dae"
+    constuctorFileName="@assetFile=tileWall.tscript"
+    materialSlot0="@asset=scifiTiles:tileSet_frameMat"/>

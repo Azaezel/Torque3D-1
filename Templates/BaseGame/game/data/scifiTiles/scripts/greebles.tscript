@@ -1,0 +1,58 @@
+
+    new arrayobject(floor);
+        floor.add("TSStatic", "scifiTiles:barrel_shape");
+        floor.add("TSStatic", "scifiTiles:crateA_shape");
+        floor.add("TSStatic", "scifiTiles:crateB_shape");
+        floor.add("TSStatic", "scifiTiles:crateC_shape");
+        floor.add("TSStatic", "scifiTiles:crateD_shape");
+        floor.add("TSStatic", "scifiTiles:crateE_shape");
+        floor.add("TSStatic", "scifiTiles:crateF_shape");
+        floor.add("TSStatic", "scifiTiles:crateG_shape");
+        floor.add("TSStatic", "scifiTiles:crateH_shape");
+        floor.add("TSStatic", "scifiTiles:crateI_shape");
+        floor.add("TSStatic", "scifiTiles:crateJ_shape");
+        floor.add("TSStatic", "scifiTiles:crateK_shape");
+        floor.add("TSStatic", "scifiTiles:crateL_shape");
+        floor.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
+        floor.add("StaticShape", "SpikeTrap");
+    GreebleList.add(0,floor);
+    
+    new arrayobject(floorMid);
+        floorMid.add("TSStatic", "scifiTiles:carRamp_shape");
+        floorMid.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
+        floorMid.add("StaticShape", "SpikeTrap");
+    GreebleList.add(1,floorMid);
+    
+    new arrayobject(floorBig);
+        floorBig.add("TSStatic", "scifiTiles:overpassA_shape");
+        floorBig.add("TSStatic", "scifiTiles:overpassB_shape");
+        floorBig.add("TSStatic", "scifiTiles:overpassC_shape");
+        floorBig.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
+        floorBig.add("StaticShape", "SpikeTrap");
+    GreebleList.add(2,floorBig);    
+    
+    new arrayobject(wallL);
+        wallL.add("TSStatic", "scifiTiles:jetRampL_shape");
+        wallL.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
+    GreebleList.add(3,wallL);
+    
+    new arrayobject(wallR);
+        wallR.add("TSStatic", "scifiTiles:jetRampR_shape");
+        wallR.add("ParticleEmitterNode", "steamEM");
+        wallR.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
+    GreebleList.add(4,wallR);
+    
+    new arrayobject(ceiling);
+        ceiling.add("TSStatic", "scifiTiles:jetRampD_shape");
+        ceiling.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
+    GreebleList.add(5,ceiling);
+    
+    new arrayobject(ceilingR);
+        ceilingR.add("TSStatic", "scifiTiles:jetRampR_shape");
+        ceilingR.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
+    GreebleList.add(6,ceilingR);
+    
+    new arrayobject(ceilingL);
+        ceilingL.add("TSStatic", "scifiTiles:jetRampL_shape");
+        ceilingL.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
+    GreebleList.add(7,ceilingL);

@@ -1,66 +1,9 @@
-function mazeGen::getGreebleList(%this)
+function mazeGen::getGreebleList(%this,%greebleFile)
 {
-    if (isObject(GreebleList)) return;
-    
-    new arrayobject(GreebleList);
-    
-    new arrayobject(floor);
-        floor.add("TSStatic", "mazeGen:barrel_shape");
-        floor.add("TSStatic", "mazeGen:crateA_shape");
-        floor.add("TSStatic", "mazeGen:crateB_shape");
-        floor.add("TSStatic", "mazeGen:crateC_shape");
-        floor.add("TSStatic", "mazeGen:crateD_shape");
-        floor.add("TSStatic", "mazeGen:crateE_shape");
-        floor.add("TSStatic", "mazeGen:crateF_shape");
-        floor.add("TSStatic", "mazeGen:crateG_shape");
-        floor.add("TSStatic", "mazeGen:crateH_shape");
-        floor.add("TSStatic", "mazeGen:crateI_shape");
-        floor.add("TSStatic", "mazeGen:crateJ_shape");
-        floor.add("TSStatic", "mazeGen:crateK_shape");
-        floor.add("TSStatic", "mazeGen:crateL_shape");
-        floor.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
-        floor.add("StaticShape", "SpikeTrap");
-    GreebleList.add(0,floor);
-    
-    new arrayobject(floorMid);
-        floorMid.add("TSStatic", "mazeGen:carRamp_shape");
-        floorMid.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
-        floorMid.add("StaticShape", "SpikeTrap");
-    GreebleList.add(1,floorMid);
-    
-    new arrayobject(floorBig);
-        floorBig.add("TSStatic", "mazeGen:overpassA_shape");
-        floorBig.add("TSStatic", "mazeGen:overpassB_shape");
-        floorBig.add("TSStatic", "mazeGen:overpassC_shape");
-        floorBig.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
-        floorBig.add("StaticShape", "SpikeTrap");
-    GreebleList.add(2,floorBig);    
-    
-    new arrayobject(wallL);
-        wallL.add("TSStatic", "mazeGen:jetRampL_shape");
-        wallL.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
-    GreebleList.add(3,wallL);
-    
-    new arrayobject(wallR);
-        wallR.add("TSStatic", "mazeGen:jetRampR_shape");
-        wallR.add("ParticleEmitterNode", "steamEM");
-        wallR.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
-    GreebleList.add(4,wallR);
-    
-    new arrayobject(ceiling);
-        ceiling.add("TSStatic", "mazeGen:jetRampD_shape");
-        ceiling.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
-    GreebleList.add(5,ceiling);
-    
-    new arrayobject(ceilingR);
-        ceilingR.add("TSStatic", "mazeGen:jetRampR_shape");
-        ceilingR.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
-    GreebleList.add(6,ceilingR);
-    
-    new arrayobject(ceilingL);
-        ceilingL.add("TSStatic", "mazeGen:jetRampL_shape");
-        ceilingL.add("Prefab", "data/trapsNTriggers/prefabs/electricHazzard.prefab");
-    GreebleList.add(7,ceilingL);
+    if (!isObject(GreebleList))
+        new arrayobject(GreebleList);
+    GreebleList.clear();
+    exec(%greebleFile);
 }
 
 function mazeGen::fillGreebles(%this,%nodeObj)

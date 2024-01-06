@@ -1,0 +1,18 @@
+<MaterialAsset
+    AssetName="frameMat"
+    materialDefinitionName="frameMat"
+    imageMap0="@asset=scifiTiles:tileWork_frameMat_A_image">
+    <Material
+        Name="frameMat"
+        mapTo="frameMat"
+        originalAssetName="frameMat">
+        <Material.Stages>
+            <Stages_beginarray
+                DiffuseMapAsset="scifiTiles:tileWork_frameMat_A_image"
+                NormalMapAsset="scifiTiles:frameMat_n_image"
+                ORMConfigMapAsset="scifiTiles:frameMat_orm_image"
+                GlowMapAsset="scifiTiles:frameMat_g_image"
+                GlowMul="100"/>
+        </Material.Stages>
+    </Material>
+</MaterialAsset>
