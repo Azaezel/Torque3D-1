@@ -89,12 +89,14 @@ function mazeGen::pickTile(%this, %exitPos, %rot)
     if (%completionPCT>%nextEevntPCT)
     {
         %this.countDown++;
-        %roomtype = RoomList.count()-1;
+        %roomtype = RoomList.arenaKey;
     }
     else
     {
-        if (getRandom(3) == 1)
-            %roomtype = getRandom(RoomList.count()-2);
+        if (getRandom() < RoomList.hallwayBias)
+            %roomtype = getRandom(RoomList.hallwayTypes);
+        else
+            %roomtype = getRandom(RoomList.roomTypes+RoomList.hallwayTypes);
     }
     
     %tile = %this.findRoomSize(%roomtype,%exitPos,%rot);
@@ -110,9 +112,11 @@ function mazeGen::findRoomSize(%this, %roomtype, %exitPos, %rot)
     if (!%this.findGap(%exitPos, %rot, %roomTypeList.bounds))
         return %this.findRoomSize(%roomtype-1,%exitPos,%rot);
     %tile = %roomTypeList.getValue(getRandom(%roomTypeList.count()-1));
-    if (%roomtype == RoomList.count()-1)
+    if (%roomtype == RoomList.arenaKey)
     {
-        %this.eventRoomsSpawned++;
+        if (RoomList.arenasOrdered)
+            %tile = %roomTypeList.getValue(%this.eventRoomsSpawned);
+        %this.eventRoomsSpawned++;            
     }
     return %tile;
 }

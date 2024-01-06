@@ -4,6 +4,12 @@
     //todo: make this a list of doorblockers, or have rooms define thier own
     RoomList.blockerTile = "data/scifiTiles/prefabs/tileWall.prefab";
     
+    RoomList.hallwayTypes = 3;
+    RoomList.roomTypes = 2;
+    RoomList.hallwayBias = 0.75;
+    RoomList.arenaKey = 5;
+    RoomList.arenasOrdered = false;
+    
     new arrayobject(corridorList);
         corridorList.bounds = "30 30 30";
         corridorList.add(0, "data/scifiTiles/prefabs/tileStraight.prefab");
