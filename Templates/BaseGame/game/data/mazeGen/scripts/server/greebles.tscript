@@ -2,7 +2,7 @@ function mazeGen::getGreebleList(%this,%greebleFile)
 {
     if (!isObject(GreebleList))
         new arrayobject(GreebleList);
-    GreebleList.clear();
+    GreebleList.empty();
     exec(%greebleFile);
 }
 

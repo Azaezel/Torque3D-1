@@ -2,7 +2,7 @@ function mazeGen::getRoomList(%this,%roomFile)
 {
     if (!isObject(RoomList))
         new arrayobject(RoomList);
-    RoomList.clear();
+    RoomList.empty();
     exec(%roomFile);
 }
 
