@@ -62,6 +62,9 @@ function UIBuilder::Window(%title, %pos, %ext, %dockable)
 
 function UIBuilder::dockWindow(%targetWindow, %window)
 {
+   if(!%targetWindow.isDockable || !%window.isDockable)
+      return;
+      
    %windowContent = %window-->scroll;
    
    %tab = new GuiTabPageCtrl() {

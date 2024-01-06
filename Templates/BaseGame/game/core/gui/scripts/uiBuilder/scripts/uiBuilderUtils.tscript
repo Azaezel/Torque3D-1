@@ -13,3 +13,30 @@ function UIBuilder::End()
    if(UIBuilderStack.count() != 0)
       UIBuilderStack.pop_back();
 }
+
+function UIBuilder::SameLine()
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::SameLine() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   %content = new GuiStackControl()
+   {
+      profile = ToolsGuiStackControl;
+      position = $GUIFormBuilder::edgePad SPC 20;
+      extent = (%baseCtrl.extent.x - ($GUIFormBuilder::edgePad * 2)) SPC (%baseCtrl.extent.y - 20 - $GUIFormBuilder::edgePad);
+      horizSizing = "width";
+      vertSizing = "height";
+      StackingType = "Horizontal";
+   };
+   
+   UIBuilderStack.push_back(%content);
+   
+   %baseCtrl.add(%content);
+   
+   return true;
+}

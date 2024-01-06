@@ -22,7 +22,7 @@ function testFBFunc2()
 
 function UIBuilder::test1()
 {
-   %window = UIBuilder::Window("Test Window", "50 50", "200 500", true);
+   %window = UIBuilder::Window("Test Window", "50 50", "200 500");
 
       UIBuilder::Rollout("Test Rollout");
       

@@ -1,23 +1,29 @@
-function GuiFormBuilder::createTabBook(%base)
+function GuiFormBuilder::createTabBook()
 {
-   if(isObject(%base-->content))
-      %base = %base-->content;
-      
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::createTabBook() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
    %book = new GuiTabBookCtrl()
    {
-      superClass = GuiFormBuilder;
       class = GuiFormBuilderTabBook;
       profile = ToolsGuiTabBookProfile;
       position = "0 0";
-      extent = %base.extent;
+      extent = %baseCtrl.extent;
       internalName = "book";  
       horizSizing = "width";
       vertSizing = "height";
    };
 
-   %base.add(%book);
+   UIBuilderStack.push_back(%book);
    
-   return %book;
+   %baseCtrl.add(%book);
+   
+   return true;
 }
 
 function GuiFormBuilderTabBook::setAllowReorder(%this, %canReorder)
