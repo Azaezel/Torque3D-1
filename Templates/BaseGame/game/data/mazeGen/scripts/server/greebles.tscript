@@ -68,6 +68,15 @@ function mazeGen::fillGreebles(%this,%nodeObj)
                     };
                 
                 }
+                else
+                {
+                    if (isObject(%greebleMeta))
+                    {
+                        %propsString = "position =\""@ %pos @"\";";
+                        %propsString = %propsString SPC "rotation =\""@ %rot @"\";";
+                        %nuGreeble = spawnObject(%greebleClass, %greebleMeta,"",%propsString);
+                    }
+                }
                 Greebles.add(%nuGreeble);
             }
             %grebCount++;
