@@ -1,0 +1,27 @@
+//--- OBJECT WRITE BEGIN ---
+$ThisPrefab = new SimGroup() {
+
+   new Trigger() {
+      dataBlock = "TrapDamager";
+      rotation = "0 1 0 180";
+      scale = "2.5 2.5 14";
+      internalName = "damager";
+         firstDataCheck = "1";
+   };
+   new Trigger() {
+      dataBlock = "TrapTrigger";
+      rotation = "0 1 0 180";
+      scale = "20 20 20";
+      internalName = "activator";
+         firstDataCheck = "1";
+   };
+   new StaticShape() {
+      dataBlock = "SpikeTrap";
+      rotation = "0 1 0 180";
+      scale = "1 1 2";
+      internalName = "vis";
+         activeState = "0";
+         firstDataCheck = "1";
+   };
+};
+//--- OBJECT WRITE END ---
