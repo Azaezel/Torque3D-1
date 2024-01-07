@@ -13,5 +13,8 @@ singleton TSShapeConstructor(SpikeTrapdae)
 
 function SpikeTrapdae::onLoad(%this)
 {
-   %this.setSequenceCyclic("ambient", "0");
+   %this.addSequence("ambient", "Trip", "0", "5", "1", "0");
+   %this.setSequenceCyclic("Trip", "0");
+   %this.addSequence("ambient", "TripDone", "5", "20", "1", "0");
+   %this.setSequenceCyclic("TripDone", "0");
 }

@@ -1,81 +1,63 @@
-function TrapData::onAdd(%this,%obj)
+function trapData::setActive(%this, %obj, %activate)
 {
-   %obj.trigger = "";
-   %obj.activeTrigger = -1;
-   %obj.damageTrigger = -1;
-   %this.schedule(64,"createTriggers",%obj);
+    if (%obj.activeState == %activate) return;
+    
+    if (%activate)
+    {
+        %obj.playAudio(0,%this.ambientSound);
+        %obj.playthread(0, "Trip");
+        %obj.activeState = true;
+    }
+    else
+    {
+        %obj.stopthread(0);        
+        %obj.activeState = false;
+    }
 }
 
-function TrapData::onRemove(%this,%obj)
+function trapData::onEndSequence(%this, %obj, %slot, %name)
 {
-   %obj.activeTrigger.delete();
-   %obj.damageTrigger.delete();
+   %script = "on" @ %name;
+   if(%this.isMethod(%script))
+      %this.call(%script, %obj);
 }
 
-function TrapData::createTriggers(%this,%owner)
+function trapData::onTrip(%this,%obj)
 {
-    %polyhedron = getPolyhedronFromShape(%owner);
-	%scale = "1 1 1";
-	if (%this.trapScale) 
-        %scale = %this.trapScale;
-	%trigger = new Trigger()
+    %damageTrigger = %obj.parentGroup-->damager;
+	%count = %damageTrigger.getNumObjects();	
+	%victimCount = 0;	
+	for (%i=0;%i<%count;%i++)
 	{
-		dataBlock = %this.triggerDamageDB;
-		position = %owner.position;
-		rotation = %owner.rotation;
-		scale = vectorMul(%owner.scale,%scale);
-        //position from center, xlength, ylength, zlength
-		polyhedron = %polyhedron;
-		damage = %owner.getDataBlock().TriggerDamage;
-	};
-	%trigger.owner = %owner;
-	MissionCleanup.add(%trigger);
-    %owner.activeTrigger = %trigger;
-    
-    
-	%scale = "1 1 1";
-	if (%this.trapTriggerScale) 
-        %scale = %this.trapTriggerScale;
-	%trigger = new Trigger()
+		%victim = %damageTrigger.getObject(%i);
+        %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
+        if (%victim.getType() & %damageMask)
+		{
+			%victimCount++;
+		}
+	}	
+	if (%victimCount>0)
 	{
-		dataBlock = %this.triggerDB;
-		position = %owner.position;
-		rotation = %owner.rotation;
-		scale = vectorMul(%owner.scale,%scale);
-        //position from center, xlength, ylength, zlength
-		polyhedron = %polyhedron;
-		damage = %owner.getDataBlock().TriggerDamage;
-	};
-	%trigger.owner = %owner;
-	MissionCleanup.add(%trigger);
-    %owner.damageTrigger = %trigger;
+		for (%i=0;%i<%count;%i++)
+		{
+			%victim = %damageTrigger.getObject(%i);
+            %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
+			if (%victim.getType() & %damageMask)
+			{
+                %victim.damage(%damageTrigger, %damageTrigger.position, %this.TriggerDamage, "trap");
+			}
+		}
+	}
+    %obj.playthread(0, "TripDone");
+}
+
+function trapData::onTripDone(%this,%obj)
+{
+    %obj.activeState = false;
 }
 
 function TrapTriggerData::onTickTrigger(%this,%trigger)
-{
-	if (!isObject(%trigger.owner))
-	{
-		%trigger.delete();
-		return;
-	}
-	
-	%DB = %trigger.owner.getDataBlock();
-	if (%DB.triggerCycle !=0)
-	{
-		%cycle = %DB.triggerCycle;
-		%trigger.owner.curCycle++;
-		if (%trigger.owner.curCycle < %cycle)
-        {
-            %trigger.owner.tripped = false;
-            return;
-        }    
-		else
-        {
-            %trigger.owner.tripped = true;
-            %trigger.owner.curCycle = 0;
-        }
-	}
-	
+{	
 	%count = %trigger.getNumObjects();	
 	%victimCount = 0;
 	
@@ -88,57 +70,8 @@ function TrapTriggerData::onTickTrigger(%this,%trigger)
 			%victimCount++;
 		}
 	}
-	
-	if (%victimCount>0)
-	{
-	    %trigger.owner.playAudio(0,%trigger.owner.getDatablock().ambientSound);
-		%trigger.owner.playthread(0, "ambient");
-	}
-    else
-        %trigger.owner.stopThread(0);
-}
-
-function TrapDamagerData::onTickTrigger(%this,%trigger)
-{
-	if (!isObject(%trigger.owner))
-	{
-		%trigger.delete();
-		return;
-	}
-	
-	%DB = %trigger.owner.getDataBlock();
-	if (%DB.triggerCycle !=0)
-	{
-		if (%trigger.owner.tripped == false) return;
-        %trigger.owner.tripped = false;
-	}
-	
-	%count = %trigger.getNumObjects();
-	
-	%victimCount = 0;
-	
-	for (%i=0;%i<%count;%i++)
-	{
-		%victim = %trigger.getObject(%i);
-        %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
-        if (%victim.getType() & %damageMask)
-		{
-			%victimCount++;
-		}
-	}
-	
-	if (%victimCount>0)
-	{
-		for (%i=0;%i<%count;%i++)
-		{
-			%victim = %trigger.getObject(%i);
-            %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
-			if (%victim.getType() & %damageMask)
-			{
-                %victim.damage(%trigger, %trigger.position, %DB.TriggerDamage, "trap");
-			}
-		}
-	}
+	%visobject = %trigger.parentGroup-->vis;
+    %visobject.getDatablock().setActive(%visobject,(%victimCount>0));
 }
 
 function EnvironmentalDamager::onTickTrigger(%this,%trigger)
@@ -167,47 +100,4 @@ function EnvironmentalDamager::onTickTrigger(%this,%trigger)
 			}
 		}
 	}
-}
-
-function PrefabDamager::onTickTrigger(%this,%trigger)
-{	
-	%count = %trigger.getNumObjects();	
-	%victimCount = 0;
-	
-	for (%i=0;%i<%count;%i++)
-	{
-		%victim = %trigger.getObject(%i);
-		if (%victim.getType() &$TypeMasks::PlayerObjectType)
-		{
-			%victimCount++;
-		}
-	}
-	
-	if (%victimCount>0)
-	{
-        %trigger.parentGroup-->effect.setActive(true);
-        %trigger.parentGroup-->effect.schedule(500, "setActive", false);
-		for (%i=0;%i<%count;%i++)
-		{
-			%victim = %trigger.getObject(%i);
-            %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
-			if (%victim.getType() & %damageMask)
-			{
-                %victim.schedule(250, "damage", %trigger, %trigger.position, %this.TriggerDamage, "environmmental");
-			}
-		}
-	}
-    else    
-        %trigger.parentGroup-->effect.setActive(false);
-}
-
-//trip premature ticks
-function PrefabDamager::onEnterTrigger(%this,%trigger)
-{
-    %this.onTickTrigger(%trigger);
-}
-
-function PrefabDamager::onLeaveTrigger(%this,%trigger)
-{
-    %this.onTickTrigger(%trigger);
 }
