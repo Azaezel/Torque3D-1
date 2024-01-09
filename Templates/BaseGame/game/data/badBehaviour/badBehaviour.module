@@ -2,8 +2,14 @@
 	ModuleId="badBehaviour"
 	VersionId="1"
 	Description="Bad Behaviour Module."
-	ScriptFile="badBehaviour.cs"
+	ScriptFile="badBehaviour"
 	CreateFunction="create"
 	DestroyFunction="destroy"
-	Group="Game">
+	Group="Game"
+    Dependencies="FPSPlayer=1">
+	<DeclaredAssets
+        canSave="true"
+        canSaveDynamicFields="true"
+        Extension="asset.taml"
+        Recurse="true" />
 </ModuleDefinition>

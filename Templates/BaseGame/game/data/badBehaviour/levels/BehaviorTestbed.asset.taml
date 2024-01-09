@@ -1,0 +1,6 @@
+<LevelAsset
+    AssetName="BehaviorTestbed"
+    LevelFile="@assetFile=BehaviorTestbed.mis"
+    LevelName="BehaviorTestbed"
+    previewImageAsset0="@asset=BadBehavior:BehaviorTestbed_preview_image"
+    VersionId="1"/>

@@ -1,0 +1,60 @@
+function reloadBTE()
+{
+   //if(isObject(BehaviorTreeEditorGui))
+      //BehaviorTreeEditorGui.delete();
+      
+   initializeBehaviorTreeEditor();
+}
+
+function initializeBehaviorTreeEditor()
+{
+   echo( " % - Initializing Behavior Tree Editor" );
+   
+   // exec the scripts and gui
+   exec("./scripts/behaviorTreeEditorProfiles.ed." @ $TorqueScriptFileExtension);
+   exec("./gui/behaviorTreeEditor.ed.gui");
+   exec("./gui/BTEditorCreatePrompt.ed.gui");
+   exec("./scripts/guiBehaviorTreeViewCtrl.ed." @ $TorqueScriptFileExtension);
+   exec("./scripts/behaviorTreeEditorCanvas.ed." @ $TorqueScriptFileExtension);
+   exec("./scripts/behaviorTreeEditor.ed." @ $TorqueScriptFileExtension);
+   exec("./scripts/behaviorTreeEditorUndo.ed." @ $TorqueScriptFileExtension);
+   exec("./scripts/behaviorTreeEditorStatusBar.ed." @ $TorqueScriptFileExtension);
+   exec("./scripts/behaviorTreeEditorContentList.ed." @ $TorqueScriptFileExtension);
+   exec("./scripts/behaviorTreeEditorInspector.ed." @ $TorqueScriptFileExtension);
+   
+   // register the class icons
+   EditorIconRegistry::loadFromPath("./images/classIcons/");
+   
+   new ScriptObject( BehaviorTreeEditorPlugin )
+   {
+      superClass = "EditorPlugin";
+   };
+}
+
+function destroyBehaviorTreeEditor()
+{
+}
+
+function BehaviorTreeEditorPlugin::onWorldEditorStartup( %this )
+{  
+   // Add ourselves to the window menu.
+   %ObjectiveEditorName = "BadBehavior Tree Editor";
+   
+   %windowMenu = EditorGui.findMenu( "Editors" );   
+   %count = %windowMenu.getItemCount();      
+   
+   %alreadyExists = false;
+   for ( %i = 0; %i < %count; %i++ )
+   {      
+      %existingPluginName = getField(%windowMenu.Item[%i], 0);
+      
+      if(%ObjectiveEditorName $= %existingPluginName)
+         return;
+   }
+         
+   if(!%alreadyExists)
+   {
+      %pluginCommand = "Canvas.pushDialog(BehaviorTreeEditorGui);";
+      %windowMenu.addItem( %count, %ObjectiveEditorName TAB "" TAB %pluginCommand);
+   }
+}

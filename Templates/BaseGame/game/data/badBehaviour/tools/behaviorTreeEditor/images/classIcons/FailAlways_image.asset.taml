@@ -1,0 +1,3 @@
+<ImageAsset
+    AssetName="FailAlways_image"
+    imageFile="@assetFile=FailAlways.png"/>
