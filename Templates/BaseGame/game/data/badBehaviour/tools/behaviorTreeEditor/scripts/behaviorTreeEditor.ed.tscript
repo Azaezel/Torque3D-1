@@ -30,7 +30,7 @@ function BTEdit()
    if (!$InBehaviorTreeEditor)
    {
       if(!isObject(BTEditCanvas))
-         new GuiControl(BTEditCanvas_EditorGuiGroup);
+         new GuiControl(BTEditCanvas,EditorGuiGroup);
       
       BTEditor.startUp(Canvas.getContent());
       

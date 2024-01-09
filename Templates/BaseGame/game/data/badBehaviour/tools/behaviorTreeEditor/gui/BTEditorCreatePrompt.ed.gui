@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 //--- OBJECT WRITE BEGIN ---
- new GuiControl(BTEditorCreatePromptEditorGuiGroup) {
+ new GuiControl(BTEditorCreatePrompt, EditorGuiGroup) {
    position = "0 0";
    extent = "1024 768";
    minExtent = "8 2";

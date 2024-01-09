@@ -98,7 +98,7 @@ datablock PlayerData(BadBotData : DefaultPlayerData)
 function BadBot::spawn(%name, %startPos)
 {
    // create the bot
-   %bot = new AIPlayer(name) {
+   %bot = new AIPlayer(%name) {
       dataBlock = BadBotData; 
       class = "BadBot";
    };
