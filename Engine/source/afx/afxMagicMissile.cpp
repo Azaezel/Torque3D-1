@@ -141,9 +141,8 @@ U32 Projectile::smProjectileWarpTicks = 5;
 //
 afxMagicMissileData::afxMagicMissileData()
 {
-   projectileShapeName = ST_NULLSTRING;
-
-   sound = NULL;
+   INIT_ASSET(ProjectileShape);
+   INIT_ASSET(ProjectileSound);
 
    /* From stock Projectile code...
    explosion = NULL;
@@ -246,9 +245,9 @@ afxMagicMissileData::afxMagicMissileData()
 
 afxMagicMissileData::afxMagicMissileData(const afxMagicMissileData& other, bool temp_clone) : GameBaseData(other, temp_clone)
 {
-  projectileShapeName = other.projectileShapeName;
+   CLONE_ASSET(ProjectileShape);
   projectileShape = other.projectileShape; // -- TSShape loads using projectileShapeName
-  sound = other.sound;
+  CLONE_ASSET(ProjectileSound);
   splash = other.splash;
   splashId = other.splashId; // -- for pack/unpack of splash ptr
   lightDesc = other.lightDesc;
@@ -330,96 +329,81 @@ FRangeValidator missileBallisticCoefficientValidator(0, 1);
 
 void afxMagicMissileData::initPersistFields()
 {
+   docsURL;
    static IRangeValidatorScaled ticksFromMS(TickMs, 0, MaxLifetimeTicks);
 
-   addField("particleEmitter", TYPEID<ParticleEmitterData>(), Offset(particleEmitter, afxMagicMissileData));
-   addField("particleWaterEmitter", TYPEID<ParticleEmitterData>(), Offset(particleWaterEmitter, afxMagicMissileData));
+   addGroup("Shapes");
+      INITPERSISTFIELD_SHAPEASSET(ProjectileShape, afxMagicMissileData, "Shape for the projectile");
+      addField("scale", TypePoint3F, Offset(scale, afxMagicMissileData));
+      addField("missileShapeScale",   TypePoint3F,  myOffset(scale));
+   endGroup("Shapes");
 
-   addField("projectileShapeName", TypeFilename, Offset(projectileShapeName, afxMagicMissileData));
-   addField("scale", TypePoint3F, Offset(scale, afxMagicMissileData));
+   addGroup("Particle Effects");
+      addField("particleEmitter", TYPEID<ParticleEmitterData>(), Offset(particleEmitter, afxMagicMissileData));
+      addField("particleWaterEmitter", TYPEID<ParticleEmitterData>(), Offset(particleWaterEmitter, afxMagicMissileData));
+      addField("splash", TYPEID<SplashData>(), Offset(splash, afxMagicMissileData));
+   endGroup("Particle Effects");
 
-   addField("sound", TypeSFXTrackName, Offset(sound, afxMagicMissileData));
+   addGroup("Sounds");
+      INITPERSISTFIELD_SOUNDASSET(ProjectileSound, afxMagicMissileData, "sound for the projectile");
+   endGroup("Sounds");
 
-   /* From stock Projectile code...
-   addField("explosion", TYPEID< ExplosionData >(), Offset(explosion, ProjectileData));
-   addField("waterExplosion", TYPEID< ExplosionData >(), Offset(waterExplosion, ProjectileData));
-   */
+   addGroup("Light Emitter");
+      addField("lightDesc", TYPEID< LightDescription >(), Offset(lightDesc, afxMagicMissileData));
+   endGroup("Light Emitter");
 
-   addField("splash", TYPEID<SplashData>(), Offset(splash, afxMagicMissileData));
-   /* From stock Projectile code...
-   addField("decal", TYPEID< DecalData >(), Offset(decal, ProjectileData));
-   */
+   addGroup("Physics");
+      addNamedFieldV(lifetime,    TypeS32,              afxMagicMissileData,  &ticksFromMS);
+      addFieldV("casterSafetyTime", TypeS32, myOffset(caster_safety_time), &ticksFromMS);
+      addField("isBallistic", TypeBool,   Offset(isBallistic, afxMagicMissileData));
+      addNamedFieldV(muzzleVelocity,    TypeF32,      afxMagicMissileData,  &muzzleVelocityValidator);
+      addNamedFieldV(ballisticCoefficient,  TypeF32,    afxMagicMissileData,  &missileBallisticCoefficientValidator);
+      addField("gravityMod", TypeF32, Offset(gravityMod, afxMagicMissileData));
+      addField("collisionMask",         TypeS32,      myOffset(collision_mask));
+      addField("startingVelocityVector",TypePoint3F,  myOffset(starting_vel_vec));
+      addNamedField(acceleration,     TypeF32,  afxMagicMissileData);
+      addNamedFieldV(accelDelay,      TypeS32,  afxMagicMissileData,  &ticksFromMS);
+      addNamedFieldV(accelLifetime,   TypeS32,  afxMagicMissileData,  &ticksFromMS);
+      addField("reverseTargeting", TypeBool, myOffset(reverse_targeting));
+   endGroup("Physics");
 
-   addField("lightDesc", TYPEID< LightDescription >(), Offset(lightDesc, afxMagicMissileData));
+   addGroup("Physics-Tracking");
+      addNamedField(isGuided,               TypeBool,   afxMagicMissileData);
+      addNamedFieldV(precision,             TypeF32,    afxMagicMissileData,  &missilePrecisionValidator); 
+      addNamedFieldV(trackDelay,            TypeS32,    afxMagicMissileData,  &missileTrackDelayValidator);
+   endGroup("Physics-Tracking");
 
-   addField("isBallistic", TypeBool,   Offset(isBallistic, afxMagicMissileData));
-   /* From stock Projectile code...
-   addField("velInheritFactor", TypeF32, Offset(velInheritFactor, ProjectileData));
-   */
-   addNamedFieldV(muzzleVelocity,    TypeF32,      afxMagicMissileData,  &muzzleVelocityValidator);
-   /* From stock Projectile code...
-   addField("impactForce", TypeF32, Offset(impactForce, ProjectileData));
-   */
-   addNamedFieldV(lifetime,    TypeS32,              afxMagicMissileData,  &ticksFromMS);
-   /* From stock Projectile code...
-   addProtectedField("armingDelay", TypeS32, Offset(armingDelay, ProjectileData), &setArmingDelay, &getScaledValue, 
-      "The time in milliseconds before the projectile is armed and will cause damage or explode on impact." );
+   addGroup("Physics-Avoidance");
+      addField("followTerrain",             TypeBool, myOffset(followTerrain));
+      addField("followTerrainHeight",       TypeF32,  myOffset(followTerrainHeight));
+      addField("followTerrainAdjustRate",   TypeF32,  myOffset(followTerrainAdjustRate));
+      addFieldV("followTerrainAdjustDelay", TypeS32,  myOffset(followTerrainAdjustDelay), &ticksFromMS);
 
-   addProtectedField("fadeDelay", TypeS32, Offset(fadeDelay, ProjectileData), &setFadeDelay, &getScaledValue,
-      "The time in milliseconds when the projectile begins to fade out.  Must be less than the lifetime to have an effect." );
+      addField("hoverAltitude",       TypeF32,    myOffset(hover_altitude));
+      addField("hoverAttackDistance", TypeF32,    myOffset(hover_attack_distance));
+      addField("hoverAttackGradient", TypeF32,    myOffset(hover_attack_gradient));
+      addFieldV("hoverTime",          TypeS32,    myOffset(hover_time), &ticksFromMS); 
+   endGroup("Physics-Avoidance");
 
-   addField("bounceElasticity", TypeF32, Offset(bounceElasticity, ProjectileData));
-   addField("bounceFriction", TypeF32, Offset(bounceFriction, ProjectileData));
-   */
-   addField("gravityMod", TypeF32, Offset(gravityMod, afxMagicMissileData));
+   addGroup("Physics-Launch");
+      addField("launchNode",        TypeString,   myOffset(launch_node));
+      addField("launchOffset",      TypePoint3F,  myOffset(launch_offset));
+      addField("launchOffsetServer",TypePoint3F,  myOffset(launch_offset_server));
+      addField("launchOffsetClient",TypePoint3F,  myOffset(launch_offset_client));
+      addField("launchNodeOffset",  TypePoint3F,  myOffset(launch_node_offset));
+      addField("launchAimPitch",    TypeF32,      myOffset(launch_pitch));
+      addField("launchAimPan",      TypeF32,      myOffset(launch_pan));
+      addField("launchConstraintServer",  TypeString,   myOffset(launch_cons_s_spec));
+      addField("launchConstraintClient",  TypeString,   myOffset(launch_cons_c_spec));
+      addField("echoLaunchOffset",  TypeBool,     myOffset(echo_launch_offset));
+   endGroup("Physics-Launch");
 
-   // FIELDS ADDED BY MAGIC-MISSILE
-
-   addField("missileShapeName",    TypeFilename, myOffset(projectileShapeName));
-   addField("missileShapeScale",   TypePoint3F,  myOffset(scale));
-
-   addField("startingVelocityVector",TypePoint3F,  myOffset(starting_vel_vec));
-
-   addNamedField(isGuided,               TypeBool,   afxMagicMissileData);
-   addNamedFieldV(precision,             TypeF32,    afxMagicMissileData,  &missilePrecisionValidator); 
-   addNamedFieldV(trackDelay,            TypeS32,    afxMagicMissileData,  &missileTrackDelayValidator); 
-   addNamedFieldV(ballisticCoefficient,  TypeF32,    afxMagicMissileData,  &missileBallisticCoefficientValidator);
-
-   addField("collisionMask",         TypeS32,      myOffset(collision_mask));
-
-   addField("followTerrain",             TypeBool, myOffset(followTerrain));
-   addField("followTerrainHeight",       TypeF32,  myOffset(followTerrainHeight));
-   addField("followTerrainAdjustRate",   TypeF32,  myOffset(followTerrainAdjustRate));
-   addFieldV("followTerrainAdjustDelay", TypeS32,  myOffset(followTerrainAdjustDelay), &ticksFromMS); 
-
-   addNamedField(acceleration,     TypeF32,  afxMagicMissileData);
-   addNamedFieldV(accelDelay,      TypeS32,  afxMagicMissileData,  &ticksFromMS);
-   addNamedFieldV(accelLifetime,   TypeS32,  afxMagicMissileData,  &ticksFromMS);
-
-   addField("launchNode",        TypeString,   myOffset(launch_node));
-   addField("launchOffset",      TypePoint3F,  myOffset(launch_offset));
-   addField("launchOffsetServer",TypePoint3F,  myOffset(launch_offset_server));
-   addField("launchOffsetClient",TypePoint3F,  myOffset(launch_offset_client));
-   addField("launchNodeOffset",  TypePoint3F,  myOffset(launch_node_offset));
-   addField("launchAimPitch",    TypeF32,      myOffset(launch_pitch));
-   addField("launchAimPan",      TypeF32,      myOffset(launch_pan));
-   addField("launchConstraintServer",  TypeString,   myOffset(launch_cons_s_spec));
-   addField("launchConstraintClient",  TypeString,   myOffset(launch_cons_c_spec));
-   //
-   addField("echoLaunchOffset",  TypeBool,     myOffset(echo_launch_offset));
-
+   addGroup("Physics-Wiggle");
    addField("wiggleMagnitudes", TypeF32Vector, myOffset(wiggle_magnitudes));
    addField("wiggleSpeeds",     TypeF32Vector, myOffset(wiggle_speeds));
    addField("wiggleAxis",       TypeString,    myOffset(wiggle_axis_string));
+   endGroup("Physics-Wiggle");
 
-   addField("hoverAltitude",       TypeF32,    myOffset(hover_altitude));
-   addField("hoverAttackDistance", TypeF32,    myOffset(hover_attack_distance));
-   addField("hoverAttackGradient", TypeF32,    myOffset(hover_attack_gradient));
-   addFieldV("hoverTime",          TypeS32,    myOffset(hover_time), &ticksFromMS); 
-
-   addField("reverseTargeting",  TypeBool,     myOffset(reverse_targeting));
-
-   addFieldV("casterSafetyTime", TypeS32,      myOffset(caster_safety_time), &ticksFromMS); 
 
    Parent::initPersistFields();
 
@@ -444,7 +428,7 @@ bool afxMagicMissileData::onAdd()
    {
       // Tokenize input string and convert to Point3F array
       //
-      Vector<char*> dataBlocks(__FILE__, __LINE__);
+      Vector<String> dataBlocks(__FILE__, __LINE__);
 
       // make a copy of points_string
       dsize_t tokCopyLen = dStrlen(wiggle_axis_string) + 1;
@@ -533,21 +517,23 @@ bool afxMagicMissileData::preload(bool server, String &errorStr)
             Con::errorf(ConsoleLogEntry::General, "ProjectileData::preload: Invalid packet, bad datablockId(decal): %d", decalId);
       */
 
-      String sfxErrorStr;
-      if( !sfxResolve( &sound, sfxErrorStr) )
-         Con::errorf(ConsoleLogEntry::General, "afxMagicMissileData::preload: Invalid packet: %s", sfxErrorStr.c_str());
+      if (!isProjectileSoundValid())
+      {
+         //return false; -TODO: trigger asset download
+      }
 
       if (!lightDesc && lightDescId != 0)
          if (Sim::findObject(lightDescId, lightDesc) == false)
             Con::errorf(ConsoleLogEntry::General, "afxMagicMissileData::preload: Invalid packet, bad datablockid(lightDesc): %d", lightDescId);   
    }
 
-   if (projectileShapeName != ST_NULLSTRING) 
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mProjectileShapeAsset);
+   if (assetStatus == AssetBase::Ok || assetStatus == AssetBase::UsingFallback)
    {
-      projectileShape = ResourceManager::get().load(projectileShapeName);
+      projectileShape = mProjectileShapeAsset->getShapeResource();
       if (bool(projectileShape) == false)
       {
-         errorStr = String::ToString("afxMagicMissileData::load: Couldn't load shape \"%s\"", projectileShapeName);
+         errorStr = String::ToString("afxMagicMissileData::preload: Couldn't load shape \"%s\"", mProjectileShapeAssetId);
          return false;
       }
       /* From stock Projectile code...
@@ -599,7 +585,8 @@ void afxMagicMissileData::packData(BitStream* stream)
 {
    Parent::packData(stream);
 
-   stream->writeString(projectileShapeName);
+   PACKDATA_ASSET(ProjectileShape);
+
    /* From stock Projectile code...
    stream->writeFlag(faceViewer);
    */
@@ -640,7 +627,7 @@ void afxMagicMissileData::packData(BitStream* stream)
                                               DataBlockObjectIdLast);
    */
 
-   sfxWrite( stream, sound );
+   PACKDATA_ASSET(ProjectileSound);
 
    if ( stream->writeFlag(lightDesc != NULL))
       stream->writeRangedU32(lightDesc->getId(), DataBlockObjectIdFirst,
@@ -709,7 +696,7 @@ void afxMagicMissileData::unpackData(BitStream* stream)
 {
    Parent::unpackData(stream);
 
-   projectileShapeName = stream->readSTString();
+   UNPACKDATA_ASSET(ProjectileShape);
    /* From stock Projectile code...
    faceViewer = stream->readFlag();
    */
@@ -746,7 +733,7 @@ void afxMagicMissileData::unpackData(BitStream* stream)
       decalId = stream->readRangedU32(DataBlockObjectIdFirst, DataBlockObjectIdLast);
    */
    
-   sfxRead( stream, &sound );
+   UNPACKDATA_ASSET(ProjectileSound);
 
    if (stream->readFlag())
       lightDescId = stream->readRangedU32(DataBlockObjectIdFirst, DataBlockObjectIdLast);
@@ -996,6 +983,7 @@ afxMagicMissile::~afxMagicMissile()
 //--------------------------------------------------------------------------
 void afxMagicMissile::initPersistFields()
 {
+   docsURL;
    addGroup("Physics");
    addField("initialPosition", TypePoint3F, Offset(mCurrPosition, afxMagicMissile) ,
      "Initial starting position for this missile.");
@@ -1169,8 +1157,8 @@ bool afxMagicMissile::onNewDataBlock(GameBaseData* dptr, bool reload)
 
       SFX_DELETE( mSound );
 
-      if ( mDataBlock->sound )
-         mSound = SFX->createSource( mDataBlock->sound );
+      if (mDataBlock->getProjectileSound())
+         mSound = SFX->createSource(mDataBlock->getProjectileSoundProfile());
    }
 
    return true;
@@ -2005,7 +1993,7 @@ void afxMagicMissile::get_launch_data(Point3F& pos, Point3F& vel)
 
 void afxMagicMissile::updateSound()
 {
-  if (!mDataBlock->sound)
+  if (!mDataBlock->isProjectileSoundValid())
     return;
 
   if ( mSound )

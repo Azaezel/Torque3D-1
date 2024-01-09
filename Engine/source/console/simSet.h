@@ -95,6 +95,7 @@ class SimSet : public SimObject, public TamlChildren
    public:
 
       typedef SimObject Parent;
+      typedef SimObject Children;
 
       enum SetModification
       {
@@ -217,7 +218,7 @@ class SimSet : public SimObject, public TamlChildren
       
       /// @}
 
-      void callOnChildren( const String &method, S32 argc, ConsoleValueRef argv[], bool executeOnChildGroups = true );
+      void callOnChildren( const String &method, S32 argc, ConsoleValue argv[], bool executeOnChildGroups = true );
 
       /// Return the number of objects in this set as well as all sets that are contained
       /// in this set and its children.
@@ -332,7 +333,7 @@ void SimSet::findObjectByType( Vector<T*> &foundObjects )
       curSet = dynamic_cast<SimSet*>( *itr );
 
       // If child object is a set, call recursively into it.
-      if ( curSet )
+      if ( curSet && curSet->size() != 0)
          curSet->findObjectByType( foundObjects ); 
 
       // Add this child object if appropriate.
@@ -463,7 +464,7 @@ class SimGroup: public SimSet
       virtual SimObject* findObject(const char* name);
       virtual void onRemove();
 
-      virtual bool processArguments( S32 argc, ConsoleValueRef *argv );
+      virtual bool processArguments( S32 argc, ConsoleValue *argv );
 
       virtual SimObject* getObject(const S32& index);
 

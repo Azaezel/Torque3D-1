@@ -99,7 +99,7 @@ bool GuiGradientSwatchCtrl::onWake()
 
 void GuiGradientSwatchCtrl::onRender( Point2I offset, const RectI &updateRect )
 {
-   bool highlight = mMouseOver;
+   bool highlight = mHighlighted;
 
    ColorI borderColor = mActive ? ( highlight ? mProfile->mBorderColorHL : mProfile->mBorderColor ) : mProfile->mBorderColorNA;
    RectI renderRect( offset, getExtent() );
@@ -232,6 +232,7 @@ GuiGradientCtrl::GuiGradientCtrl()
 //--------------------------------------------------------------------------
 void GuiGradientCtrl::initPersistFields()
 {
+   docsURL;
    addGroup("ColorPicker");
    addField("baseColor", TypeColorF, Offset(mBaseColor, GuiGradientCtrl));
    addField("pickColor", TypeColorF, Offset(mPickColor, GuiGradientCtrl));

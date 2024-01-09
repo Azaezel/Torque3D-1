@@ -77,7 +77,7 @@ public:
   static void       initPersistFields();
 
   //DECLARE_CONOBJECT(afxEA_Zodiac);
-  DECLARE_CATEGORY("AFX");
+  DECLARE_CATEGORY("UNLISTED");
 };
 
 //IMPLEMENT_CONOBJECT(afxEA_Zodiac);
@@ -396,6 +396,7 @@ void afxEA_Zodiac::do_runtime_substitutions()
 
 void afxEA_Zodiac::initPersistFields()
 {
+   docsURL;
   addField("liveColor",         TypeColorF,     myOffset(live_color),
     "...");
   addField("liveColorFactor",   TypeF32,        myOffset(live_color_factor),

@@ -112,6 +112,7 @@ GuiHealthBarHud::GuiHealthBarHud()
 
 void GuiHealthBarHud::initPersistFields()
 {
+   docsURL;
    addGroup("Colors");		
    addField( "fillColor", TypeColorF, Offset( mFillColor, GuiHealthBarHud ), "Standard color for the background of the control." );
    addField( "frameColor", TypeColorF, Offset( mFrameColor, GuiHealthBarHud ), "Color for the control's frame." );
@@ -146,7 +147,7 @@ void GuiHealthBarHud::onRender(Point2I offset, const RectI &updateRect)
    if (!conn)
       return;
    ShapeBase* control = dynamic_cast<ShapeBase*>(conn->getControlObject());
-   if (!control || !(control->getTypeMask() & PlayerObjectType))
+   if (!control || !(control->getTypeMask() & (PlayerObjectType | VehicleObjectType)))
       return;
 
    if(mDisplayEnergy)

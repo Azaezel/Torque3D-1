@@ -71,7 +71,7 @@ bool blTerrainChunk::read(Stream & stream)
       return(false);
 
    mLightmap = new GBitmap();
-   return mLightmap->readBitmap("png",stream);
+   return false;//mLightmap->readBitmap("png",stream);
 }
 
 bool blTerrainChunk::write(Stream & stream)
@@ -82,8 +82,8 @@ bool blTerrainChunk::write(Stream & stream)
    if(!mLightmap)
       return(false);
 
-   if(!mLightmap->writeBitmap("png",stream))
-      return(false);
+   //if(!mLightmap->writeBitmap("png",stream))
+      //return(false);
 
    return(true);
 }
@@ -682,9 +682,9 @@ bool blTerrainSystem::createPersistChunkFromProxy(SceneLighting::ObjectProxy* ob
    {
       *ret = new blTerrainChunk();
       return true;
-   } else {
-      return NULL;
    }
+
+   return false;
 }
 
 // Given a ray, this will return the color from the lightmap of this object, return true if handled

@@ -46,6 +46,7 @@ extern StringTableEntry assetCategoryField;
 extern StringTableEntry assetInternalField;
 extern StringTableEntry assetPrivateField;
 extern StringTableEntry assetAutoUnloadField;
+extern StringTableEntry assetTypeField;
 
 //#define ASSET_BASE_ASSETNAME_FIELD         "AssetName"
 //#define ASSET_BASE_ASSETDESCRIPTION_FIELD  "AssetDescription"
@@ -55,20 +56,42 @@ extern StringTableEntry assetAutoUnloadField;
 //#define ASSET_BASE_AUTOUNLOAD_FIELD        "AssetAutoUnload"
 
 //-----------------------------------------------------------------------------
-
-class AssetBase : public SimObject
+class AssetBase : public SimGroup
 {
    friend class AssetManager;
 
-   typedef SimObject Parent;
+   typedef SimGroup Parent;
 
 protected:
    AssetManager*           mpOwningAssetManager;
    bool                    mAssetInitialized;
    AssetDefinition*        mpAssetDefinition;
    U32                     mAcquireReferenceCount;
+   U32                     mLoadedState;
 
 public:
+   enum AssetErrCode
+   {
+      Failed,
+      Ok,
+      NotLoaded,
+      Reloading,
+      BadFileReference,
+      InvalidFormat,
+      DependencyNotFound,
+      FileTooLarge,
+      UsingFallback,
+      Extended
+   };
+
+   static const String mErrCodeStrings[AssetErrCode::Extended + 1];
+   static String getAssetErrstrn(U32 errCode)
+   {
+      if (errCode > AssetErrCode::Extended) return "undefined error";
+      return mErrCodeStrings[errCode];
+   };
+   U32 getStatus() { return mLoadedState; };
+   U32 load() { return NotLoaded; };
    AssetBase();
    virtual ~AssetBase();
 
@@ -78,23 +101,23 @@ public:
 
    /// Asset configuration.
    inline void             setAssetName(const char* pAssetName)              { if (mpOwningAssetManager == NULL) mpAssetDefinition->mAssetName = StringTable->insert(pAssetName); }
-   inline StringTableEntry getAssetName(void) const                          { return mpAssetDefinition->mAssetName; }
+   inline StringTableEntry getAssetName(void) const                          { return mpAssetDefinition ? mpAssetDefinition->mAssetName : StringTable->EmptyString(); }
    void                    setAssetDescription(const char* pAssetDescription);
-   inline StringTableEntry getAssetDescription(void) const                   { return mpAssetDefinition->mAssetDescription; }
+   inline StringTableEntry getAssetDescription(void) const                   { return mpAssetDefinition ? mpAssetDefinition->mAssetDescription : StringTable->EmptyString(); }
    void                    setAssetCategory(const char* pAssetCategory);
-   inline StringTableEntry getAssetCategory(void) const                      { return mpAssetDefinition->mAssetCategory; }
+   inline StringTableEntry getAssetCategory(void) const                      { return mpAssetDefinition ? mpAssetDefinition->mAssetCategory : StringTable->EmptyString(); }
    void                    setAssetAutoUnload(const bool autoUnload);
    inline bool             getAssetAutoUnload(void) const                    { return mpAssetDefinition->mAssetAutoUnload; }
    void                    setAssetInternal(const bool assetInternal);
    inline bool             getAssetInternal(void) const                      { return mpAssetDefinition->mAssetInternal; }
    inline bool             getAssetPrivate(void) const                       { return mpAssetDefinition->mAssetPrivate; }
-   inline StringTableEntry getAssetType(void) const                          { return mpAssetDefinition->mAssetType; }
+   inline StringTableEntry getAssetType(void) const                          { return mpAssetDefinition ? mpAssetDefinition->mAssetType: StringTable->EmptyString(); }
 
    inline S32              getAcquiredReferenceCount(void) const             { return mAcquireReferenceCount; }
    inline bool             getOwned(void) const                              { return mpOwningAssetManager != NULL; }
 
    // Asset Id is only available once registered with the asset manager.
-   inline StringTableEntry getAssetId(void) const                            { return mpAssetDefinition->mAssetId; }
+   inline StringTableEntry getAssetId(void) const { return mpAssetDefinition ? mpAssetDefinition->mAssetId : StringTable->EmptyString(); }
 
    /// Expanding/Collapsing asset paths is only available once registered with the asset manager.
    StringTableEntry        expandAssetFilePath(const char* pAssetFilePath) const;
@@ -105,6 +128,7 @@ public:
    void                    refreshAsset(void);
 
    S32 getAssetDependencyFieldCount(const char* pFieldName);
+   StringTableEntry getAssetDependencyField(const char* pFieldName, S32 index = 0);
    void clearAssetDependencyFields(const char* pFieldName);
    void addAssetDependencyField(const char* pFieldName, const char* pAssetId);
 
@@ -116,6 +140,7 @@ public:
 protected:
    virtual void            initializeAsset(void) {}
    virtual void            onAssetRefresh(void) {}
+   virtual void            unloadAsset(void) {}
 
 protected:
    static bool             setAssetName(void *obj, const char *array, const char *data)           { static_cast<AssetBase*>(obj)->setAssetName(data); return false; }
@@ -148,5 +173,9 @@ private:
    void                    setOwned(AssetManager* pAssetManager, AssetDefinition* pAssetDefinition);
 };
 
+//helper macro for stitching string and non string values togeather sans quotes
+#define assetText(x,suff) #x#suff
+#define macroText(x) #x
+#define assetDoc(x,suff) "@brief "#x" "#suff
 #endif // _ASSET_BASE_H_
 

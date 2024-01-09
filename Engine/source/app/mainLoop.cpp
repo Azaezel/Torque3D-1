@@ -45,7 +45,6 @@
 #include "console/debugOutputConsumer.h"
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
-#include "console/codeInterpreter.h"
 
 #include "gfx/bitmap/gBitmap.h"
 #include "gfx/gFont.h"
@@ -61,7 +60,7 @@
 
 // For the TickMs define... fix this for T2D...
 #include "T3D/gameBase/processList.h"
-#include "cinterface/cinterface.h"
+#include "console/script.h"
 
 #ifdef TORQUE_ENABLE_VFS
 #include "platform/platformVFS.h"
@@ -229,9 +228,6 @@ void StandardMainLoop::init()
    ManagedSingleton< ThreadManager >::createSingleton();
    FrameAllocator::init(TORQUE_FRAME_SIZE);      // See comments in torqueConfig.h
 
-   // Initialize the TorqueScript interpreter.
-   CodeInterpreter::init();
-
    // Yell if we can't initialize the network.
    if(!Net::init())
    {
@@ -294,6 +290,8 @@ void StandardMainLoop::init()
 	   "@ingroup platform");
 
    Con::setVariable( "defaultGame", StringTable->insert("scripts") );
+
+   Con::setVariable("TorqueScriptFileExtension", TORQUE_SCRIPT_EXTENSION);
 
    Con::addVariable( "_forceAllMainThread", TypeBool, &ThreadPool::getForceAllMainThread(), "Force all work items to execute on main thread. turns this into a single-threaded system. Primarily useful to find whether malfunctions are caused by parallel execution or not.\n"
 	   "@ingroup platform" );
@@ -436,18 +434,13 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
    }
 #endif
 
-   // Executes an entry script file. This is "main.cs"
+   // Executes an entry script file. This is "main.tscript"
    // by default, but any file name (with no whitespace
    // in it) may be run if it is specified as the first
    // command-line parameter. The script used, default
    // or otherwise, is not compiled and is loaded here
    // directly because the resource system restricts
    // access to the "root" directory.
-
-   bool foundExternalMain = false;
-   CInterface::CallMain(&foundExternalMain);
-   if (foundExternalMain)
-      return true;
 
 #ifdef TORQUE_ENABLE_VFS
    Zip::ZipArchive *vfs = openEmbeddedVFSArchive();
@@ -457,16 +450,21 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
    Stream *mainCsStream = NULL;
 
    // The working filestream.
-   FileStream str; 
+   FileStream str;
 
-   const char *defaultScriptName = "main.cs";
+#ifdef TORQUE_ENTRY_FUNCTION
+   Con::executef(TORQUE_ENTRY_FUNCTION);
+   return true;
+#endif
+
+   const char *defaultScriptName = "main." TORQUE_SCRIPT_EXTENSION;
    bool useDefaultScript = true;
 
    // Check if any command-line parameters were passed (the first is just the app name).
    if (argc > 1)
    {
       // If so, check if the first parameter is a file to open.
-      if ( (dStrcmp(argv[1], "") != 0 ) && (str.open(argv[1], Torque::FS::File::Read)) )
+      if ( (String::compare(argv[1], "") != 0 ) && (str.open(argv[1], Torque::FS::File::Read)) )
       {
          // If it opens, we assume it is the script to run.
          useDefaultScript = false;
@@ -474,6 +472,10 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
          useVFS = false;
 #endif
          mainCsStream = &str;
+      }
+      else if (String::compare(argv[1], "SkipMainCs") == 0)
+      {
+         return true;
       }
    }
 
@@ -493,14 +495,14 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
       {
          OpenFileDialog ofd;
          FileDialogData &fdd = ofd.getData();
-         fdd.mFilters = StringTable->insert("Main Entry Script (main.cs)|main.cs|");
+         fdd.mFilters = StringTable->insert("Main Entry Script (main." TORQUE_SCRIPT_EXTENSION ")|main." TORQUE_SCRIPT_EXTENSION "|");
          fdd.mTitle   = StringTable->insert("Locate Game Entry Script");
 
          // Get the user's selection
          if( !ofd.Execute() )
             return false;
 
-         // Process and update CWD so we can run the selected main.cs
+         // Process and update CWD so we can run the selected main.tscript
          S32 pathLen = dStrlen( fdd.mFile );
          FrameTemp<char> szPathCopy( pathLen + 1);
 
@@ -636,6 +638,7 @@ bool StandardMainLoop::doMainLoop()
 
       ThreadPool::processMainThreadWorkItems();
       Sampler::endFrame();
+      ConsoleValue::resetConversionBuffer();
       PROFILE_END_NAMED(MainLoop);
    }
    

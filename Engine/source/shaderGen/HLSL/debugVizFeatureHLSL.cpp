@@ -24,7 +24,7 @@ void DebugVizHLSL::processPix(Vector<ShaderComponent*>& componentList,
 {
    MultiLine* meta = new MultiLine;
    Var* surface = (Var*)LangElement::find("surface");
-   Var* color = (Var*)LangElement::find("col");
+   Var* color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
 
    if (!surface)
       return;
@@ -122,8 +122,6 @@ void DebugVizHLSL::processPix(Vector<ShaderComponent*>& componentList,
       if (fd.features[MFT_LightMap] || fd.features[MFT_ToneMap] || fd.features[MFT_VertLit])
          return;
 
-      ShaderConnector* connectComp = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
-
       MultiLine* meta = new MultiLine;
 
       // Now the wsPosition and wsView.
@@ -135,33 +133,21 @@ void DebugVizHLSL::processPix(Vector<ShaderComponent*>& componentList,
       //Reflection Probe WIP
       U32 MAX_FORWARD_PROBES = 4;
 
-      Var* numProbes = (Var*)LangElement::find("numProbes");
+      Var* numProbes = (Var*)LangElement::find("inNumProbes");
       Var* cubeMips = (Var*)LangElement::find("cubeMips");
-      Var* skylightCubemapIdx = (Var*)LangElement::find("skylightCubemapIdx");
+      Var* skylightCubemapIdx = (Var*)LangElement::find("inSkylightCubemapIdx");
       Var* inProbePosArray = (Var*)LangElement::find("inProbePosArray");
       Var* inRefPosArray = (Var*)LangElement::find("inRefPosArray");
-      Var* refBoxMinArray = (Var*)LangElement::find("inRefBoxMin");
-      Var* refBoxMaxArray = (Var*)LangElement::find("inRefBoxMax");
+      Var* refScaleArray = (Var*)LangElement::find("inRefScaleArray");
 
-      Var* probeConfigData = (Var*)LangElement::find("probeConfigData");
-      Var* worldToObjArray = (Var*)LangElement::find("worldToObjArray");
+      Var* probeConfigData = (Var*)LangElement::find("inProbeConfigDataArray");
+      Var* worldToObjArray = (Var*)LangElement::find("inWorldToObjArray");
 
       Var* BRDFTexture = (Var*)LangElement::find("BRDFTexture");
-      Var* BRDFTextureTex = (Var*)LangElement::find("texture_BRDFTexture");
 
-      Var* specularCubemapAR = (Var*)LangElement::find("specularCubemapAR");
-      Var* specularCubemapARTex = (Var*)LangElement::find("texture_specularCubemapAR");
+      Var* specularCubemapAR = (Var*)LangElement::find("SpecularCubemapAR");
 
-      Var* irradianceCubemapAR = (Var*)LangElement::find("irradianceCubemapAR");
-      Var* irradianceCubemapARTex = (Var*)LangElement::find("texture_irradianceCubemapAR");
-
-      Var* matinfo = (Var*)LangElement::find("PBRConfig");
-      Var* metalness = (Var*)LangElement::find("metalness");
-      Var* smoothness = (Var*)LangElement::find("smoothness");
-
-      Var* wsEyePos = (Var*)LangElement::find("eyePosWorld");
-
-      Var* ibl = (Var*)LangElement::find("ibl");
+      Var* irradianceCubemapAR = (Var*)LangElement::find("IrradianceCubemapAR");
 
       //Reflection vec
       Var* showAttenVar = new Var("showAttenVar", "int");
@@ -181,11 +167,11 @@ void DebugVizHLSL::processPix(Vector<ShaderComponent*>& componentList,
       dSprintf(buf, sizeof(buf), "   @ = %s;\r\n", showDiff);
       meta->addStatement(new GenOp(buf, new DecOp(showDiffVar)));
 
-      String computeForwardProbes = String::String("   @ = debugVizForwardProbes(@,@,@,@,@,@,@,@,@,\r\n\t\t");
-      computeForwardProbes += String::String("@,TORQUE_SAMPLER2D_MAKEARG(@),\r\n\t\t");
-      computeForwardProbes += String::String("TORQUE_SAMPLERCUBEARRAY_MAKEARG(@),TORQUE_SAMPLERCUBEARRAY_MAKEARG(@), @, @, @, @).rgb; \r\n");
+      String computeForwardProbes = String("   @ = debugVizForwardProbes(@,@,@,@,@,@,@,@,\r\n\t\t");
+      computeForwardProbes += String("@,TORQUE_SAMPLER2D_MAKEARG(@),\r\n\t\t");
+      computeForwardProbes += String("TORQUE_SAMPLERCUBEARRAY_MAKEARG(@),TORQUE_SAMPLERCUBEARRAY_MAKEARG(@), @, @, @, @).rgb; \r\n");
 
-      meta->addStatement(new GenOp(computeForwardProbes.c_str(), ibl, surface, cubeMips, numProbes, worldToObjArray, probeConfigData, inProbePosArray, refBoxMinArray, refBoxMaxArray, inRefPosArray,
+      meta->addStatement(new GenOp(computeForwardProbes.c_str(), ibl, surface, cubeMips, numProbes, worldToObjArray, probeConfigData, inProbePosArray, refScaleArray, inRefPosArray,
          skylightCubemapIdx, BRDFTexture,
          irradianceCubemapAR, specularCubemapAR,
          showAttenVar, showContribVar, showSpecVar, showDiffVar));

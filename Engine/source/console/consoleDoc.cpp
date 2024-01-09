@@ -23,14 +23,12 @@
 #include "platform/platform.h"
 #include "console/console.h"
 
-#include "console/ast.h"
 #include "core/tAlgorithm.h"
 
 #include "core/strings/findMatch.h"
 #include "console/consoleInternal.h"
 #include "console/consoleObject.h"
 #include "core/stream/fileStream.h"
-#include "console/compiler.h"
 #include "core/frameAllocator.h"
 #include "console/engineAPI.h"
 
@@ -135,7 +133,7 @@ void printClassHeader(const char* usage, const char * className, const char * su
          }
 
          // Print all fields that aren't associated with the 'field' keyword.
-         if( dStrcmp( keyword, "field" ) )
+         if( String::compare( keyword, "field" ) )
             Con::printf( "%s", lineStr );    // print lineStr as an unformatted string (otherwise '%' characters in the string could cause problems)
 
 
@@ -272,7 +270,7 @@ void Namespace::printNamespaceEntries(Namespace * g, bool dumpScript, bool dumpE
       }
       else if(ewalk->mFunctionOffset)                 // If it's a builtin function...
       {
-         String args = ewalk->mCode->getFunctionArgs(ewalk->mFunctionOffset);
+         String args = ewalk->mModule->getFunctionArgs(ewalk->mFunctionName, ewalk->mFunctionOffset);
          printClassMethod(false, typeNames[ewalk->mType], ewalk->mFunctionName, args, "");
       }
       else

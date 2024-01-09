@@ -23,17 +23,21 @@
 #import "app/mainLoop.h"
 #import "platform/platformInput.h"
 #import "console/console.h"
+#import "platformPOSIX/POSIXStdConsole.h"
+#import "platformPOSIX/POSIXState.h"
 
 extern void InitWindowingSystem();
 
 //------------------------------------------------------------------------------
 void Platform::init()
 {
-   
-   Con::printf("Initializing platform...");
+    StdConsole::create();
+    stdConsole->enable(true);
+
+    Con::printf("Initializing platform...");
    
    // Set the platform variable for the scripts
-   Con::setVariable( "$platform", "MacOSX" );
+   Con::setVariable( "$platform", "macos" );
    
    Input::init();
    

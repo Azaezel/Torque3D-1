@@ -41,6 +41,9 @@
 #include "lighting/lightInfo.h"
 #endif
 
+#include "T3D/assets/ShapeAsset.h"
+#include "T3D/assets/SoundAsset.h"
+
 class ParticleEmitter;
 class ParticleEmitterData;
 class TSThread;
@@ -62,21 +65,23 @@ class ExplosionData : public GameBaseData {
    };
 
   public:
-   StringTableEntry dtsFileName;
-
    bool faceViewer;
 
    S32 particleDensity;
    F32 particleRadius;
 
-   SFXTrack*        soundProfile;
+   DECLARE_SOUNDASSET(ExplosionData, Sound);
+   DECLARE_ASSET_SETGET(ExplosionData, Sound);
+
    ParticleEmitterData* particleEmitter;
    S32                  particleEmitterId;
 
    Point3F              explosionScale;
    F32                  playSpeed;
 
-   Resource<TSShape> explosionShape;
+   DECLARE_SHAPEASSET(ExplosionData, ExplosionShape, onShapeChanged);
+   DECLARE_ASSET_SETGET(ExplosionData, ExplosionShape);
+
    S32               explosionAnimation;
 
    ParticleEmitterData*    emitterList[EC_NUM_EMITTERS];
@@ -137,6 +142,8 @@ public:
    /*D*/          ~ExplosionData();
    ExplosionData* cloneAndPerformSubstitutions(const SimObject*, S32 index=0);
    virtual bool   allowSubstitutions() const { return true; }
+
+   void onShapeChanged() {}
 };
 
 
@@ -198,6 +205,7 @@ class Explosion : public GameBase, public ISceneLight
    void setCollideType( U32 cType ){ mCollideType = cType; }
 
    DECLARE_CONOBJECT(Explosion);
+   DECLARE_CATEGORY("UNLISTED");
    static void initPersistFields();
 private:
    SimObject*     ss_object;

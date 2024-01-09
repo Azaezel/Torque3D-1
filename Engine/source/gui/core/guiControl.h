@@ -107,6 +107,7 @@ class GuiControl : public SimGroup
    public:
    
       typedef SimGroup Parent;
+      typedef GuiControl Children;
       
       friend class GuiWindowCtrl; // mCollapseGroupVec
       friend class GuiCanvas;
@@ -217,6 +218,8 @@ class GuiControl : public SimGroup
       String mAltConsoleCommand;
       
       String mTooltip;
+
+      StringTableEntry mCategory;
       
       /// @}
       
@@ -340,7 +343,7 @@ class GuiControl : public SimGroup
       
       GuiControl();
       virtual ~GuiControl();
-      virtual bool processArguments(S32 argc, ConsoleValueRef *argv);
+      virtual bool processArguments(S32 argc, ConsoleValue *argv);
       
       static void initPersistFields();
       static void consoleInit();

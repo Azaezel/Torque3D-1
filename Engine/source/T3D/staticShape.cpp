@@ -95,9 +95,6 @@ ConsoleDocClass( StaticShapeData,
 StaticShapeData::StaticShapeData()
 {
    dynamicTypeField     = 0;
-
-   shadowEnable = true;
-
    noIndividualDamage = false;
 }
 
@@ -111,13 +108,13 @@ StaticShapeData::StaticShapeData(const StaticShapeData& other, bool temp_clone) 
 
 void StaticShapeData::initPersistFields()
 {
+   docsURL;
+   Parent::initPersistFields();
    addField("noIndividualDamage",   TypeBool, Offset(noIndividualDamage,   StaticShapeData), "Deprecated\n\n @internal");
    addField("dynamicType",          TypeS32,  Offset(dynamicTypeField,     StaticShapeData), 
       "@brief An integer value which, if speficied, is added to the value retured by getType().\n\n"
       "This allows you to extend the type mask for a StaticShape that uses this datablock.  Type masks "
       "are used for container queries, etc.");
-
-   Parent::initPersistFields();
 }
 
 void StaticShapeData::packData(BitStream* stream)
@@ -197,6 +194,7 @@ StaticShape::~StaticShape()
 
 void StaticShape::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 
@@ -260,8 +258,9 @@ void StaticShape::setTransform(const MatrixF& mat)
    setMaskBits(PositionMask);
 }
 
-void StaticShape::onUnmount(SceneObject*,S32)
+void StaticShape::onUnmount(SceneObject* obj, S32 node)
 {
+   Parent::onUnmount(obj, node);
    // Make sure the client get's the final server pos.
    setMaskBits(PositionMask);
 }
@@ -272,7 +271,7 @@ void StaticShape::onUnmount(SceneObject*,S32)
 U32 StaticShape::packUpdate(NetConnection *connection, U32 mask, BitStream *bstream)
 {
    U32 retMask = Parent::packUpdate(connection,mask,bstream);
-   if (bstream->writeFlag(mask & (PositionMask | ExtendedInfoMask)))
+   if (bstream->writeFlag(mask & ((U32)PositionMask | (U32)ExtendedInfoMask)))
    {
 
       // Write the transform (do _not_ use writeAffineTransform.  Since this is a static

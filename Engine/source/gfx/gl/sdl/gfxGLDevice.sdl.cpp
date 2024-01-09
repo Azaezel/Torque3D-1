@@ -58,7 +58,16 @@ void EnumerateVideoModes(Vector<GFXVideoMode>& outModes)
       GFXVideoMode outMode;
       outMode.resolution.set( mode.w, mode.h );
       outMode.refreshRate = mode.refresh_rate;
-      outMode.bitDepth = SDL_BYTESPERPIXEL( mode.format );
+
+      // BBP = 32 for some reason the engine knows it should be 32, but then we
+      // add some extra code to break what the engine knows.
+      //outMode.bitDepth = SDL_BYTESPERPIXEL( mode.format );     // sets bitdepths to 4
+      //outMode.bitDepth = SDL_BITSPERPIXEL(mode.format);        // sets bitdepth to 24
+      
+      // hardcoded magic numbers ftw
+      // This value is hardcoded in DX, probably to avoid the shenanigans going on here
+      outMode.bitDepth = 32;                                   
+
       outMode.wideScreen = (mode.w / mode.h) > (4 / 3);
       outMode.fullScreen = true;
       
@@ -68,6 +77,10 @@ void EnumerateVideoModes(Vector<GFXVideoMode>& outModes)
 
 void GFXGLDevice::enumerateAdapters( Vector<GFXAdapter*> &adapterList )
 {
+#ifdef TORQUE_TESTS_ENABLED
+      return;
+#endif
+
    AssertFatal( SDL_WasInit(SDL_INIT_VIDEO), "");
 
    PlatformGL::init(); // for hints about context creation
@@ -81,6 +94,13 @@ void GFXGLDevice::enumerateAdapters( Vector<GFXAdapter*> &adapterList )
         480,                               // height, in pixels
         SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN // flags - see below
     );
+   if (!tempWindow)
+   {
+      const char* err = SDL_GetError();
+      Con::printf(err);
+      AssertFatal(0, err);
+      return;
+   }
 
    SDL_ClearError();
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);

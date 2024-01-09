@@ -329,7 +329,7 @@ char* dStrcpyl(char *dst, dsize_t dstSize, ...)
 }
 
 
-S32 dStrcmp( const UTF16 *str1, const UTF16 *str2)
+S32 dStrcmp(const UTF16 *str1, const UTF16 *str2)
 {
 #if defined(TORQUE_OS_WIN)
    return wcscmp( reinterpret_cast<const wchar_t *>( str1 ), reinterpret_cast<const wchar_t *>( str2 ) );
@@ -428,7 +428,7 @@ S32 dStrlcpy(char *dst, const char *src, dsize_t dstSize)
    S32 copyLen = srcLen;
 
    //Check for buffer overflow and don't allow it. Warn on debug so we can fix it
-   AssertWarn(copyLen < dstSize, "Buffer too small in call to dStrlcpy!");
+   AssertFatal(copyLen < dstSize, "Buffer too small in call to dStrlcpy!");
    if (srcLen + 1 > dstSize)
    {
       copyLen = dstSize - 1;
@@ -546,7 +546,7 @@ bool dStrEqual(const char* str1, const char* str2)
    if (!str1 || !str2)
       return false;
    else
-      return (dStrcmp(str1, str2) == 0);
+      return (String::compare(str1, str2) == 0);
 }
 
 /// Check if one string starts with another
@@ -582,7 +582,7 @@ char* dStristr( char* str1, const char* str2 )
 
    // Slow but at least we have it.
 
-   U32 str2len = strlen( str2 );
+   U64 str2len = (U64)strlen( str2 );
    while( *str1 )
    {
       if( strncasecmp( str1, str2, str2len ) == 0 )

@@ -54,7 +54,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_MountedImageNodeData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
@@ -104,6 +103,7 @@ afxXM_MountedImageNodeData::afxXM_MountedImageNodeData(const afxXM_MountedImageN
 
 void afxXM_MountedImageNodeData::initPersistFields()
 {
+   docsURL;
   addField("imageSlot",   TypeS32,      Offset(image_slot, afxXM_MountedImageNodeData),
     "...");
   addField("nodeName",    TypeString,   Offset(node_name, afxXM_MountedImageNodeData),

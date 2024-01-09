@@ -46,9 +46,8 @@ S32 GFXTextureManager::smTextureReductionLevel = 0;
 String GFXTextureManager::smMissingTexturePath(Con::getVariable("$Core::MissingTexturePath"));
 String GFXTextureManager::smUnavailableTexturePath(Con::getVariable("$Core::UnAvailableTexturePath"));
 String GFXTextureManager::smWarningTexturePath(Con::getVariable("$Core::WarningTexturePath"));
-String GFXTextureManager::smDefaultIrradianceCubemapPath(Con::getVariable("$Core::DefaultIrradianceCubemap"));
-String GFXTextureManager::smDefaultPrefilterCubemapPath(Con::getVariable("$Core::DefaultPrefilterCubemap"));
 String GFXTextureManager::smBRDFTexturePath(Con::getVariable("$Core::BRDFTexture"));
+String GFXTextureManager::smWetnessTexturePath(Con::getVariable("$Core::WetnessTexture"));
 
 GFXTextureManager::EventSignal GFXTextureManager::smEventSignal;
 
@@ -75,16 +74,12 @@ void GFXTextureManager::init()
       "The file path of the texture used to warn the developer.\n"
       "@ingroup GFX\n" );
 
-   Con::addVariable("$Core::DefaultIrradianceCubemap", TypeRealString, &smDefaultIrradianceCubemapPath,
-      "The file path of the texture used as the default irradiance cubemap for PBR.\n"
-      "@ingroup GFX\n");
-
-   Con::addVariable("$Core::DefaultPrefilterCubemap", TypeRealString, &smDefaultPrefilterCubemapPath,
-      "The file path of the texture used as the default specular cubemap for PBR.\n"
-      "@ingroup GFX\n");
-
    Con::addVariable("$Core::BRDFTexture", TypeRealString, &smBRDFTexturePath,
-      "The file path of the texture used as the default irradiance cubemap for PBR.\n"
+      "The file path of the texture used as the default BRDF lut for PBR.\n"
+      "@ingroup GFX\n");
+
+   Con::addVariable("$Core::WetnessTexture", TypeRealString, &smWetnessTexturePath,
+      "The file path of the texture used as the default wetness influence map for PBR.\n"
       "@ingroup GFX\n");
 }
 
@@ -110,7 +105,7 @@ GFXTextureManager::~GFXTextureManager()
 
 U32 GFXTextureManager::getTextureDownscalePower( GFXTextureProfile *profile )
 {
-   if ( !profile || profile->canDownscale() )
+   if ( profile && profile->canDownscale() )
       return smTextureReductionLevel;
 
    return 0;
@@ -271,7 +266,7 @@ GFXTextureObject *GFXTextureManager::_lookupTexture( const char *hashName, const
    if (ret && (ret->mProfile->compareFlags(*profile)))
       return ret;
    else if (ret)
-      Con::warnf("GFXTextureManager::_lookupTexture: Cached texture %s has a different profile flag", hashName);
+      Con::warnf("GFXTextureManager::_lookupTexture: Cached texture %s has different profile flags: (%s,%s) ", hashName, ret->mProfile->getName().c_str(), profile->getName().c_str());
 
    return NULL;
 }
@@ -894,6 +889,45 @@ Torque::Path GFXTextureManager::validatePath(const Torque::Path &path)
    return correctPath;
 }
 
+GBitmap *GFXTextureManager::loadUncompressedTexture(const Torque::Path &path, GFXTextureProfile *profile, U32 width, U32 height, bool genMips)
+{
+   GBitmap* inBitmap = loadUncompressedTexture(path, &GFXTexturePersistentProfile);
+
+   if (inBitmap == NULL)
+   {
+      Con::warnf("GFXTextureManager::loadUncompressedTexture unable to load texture: %s", path.getFullPath().c_str());
+      return NULL;
+   }
+
+   // Set the format so we don't have to handle which channels are where.
+   if (!inBitmap->setFormat(GFXFormatR8G8B8A8))
+   {
+      Con::warnf("GFXTextureManager::loadUncompressedTexture unable to handle texture format: %s", path.getFullPath().c_str());
+      return NULL;
+   }
+
+   GBitmap* outBmp = new GBitmap(width, height, true, GFXFormatR8G8B8A8);
+
+   U8* oBits = (U8*)outBmp->getWritableBits();
+   for (S32 y = 0; y < width; y++)
+   {
+      for (S32 x = 0; x < height; x++)
+      {
+         ColorI texelColor = inBitmap->sampleTexel(x / F32(width), y / F32(height), true).toColorI(true);
+
+         oBits[(y * width + x) * 4] = texelColor.red;
+         oBits[(y * width + x) * 4 + 1] = texelColor.green;
+         oBits[(y * width + x) * 4 + 2] = texelColor.blue;
+         oBits[(y * width + x) * 4 + 3] = texelColor.alpha;
+      }
+   }
+
+   if (genMips)
+      outBmp->extrudeMipLevels();
+
+   return outBmp;
+}
+
 GBitmap *GFXTextureManager::loadUncompressedTexture(const Torque::Path &path, GFXTextureProfile *profile)
 {
    PROFILE_SCOPE(GFXTextureManager_loadUncompressedTexture);
@@ -1028,26 +1062,45 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(const Torque::Path &
    GFXTextureObject *cacheHit = _lookupTexture(resourceTag, profile);
    if (cacheHit != NULL) return cacheHit;
 
+   Torque::Path lastValidPath = "";
    GBitmap*bitmap[4];
-   bitmap[0] = loadUncompressedTexture(pathR, profile);
+
+   if (!pathR.isEmpty())
+   {
+      bitmap[0] = loadUncompressedTexture(pathR, profile);
+      lastValidPath = pathR;
+   }
+   else
+      bitmap[0] = NULL;
+
    if (!pathG.isEmpty())
+   {
       bitmap[1] = loadUncompressedTexture(pathG, profile);
+      lastValidPath = pathG;
+   }
    else
       bitmap[1] = NULL;
 
    if (!pathB.isEmpty())
+   {
       bitmap[2] = loadUncompressedTexture(pathB, profile);
+      lastValidPath = pathB;
+   }
    else
       bitmap[2] = NULL;
+
    if (!pathA.isEmpty())
+   {
       bitmap[3] = loadUncompressedTexture(pathA, profile);
+      lastValidPath = pathA;
+   }
    else
       bitmap[3] = NULL;
    
 
    Path realPath;
    GFXTextureObject *retTexObj = NULL;
-   realPath = validatePath(pathR); //associate path with r channel texture in.
+   realPath = validatePath(lastValidPath); //associate path with last valid channel texture in.
 
    retTexObj = createCompositeTexture(bitmap, inputKey, resourceTag, profile, false);
 
@@ -1087,26 +1140,45 @@ void GFXTextureManager::saveCompositeTexture(const Torque::Path &pathR, const To
       cacheHit->dumpToDisk("png", saveAs.getFullPath());
       return;
    }
-   GBitmap*bitmap[4];
-   bitmap[0] = loadUncompressedTexture(pathR, profile);
+
+   Torque::Path lastValidPath = "";
+   GBitmap* bitmap[4];
+
+   if (!pathR.isEmpty())
+   {
+      bitmap[0] = loadUncompressedTexture(pathR, profile);
+      lastValidPath = pathR;
+   }
+   else
+      bitmap[0] = NULL;
+
    if (!pathG.isEmpty())
+   {
       bitmap[1] = loadUncompressedTexture(pathG, profile);
+      lastValidPath = pathG;
+   }
    else
       bitmap[1] = NULL;
 
    if (!pathB.isEmpty())
+   {
       bitmap[2] = loadUncompressedTexture(pathB, profile);
+      lastValidPath = pathB;
+   }
    else
       bitmap[2] = NULL;
+
    if (!pathA.isEmpty())
+   {
       bitmap[3] = loadUncompressedTexture(pathA, profile);
+      lastValidPath = pathA;
+   }
    else
       bitmap[3] = NULL;
 
-
    Path realPath;
    GFXTextureObject *retTexObj = NULL;
-   realPath = validatePath(pathR); //associate path with r channel texture in.
+   realPath = validatePath(lastValidPath); //associate path with last valid channel texture in.
 
    retTexObj = createCompositeTexture(bitmap, inputKey, resourceTag, profile, false);
    if (retTexObj != NULL)
@@ -1120,7 +1192,7 @@ DefineEngineFunction(saveCompositeTexture, void, (const char* pathR, const char*
 {
    U32 inputKey[4] = {0,0,0,0};
 
-   if (dStrcmp(inputKeyString, "") != 0)
+   if (String::compare(inputKeyString, "") != 0)
    {
       dSscanf(inputKeyString, "%i %i %i %i", &inputKey[0], &inputKey[1], &inputKey[2], &inputKey[3]);
    }
@@ -1130,9 +1202,16 @@ DefineEngineFunction(saveCompositeTexture, void, (const char* pathR, const char*
 GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
    const String &resourceName, GFXTextureProfile *profile, bool deleteBmp)
 {
-   if (!bmp[0])
+   S32 lastValidTex = -1;
+   for (U32 i = 0; i < 4; i++)
    {
-      Con::errorf(ConsoleLogEntry::General, "GFXTextureManager::createCompositeTexture() - Got NULL bitmap(R)!");
+      if (bmp[i])
+         lastValidTex = i;
+   }
+
+   if (lastValidTex == -1)
+   {
+      Con::errorf(ConsoleLogEntry::General, "GFXTextureManager::createCompositeTexture() - Got all NULL bitmaps!");
       return NULL;
    }
 
@@ -1145,13 +1224,16 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 
 
    U8 rChan, gChan, bChan, aChan;
    GBitmap *outBitmap = new GBitmap();
-   outBitmap->allocateBitmap(bmp[0]->getWidth(), bmp[0]->getHeight(),false, GFXFormatR8G8B8A8);
+   outBitmap->allocateBitmap(bmp[lastValidTex]->getWidth(), bmp[lastValidTex]->getHeight(),false, GFXFormatR8G8B8A8);
    //pack additional bitmaps into the origional
-   for (U32 x = 0; x < bmp[0]->getWidth(); x++)
+   for (U32 x = 0; x < bmp[lastValidTex]->getWidth(); x++)
    {
-      for (U32 y = 0; y < bmp[0]->getHeight(); y++)
+      for (U32 y = 0; y < bmp[lastValidTex]->getHeight(); y++)
       {
-         rChan = bmp[0]->getChanelValueAt(x, y, inputKey[0]);
+         if (bmp[0])
+            rChan = bmp[0]->getChanelValueAt(x, y, inputKey[0]);
+         else
+            rChan = 255;
 
          if (bmp[1])
             gChan = bmp[1]->getChanelValueAt(x, y, inputKey[1]);
@@ -1161,7 +1243,7 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 
          if (bmp[2])
             bChan = bmp[2]->getChanelValueAt(x, y, inputKey[2]);
          else
-            bChan = 255;
+            bChan = 0;
 
          if (bmp[3])
             aChan = bmp[3]->getChanelValueAt(x, y, inputKey[3]);

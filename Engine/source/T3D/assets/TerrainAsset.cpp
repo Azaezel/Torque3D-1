@@ -91,7 +91,7 @@ ConsoleSetType(TypeTerrainAssetPtr)
 
 
 //-----------------------------------------------------------------------------
-ConsoleType(assetIdString, TypeTerrainAssetId, String, ASSET_ID_FIELD_PREFIX)
+ConsoleType(assetIdString, TypeTerrainAssetId, const char*, ASSET_ID_FIELD_PREFIX)
 
 ConsoleGetType(TypeTerrainAssetId)
 {
@@ -104,14 +104,7 @@ ConsoleSetType(TypeTerrainAssetId)
    // Was a single argument specified?
    if (argc == 1)
    {
-      // Yes, so fetch field value.
-      const char* pFieldValue = argv[0];
-
-      // Fetch asset Id.
-      StringTableEntry* assetId = (StringTableEntry*)(dptr);
-
-      // Update asset value.
-      *assetId = StringTable->insert(pFieldValue);
+      *((const char**)dptr) = StringTable->insert(argv[0]);
 
       return;
    }
@@ -138,6 +131,7 @@ TerrainAsset::~TerrainAsset()
 
 void TerrainAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -165,37 +159,40 @@ void TerrainAsset::initializeAsset()
    // Call parent.
    Parent::initializeAsset();
 
-   mTerrainFilePath = expandAssetFilePath(mTerrainFileName);
+   mTerrainFilePath = getOwned() ? expandAssetFilePath(mTerrainFileName) : mTerrainFilePath;
 
-   loadTerrain();
+   load();
 }
 
 void TerrainAsset::onAssetRefresh()
 {
-   mTerrainFilePath = expandAssetFilePath(mTerrainFileName);
+   mTerrainFilePath = getOwned() ? expandAssetFilePath(mTerrainFileName) : mTerrainFilePath;
 
-   loadTerrain();
+   load();
 }
 
 void TerrainAsset::setTerrainFileName(const char* pScriptFile)
 {
    // Sanity!
-   AssertFatal(pScriptFile != NULL, "Cannot use a NULL script file.");
+   AssertFatal(pScriptFile != NULL, "Cannot use a NULL terrain file.");
 
-   // Fetch image file.
-   pScriptFile = StringTable->insert(pScriptFile);
+   pScriptFile = StringTable->insert(pScriptFile, true);
+
+   // Ignore no change,
+   if (pScriptFile == mTerrainFileName)
+      return;
 
    // Update.
-   mTerrainFileName = pScriptFile;
+   mTerrainFileName = getOwned() ? expandAssetFilePath(pScriptFile) : pScriptFile;
 
    // Refresh the asset.
    refreshAsset();
 }
 
-bool TerrainAsset::loadTerrain()
+U32 TerrainAsset::load()
 {
-   if (!Platform::isFile(mTerrainFilePath))
-      return false;
+   if (!Torque::FS::IsFile(mTerrainFilePath))
+      return BadFileReference;
 
    mTerrMaterialAssets.clear();
    mTerrMaterialAssetIds.clear();
@@ -232,9 +229,9 @@ bool TerrainAsset::loadTerrain()
    mTerrainFile = ResourceManager::get().load(mTerrainFilePath);
 
    if (mTerrainFile)
-      return true;
+      return Ok;
 
-   return false;
+   return BadFileReference;
 }
 
 //------------------------------------------------------------------------------
@@ -248,7 +245,7 @@ bool TerrainAsset::getAssetByFilename(StringTableEntry fileName, AssetPtr<Terrai
    {
       //Didn't find any assets
       //If possible, see if we can run an in-place import and the get the asset from that
-#if TORQUE_DEBUG
+#ifdef TORQUE_DEBUG
       Con::warnf("TerrainAsset::getAssetByFilename - Attempted to in-place import a terrainFile(%s) that had no associated asset", fileName);
 #endif
 
@@ -430,6 +427,14 @@ void TerrainAsset::copyTo(SimObject* object)
    Parent::copyTo(object);
 }
 
+DefineEngineMethod(TerrainAsset, getTerrainFilePath, const char*, (), ,
+   "Gets the terrain filepath of this asset.\n"
+   "@return File path of the terrain file.")
+{
+   return object->getTerrainFilePath();
+}
+
+#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // GuiInspectorTypeAssetId
 //-----------------------------------------------------------------------------
@@ -459,10 +464,8 @@ GuiControl* GuiInspectorTypeTerrainAssetPtr::constructEditControl()
    // Change filespec
    char szBuffer[512];
    dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"TerrainAsset\", \"AssetBrowser.changeAsset\", %s, %s);",
-      mInspector->getInspectObject()->getIdString(), mCaption);
+      mInspector->getIdString(), mCaption);
    mBrowseButton->setField("Command", szBuffer);
-
-   const char* id = mInspector->getInspectObject()->getIdString();
 
    setDataField(StringTable->insert("targetObject"), NULL, mInspector->getInspectObject()->getIdString());
 
@@ -471,8 +474,8 @@ GuiControl* GuiInspectorTypeTerrainAssetPtr::constructEditControl()
 
    mShapeEdButton->setField("Command", "EditorGui.setEditor(TerrainEditorPlugin);");
 
-   char bitmapName[512] = "tools/worldEditor/images/toolbar/shape-editor";
-   mShapeEdButton->setBitmap(bitmapName);
+   char bitmapName[512] = "ToolsModule:TerrainBlock_image";
+   mShapeEdButton->setBitmap(StringTable->insert(bitmapName));
 
    mShapeEdButton->setDataField(StringTable->insert("Profile"), NULL, "GuiButtonProfile");
    mShapeEdButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
@@ -525,3 +528,4 @@ void GuiInspectorTypeTerrainAssetId::consoleInit()
 
    ConsoleBaseType::getType(TypeTerrainAssetId)->setInspectorFieldType("GuiInspectorTypeTerrainAssetId");
 }
+#endif

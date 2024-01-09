@@ -112,6 +112,7 @@ SceneObject::SceneObject()
 
    mObjScale.set(1,1,1);
    mObjToWorld.identity();
+   mLastXform.identity();
    mWorldToObj.identity();
 
    mObjBox      = Box3F(Point3F(0, 0, 0), Point3F(0, 0, 0));
@@ -125,18 +126,12 @@ SceneObject::SceneObject()
 
    mContainerSeqKey = 0;
 
-   mBinRefHead = NULL;
-
    mSceneManager = NULL;
 
+   mZoneListHandle = 0;
    mNumCurrZones = 0;
-   mZoneRefHead = NULL;
    mZoneRefDirty = false;
 
-   mBinMinX = 0xFFFFFFFF;
-   mBinMaxX = 0xFFFFFFFF;
-   mBinMinY = 0xFFFFFFFF;
-   mBinMaxY = 0xFFFFFFFF;
    mLightPlugin = NULL;
 
    mMount.object = NULL;
@@ -165,19 +160,23 @@ SceneObject::SceneObject()
    mGameObjectAssetId = StringTable->insert("");
 
    mDirtyGameObject = false;
+
+   mContainer = NULL;
+   mContainerIndex = 0;
 }
 
 //-----------------------------------------------------------------------------
 
 SceneObject::~SceneObject()
 {
-   AssertFatal( mZoneRefHead == NULL && mBinRefHead == NULL,
+   AssertFatal(mContainer == NULL,
+      "SceneObject::~SceneObject - Object still in container!");
+   AssertFatal( mZoneListHandle == NULL,
       "SceneObject::~SceneObject - Object still linked in reference lists!");
    AssertFatal( !mSceneObjectLinks,
       "SceneObject::~SceneObject() - object is still linked to SceneTrackers" );
 
    mAccuTex = NULL;
-   unlink();
 }
 
 //-----------------------------------------------------------------------------
@@ -293,6 +292,8 @@ bool SceneObject::collideBox(const Point3F &start, const Point3F &end, RayInfo *
 
 void SceneObject::disableCollision()
 {
+   for (SceneObject* ptr = getMountList(); ptr; ptr = ptr->getMountLink())
+      ptr->disableCollision();
    mCollisionCount++;
    AssertFatal(mCollisionCount < 50, "SceneObject::disableCollision called 50 times on the same object. Is this inside a circular loop?" );
 }
@@ -301,6 +302,8 @@ void SceneObject::disableCollision()
 
 void SceneObject::enableCollision()
 {
+   for (SceneObject* ptr = getMountList(); ptr; ptr = ptr->getMountLink())
+      ptr->enableCollision();
    if (mCollisionCount)
       --mCollisionCount;
 }
@@ -412,6 +415,7 @@ void SceneObject::setTransform( const MatrixF& mat )
 
    PROFILE_SCOPE( SceneObject_setTransform );
 // PATHSHAPE
+   UpdateXformChange(mat);
    PerformUpdatesForChildren(mat);
 // PATHSHAPE END
 
@@ -627,12 +631,14 @@ void SceneObject::setHidden( bool hidden )
 
 void SceneObject::initPersistFields()
 {
-   addGroup("GameObject");
+   docsURL;
+   //Disabled temporarily
+   /*addGroup("GameObject");
    addField("GameObject", TypeGameObjectAssetPtr, Offset(mGameObjectAsset, SceneObject), "The asset Id used for the game object this entity is based on.");
 
    addField("dirtyGameObject", TypeBool, Offset(mDirtyGameObject, SceneObject), "If this entity is a GameObject, it flags if this instance delinates from the template.",
       AbstractClassRep::FieldFlags::FIELD_HideInInspectors);
-   endGroup("GameObject");
+   endGroup("GameObject");*/
 
    addGroup( "Transform" );
 
@@ -1021,7 +1027,7 @@ void SceneObject::unpackUpdate( NetConnection* conn, BitStream* stream )
 
 //-----------------------------------------------------------------------------
 
-void SceneObject::_updateZoningState() const
+void SceneObject::_updateZoningState()
 {
    if( mZoneRefDirty )
    {
@@ -1035,21 +1041,18 @@ void SceneObject::_updateZoningState() const
 
 //-----------------------------------------------------------------------------
 
-U32 SceneObject::getCurrZone( const U32 index ) const
+U32 SceneObject::getCurrZone( const U32 index )
 {
+   SceneZoneSpaceManager* manager = getSceneManager()->getZoneManager();
    _updateZoningState();
 
    // Not the most efficient way to do this, walking the list,
    //  but it's an uncommon call...
-   ZoneRef* walk = mZoneRefHead;
-   for( U32 i = 0; i < index; ++ i )
-   {
-      walk = walk->nextInObj;
-      AssertFatal( walk != NULL, "SceneObject::_getCurrZone - Too few object refs!" );
-   }
-   AssertFatal( walk != NULL, "SceneObject::_getCurrZone - Too few object refs!" );
+   U32 numZones = 0;
+   U32* zones = NULL;
+   zones = manager->getZoneIDS(this, numZones);
 
-   return walk->zone;
+   return index < numZones ? zones[index] : 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -1523,6 +1526,19 @@ DefineEngineMethod( SceneObject, getEulerRotation, Point3F, (),,
    return euler;
 }
 
+DefineEngineMethod(SceneObject, setEulerRotation, void, (Point3F inRot), ,
+   "set Euler rotation of this object.\n"
+   "@set the orientation of the object in the form of rotations around the "
+   "X, Y and Z axes in degrees.\n")
+{
+   MatrixF curMat = object->getTransform();
+   Point3F curPos = curMat.getPosition();
+   Point3F curScale = curMat.getScale();
+   EulerF inRotRad = inRot * M_PI_F / 180.0;
+   curMat.set(inRotRad, curPos);
+   curMat.scale(curScale);
+   object->setTransform(curMat);
+}
 //-----------------------------------------------------------------------------
 
 DefineEngineMethod( SceneObject, getForwardVector, VectorF, (),,
@@ -1656,7 +1672,6 @@ void SceneObject::moveRender(const Point3F &delta)
 }
 
 void SceneObject::PerformUpdatesForChildren(MatrixF mat){
-	    UpdateXformChange(mat);
 		for (U32 i=0; i < getNumChildren(); i++) {
 			SceneObject *o = getChild(i);
 			o->updateChildTransform(); //update the position of the child object
@@ -1874,7 +1889,7 @@ DefineEngineMethod(SceneObject, attachToParent, bool, (const char*_sceneObject),
     }
     else
     {      
-        if ((!dStrcmp("0", _sceneObject))|| (!dStrcmp("", _sceneObject)))
+        if ((!String::compare("0", _sceneObject))|| (!String::compare("", _sceneObject)))
             return object->attachToParent(NULL);
         else
         {
@@ -1983,8 +1998,11 @@ DefineEngineMethod(SceneObject, detachChild, bool, (const char*_subObject),, "Sc
         return false;  
 }
 
-// subclasses can do something with these if they care to
-void SceneObject::onNewParent(SceneObject *newParent) {}  
-void SceneObject::onLostParent(SceneObject *oldParent){}    
-void SceneObject::onNewChild(SceneObject *newKid){}   
-void SceneObject::onLostChild(SceneObject *lostKid){}
+IMPLEMENT_CALLBACK(SceneObject, onNewParent, void, (SceneObject *newParent), (newParent), "");
+IMPLEMENT_CALLBACK(SceneObject, onLostParent, void, (SceneObject *oldParent), (oldParent), "");
+IMPLEMENT_CALLBACK(SceneObject, onNewChild, void, (SceneObject *newKid), (newKid), "");
+IMPLEMENT_CALLBACK(SceneObject, onLostChild, void, (SceneObject *lostKid), (lostKid), "");
+void SceneObject::onNewParent(SceneObject *newParent) { if (isServerObject()) onNewParent_callback(newParent); }
+void SceneObject::onLostParent(SceneObject *oldParent) { if (isServerObject()) onLostParent_callback(oldParent); }
+void SceneObject::onNewChild(SceneObject *newKid) { if (isServerObject()) onNewChild_callback(newKid); }
+void SceneObject::onLostChild(SceneObject *lostKid) { if (isServerObject()) onLostChild_callback(lostKid); }

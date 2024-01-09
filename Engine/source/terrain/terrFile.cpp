@@ -115,7 +115,7 @@ void TerrainFile::_buildGridMap()
    for ( S32 i = mGridLevels; i >= 0; i-- )
    {
       mGridMap[i] = grid;
-	  grid += 1 << ( 2 * ( mGridLevels - i ) );
+	  grid += (U64)1 << (U64)( 2 * ( mGridLevels - i ) );
    }
 
    for( S32 i = mGridLevels; i >= 0; i-- )
@@ -259,8 +259,7 @@ void TerrainFile::_initMaterialInstMapping()
    
    for( U32 i = 0; i < mMaterials.size(); ++ i )
    {
-      Torque::Path path( mMaterials[ i ]->getDiffuseMap() );
-      mMaterialInstMapping.push_back( path.getFileName() );
+      mMaterialInstMapping.push_back(mMaterials[i]->getInternalName());
    }
    
    mMaterialInstMapping.mapMaterials();

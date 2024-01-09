@@ -55,7 +55,6 @@ public:
 #endif
   
   DECLARE_CONOBJECT(afxXM_BoxHeightOffsetData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
@@ -97,6 +96,7 @@ afxXM_BoxHeightOffsetData::afxXM_BoxHeightOffsetData(const afxXM_BoxHeightOffset
 
 void afxXM_BoxHeightOffsetData::initPersistFields()
 {
+   docsURL;
   addField("offset",   TypePoint3F,  Offset(offset, afxXM_BoxHeightOffsetData));
 
   Parent::initPersistFields();

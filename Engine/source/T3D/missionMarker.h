@@ -85,6 +85,7 @@ class MissionMarker : public ShapeBase
       void unpackUpdate(NetConnection *conn,           BitStream *stream);
 
       DECLARE_CONOBJECT(MissionMarker);
+      DECLARE_CATEGORY("Markers");
       static void initPersistFields();
 };
 
@@ -166,6 +167,8 @@ class SpawnSphere : public MissionMarker
       bool     mAutoSpawn;
       bool     mSpawnTransform;
 
+      /// returns the datablock spawned for this object
+      StringTableEntry getTypeHint() const override { return (mSpawnDataBlock.isNotEmpty()) ? mSpawnDataBlock.c_str() : StringTable->EmptyString(); };
       // Radius/weight info
       F32      mRadius;
       F32      mSphereWeight;
@@ -215,6 +218,7 @@ class CameraBookmark : public MissionMarker
       static void initPersistFields();
 
       DECLARE_CONOBJECT(CameraBookmark);
+      DECLARE_CATEGORY("Markers");
 	  /*DECLARE_CALLBACK( void, onAdd, () );
 	  DECLARE_CALLBACK( void, onRemove, () );
 	  DECLARE_CALLBACK( void, onGroupAdd, () );

@@ -52,7 +52,11 @@
    #include "console/simObjectRef.h"
 #endif
 #ifndef TINYXML_INCLUDED
-   #include "tinyxml.h"
+   #include "tinyxml2.h"
+#endif
+
+#ifndef _CONSOLFUNCTIONS_H_
+#include "console/consoleFunctions.h"
 #endif
 
 /// @file
@@ -208,7 +212,7 @@ public:
    typedef ConsoleBaseType Parent;
 
    /// Allows the writing of a custom TAML schema.
-   typedef void(*WriteCustomTamlSchema)(const AbstractClassRep* pClassRep, TiXmlElement* pParentElement);
+   typedef void(*WriteCustomTamlSchema)(const AbstractClassRep* pClassRep, tinyxml2::XMLElement* pParentElement);
 
    /// @name 'Tructors
    /// @{
@@ -678,7 +682,7 @@ public:
       T::initPersistFields();
       T::consoleInit();
 
-      EnginePropertyTable::Property* props = new EnginePropertyTable::Property[sg_tempFieldList.size()];
+      EnginePropertyTable::Property* props = new EnginePropertyTable::Property[sg_tempFieldList.size() + 1];
 
       for (int i = 0; i < sg_tempFieldList.size(); ++i)
       {
@@ -821,11 +825,14 @@ class ConsoleObject : public EngineObject
 protected:
 
    /// @deprecated This is disallowed.
-   ConsoleObject(const ConsoleObject&);
+   ConsoleObject(const ConsoleObject&) { mDocsClick = false; };
 
 public:
-
-   ConsoleObject() {}
+   /// <summary>
+   /// Only used for interfacing with the editor's inspector docsURL button
+   /// </summary>
+   bool mDocsClick;
+   ConsoleObject() { mDocsClick = false; }
 
    /// Get a reference to a field by name.
    const AbstractClassRep::Field *findField(StringTableEntry fieldName) const;
@@ -856,7 +863,7 @@ public:
 public:
 
    /// Get the classname from a class tag.
-   static const char* lookupClassName(const U32 in_classTag);
+   static const char* lookupClassName(const U32 in_classTag) { return ""; };
 
    /// @name Fields
    /// @{

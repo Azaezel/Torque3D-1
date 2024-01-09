@@ -1,11 +1,11 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContnt = new GuiControl(ConvexEditorOptions)
+$guiContnt = new GuiControl(ConvexEditorOptions)
 {
    position = "0 0";
    extent = "800 600";
    
    new GuiWindowCollapseCtrl(ConvexEditorOptionsWindow) {
-      text = "Properties";
+      text = "::  Sketch Tool - Properties";
       resizeWidth = "1";
       resizeHeight = "1";
       canMove = "1";
@@ -21,10 +21,10 @@
       anchorBottom = "0";
       anchorLeft = "1";
       anchorRight = "0";
-      Position = Canvas.extent.x - 209
-            SPC getWord(EditorGuiToolbar.extent, 1) - 2;
-      Extent = "210 485";
-      minExtent = "210 298";
+      Position = firstWord($pref::Video::mode) - 360
+         SPC getWord(EditorGuiToolbar.extent, 1) + 6;
+      Extent = "360" SPC getWord($pref::Video::mode, 1) - getWord(EditorGuiToolbar.extent, 1) - 65;
+      minExtent = "300 298";
       horizSizing = "windowRelative";
       vertSizing = "windowRelative";
       profile = "ToolsGuiWindowProfile";
@@ -36,10 +36,104 @@
       internalName = "window";
       canSave = "1";
       canSaveDynamicFields = "1";
-         enabled = "1";
-         minSize = "50 50";
+      enabled = "1";
+      minSize = "50 50";
+         
+      // window / panel buttons
+      new GuiBitmapButtonCtrl(ConvexEditorGui_UnDockBtn) {
+         canSaveDynamicFields = "0";
+         internalName = "";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "left";
+         VertSizing = "bottom";
+         Position = "330 1";
+         Extent = "18 18";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "0";
+         Command = "ConvexEditorGui.releaseSidePanel();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Detach Sidepanel";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:panel_undock_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+      };
+      new GuiBitmapButtonCtrl(ConvexEditorGui_DockBtn) {
+         canSaveDynamicFields = "0";
+         internalName = "";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "left";
+         VertSizing = "bottom";
+         Position = "330 1";
+         Extent = "18 18";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "0";
+         Command = "ConvexEditorGui.dockSidePanel();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Dock Sidepanel";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:panel_dock_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+      };
+      new GuiBitmapButtonCtrl(ConvexEditorGui_HideBtn) {
+         canSaveDynamicFields = "0";
+         internalName = "";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "left";
+         VertSizing = "bottom";
+         Position = "312 1";
+         Extent = "18 18";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "1";
+         Command = "ConvexEditorGui.hideSidePanel();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Hide Sidepanel";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:panel_hide_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+      };
+      new GuiBitmapButtonCtrl(ConvexEditorGui_ShowBtn) {
+         canSaveDynamicFields = "0";
+         internalName = "";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "right";
+         VertSizing = "bottom";
+         Position = "4 1";
+         Extent = "18 18";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "1";
+         Command = "ConvexEditorGui.showSidePanel();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Show Sidepanel";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:panel_show_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+      };  
 
-      new GuiContainer() {
+      new GuiContainer(ConvexEditorOptionsPanel) {
          docking = "Top";
          margin = "3 3 3 3";
          padding = "0 0 0 0";
@@ -259,7 +353,7 @@
             class = "ConvexEditorDefaultMaterialBtn";
          };
       };
-      new GuiContainer() {
+      new GuiContainer(ConvexEditorUVPanel) {
          docking = "Top";
          margin = "0 0 3 3";
          padding = "0 0 0 0";
@@ -743,6 +837,92 @@
                   class = "ConvexEditorUVVertFlipBtn";
                };
             };
+         };
+      };
+      new GuiContainer(ConvexEditorAdvPanel) {
+         docking = "Top";
+         margin = "0 0 3 3";
+         padding = "0 0 0 0";
+         anchorTop = "1";
+         anchorBottom = "0";
+         anchorLeft = "1";
+         anchorRight = "0";
+         position = "4 502";
+         extent = "1432 50";
+         minExtent = "8 2";
+         horizSizing = "width";
+         vertSizing = "bottom";
+         profile = "inspectorStyleRolloutDarkProfile";
+         visible = "1";
+         active = "1";
+         tooltipProfile = "GuiToolTipProfile";
+         hovertime = "1000";
+         isContainer = "1";
+         canSave = "1";
+         canSaveDynamicFields = "0";
+
+         new GuiTextCtrl() {
+            text = "Brush Actions";
+            maxLength = "1024";
+            margin = "0 0 0 0";
+            padding = "0 0 0 0";
+            anchorTop = "1";
+            anchorBottom = "0";
+            anchorLeft = "1";
+            anchorRight = "0";
+            position = "5 0";
+            extent = "121 18";
+            minExtent = "8 2";
+            horizSizing = "right";
+            vertSizing = "bottom";
+            profile = "ToolsGuiDefaultProfile";
+            visible = "1";
+            active = "1";
+            tooltipProfile = "GuiToolTipProfile";
+            hovertime = "1000";
+            isContainer = "1";
+            canSave = "1";
+            canSaveDynamicFields = "0";
+         };
+         
+         new GuiButtonCtrl() {
+            text = "Hollow Selected";
+            groupNum = "-1";
+            buttonType = "PushButton";
+            position = "5 22";
+            extent = "90 21";
+            minExtent = "8 2";
+            horizSizing = "right";
+            vertSizing = "bottom";
+            profile = "ToolsGuiButtonProfile";
+            visible = "1";
+            active = "1";
+            tooltipProfile = "GuiToolTipProfile";
+            hovertime = "1000";
+            isContainer = "0";
+            canSave = "1";
+            canSaveDynamicFields = "0";
+            command = "ConvexEditorGui.hollowSelection();";
+         };
+         
+         new GuiButtonCtrl() {
+            text = "Recenter Selected";
+            groupNum = "-1";
+            buttonType = "PushButton";
+            position = "100 22";
+            extent = "110 21";
+            minExtent = "8 2";
+            horizSizing = "right";
+            vertSizing = "bottom";
+            profile = "ToolsGuiButtonProfile";
+            visible = "1";
+            active = "1";
+            tooltipProfile = "GuiToolTipProfile";
+            hovertime = "1000";
+            isContainer = "0";
+            canSave = "1";
+            canSaveDynamicFields = "0";
+            command = "ConvexEditorGui.recenterSelection();";
          };
       };
    };

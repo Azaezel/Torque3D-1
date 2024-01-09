@@ -28,6 +28,7 @@
 #include "core/stringBuffer.h"
 #include "gfx/gfxDrawUtil.h"
 #include "console/engineAPI.h"
+#include "console/script.h"
 
 IMPLEMENT_CONOBJECT(GuiMLTextEditCtrl);
 
@@ -89,6 +90,7 @@ bool GuiMLTextEditCtrl::resize(const Point2I &newPosition, const Point2I &newExt
 //--------------------------------------------------------------------------
 void GuiMLTextEditCtrl::initPersistFields()
 {
+   docsURL;
    addField( "escapeCommand", TypeString, Offset( mEscapeCommand, GuiMLTextEditCtrl ), "Script function to run whenever the 'escape' key is pressed when this control is in focus.\n");
    Parent::initPersistFields();
 }

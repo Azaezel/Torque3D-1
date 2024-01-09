@@ -132,6 +132,7 @@ afxXM_BaseData::afxXM_BaseData(const afxXM_BaseData& other, bool temp_clone) : G
 
 void afxXM_BaseData::initPersistFields()
 {
+   docsURL;
   addField("ignoreTimeFactor",  TypeBool,   Offset(ignore_time_factor, afxXM_BaseData),
     "...");
 
@@ -203,7 +204,7 @@ afxXM_WeightedBaseData::afxXM_WeightedBaseData(const afxXM_WeightedBaseData& oth
 
 bool afxXM_WeightedBaseData::hasFixedWeight() const
 {
-  return (delay == 0.0f && lifetime == afxEffectDefs::INFINITE_LIFETIME && fade_in_time == 0.0f && fade_out_time == 0.0f);
+  return (delay == 0.0f && lifetime == (F32)afxEffectDefs::INFINITE_LIFETIME && fade_in_time == 0.0f && fade_out_time == 0.0f);
 }
 
 F32 afxXM_WeightedBaseData::getWeightFactor() const
@@ -213,6 +214,7 @@ F32 afxXM_WeightedBaseData::getWeightFactor() const
 
 void afxXM_WeightedBaseData::initPersistFields()
 {
+   docsURL;
   addField("delay",         TypeF32,      Offset(delay,         afxXM_WeightedBaseData),
     "...");
   addField("lifetime",      TypeF32,      Offset(lifetime,      afxXM_WeightedBaseData),

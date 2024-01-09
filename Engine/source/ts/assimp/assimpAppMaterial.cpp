@@ -129,7 +129,7 @@ void AssimpAppMaterial::initMaterial(const Torque::Path& path, Material* mat) co
       aiString opacityMode;
       if (AI_SUCCESS == mAIMat->Get("$mat.gltf.alphaMode", 0, 0, opacityMode))
       {
-         if (dStrcmp("MASK", opacityMode.C_Str()) == 0)
+         if (String::compare("MASK", opacityMode.C_Str()) == 0)
          {
             translucent = true;
             blendOp = Material::None;
@@ -141,7 +141,7 @@ void AssimpAppMaterial::initMaterial(const Torque::Path& path, Material* mat) co
                mat->mAlphaTest = true;
             }
          }
-         else if (dStrcmp("BLEND", opacityMode.C_Str()) == 0)
+         else if (String::compare("BLEND", opacityMode.C_Str()) == 0)
          {
             translucent = true;
             blendOp = Material::LerpAlpha;
@@ -150,7 +150,7 @@ void AssimpAppMaterial::initMaterial(const Torque::Path& path, Material* mat) co
          else
          {  // OPAQUE
             translucent = false;
-            blendOp = Material::LerpAlpha; // Make default so it doesn't get written to materials.cs
+            blendOp = Material::LerpAlpha; // Make default so it doesn't get written to materials.tscript
          }
       }
    }
@@ -170,14 +170,14 @@ void AssimpAppMaterial::initMaterial(const Torque::Path& path, Material* mat) co
    {
       torquePath = texName.C_Str();
       if (!torquePath.isEmpty())
-         mat->mDiffuseMapFilename[0] = cleanTextureName(torquePath, cleanFile, path, false);
+         mat->mDiffuseMapName[0] = cleanTextureName(torquePath, cleanFile, path, false);
    }
 
    if (AI_SUCCESS == mAIMat->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), texName))
    {
       torquePath = texName.C_Str();
       if (!torquePath.isEmpty())
-         mat->mNormalMapFilename[0] = cleanTextureName(torquePath, cleanFile, path, false);
+         mat->mNormalMapName[0] = cleanTextureName(torquePath, cleanFile, path, false);
    }
 
 #ifdef TORQUE_PBR_MATERIALS
@@ -194,20 +194,20 @@ void AssimpAppMaterial::initMaterial(const Torque::Path& path, Material* mat) co
       {  // If we have either map, fill all three slots
          if (rmName.isNotEmpty())
          {
-            mat->mRoughMapFilename[0] = cleanTextureName(rmName, cleanFile, path, false); // Roughness
-            mat->mSmoothnessChan[0] = 1.0f;
-            mat->mInvertSmoothness[0] = (floatVal == 1.0f);
-            mat->mMetalMapFilename[0] = cleanTextureName(rmName, cleanFile, path, false); // Metallic
+            mat->mRoughMapName[0] = cleanTextureName(rmName, cleanFile, path, false); // Roughness
+            mat->mRoughnessChan[0] = 1.0f;
+            mat->mInvertRoughness[0] = (floatVal == 1.0f);
+            mat->mMetalMapName[0] = cleanTextureName(rmName, cleanFile, path, false); // Metallic
             mat->mMetalChan[0] = 2.0f;
          }
          if (aoName.isNotEmpty())
          {
-            mat->mAOMapFilename[0] = cleanTextureName(aoName, cleanFile, path, false); // occlusion
+            mat->mAOMapName[0] = cleanTextureName(aoName, cleanFile, path, false); // occlusion
             mat->mAOChan[0] = 0.0f;
          }
          else
          {
-            mat->mAOMapFilename[0] = cleanTextureName(rmName, cleanFile, path, false); // occlusion
+            mat->mAOMapName[0] = cleanTextureName(rmName, cleanFile, path, false); // occlusion
             mat->mAOChan[0] = 0.0f;
          }
       }
@@ -296,7 +296,7 @@ String AssimpAppMaterial::cleanTextureName(String& texName, String& shapeName, c
       if (nameOnly)
          cleanStr = foundPath.getFullFileName();
       else
-      {  // Unless the file is in the same directory as the materials.cs (covered above)
+      {  // Unless the file is in the same directory as the materials.tscript (covered above)
          // we need to set the full path from the root directory. If we use "subdirectory/file.ext",
          // the material manager won't find the image file, but it will be found the next time the
          // material is loaded from file. If we use "./subdirectory/file.ext", the image will be found

@@ -37,6 +37,8 @@
 
 #include "torqueConfig.h"
 #include "T3D/accumulationVolume.h"
+#include "console/typeValidators.h"
+#include "materials/materialManager.h"
 
 IMPLEMENT_CO_NETOBJECT_V1(LevelInfo);
 
@@ -73,7 +75,7 @@ extern F32 gDecalBias;
 extern GFXTexHandle gLevelAccuMap;
 
 /// Default SFXAmbience used to reset the global soundscape.
-static SFXAmbience sDefaultAmbience;
+extern SFXAmbience* sDefaultAmbience;
 
 
 //-----------------------------------------------------------------------------
@@ -88,7 +90,8 @@ LevelInfo::LevelInfo()
       mAmbientLightBlendPhase( 1.f ),
       mSoundAmbience( NULL ),
       mSoundDistanceModel( SFXDistanceModelLinear ),
-      mSoundscape( NULL )
+      mSoundscape( NULL ),
+      mDampness(0.0)
 {
    mFogData.density = 0.0f;
    mFogData.densityOffset = 0.0f;
@@ -98,8 +101,8 @@ LevelInfo::LevelInfo()
    mNetFlags.set( ScopeAlways | Ghostable );
 
    mAdvancedLightmapSupport = true;
-   mAccuTextureName = "";
-   mAccuTexture = NULL;
+
+   INIT_ASSET(AccuTexture);
 
    // Register with the light manager activation signal, and we need to do it first
    // so the advanced light bin manager can be instructed about MRT lightmaps
@@ -120,8 +123,11 @@ LevelInfo::~LevelInfo()
 
 //-----------------------------------------------------------------------------
 
+FRangeValidator ValiDampnessRange(0.0f, 1.0f);
+
 void LevelInfo::initPersistFields()
 {
+   docsURL;
    addGroup( "Visibility" );
 
       addField( "nearClip", TypeF32, Offset( mNearClip, LevelInfo ), "Closest distance from the camera's position to render the world." );
@@ -130,6 +136,8 @@ void LevelInfo::initPersistFields()
       addField( "decalBias", TypeF32, Offset( mDecalBias, LevelInfo ),
          "NearPlane bias used when rendering Decal and DecalRoad. This should be tuned to the visibleDistance in your level." );
 
+      addFieldV("dampness", TypeF32, Offset(mDampness, LevelInfo), &ValiDampnessRange,
+         "@brief dampness influence");
    endGroup( "Visibility" );
 
    addGroup( "Fog" );
@@ -166,8 +174,7 @@ void LevelInfo::initPersistFields()
       //addField( "advancedLightmapSupport", TypeBool, Offset( mAdvancedLightmapSupport, LevelInfo ),
       //   "Enable expanded support for mixing static and dynamic lighting (more costly)" );
 
-      addProtectedField("AccuTexture", TypeStringFilename, Offset(mAccuTextureName, LevelInfo),
-         &_setLevelAccuTexture, &defaultProtectedGetFn, "Accumulation texture.");
+      INITPERSISTFIELD_IMAGEASSET(AccuTexture, LevelInfo, "Accumulation texture.");
 
    endGroup( "Lighting" );
    
@@ -200,6 +207,7 @@ U32 LevelInfo::packUpdate(NetConnection *conn, U32 mask, BitStream *stream)
    stream->write( mNearClip );
    stream->write( mVisibleDistance );
    stream->write( mDecalBias );
+   stream->write(mDampness);
 
    stream->write( mFogData.density );
    stream->write( mFogData.densityOffset );
@@ -216,7 +224,8 @@ U32 LevelInfo::packUpdate(NetConnection *conn, U32 mask, BitStream *stream)
    sfxWrite( stream, mSoundAmbience );
    stream->writeInt( mSoundDistanceModel, 1 );
 
-   stream->write(mAccuTextureName);
+   PACK_ASSET(conn, AccuTexture);
+
    return retMask;
 }
 
@@ -229,6 +238,8 @@ void LevelInfo::unpackUpdate(NetConnection *conn, BitStream *stream)
    stream->read( &mNearClip );
    stream->read( &mVisibleDistance );
    stream->read( &mDecalBias );
+   stream->read(&mDampness);
+   MATMGR->setDampness(mDampness);
 
    stream->read( &mFogData.density );
    stream->read( &mFogData.densityOffset );
@@ -256,13 +267,14 @@ void LevelInfo::unpackUpdate(NetConnection *conn, BitStream *stream)
          if( mSoundAmbience )
             mSoundscape->setAmbience( mSoundAmbience );
          else
-            mSoundscape->setAmbience( &sDefaultAmbience );
+            mSoundscape->setAmbience( sDefaultAmbience );
       }
 
       SFX->setDistanceModel( mSoundDistanceModel );
    }
-   stream->read(&mAccuTextureName);
-   setLevelAccuTexture(mAccuTextureName);
+
+   UNPACK_ASSET(conn, AccuTexture);
+   setLevelAccuTexture(getAccuTexture());
 }
 
 //-----------------------------------------------------------------------------
@@ -301,7 +313,7 @@ bool LevelInfo::onAdd()
 void LevelInfo::onRemove()
 {
    if( mSoundscape )
-      mSoundscape->setAmbience( &sDefaultAmbience );
+      mSoundscape->setAmbience( sDefaultAmbience );
 
    Parent::onRemove();
 }
@@ -361,19 +373,19 @@ void LevelInfo::_onLMActivate(const char *lm, bool enable)
 bool LevelInfo::_setLevelAccuTexture(void *object, const char *index, const char *data)
 {
    LevelInfo* volume = reinterpret_cast< LevelInfo* >(object);
-   volume->setLevelAccuTexture(data);
+   volume->setLevelAccuTexture(StringTable->insert(data));
    return false;
 }
 
 
-void LevelInfo::setLevelAccuTexture(const String& name)
+void LevelInfo::setLevelAccuTexture(StringTableEntry name)
 {
-   mAccuTextureName = name;
-   if (isClientObject() && mAccuTextureName.isNotEmpty())
+   _setAccuTexture(name);
+
+   if (isClientObject() && getAccuTexture() != StringTable->EmptyString())
    {
-      mAccuTexture.set(mAccuTextureName, &GFXStaticTextureSRGBProfile, "AccumulationVolume::mAccuTexture");
       if (mAccuTexture.isNull())
-         Con::warnf("AccumulationVolume::setTexture - Unable to load texture: %s", mAccuTextureName.c_str());
+         Con::warnf("AccumulationVolume::setTexture - Unable to load texture: %s", getAccuTexture());
       else
          gLevelAccuMap = mAccuTexture;
    }

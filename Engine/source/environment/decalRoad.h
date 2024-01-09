@@ -36,6 +36,8 @@
 #include "collision/clippedPolyList.h"
 #endif
 
+#include "T3D/assets/MaterialAsset.h"
+
 class Path;
 class TerrainBlock;
 struct ObjectRenderInst;
@@ -152,6 +154,7 @@ public:
 	~DecalRoad();
 
 	DECLARE_CONOBJECT(DecalRoad);
+   DECLARE_CATEGORY("Environment \t BackGround");
 
    // ConsoleObject
 	static void initPersistFields();
@@ -237,7 +240,12 @@ protected:
    F32 mBreakAngle;
    U32 mSegmentsPerBatch;
    F32 mTextureLength;
-   String mMaterialName;
+
+   BaseMatInstance* mMaterialInst;
+
+   DECLARE_MATERIALASSET(DecalRoad, Material);
+   DECLARE_ASSET_NET_SETGET(DecalRoad, Material, DecalRoadMask);
+
    U32 mRenderPriority;
 
    // Static ConsoleVars for editor
@@ -258,9 +266,6 @@ protected:
    RoadBatchVector mBatches;
    
    bool mLoadRenderData;
-   
-   SimObjectPtr<Material> mMaterial;
-   BaseMatInstance *mMatInst;
 
    GFXVertexBufferHandle<GFXVertexPNTBT> mVB;
    GFXPrimitiveBufferHandle mPB;

@@ -66,8 +66,7 @@ ConsoleDocClass( PhysicsShapeData,
 );
 
 PhysicsShapeData::PhysicsShapeData()
-   :  shapeName( NULL ),
-      mass( 1.0f ),
+   :  mass( 1.0f ),
       dynamicFriction( 0.0f ),
       staticFriction( 0.0f ),
       restitution( 0.0f ),
@@ -79,6 +78,7 @@ PhysicsShapeData::PhysicsShapeData()
       buoyancyDensity( 0.0f ),
       simType( SimType_ClientServer )      
 {
+   INIT_ASSET(Shape);
 }
 
 PhysicsShapeData::~PhysicsShapeData()
@@ -87,13 +87,11 @@ PhysicsShapeData::~PhysicsShapeData()
 
 void PhysicsShapeData::initPersistFields()
 {
-   Parent::initPersistFields();
+   docsURL;
+   addGroup("Shapes");
 
-   addGroup("Media");
-
-      addField( "shapeName", TypeShapeFilename, Offset( shapeName, PhysicsShapeData ),
-         "@brief Path to the .DAE or .DTS file to use for this shape.\n\n"
-         "Compatable with Live-Asset Reloading. ");
+      INITPERSISTFIELD_SHAPEASSET(Shape, PhysicsShapeData, "@brief Shape asset to be used with this physics object.\n\n"
+         "Compatable with Live-Asset Reloading. ")
 
       addField( "debris", TYPEID< SimObjectRef<PhysicsDebrisData> >(), Offset( debris, PhysicsShapeData ),
          "@brief Name of a PhysicsDebrisData to spawn when this shape is destroyed (optional)." );
@@ -104,7 +102,7 @@ void PhysicsShapeData::initPersistFields()
       addField( "destroyedShape", TYPEID< SimObjectRef<PhysicsShapeData> >(), Offset( destroyedShape, PhysicsShapeData ),
          "@brief Name of a PhysicsShapeData to spawn when this shape is destroyed (optional)." );
 
-   endGroup("Media");
+   endGroup("Shapes");
 
    addGroup( "Physics" );
       
@@ -174,14 +172,15 @@ void PhysicsShapeData::initPersistFields()
       addField( "simType", TYPEID< PhysicsShapeData::SimType >(), Offset( simType, PhysicsShapeData ),
          "@brief Controls whether this shape is simulated on the server, client, or both physics simulations.\n\n" );
 
-   endGroup( "Networking" );   
+   endGroup( "Networking" );
+   Parent::initPersistFields();
 }
 
 void PhysicsShapeData::packData( BitStream *stream )
 { 
    Parent::packData( stream );
 
-   stream->writeString( shapeName );
+   PACKDATA_ASSET(Shape);
 
    stream->write( mass );
    stream->write( dynamicFriction );
@@ -205,7 +204,7 @@ void PhysicsShapeData::unpackData( BitStream *stream )
 {
    Parent::unpackData(stream);
 
-   shapeName = stream->readSTString();
+   UNPACKDATA_ASSET(Shape);
 
    stream->read( &mass );
    stream->read( &dynamicFriction );
@@ -242,28 +241,30 @@ void PhysicsShapeData::onRemove()
 
 void PhysicsShapeData::_onResourceChanged( const Torque::Path &path )
 {
-   if ( path != Path( shapeName ) )
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus != AssetBase::Ok && assetStatus != AssetBase::UsingFallback)
+   {
+      return;
+   }
+   if ( path != Path(mShapeAsset->getShapeFilePath()) )
       return;
 
+   _setShape(getShape());
+
    // Reload the changed shape.
-   Resource<TSShape> reloadShape;
    PhysicsCollisionRef reloadcolShape;
 
-   reloadShape = ResourceManager::get().load( shapeName );
-   if ( !bool(reloadShape) )
+   if ( !mShape )
    {
       Con::warnf( ConsoleLogEntry::General, "PhysicsShapeData::_onResourceChanged: Could not reload %s.", path.getFileName().c_str() );
       return;
    }
 
    // Reload the collision shape.
-   reloadcolShape = reloadShape->buildColShape( false, Point3F::One );
+   reloadcolShape = mShape->buildColShape( false, Point3F::One );
 
-   if ( bool(reloadShape) &&  bool(reloadcolShape))
-   {
-      shape = reloadShape;
+   if (  bool(reloadcolShape))
       colShape = reloadcolShape;
-   }
 
    mReloadSignal.trigger();
 }
@@ -283,35 +284,33 @@ bool PhysicsShapeData::preload( bool server, String &errorBuffer )
 
    bool shapeError = false;
 
-   if (shapeName && shapeName[0])
+   if (mShapeAsset.notNull())
    {
-      // Resolve shapename
-      shape = ResourceManager::get().load(shapeName);
-      if (bool(shape) == false)
+      if (bool(mShape) == false)
       {
-         errorBuffer = String::ToString("PhysicsShapeData: Couldn't load shape \"%s\"", shapeName);
+         errorBuffer = String::ToString("PhysicsShapeData: Couldn't load shape \"%s\"", mShapeAssetId);
          return false;
       }
-      if (!server && !shape->preloadMaterialList(shape.getPath()) && NetConnection::filesWereDownloaded())
+      if (!server && !mShape->preloadMaterialList(mShape.getPath()) && NetConnection::filesWereDownloaded())
          shapeError = true;
 
    }
 
    // Prepare the shared physics collision shape.
-   if ( !colShape && shape )
+   if ( !colShape && mShape)
    {
-      colShape = shape->buildColShape( false, Point3F::One );
+      colShape = mShape->buildColShape( false, Point3F::One );
 
       // If we got here and didn't get a collision shape then
       // we need to fail... can't have a shape without collision.
       if ( !colShape )
       {
          //no collision so we create a simple box collision shape from the shapes bounds and alert the user
-         Con::warnf( "PhysicsShapeData::preload - No collision found for shape '%s', auto-creating one", shapeName );
-         Point3F halfWidth = shape->mBounds.getExtents() * 0.5f;
+         Con::warnf( "PhysicsShapeData::preload - No collision found for shape '%s', auto-creating one", mShapeAssetId);
+         Point3F halfWidth = mShape->mBounds.getExtents() * 0.5f;
          colShape = PHYSICSMGR->createCollision();
          MatrixF centerXfm(true);
-         centerXfm.setPosition(shape->mBounds.getCenter());
+         centerXfm.setPosition(mShape->mBounds.getCenter());
          colShape->addBox(halfWidth, centerXfm);
          return true;
       }
@@ -434,7 +433,8 @@ void PhysicsShape::consoleInit()
 }
 
 void PhysicsShape::initPersistFields()
-{   
+{
+   docsURL;
    addGroup( "PhysicsShape" );
 
       addField( "playAmbient", TypeBool, Offset( mPlayAmbient, PhysicsShape ),
@@ -703,11 +703,11 @@ bool PhysicsShape::_createShape()
    mAmbientSeq = -1;
 
    PhysicsShapeData *db = getDataBlock();
-   if ( !db || !db->shape)
+   if ( !db || !db->mShape)
       return false;
 
    // Set the world box.
-   mObjBox = db->shape->mBounds;
+   mObjBox = db->mShape->mBounds;
    resetWorldBox();
 
    // If this is the server and its a client only simulation
@@ -721,11 +721,11 @@ bool PhysicsShape::_createShape()
    }
 
    // Create the shape instance.
-   mShapeInst = new TSShapeInstance( db->shape, isClientObject() );
+   mShapeInst = new TSShapeInstance( db->mShape, isClientObject() );
 
    if ( isClientObject() )
    {
-      mAmbientSeq = db->shape->findSequence( "ambient" );
+      mAmbientSeq = db->mShape->findSequence( "ambient" );
       _initAmbient();   
    }
 

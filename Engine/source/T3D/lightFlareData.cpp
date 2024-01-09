@@ -40,10 +40,10 @@
 #include "collision/collision.h"
 #include "lighting/lightManager.h"
 
-const U32 LightFlareData::LosMask = STATIC_COLLISION_TYPEMASK |
-                                    ShapeBaseObjectType |
-                                    StaticShapeObjectType |
-                                    ItemObjectType;
+const U32 LightFlareData::LosMask = (U32)STATIC_COLLISION_TYPEMASK |
+                                    (U32)ShapeBaseObjectType |
+                                    (U32)StaticShapeObjectType |
+                                    (U32)ItemObjectType;
 
 
 LightFlareState::~LightFlareState()
@@ -85,7 +85,7 @@ ConsoleDocClass( LightFlareData,
    "as a 2D sprite in screenspace.\n\n"
 
    "@tsexample\n"
-   "// example from Full Template, core/art/datablocks/lights.cs\n"
+   "// example from Full Template, core/art/datablocks/lights." TORQUE_SCRIPT_EXTENSION "\n"
    "datablock LightFlareData( LightFlareExample0 )\n"
    "{\n"
    "   overallScale = 2.0;\n"
@@ -131,7 +131,9 @@ LightFlareData::LightFlareData()
    dMemset( mElementUseLightColor, 0, sizeof( bool ) * MAX_ELEMENTS );   
 
    for ( U32 i = 0; i < MAX_ELEMENTS; i++ )   
-      mElementDist[i] = -1.0f;   
+      mElementDist[i] = -1.0f;
+
+   INIT_ASSET(FlareTexture);
 }
 
 LightFlareData::~LightFlareData()
@@ -140,6 +142,7 @@ LightFlareData::~LightFlareData()
 
 void LightFlareData::initPersistFields()
 {
+   docsURL;
    addGroup( "LightFlareData" );
 
       addField( "overallScale", TypeF32, Offset( mScale, LightFlareData ),
@@ -158,8 +161,7 @@ void LightFlareData::initPersistFields()
       addField( "flareEnabled", TypeBool, Offset( mFlareEnabled, LightFlareData ),
          "Allows the user to disable this flare globally for any lights referencing it." );
 
-      addField( "flareTexture", TypeImageFilename, Offset( mFlareTextureName, LightFlareData ),
-         "The texture / sprite sheet for this flare." );
+      INITPERSISTFIELD_IMAGEASSET(FlareTexture, LightFlareData, "The texture / sprite sheet for this flare.");
 
       addArray( "Elements", MAX_ELEMENTS );
 
@@ -217,7 +219,9 @@ void LightFlareData::packData( BitStream *stream )
    Parent::packData( stream );
 
    stream->writeFlag( mFlareEnabled );
-   stream->write( mFlareTextureName );   
+
+   PACKDATA_ASSET(FlareTexture);
+
    stream->write( mScale );
    stream->write( mOcclusionRadius );
    stream->writeFlag( mRenderReflectPass );
@@ -240,7 +244,9 @@ void LightFlareData::unpackData( BitStream *stream )
    Parent::unpackData( stream );
 
    mFlareEnabled = stream->readFlag();
-   stream->read( &mFlareTextureName );   
+
+   UNPACKDATA_ASSET(FlareTexture);
+
    stream->read( &mScale );
    stream->read( &mOcclusionRadius );
    mRenderReflectPass = stream->readFlag();
@@ -449,7 +455,7 @@ void LightFlareData::prepRender(SceneRenderState *state, LightFlareState *flareS
    lightPosSS *= oneOverViewportExtent;
    lightPosSS = (lightPosSS * 2.0f) - Point3F::One;
    lightPosSS.y = -lightPosSS.y;
-   lightPosSS.z = 0.0f;
+   lightPosSS.z = 1.0f;
 
    // Determine the center of the current projection so we can converge there
    Point3F centerProj(0);
@@ -630,12 +636,6 @@ bool LightFlareData::_preload( bool server, String &errorStr )
 
    if ( mElementCount > 0 )
       _makePrimBuffer( &mFlarePrimBuffer, mElementCount );
-
-   if ( !server )
-   {
-      if ( mFlareTextureName.isNotEmpty() )      
-         mFlareTexture.set( mFlareTextureName, &GFXStaticTextureSRGBProfile, "FlareTexture" );
-   }
 
    return true;
 }

@@ -103,7 +103,8 @@ S32 QSORT_CALLBACK ArrayObject::_keyFunctionCompare( const void* a, const void* 
    ArrayObject::Element* ea = ( ArrayObject::Element* )( a );
    ArrayObject::Element* eb = ( ArrayObject::Element* )( b );
    
-   S32 result = dAtoi(Con::executef((const char*)smCompareFunction, ea->key, eb->key));
+   ConsoleValue cValue = Con::executef((const char*)smCompareFunction, ea->key, eb->key);
+   S32 result = cValue.getInt();
    S32 res = result < 0 ? -1 : ( result > 0 ? 1 : 0 );
    return ( smDecreasing ? -res : res );
 }
@@ -113,7 +114,8 @@ S32 QSORT_CALLBACK ArrayObject::_valueFunctionCompare( const void* a, const void
    ArrayObject::Element* ea = ( ArrayObject::Element* )( a );
    ArrayObject::Element* eb = ( ArrayObject::Element* )( b );
    
-   S32 result = dAtoi( Con::executef( (const char*)smCompareFunction, ea->value, eb->value ) );
+   ConsoleValue cValue = Con::executef( (const char*)smCompareFunction, ea->value, eb->value );
+   S32 result = cValue.getInt();
    S32 res = result < 0 ? -1 : ( result > 0 ? 1 : 0 );
    return ( smDecreasing ? -res : res );
 }
@@ -123,7 +125,7 @@ S32 QSORT_CALLBACK ArrayObject::_valueFunctionCompare( const void* a, const void
 
 ArrayObject::ArrayObject()
    : mCaseSensitive( false ),
-     mCurrentIndex( NULL )
+     mCurrentIndex( 0 )
 {
 }
 
@@ -131,11 +133,12 @@ ArrayObject::ArrayObject()
 
 void ArrayObject::initPersistFields()
 {
+   docsURL;
    addField( "caseSensitive",    TypeBool,   Offset( mCaseSensitive, ArrayObject ), 
       "Makes the keys and values case-sensitive.\n"
       "By default, comparison of key and value strings will be case-insensitive." );
 
-   addProtectedField( "key", TypeCaseString, NULL, &_addKeyFromField, &emptyStringProtectedGetFn, 
+   addProtectedField( "key", TypeCaseString, 0, &_addKeyFromField, &emptyStringProtectedGetFn,
       "Helper field which allows you to add new key['keyname'] = value pairs." );
 
    Parent::initPersistFields();
@@ -153,8 +156,9 @@ bool ArrayObject::_addKeyFromField( void *object, const char *index, const char 
 
 S32 ArrayObject::getIndexFromValue( const String &value ) const
 {
+   S32 currentIndex = mMax(mCurrentIndex, 0);
    S32 foundIndex = -1;
-   for ( S32 i = mCurrentIndex; i < mArray.size(); i++ )
+   for ( S32 i = currentIndex; i < mArray.size(); i++ )
    {
       if ( isEqual( mArray[i].value, value ) )
       {
@@ -165,7 +169,7 @@ S32 ArrayObject::getIndexFromValue( const String &value ) const
 
    if( foundIndex < 0 )
    {
-      for ( S32 i = 0; i < mCurrentIndex; i++ )
+      for ( S32 i = 0; i < currentIndex; i++ )
       {
          if ( isEqual( mArray[i].value, value ) )
          {
@@ -182,8 +186,9 @@ S32 ArrayObject::getIndexFromValue( const String &value ) const
 
 S32 ArrayObject::getIndexFromKey( const String &key ) const
 {
+   S32 currentIndex = mMax(mCurrentIndex, 0);
    S32 foundIndex = -1;
-   for ( S32 i = mCurrentIndex; i < mArray.size(); i++ )
+   for ( S32 i = currentIndex; i < mArray.size(); i++ )
    {
       if ( isEqual( mArray[i].key, key ) )
       {
@@ -194,7 +199,7 @@ S32 ArrayObject::getIndexFromKey( const String &key ) const
 
    if( foundIndex < 0 )
    {
-      for ( S32 i = 0; i < mCurrentIndex; i++ )
+      for ( S32 i = 0; i < currentIndex; i++ )
       {
          if ( isEqual( mArray[i].key, key ) )
          {
@@ -211,8 +216,9 @@ S32 ArrayObject::getIndexFromKey( const String &key ) const
 
 S32 ArrayObject::getIndexFromKeyValue( const String &key, const String &value ) const
 {
+   S32 currentIndex = mMax(mCurrentIndex, 0);
    S32 foundIndex = -1;
-   for ( S32 i = mCurrentIndex; i < mArray.size(); i++ )
+   for ( S32 i = currentIndex; i < mArray.size(); i++ )
    {
       if ( isEqual( mArray[i].key, key ) && isEqual( mArray[i].value, value ) )
       {
@@ -223,7 +229,7 @@ S32 ArrayObject::getIndexFromKeyValue( const String &key, const String &value ) 
 
    if ( foundIndex < 0 )
    {
-      for ( S32 i = 0; i < mCurrentIndex; i++ )
+      for ( S32 i = 0; i < currentIndex; i++ )
       {
          if ( isEqual( mArray[i].key, key ) && isEqual( mArray[i].value, value ) )
          {

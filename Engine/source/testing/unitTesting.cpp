@@ -19,116 +19,210 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+#include "unitTesting.h"
 
-#ifdef TORQUE_TESTS_ENABLED
-
+#include "app/mainLoop.h"
+#include "console/console.h"
+#include "console/script.h"
 #include "console/engineAPI.h"
 #include "console/consoleInternal.h"
-#include "unitTesting.h"
-#include "memoryTester.h"
+#include "gfx/gfxInit.h"
 
-#include <gtest/gtest-all.cc>
+#if defined(TORQUE_OS_WIN)
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+#endif
+
 
 //-----------------------------------------------------------------------------
 
 class TorqueUnitTestListener : public ::testing::EmptyTestEventListener
 {
    // Called before a test starts.
-   virtual void OnTestStart( const ::testing::TestInfo& testInfo )
+   virtual void OnTestStart(const ::testing::TestInfo& testInfo)
    {
-      if( mVerbose )
+      if (mVerbose)
          Con::printf("> Starting Test '%s.%s'",
             testInfo.test_case_name(), testInfo.name());
    }
 
    // Called after a failed assertion or a SUCCEED() invocation.
-   virtual void OnTestPartResult( const ::testing::TestPartResult& testPartResult )
+   virtual void OnTestPartResult(const ::testing::TestPartResult& testPartResult)
    {
-      if ( testPartResult.failed() )
+      if (testPartResult.failed())
       {
          Con::warnf(">> Failed with '%s' in '%s' at (line:%d)\n",
             testPartResult.summary(),
             testPartResult.file_name(),
             testPartResult.line_number()
-            );
+         );
       }
-      else if( mVerbose )
+      else if (mVerbose)
       {
          Con::printf(">> Passed with '%s' in '%s' at (line:%d)",
             testPartResult.summary(),
             testPartResult.file_name(),
             testPartResult.line_number()
-            );
+         );
       }
    }
 
    // Called after a test ends.
-   virtual void OnTestEnd( const ::testing::TestInfo& testInfo )
+   virtual void OnTestEnd(const ::testing::TestInfo& testInfo)
    {
-      if( mVerbose )
-         Con::printf("> Ending Test '%s.%s'\n",
+      if (testInfo.result()->Failed())
+      {
+         Con::printf("TestClass:%s Test:%s Failed!",
             testInfo.test_case_name(), testInfo.name());
+      }
+
+      if (!mVerbose)
+         return;
+
+      else if(testInfo.result()->Passed())
+      {
+         Con::printf("TestClass:%s Test:%s Succeeded!",
+            testInfo.test_case_name(), testInfo.name());
+      }
+      else
+      {
+         Con::printf("TestClass:%s Test:%s Skipped!",
+            testInfo.test_case_name(), testInfo.name());
+      }
+
+      Con::printf("> Ending Test\n");
+
    }
 
    bool mVerbose;
 
 public:
-   TorqueUnitTestListener( bool verbose ) : mVerbose( verbose ) {}
+   TorqueUnitTestListener(bool verbose) : mVerbose(verbose) {}
 };
 
-DefineEngineFunction( runAllUnitTests, int, (const char* testSpecs), (""),
-   "Runs engine unit tests. Some tests are marked as 'stress' tests which do not "
-   "necessarily check correctness, just performance or possible nondeterministic "
-   "glitches. There may also be interactive or networking tests which may be "
-   "excluded by using the testSpecs argument.\n"
-   "This function should only be called once per executable run, because of "
-   "googletest's design.\n\n"
-
-   "@param testSpecs A space-sepatated list of filters for test cases. "
-   "See https://code.google.com/p/googletest/wiki/AdvancedGuide#Running_a_Subset_of_the_Tests "
-   "and http://stackoverflow.com/a/14021997/945863 "
-   "for a description of the flag format.")
+class MemoryLeakDetector : public ::testing::EmptyTestEventListener
 {
-   S32 testArgc = 0;
-   char** testArgv = NULL;
-   if ( dStrlen( testSpecs ) > 0 )
+public:
+   virtual void OnTestStart(const ::testing::TestInfo& testInfo)
    {
-      String specs(testSpecs);
-      specs.replace(' ', ':');
-      specs.insert(0, "--gtest_filter=");
-      testArgc = 2;
-      testArgv = new char*[2];
-      testArgv[0] = NULL; // Program name is unused by googletest.
-      testArgv[1] = new char[specs.size()];
-      dStrcpy(testArgv[1], specs, specs.size());
+#if defined(TORQUE_OS_WIN)
+      _CrtMemCheckpoint(&memState_);
+#endif
    }
 
+   virtual void OnTestEnd(const ::testing::TestInfo& testInfo)
+   {
+      if (testInfo.result()->Passed())
+      {
+#if defined(TORQUE_OS_WIN)
+         _CrtMemState stateNow, stateDiff;
+         _CrtMemCheckpoint(&stateNow);
+         int diffResult = _CrtMemDifference(&stateDiff, &memState_, &stateNow);
+         if (diffResult)
+         {
+            FAIL() << "Memory leak of " << stateDiff.lSizes[1] << " byte(s) detected.";
+         }
+#endif
+      }
+   }
+
+private:
+#if defined(TORQUE_OS_WIN)
+   _CrtMemState memState_;
+#endif
+public:
+   MemoryLeakDetector() {}
+};
+
+class TorqueScriptFixture : public testing::Test {};
+
+class TorqueScriptTest : public TorqueScriptFixture {
+public:
+   explicit TorqueScriptTest(const char* pFunctionName) : mFunctionName(pFunctionName) {}
+   void TestBody() override
+   {
+      Con::executef(mFunctionName);
+   }
+
+private:
+   const char* mFunctionName;
+};
+
+int main(int argc, char** argv)
+{
+   testing::GTEST_FLAG(output) = "xml:test_detail.xml";
+   testing::GTEST_FLAG(stack_trace_depth) = 10;
+
+   printf("Running main() from %s\n", __FILE__);
    // Initialize Google Test.
-   testing::InitGoogleTest( &testArgc, testArgv );
+   testing::InitGoogleTest(&argc, argv);
 
-   // Fetch the unit test instance.
-   testing::UnitTest& unitTest = *testing::UnitTest::GetInstance();
+   // torques handle command.
+   StandardMainLoop::init();
+   // setup torque for testing.
+   GFXInit::enumerateAdapters();
+   GFXAdapter* a = GFXInit::chooseAdapter(NullDevice, "");
+   GFXDevice* newDevice = GFX;
+   if (newDevice == NULL)
+      newDevice = GFXInit::createDevice(a);
+   newDevice->setAllowRender(false);
 
-   // Fetch the unit test event listeners.
-   testing::TestEventListeners& listeners = unitTest.listeners();
+   // required for tests that add gui elements.
+   Con::evaluate("if (!isObject(GuiDefaultProfile)) new GuiControlProfile(GuiDefaultProfile){}; if (!isObject(GuiTooltipProfile)) new GuiControlProfile(GuiTooltipProfile){};");
 
-   // Release the default listener.
-   delete listeners.Release( listeners.default_result_printer() );
+   // this call is to add the tests that exist in runTests.tscript
+   // note these tests will not appear in the test explorer.
+   if(argc > 1)
+      StandardMainLoop::handleCommandLine(argc, (const char**)argv);
 
-   if ( Con::getBoolVariable( "$Testing::CheckMemoryLeaks", false ) ) {
-      // Add the memory leak tester.
-      listeners.Append( new testing::MemoryLeakDetector );
-   }
-
-   // Add the Torque unit test listener.
-   listeners.Append( new TorqueUnitTestListener(false) );
-
-   // Perform googletest run.
-   Con::printf( "\nUnit Tests Starting...\n" );
-   const S32 result = RUN_ALL_TESTS();
-   Con::printf( "... Unit Tests Ended.\n" );
-
-   return result;
+   // run tests.
+   int res = RUN_ALL_TESTS();
+   StandardMainLoop::shutdown();
+   return 0;
 }
 
-#endif // TORQUE_TESTS_ENABLED
+DefineEngineFunction(addUnitTest, void, (const char* function), ,
+   "Add a TorqueScript function as a GTest unit test.\n"
+   "@note This is only implemented rudimentarily to open the door for future development in unit-testing the engine.\n"
+   "@tsexample\n"
+   "function MyTest() {\n"
+   "   expectTrue(2+2 == 4, \"basic math should work\");\n"
+   "}\n"
+   "addUnitTest(MyTest);\n"
+   "@endtsexample\n"
+   "@see expectTrue")
+{
+   Namespace::Entry* entry = Namespace::global()->lookup(StringTable->insert(function));
+   const char* file = __FILE__;
+   U32 ln = __LINE__;
+   if (entry != NULL)
+   {
+      file = entry->mModule->getName();
+      U32 inst;
+      entry->mModule->findBreakLine(entry->mFunctionOffset, ln, inst);
+   }
+   else
+   {
+      Con::warnf("failed to register unit test %s, could not find the function", function);
+   }
+
+   testing::RegisterTest("TorqueScriptFixture", function, NULL, NULL, file, ln,
+      [=]() -> TorqueScriptFixture* { return new TorqueScriptTest(function); });
+}
+
+String scriptFileMessage(const char* message)
+{
+   Dictionary* frame = Con::getCurrentStackFrame();
+   Con::Module* module = frame->module;
+   const char* scriptLine = module->getFileLine(frame->ip);
+   return  String::ToString("at %s: %s", scriptLine, message);
+}
+
+DefineEngineFunction(expectTrue, void, (bool test, const char* message), (""),
+   "TorqueScript wrapper around the EXPECT_TRUE assertion in GTest.\n"
+   "@tsexample\n"
+   "expectTrue(2+2 == 4, \"basic math should work\");\n"
+   "@endtsexample")
+{
+   EXPECT_TRUE(test) << scriptFileMessage(message).c_str();
+}

@@ -1,4 +1,4 @@
-%guiContent = new GuiControl(RoadEditorToolbar) {
+$guiContent = new GuiControl(RoadEditorToolbar) {
    canSaveDynamicFields = "0";
    internalName = "RoadEditorToolbar";
    Enabled = "1";
@@ -10,7 +10,7 @@
    Extent = "800 32";
    MinExtent = "8 2";
    canSave = "1";
-   Visible = "0";
+   Visible = "1";
    hovertime = "1000";
    
    new GuiTextCtrl() {
@@ -52,7 +52,7 @@
          tooltipprofile = "ToolsGuiToolTipProfile";
          hovertime = "1000";
          toolTip = "Show Spline";
-         bitmap = "tools/worldEditor/images/road-river/menubar/show-spline";
+         bitmapAsset = "ToolsModule:show_spline_n_image";
          groupNum = "7";
          buttonType = "ToggleButton";
          useMouseEvents = "0";
@@ -75,7 +75,7 @@
          tooltipprofile = "ToolsGuiToolTipProfile";
          hovertime = "1000";
          toolTip = "Show Wireframe";
-         bitmap = "tools/worldEditor/images/road-river/menubar/show-wireframe";
+         bitmapAsset = "ToolsModule:menubar_show_wireframe_n_image";
          groupNum = "-1";
          buttonType = "ToggleButton";
          useMouseEvents = "0";
@@ -98,7 +98,7 @@
          tooltipprofile = "ToolsGuiToolTipProfile";
          hovertime = "1000";
          toolTip = "Show Road Texture";
-         bitmap = "tools/worldEditor/images/road-river/menubar/show-texture";
+         bitmapAsset = "ToolsModule:show_texture_n_image";
          groupNum = "-1";
          buttonType = "ToggleButton";
          useMouseEvents = "0";
@@ -180,7 +180,7 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };
       /*new GuiTextEditSliderCtrl(RoadEditorDefaultWidthSlider) {
@@ -259,8 +259,8 @@ new GuiMouseEventCtrl(RoadDefaultWidthSliderCtrlContainer, EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(RoadDefaultWidthTextEditContainer.position) + firstWord(RoadEditorToolbar.position) + 10 SPC 
-         (getWord(RoadDefaultWidthTextEditContainer, 1)) + 25;
+      position = RoadDefaultWidthTextEditContainer.position.x + RoadEditorToolbar.position.x + 50 SPC 
+         RoadDefaultWidthTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";

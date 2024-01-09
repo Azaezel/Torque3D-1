@@ -45,10 +45,6 @@
 #include "Verve/Core/VTreeNode.h"
 #endif
 
-#ifndef TINYXML_INCLUDED
-#include "tinyxml/tinyxml.h"
-#endif
-
 //-----------------------------------------------------------------------------
 class VController;
 //-----------------------------------------------------------------------------
@@ -70,7 +66,7 @@ public:
     VObject( void );
     virtual ~VObject( void );
 
-    static  void           initPersistFields( void );
+    static  void           initPersistFields();
 
     // Reference Methods.
 

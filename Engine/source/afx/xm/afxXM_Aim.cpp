@@ -54,7 +54,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_AimData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
@@ -131,6 +130,7 @@ afxXM_AimData::afxXM_AimData(const afxXM_AimData& other, bool temp_clone) : afxX
 
 void afxXM_AimData::initPersistFields()
 {
+   docsURL;
   addField("aimZOnly",          TypeBool,    Offset(aim_z_only, afxXM_AimData),
     "...");
 

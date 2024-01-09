@@ -178,6 +178,19 @@ protected:
    bool           mHoverPositionSet;
    U32            mHoverLeftControlTime;
 
+public:
+   /// Setting for how to handle 'enableKeyboardTranslation' and 'setNativeAcceleratorsEnabled' requests.
+   enum KeyTranslationMode
+   {
+      TranslationMode_Platform,
+      TranslationMode_Callback,
+      TranslationMode_Ignore,
+   };
+
+protected:
+   KeyTranslationMode mKeyTranslationMode;
+   KeyTranslationMode mNativeAcceleratorMode;
+
    /// @}
 
    // Internal event handling callbacks for use with PlatformWindow.
@@ -209,10 +222,10 @@ public:
 
    virtual bool onAdd();
    virtual void onRemove();
-
+#ifdef TORQUE_TOOLS
    void setMenuBar(SimObject *obj);
    SimObject* getMenuBar() { return mMenuBarCtrl; }
-
+#endif
    static void initPersistFields();
 
    static CanvasSizeChangeSignal& getCanvasSizeChangeSignal() { return smCanvasSizeChangeSignal; }
@@ -454,15 +467,24 @@ public:
 
    virtual void setWindowTitle(const char *newTitle);
 
+   DECLARE_CALLBACK(bool, onSetKeyboardTranslationEnabled, (bool enable));
+   DECLARE_CALLBACK(bool, onSetNativeAcceleratorsEnabled, (bool enable));
+
+
 private:
    static const U32 MAX_GAMEPADS = 4; ///< The maximum number of supported gamepads
   protected:
      bool   mConsumeLastInputEvent;
+     S32    mLastInputDeviceType;
   public:
      void clearMouseRightButtonDown(void) { mMouseRightButtonDown = false; }
      void clearMouseButtonDown(void) { mMouseButtonDown = false; }
      void setConsumeLastInputEvent(bool flag) { mConsumeLastInputEvent = flag; }
      bool getLastCursorPoint(Point2I& pt) const { pt = mLastCursorPt; return mLastCursorEnabled; }
+
+     StringTableEntry getLastInputDeviceType();
 };
+typedef GuiCanvas::KeyTranslationMode KeyboardTranslationMode;
+DefineEnumType(KeyboardTranslationMode);
 
 #endif

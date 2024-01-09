@@ -67,8 +67,13 @@
    #include "console/dynamicTypes.h"
 #endif
 
+#ifndef SHAPEASSET_H
+#include "T3D/assets/ShapeAsset.h"
+#endif 
+
 // Need full definition visible for SimObjectPtr<ParticleEmitter>
 #include "T3D/fx/particleEmitter.h"
+#include "T3D/assets/SoundAsset.h"
 
 class GFXCubemap;
 class TSShapeInstance;
@@ -86,6 +91,7 @@ class SFXProfile;
 
 typedef void* Light;
 
+const F32 gGravity = -9.8f;
 
 //--------------------------------------------------------------------------
 
@@ -111,7 +117,7 @@ class ShapeBaseConvex : public Convex
    Box3F       box;
 
   public:
-   ShapeBaseConvex() :pShapeBase(NULL), transform(NULL), hullId(NULL), nodeTransform(0) { mType = ShapeBaseConvexType; }
+   ShapeBaseConvex() :pShapeBase(NULL), transform(NULL), hullId(0), nodeTransform(0) { mType = ShapeBaseConvexType; }
    ShapeBaseConvex(const ShapeBaseConvex& cv) {
       mObject    = cv.mObject;
       pShapeBase = cv.pShapeBase;
@@ -254,11 +260,13 @@ struct ShapeBaseImageData: public GameBaseData {
                                     ///  the imageSlot.
       ParticleEmitterData* emitter; ///< A particle emitter; this emitter will emit as long as the gun is in this
                                     ///  this state.
-      SFXTrack* sound;
+      
+      //SFXTrack* sound;
       F32 emitterTime;              ///<
       S32 emitterNode[MaxShapes];   ///< Node ID on the shape to emit from
+      SoundAsset* sound;
+      SFXTrack* soundTrack;         ///<Holdover for special, non-asset cases like SFXPlaylists
    };
-
    /// @name State Data
    /// Individual state data used to initialize struct array
    /// @{
@@ -316,7 +324,10 @@ struct ShapeBaseImageData: public GameBaseData {
 
    bool                    stateIgnoreLoadedForReady  [MaxStates];
 
-   SFXTrack*               stateSound                 [MaxStates];
+   DECLARE_SOUNDASSET_ARRAY(ShapeBaseImageData, stateSound, MaxStates);
+   DECLARE_ASSET_ARRAY_SETGET(ShapeBaseImageData, stateSound);
+
+   //SFXTrack*               stateSound                 [MaxStates];
    const char*             stateScript                [MaxStates];
 
    ParticleEmitterData*    stateEmitter               [MaxStates];
@@ -343,7 +354,6 @@ struct ShapeBaseImageData: public GameBaseData {
    bool useRemainderDT;
 
    //
-   bool emap;                       ///< Environment mapping on?
    bool correctMuzzleVector;        ///< Adjust 1st person firing vector to eye's LOS point?
    bool correctMuzzleVectorTP;      ///< Adjust 3rd person firing vector to camera's LOS point?
    bool firstPerson;                ///< Render the image when in first person?
@@ -368,8 +378,11 @@ struct ShapeBaseImageData: public GameBaseData {
    F32 scriptAnimTransitionTime;    ///< The amount of time to transition between the previous sequence and new sequence
                                     ///< when the script prefix has changed.
 
-   StringTableEntry  shapeName;     ///< Name of shape to render.
-   StringTableEntry  shapeNameFP;   ///< Name of shape to render in first person (optional).
+   DECLARE_SHAPEASSET_ARRAY(ShapeBaseImageData, Shape, MaxShapes);  ///< Name of shape to render.
+   DECLARE_ASSET_ARRAY_SETGET(ShapeBaseImageData, Shape);
+
+   //DECLARE_SHAPEASSET(ShapeBaseImageData, ShapeFP);  ///< Name of shape to render in first person (optional).
+   //DECLARE_ASSET_SETGET(ShapeBaseImageData, ShapeFP);
 
    StringTableEntry  imageAnimPrefix;     ///< Passed along to the mounting shape to modify
                                           ///  animation sequences played in 3rd person. [optional]
@@ -402,7 +415,6 @@ struct ShapeBaseImageData: public GameBaseData {
 
    /// @name Shape Data
    /// @{
-   Resource<TSShape> shape[MaxShapes]; ///< Shape handle
    bool shapeIsValid[MaxShapes];       ///< Indicates that the shape has been loaded and is valid
 
    U32 mCRC[MaxShapes];                ///< Checksum of shape.
@@ -491,6 +503,8 @@ struct ShapeBaseImageData: public GameBaseData {
    
    void inspectPostApply();
 
+   void handleStateSoundTrack(const U32& stateId);
+
    /// @}
 
    /// @name Callbacks
@@ -527,14 +541,14 @@ public:
 
    // TODO: These are only really used in Basic Lighting
    // mode... we should probably move them somewhere else.
-   bool shadowEnable;
    U32 shadowSize;
    F32 shadowMaxVisibleDistance;
    F32 shadowProjectionDistance;
    F32 shadowSphereAdjust;
 
+   DECLARE_SHAPEASSET(ShapeBaseData, Shape, onShapeChanged);
+   DECLARE_ASSET_SETGET(ShapeBaseData, Shape);
 
-   StringTableEntry  shapeName;
    StringTableEntry  cloakTexName;
 
    String cubeDescName;
@@ -547,8 +561,9 @@ public:
    /// @{
    DebrisData *      debris;
    S32               debrisID;
-   StringTableEntry  debrisShapeName;
-   Resource<TSShape> debrisShape;
+
+   DECLARE_SHAPEASSET(ShapeBaseData, DebrisShape, onDebrisChanged);
+   DECLARE_ASSET_SETGET(ShapeBaseData, DebrisShape);
 
    ExplosionData*    explosion;
    S32               explosionID;
@@ -593,8 +608,6 @@ public:
 
    /// @name Data initialized on preload
    /// @{
-
-   Resource<TSShape> mShape;         ///< Shape handle
    U32 mCRC;
    bool computeCRC;
 
@@ -655,7 +668,7 @@ public:
    DECLARE_CALLBACK( void, onCollision, ( ShapeBase* obj, SceneObject* collObj, VectorF vec, F32 len ) );
    DECLARE_CALLBACK( void, onDamage, ( ShapeBase* obj, F32 delta ) );
    DECLARE_CALLBACK( void, onTrigger, ( ShapeBase* obj, S32 index, bool state ) );
-   DECLARE_CALLBACK(void, onEndSequence, (ShapeBase* obj, S32 slot, const char* name));
+   DECLARE_CALLBACK( void, onEndSequence, (ShapeBase* obj, S32 slot, const char* name));
    DECLARE_CALLBACK( void, onForceUncloak, ( ShapeBase* obj, const char* reason ) );
    /// @}
    struct TextureTagRemapping
@@ -667,6 +680,9 @@ public:
    char* remap_buffer;
    Vector<TextureTagRemapping> txr_tag_remappings;
    bool silent_bbox_check;
+
+   void onShapeChanged() {}
+   void onDebrisChanged() {}
 public:
    ShapeBaseData(const ShapeBaseData&, bool = false);
 };
@@ -729,13 +745,13 @@ protected:
 
    /// @name Scripted Sound
    /// @{
-   struct Sound {
+   struct SoundThread {
       bool play;                    ///< Are we playing this sound?
       SimTime timeout;              ///< Time until we stop playing this sound.
-      SFXTrack* profile;            ///< Profile on server
+      AssetPtr<SoundAsset> asset; ///< Asset on server
       SFXSource* sound;             ///< Sound on client
    };
-   Sound mSoundThread[MaxSoundThreads];
+   SoundThread mSoundThread[MaxSoundThreads];
    /// @}
 
    /// @name Scripted Animation Threads
@@ -914,7 +930,7 @@ protected:
    F32 mWaterCoverage;              ///< Percent of this object covered by water
 
    Point3F mAppliedForce;
-   F32 mGravityMod;
+   F32 mNetGravity;
    /// @}
 
    F32 mDamageFlash;
@@ -1099,7 +1115,7 @@ protected:
 
    /// Updates the audio state of the supplied sound
    /// @param   st   Sound
-   void updateAudioState(Sound& st);
+   void updateAudioState(SoundThread& st);
 
    /// Recalculates the spacial sound based on the current position of the object
    /// emitting the sound.
@@ -1313,9 +1329,7 @@ public:
 
    /// Plays an audio sound from a mounted object
    /// @param   slot    Mount slot ID
-   /// @param   track   Audio track to play
-   void playAudio(U32 slot,SFXTrack* track);
-   void playAudio( U32 slot, SFXProfile* profile ) { playAudio( slot, ( SFXTrack* ) profile ); }
+   void playAudio(U32 slot, StringTableEntry assetId);
 
    /// Stops audio from a mounted object
    /// @param   slot   Mount slot ID
@@ -1613,6 +1627,12 @@ public:
    /// @name Object Transforms
    /// @{
 
+   /// Returns a named node transform for a given shape
+   virtual void getNodeTransform(const char* nodeName, MatrixF* mat);
+   /// Returns a named node forwad vector for a given shape
+   virtual void getNodeVector(const char* nodeName, VectorF* vec);
+   /// Returns a named node position for a given shape
+   void getNodePoint(const char* nodeName, Point3F* pos);
    /// Returns the eye transform of this shape, IE the eyes of a player
    /// @param   mat   Eye transform (out)
    virtual void getEyeTransform(MatrixF* mat);

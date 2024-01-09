@@ -1,0 +1,76 @@
+//--- OBJECT WRITE BEGIN ---
+$guiContent = new GuiControl(MessageBoxDlg) {
+   extent = "1280 720";
+   minExtent = "8 8";
+   horizSizing = "width";
+   vertSizing = "height";
+   profile = "GuiOverlayProfile";
+   tooltipProfile = "GuiToolTipProfile";
+   isContainer = "1";
+   canSaveDynamicFields = "1";
+      helpTag = "0";
+
+   new GuiInputCtrl(MessageBoxInputHandler) {
+      ignoreMouseEvents = "1";
+      ActionMap = "MessageBoxActionMap";
+      position = "-50 0";
+      extent = "2186 851";
+      horizSizing = "width";
+      vertSizing = "height";
+      profile = "GuiInputCtrlProfile";
+      tooltipProfile = "GuiToolTipProfile";
+   };
+   
+   new GuiBitmapCtrl() {
+      BitmapAsset = "UI:backdrop_image";
+      position = "272 128";
+      extent = "735 463";
+      horizSizing = "center";
+      vertSizing = "center";
+      profile = "GuiDefaultProfile";
+      tooltipProfile = "GuiToolTipProfile";
+   };
+   new GuiControl(MessageBoxCtrl) {
+      position = "319 169";
+      extent = "641 381";
+      horizSizing = "center";
+      vertSizing = "center";
+      profile = "GuiDefaultProfile";
+      tooltipProfile = "GuiToolTipProfile";
+      isContainer = "1";
+
+      new GuiPanel() {
+         extent = "641 381";
+         horizSizing = "width";
+         vertSizing = "height";
+         profile = "GuiMenuBasePanelProfile";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiTextCtrl(MessageBoxTitleText) {
+         position = "32 7";
+         extent = "577 28";
+         horizSizing = "width";
+         profile = "MenuHeaderText";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiMLTextCtrl(MessageBoxText) {
+         position = "81 83";
+         extent = "481 19";
+         minExtent = "8 8";
+         horizSizing = "center";
+         vertSizing = "center";
+         profile = "MenuMLSubHeaderText";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiStackControl(MessageBoxButtonHolder) {
+         stackingType = "Horizontal";
+         position = "250 285";
+         extent = "140 40";
+         horizSizing = "width";
+         vertSizing = "top";
+         profile = "GuiDefaultProfile";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+   };
+};
+//--- OBJECT WRITE END ---

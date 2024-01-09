@@ -222,7 +222,6 @@ bool ConvexShape::protectedSetSurface( void *object, const char *index, const ch
 	*/
 
    String t = data;
-   S32 len = t.length();
 
 	dSscanf( data, "%g %g %g %g %g %g %g %i %g %g %g %g %f", &quat.x, &quat.y, &quat.z, &quat.w, &pos.x, &pos.y, &pos.z,
       &matID, &offset.x, &offset.y, &scale.x, &scale.y, &rot);
@@ -264,7 +263,7 @@ bool ConvexShape::protectedSetSurfaceTexture(void *object, const char *index, co
 
    surfaceMaterial surface;
 
-   surface.materialName = data;
+   surface._setMaterial(StringTable->insert(data));
 
    shape->mSurfaceTextures.push_back(surface);
 
@@ -272,7 +271,7 @@ bool ConvexShape::protectedSetSurfaceTexture(void *object, const char *index, co
 }
 
 ConvexShape::ConvexShape()
- : mMaterialName( "Grid512_OrangeLines_Mat" ),
+   :
    mMaterialInst( NULL ),
    //mVertCount( 0 ),
    //mPrimCount( 0 ),
@@ -289,6 +288,8 @@ ConvexShape::ConvexShape()
    mSurfaceBuffers.clear();
    mSurfaceUVs.clear();
    mSurfaceTextures.clear();
+
+   INIT_ASSET(Material);
 }
 
 ConvexShape::~ConvexShape()
@@ -308,18 +309,19 @@ ConvexShape::~ConvexShape()
 
 void ConvexShape::initPersistFields()
 {
+   docsURL;
    addGroup( "Rendering" );
 
-      addField( "material", TypeMaterialName, Offset( mMaterialName, ConvexShape ), "Material used to render the ConvexShape surface." );
+      INITPERSISTFIELD_MATERIALASSET(Material, ConvexShape, "Default material used to render the ConvexShape surface.");
 
    endGroup( "Rendering" );
 
    addGroup( "Internal" );
 
-      addProtectedField( "surface", TypeRealString, NULL, &protectedSetSurface, &defaultProtectedGetFn, 
+      addProtectedField( "surface", TypeRealString, 0, &protectedSetSurface, &defaultProtectedGetFn,
          "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors );
 
-	  addProtectedField( "surfaceTexture", TypeRealString, NULL, &protectedSetSurfaceTexture, &defaultProtectedGetFn, 
+	  addProtectedField( "surfaceTexture", TypeRealString, 0, &protectedSetSurfaceTexture, &defaultProtectedGetFn,
          "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors );
 
    endGroup( "Internal" );
@@ -461,9 +463,7 @@ void ConvexShape::writeFields( Stream &stream, U32 tabStop )
       char buffer[1024];
       dMemset(buffer, 0, 1024);
 
-      const char* tex = mSurfaceTextures[i].materialName.c_str();
-
-      dSprintf(buffer, 1024, "surfaceTexture = \"%s\";", mSurfaceTextures[i].materialName.c_str());
+      dSprintf(buffer, 1024, "surfaceTexture = \"%s\";", mSurfaceTextures[i].getMaterial());
 
       stream.writeLine((const U8*)buffer);
    }
@@ -528,7 +528,7 @@ U32 ConvexShape::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 
    if ( stream->writeFlag( mask & UpdateMask ) )
    {
-      stream->write( mMaterialName );
+      PACK_ASSET(conn, Material);
       
       U32 surfCount = mSurfaces.size();
       stream->writeInt( surfCount, 32 );
@@ -556,8 +556,13 @@ U32 ConvexShape::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 	  //next check for any texture coord or scale mods
 	  for(U32 i=0; i < surfaceTex; i++)
      {
-        String a = mSurfaceTextures[i].materialName;
-			stream->write( mSurfaceTextures[i].materialName );
+         if (stream->writeFlag(mSurfaceTextures[i].mMaterialAsset.notNull()))
+         {
+            NetStringHandle assetIdStr = mSurfaceTextures[i].mMaterialAsset.getAssetId();
+            conn->packNetStringHandleU(stream, assetIdStr);
+         }
+         else
+            stream->writeString(mSurfaceTextures[i].mMaterialName);
 	  }
    }
 
@@ -579,7 +584,7 @@ void ConvexShape::unpackUpdate( NetConnection *conn, BitStream *stream )
 
    if ( stream->readFlag() ) // UpdateMask
    {
-      stream->read( &mMaterialName );      
+      UNPACK_ASSET(conn, Material);
 
       mSurfaces.clear();
       mSurfaceUVs.clear();
@@ -619,7 +624,13 @@ void ConvexShape::unpackUpdate( NetConnection *conn, BitStream *stream )
      {
         mSurfaceTextures.increment();
 
-		  stream->read( &mSurfaceTextures[i].materialName );
+        if (stream->readFlag())
+        {
+           mSurfaceTextures[i].mMaterialAssetId = StringTable->insert(conn->unpackNetStringHandleU(stream).getString());
+           mSurfaceTextures[i]._setMaterial(mSurfaceTextures[i].mMaterialAssetId);
+         }
+         else
+           mSurfaceTextures[i].mMaterialName = stream->readSTString();
 	  }
 
      if (isProperlyAdded())
@@ -889,7 +900,8 @@ bool ConvexShape::buildExportPolyList(ColladaUtils::ExportData* exportData, cons
       ColladaUtils::ExportData::detailLevel* curDetail = &meshData->meshDetailLevels.last();
 
       //Make sure we denote the size this detail level has
-      curDetail->size = 512;
+      curDetail->size = getNextPow2(getObjBox().len());
+
    }
 
    return true;
@@ -948,17 +960,6 @@ bool ConvexShape::castRay( const Point3F &start, const Point3F &end, RayInfo *in
    Point3F hitPnt, pnt;
    VectorF rayDir( end - start );
    rayDir.normalizeSafe();
-
-   if ( false )
-   {
-      PlaneF plane( Point3F(0,0,0), Point3F(0,0,1) );
-      Point3F sp( 0,0,-1 );
-      Point3F ep( 0,0,1 );
-
-      F32 t = plane.intersect( sp, ep );
-      Point3F hitPnt;
-      hitPnt.interpolate( sp, ep, t );
-   }
 
    for ( S32 i = 0; i < planeCount; i++ )
    {
@@ -1205,14 +1206,18 @@ void ConvexShape::_updateMaterial()
    //update our custom surface materials
    for (U32 i = 0; i<mSurfaceTextures.size(); i++)
    {
+      mSurfaceTextures[i]._setMaterial(mSurfaceTextures[i].getMaterial());
       //If we already have the material inst and it hasn't changed, skip
-      if (mSurfaceTextures[i].materialInst && mSurfaceTextures[i].materialName.equal(mSurfaceTextures[i].materialInst->getMaterial()->getName(), String::NoCase))
+      if (mSurfaceTextures[i].materialInst &&
+         mSurfaceTextures[i].getMaterialAsset()->getMaterialDefinitionName() == mSurfaceTextures[i].materialInst->getMaterial()->getName() &&
+         mSurfaceTextures[i].materialInst->getVertexFormat() == getGFXVertexFormat<VertexType>())
          continue;
 
-      Material *material;
+      SAFE_DELETE(mSurfaceTextures[i].materialInst);
 
-      if (!Sim::findObject(mSurfaceTextures[i].materialName, material))
-         //bail
+      Material* material = mSurfaceTextures[i].getMaterialResource();
+
+      if (material == nullptr)
          continue;
 
       mSurfaceTextures[i].materialInst = material->createMatInstance();
@@ -1227,24 +1232,20 @@ void ConvexShape::_updateMaterial()
       }
    }
 
+   _setMaterial(getMaterial());
    // If the material name matches then don't bother updating it.
-   if (mMaterialInst && mMaterialName.equal(mMaterialInst->getMaterial()->getName(), String::NoCase))
+   if (mMaterialInst && getMaterialAsset()->getMaterialDefinitionName() == mMaterialInst->getMaterial()->getName() &&
+      mMaterialInst->getVertexFormat() == getGFXVertexFormat<VertexType>())
       return;
 
    SAFE_DELETE( mMaterialInst );
 
-   Material *material;
-   
-   if ( !Sim::findObject( mMaterialName, material ) )
-      Sim::findObject( "WarningMaterial", material );
+   Material* material = getMaterialResource();
+
+   if (material == nullptr)
+      return;
 
    mMaterialInst = material->createMatInstance();
-
-   //GFXStateBlockDesc desc;
-   //desc.setCullMode( GFXCullNone );
-   //desc.setBlend( false );
-
-   //mMaterialInst->addStateBlockDesc( desc );
 
    FeatureSet features = MATMGR->getDefaultFeatures();
    //features.addFeature( MFT_DiffuseVertColor );
@@ -1364,62 +1365,15 @@ void ConvexShape::_updateGeometry( bool updateCollision )
 	{
       U32 count = faceList[i].triangles.size();
 
-      S32 matID = mSurfaceUVs[i].matID;
-
       mSurfaceBuffers[mSurfaceUVs[i].matID].mPrimCount += count;
       mSurfaceBuffers[mSurfaceUVs[i].matID].mVertCount += count * 3;
 	}
 
    //Build the buffer for our default material
-   /*if (mVertCount > 0)
-   {
-      mVertexBuffer.set(GFX, mVertCount, GFXBufferTypeStatic);
-      VertexType *pVert = mVertexBuffer.lock();
-
-      for (S32 i = 0; i < faceList.size(); i++)
-      {
-         if (mSurfaceUVs[i].matID == -1)
-         {
-            const ConvexShape::Face &face = faceList[i];
-            const Vector< U32 > &facePntMap = face.points;
-            const Vector< ConvexShape::Triangle > &triangles = face.triangles;
-            const ColorI &faceColor = sgConvexFaceColors[i % sgConvexFaceColorCount];
-
-            const Point3F binormal = mCross(face.normal, face.tangent);
-
-                  pVert++;
-               }
-            }
-         }
-      }
-
-      mVertexBuffer.unlock();
-
-      // Allocate PB
-
-      mPrimitiveBuffer.set(GFX, mPrimCount * 3, mPrimCount, GFXBufferTypeStatic);
-
-      U16 *pIndex;
-      mPrimitiveBuffer.lock(&pIndex);
-
-      for (U16 i = 0; i < mPrimCount * 3; i++)
-      {
-         *pIndex = i;
-         pIndex++;
-      }
-
-      mPrimitiveBuffer.unlock();
-   }*/
-
-   //
-   //
    for (U32 i = 0; i < mSurfaceBuffers.size(); i++)
    {
       if (mSurfaceBuffers[i].mVertCount > 0)
       {
-         U32 primCount = mSurfaceBuffers[i].mPrimCount;
-         U32 vertCount = mSurfaceBuffers[i].mVertCount;
-
          mSurfaceBuffers[i].mVertexBuffer.set(GFX, mSurfaceBuffers[i].mVertCount, GFXBufferTypeStatic);
          VertexType *pVert = mSurfaceBuffers[i].mVertexBuffer.lock();
 
@@ -1432,7 +1386,6 @@ void ConvexShape::_updateGeometry( bool updateCollision )
                const ConvexShape::Face &face = faceList[f];
                const Vector< U32 > &facePntMap = face.points;
                const Vector< ConvexShape::Triangle > &triangles = face.triangles;
-               const ColorI &faceColor = sgConvexFaceColors[f % sgConvexFaceColorCount];
 
                const Point3F binormal = mCross(face.normal, face.tangent);
 
@@ -1441,10 +1394,11 @@ void ConvexShape::_updateGeometry( bool updateCollision )
                   for (S32 k = 0; k < 3; k++)
                   {
                      pVert->normal = face.normal;
-                     pVert->tangent = face.tangent;
-                     pVert->color = faceColor;
+                     pVert->T = face.tangent;
+                     pVert->B = mCross(face.normal,face.tangent);
                      pVert->point = pointList[facePntMap[triangles[j][k]]];
                      pVert->texCoord = face.texcoords[triangles[j][k]];
+                     pVert->texCoord2 = pVert->texCoord;
 
                      pVert++;
                      vc++;
@@ -1471,56 +1425,6 @@ void ConvexShape::_updateGeometry( bool updateCollision )
          mSurfaceBuffers[i].mPrimitiveBuffer.unlock();
       }
    }
-   //
-   //
-
-   /*// Allocate VB and copy in data.
-   for (S32 i = 0; i < faceList.size(); i++)
-   {
-      mVertexBuffer.set(GFX, mVertCount, GFXBufferTypeStatic);
-      VertexType *pVert = mVertexBuffer.lock();
-
-      for (S32 i = 0; i < faceList.size(); i++)
-      {
-         const ConvexShape::Face &face = faceList[i];
-         const Vector< U32 > &facePntMap = face.points;
-         const Vector< ConvexShape::Triangle > &triangles = face.triangles;
-         const ColorI &faceColor = sgConvexFaceColors[i % sgConvexFaceColorCount];
-
-         const Point3F binormal = mCross(face.normal, face.tangent);
-
-         for (S32 j = 0; j < triangles.size(); j++)
-         {
-            for (S32 k = 0; k < 3; k++)
-            {
-               pVert->normal = face.normal;
-               pVert->tangent = face.tangent;
-               pVert->color = faceColor;
-               pVert->point = pointList[facePntMap[triangles[j][k]]];
-               pVert->texCoord = face.texcoords[triangles[j][k]];
-
-               pVert++;
-            }
-         }
-      }
-
-      mVertexBuffer.unlock();
-
-      // Allocate PB
-
-      mPrimitiveBuffer.set(GFX, mPrimCount * 3, mPrimCount, GFXBufferTypeStatic);
-
-      U16 *pIndex;
-      mPrimitiveBuffer.lock(&pIndex);
-
-      for (U16 i = 0; i < mPrimCount * 3; i++)
-      {
-         *pIndex = i;
-         pIndex++;
-      }
-
-      mPrimitiveBuffer.unlock();
-   }*/
 }
 
 void ConvexShape::_updateCollision()
@@ -2158,3 +2062,5 @@ void ConvexShape::Geometry::generate(const Vector< PlaneF > &planes, const Vecto
       faces.push_back( newFace );
    }
 }
+
+DEF_ASSET_BINDS(ConvexShape, Material);

@@ -55,7 +55,10 @@
 #endif 
 #ifndef TERRAINASSET_H
 #include "T3D/assets/TerrainAsset.h"
-#endif 
+#endif
+#ifndef _CONVEX_H_
+#include "collision/convex.h"
+#endif
 
 class GBitmap;
 class TerrainBlock;
@@ -124,7 +127,7 @@ protected:
    U32 mCRC;
 
    ///
-   FileName mTerrFileName;
+   StringTableEntry mTerrFileName;
 
    AssetPtr<TerrainAsset> mTerrainAsset;
    StringTableEntry mTerrainAssetId;
@@ -134,6 +137,11 @@ protected:
 
    ///
    Vector<GFXTexHandle> mBaseTextures;
+
+   GFXTextureArrayHandle mDetailTextureArray;
+   GFXTextureArrayHandle mMacroTextureArray;
+   GFXTextureArrayHandle mNormalTextureArray;
+   GFXTextureArrayHandle mOrmTextureArray;
 
    /// 
    GFXTexHandle mLayerTex;
@@ -211,6 +219,9 @@ protected:
 
    /// True if the zoning needs to be recalculated for the terrain.
    bool mZoningDirty;
+
+   /// Holds the generated convex list stuff for this terrain
+   Convex mTerrainConvexList;
 
    String _getBaseTexCacheFileName() const;
 
@@ -308,6 +319,8 @@ public:
    /// Deletes all the materials on the terrain.
    void deleteAllMaterials();
 
+   void setMaterialsDirty() { mDetailsDirty = true; };
+
    //void setMaterialName( U32 index, const String &name );
 
    /// Accessors and mutators for TerrainMaterialUndoAction.
@@ -323,6 +336,11 @@ public:
    const char* getMaterialName( U32 index ) const;
 
    U32 getMaterialCount() const;
+
+   GFXTextureArrayHandle getDetailTextureArray() const { return mDetailTextureArray; }
+   GFXTextureArrayHandle getMacroTextureArray() const { return mMacroTextureArray; }
+   GFXTextureArrayHandle getNormalTextureArray() const { return mNormalTextureArray; }
+   GFXTextureArrayHandle getOrmTextureArray() const { return mOrmTextureArray; }
 
    //BaseMatInstance* getMaterialInst( U32 x, U32 y );
 
@@ -464,20 +482,68 @@ public:
                         RayInfo *info, 
                         bool collideEmpty );
 
-   const FileName& getTerrainFile() const { return mTerrFileName; }
+   const StringTableEntry getTerrainFile() const { return mTerrFileName; }
 
    void postLight(Vector<TerrainBlock *> &terrBlocks) {};
 
 
    DECLARE_CONOBJECT(TerrainBlock);
+   DECLARE_CATEGORY("Environment \t BackGround");
    static void initPersistFields();
    U32 packUpdate   (NetConnection *conn, U32 mask, BitStream *stream);
    void unpackUpdate(NetConnection *conn,           BitStream *stream);
    void inspectPostApply();
 
    virtual void getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList);
+
+   const StringTableEntry getTerrain() const
+   {
+      if (mTerrainAsset && (mTerrainAsset->getTerrainFilePath() != StringTable->EmptyString()))
+         return mTerrainAsset->getTerrainFilePath(); 
+      else if (mTerrainAssetId != StringTable->EmptyString())
+         return mTerrainAssetId; 
+      else if (mTerrFileName != StringTable->EmptyString())
+         return mTerrFileName; 
+      else
+         return StringTable->EmptyString(); 
+   }
+
+   const StringTableEntry getTerrainAssetId() const
+   {
+      if (mTerrainAssetId != StringTable->EmptyString())
+         return mTerrainAssetId;
+      else
+         return StringTable->EmptyString();
+   }
+
+   bool _setTerrain(StringTableEntry terrain)
+   {
+      if (terrain == StringTable->EmptyString())
+         return false;
+
+      if (AssetDatabase.isDeclaredAsset(terrain))
+         setTerrainAsset(terrain);
+      else
+         mTerrFileName = terrain;
+
+      return true;
+   }
  
+   bool renameTerrainMaterial(StringTableEntry oldMatName, StringTableEntry newMatName);
+   S32 getTerrainMaterialCount() {
+      if (mFile)
+         return mFile->mMaterials.size();
+      return 0;
+   }
+
+   StringTableEntry getTerrainMaterialName(S32 index) {
+      if (mFile)
+         return mFile->mMaterials[index]->getInternalName();
+
+      return StringTable->EmptyString();
+   }
 protected:
+   bool mUpdateBasetex;
    bool mIgnoreZodiacs;
    U16* zode_primBuffer;
    void deleteZodiacPrimitiveBuffer();

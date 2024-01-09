@@ -36,6 +36,8 @@
 #include "collision/convex.h"
 #endif
 
+#include "T3D/assets/MaterialAsset.h"
+
 class ConvexShape;
 
 // Crap name, but whatcha gonna do.
@@ -75,9 +77,6 @@ GFXDeclareVertexFormat( ConvexVert )
 
 class PhysicsBody;
 
-// Define our vertex format here so we don't have to
-// change it in multiple spots later
-typedef ConvexVert VertexType;
 
 class ConvexShape : public SceneObject
 {
@@ -97,6 +96,10 @@ public:
    // Declaring these structs directly within ConvexShape to prevent
    // the otherwise excessively deep scoping we had.
    // eg. ConvexShape::Face::Triangle ...
+
+   // Define our vertex format here so we don't have to
+   // change it in multiple spots later
+   typedef GFXVertexPNTTB VertexType;
 
    struct Edge
    {
@@ -134,14 +137,17 @@ public:
    struct surfaceMaterial
    {
       // The name of the Material we will use for rendering
-      String            materialName;
+      DECLARE_MATERIALASSET(surfaceMaterial, Material);
+      
+      DECLARE_ASSET_SETGET(surfaceMaterial, Material);
 
       // The actual Material instance
       BaseMatInstance*  materialInst;
 
       surfaceMaterial()
       {
-         materialName = "";
+         INIT_ASSET(Material);
+
          materialInst = NULL;
       }
    };
@@ -188,6 +194,7 @@ public:
    virtual ~ConvexShape();
 
    DECLARE_CONOBJECT( ConvexShape );
+   DECLARE_CATEGORY("Object \t Simple");
 
    // ConsoleObject
    static void initPersistFields();
@@ -258,8 +265,8 @@ protected:
   
 protected:
    
-   // The name of the Material we will use for rendering
-   String            mMaterialName;
+   DECLARE_MATERIALASSET(ConvexShape, Material);
+   DECLARE_ASSET_SETGET(ConvexShape, Material);
 
    // The actual Material instance
    BaseMatInstance*  mMaterialInst;

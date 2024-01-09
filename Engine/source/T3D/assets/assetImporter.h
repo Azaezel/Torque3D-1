@@ -22,7 +22,7 @@ public:
    /// <summary>
    /// Duplicate Asset Auto-Resolution Action. Options are None, AutoPrune, AutoRename
    /// </summary>
-   String DuplicatAutoResolution;
+   String DuplicateAutoResolution;
 
    /// <summary>
    /// Indicates if warnings should be treated as errors.
@@ -40,12 +40,27 @@ public:
    bool AutomaticallyPromptMissingFiles;
    //
 
+   /// <summary>
+   /// Should the importer add the folder name as a prefix to the assetName. Helps prevent name collisions.
+   /// </summary>
+   bool AddDirectoryPrefixToAssetName;
+   //
    //
    //Mesh Settings
    /// <summary>
    /// Indicates if this config supports importing meshes
    /// </summary>
    bool ImportMesh;
+
+   /// <summary>
+   /// When importing a shape, this indicates if it should automatically add a standard suffix onto the name
+   /// </summary>
+   bool AlwaysAddShapeSuffix;
+
+   /// <summary>
+   /// If AlwaysAddShapeSuffix is on, this is the suffix to be added
+   /// </summary>
+   String AddedShapeSuffix;
 
    /// <summary>
    /// Indicates if this config should override the per-format sis files with the config's specific settings
@@ -101,22 +116,22 @@ public:
    /// <summary>
    /// A list of what nodes should be guaranteed to be imported if found in the model file. Separated by either , or ;
    /// </summary>
-   String ImportedNodes;
+   String AlwaysImportedNodes;
 
    /// <summary>
    /// A list of what nodes should be guaranteed to not be imported if found in the model file. Separated by either , or ;
    /// </summary>
-   String IgnoreNodes;
+   String AlwaysIgnoreNodes;
 
    /// <summary>
    /// A list of what mesh objects should be guaranteed to be imported if found in the model file. Separated by either , or ;
    /// </summary>
-   String ImportMeshes;
+   String AlwaysImportMeshes;
 
    /// <summary>
    /// A list of what mesh objects should be guaranteed to not be imported if found in the model file. Separated by either , or ;
    /// </summary>
-   String IgnoreMeshes;
+   String AlwaysIgnoreMeshes;
 
    //Assimp/Collada params
    /// <summary>
@@ -185,7 +200,17 @@ public:
    /// <summary>
    /// When importing a material, should it automatically attempt to merge Roughness, AO and Metalness maps into a single, composited PBR Configuration map
    /// </summary>
-   bool CreatePBRConfig;
+   bool CreateORMConfig;
+
+   /// <summary>
+   /// When creating a material on import, this indicates if it should automatically add a standard suffix onto the name
+   /// </summary>
+   bool AlwaysAddMaterialSuffix;
+
+   /// <summary>
+   /// If AlwaysAddMaterialSuffix is on, this is the suffix to be added
+   /// </summary>
+   String AddedMaterialSuffix;
 
    /// <summary>
    /// When generating a material off of an importing image, should the importer force appending a diffusemap suffix onto the end to avoid potential naming confusion.
@@ -205,7 +230,7 @@ public:
 
    /// <summary>
    /// When processing a material asset, should the importer attempt to populate the various material maps on it by looking up common naming conventions for potentially relevent image files
-   /// e.g. If MyCoolStuff_Diffuse.png is imported, generating MyCoolStuff material, it would also find MyCoolStuff_Normal and MyCoolStuff_PBR images and map them to the normal and PBRConfig maps respectively automatically
+   /// e.g. If MyCoolStuff_Diffuse.png is imported, generating MyCoolStuff material, it would also find MyCoolStuff_Normal and MyCoolStuff_PBR images and map them to the normal and ORMConfig maps respectively automatically
    /// </summary>
    bool PopulateMaterialMaps;
 
@@ -235,6 +260,16 @@ public:
    /// The FPS of the animation sequence
    /// </summary>
    F32 animFPS;
+
+   /// <summary>
+   /// When importing a shape animation, this indicates if it should automatically add a standard suffix onto the name
+   /// </summary>
+   bool AlwaysAddShapeAnimationSuffix;
+
+   /// <summary>
+   /// If AlwaysAddShapeAnimationSuffix is on, this is the suffix to be added
+   /// </summary>
+   String AddedShapeAnimationSuffix;
 
    //
    //Collision
@@ -276,7 +311,17 @@ public:
    bool importImages;
 
    /// <summary>
-   /// What is the default ImageType images are imported as. Options are: N/A, Diffuse, Normal, Metalness, Roughness, AO, PBRConfig, GUI, Cubemap
+   /// When importing an image, this indicates if it should automatically add a standard suffix onto the name
+   /// </summary>
+   bool AlwaysAddImageSuffix;
+
+   /// <summary>
+   /// If AlwaysAddImageSuffix is on, this is the suffix to be added
+   /// </summary>
+   String AddedImageSuffix;
+
+   /// <summary>
+   /// What is the default ImageType images are imported as. Options are: N/A, Diffuse, Normal, Metalness, Roughness, AO, ORMConfig, GUI, Cubemap
    /// </summary>
    String ImageType;
 
@@ -317,7 +362,7 @@ public:
    String AOTypeSuffixes;
 
    /// <summary>
-   /// What type of suffixes are scanned to detect if an importing image is a PBRConfig map.
+   /// What type of suffixes are scanned to detect if an importing image is a ORMConfig map.
    /// e.g. _Composite or _PBR
    /// </summary>
    String PBRTypeSuffixes;
@@ -373,6 +418,15 @@ public:
    /// Indicates if sounds imported with this configuration are compressed
    /// </summary>
    bool SoundsCompressed;
+
+   /// When importing an image, this indicates if it should automatically add a standard suffix onto the name
+   /// </summary>
+   bool AlwaysAddSoundSuffix;
+
+   /// <summary>
+   /// If AlwaysAddSoundSuffix is on, this is the suffix to be added
+   /// </summary>
+   String AddedSoundSuffix;
 
 public:
    AssetImportConfig();
@@ -457,15 +511,20 @@ public:
    /// </summary>
    bool dirty;
 
+   enum
+   {
+      NotProcessed=0,
+      Processed,
+      Skipped,
+      UseForDependencies,
+      Error,
+      Imported
+   };
+
    /// <summary>
    /// Is this asset item marked to be skipped. If it is, it's usually due to being marked as deleted
    /// </summary>
-   bool skip;
-
-   /// <summary>
-   /// Has the asset item been processed
-   /// </summary>
-   bool processed;
+   U32 importStatus;
 
    /// <summary>
    /// Is this specific asset item generated as part of the import process of another item
@@ -490,7 +549,7 @@ public:
    //
    /// <summary>
    /// Specific to ImageAsset type
-   /// What is the image asset's suffix type. Options are: Albedo, Normal, Roughness, AO, Metalness, PBRConfig
+   /// What is the image asset's suffix type. Options are: Albedo, Normal, Roughness, AO, Metalness, ORMConfig
    /// </summary>
    String imageSuffixType;
 
@@ -500,6 +559,13 @@ public:
    /// Processed information about the shape file. Contains numbers and lists of meshes, materials and animations
    /// </summary>
    GuiTreeViewCtrl* shapeInfo;
+
+   //
+   /// <summary>
+   /// A string that can hold a hint string to help the auto-import ensure the correct asset subtype is assigned.
+   /// e.g. "GUI" would inform an image asset being imported that it should be flagged as a GUI image type
+   /// </summary>
+   String typeHint;
 
 public:
    AssetImportObject();
@@ -521,6 +587,10 @@ public:
    bool operator == (const AssetImportObject& o) const
    {
       return o.getId() == this->getId();
+   }
+
+   bool canImport() {
+      return (importStatus == AssetImportObject::Processed);
    }
 };
 
@@ -586,6 +656,8 @@ class AssetImporter : public SimObject
    /// only used for passing up the result of an import action for a script-side handled type
    /// </summary>
    String finalImportedAssetPath;
+
+   bool mDumpLogs;
 
 public:
    AssetImporter();
@@ -738,10 +810,16 @@ public:
    void processMaterialAsset(AssetImportObject* assetItem);
 
    /// <summary>
-   /// Process a specific AssetImportObject that is an ShapeAsset type to prepare it for importing
+   /// Process a specific AssetImportObject that is an ShapeAnimationAsset type to prepare it for importing
    /// <para>@param assetItem, The AssetImportObject to process</para>
    /// </summary>
    void processShapeAsset(AssetImportObject* assetItem);
+
+   /// <summary>
+   /// Process a specific AssetImportObject that is an ShapeAsset type to prepare it for importing
+   /// <para>@param assetItem, The AssetImportObject to process</para>
+   /// </summary>
+   void processShapeAnimationAsset(AssetImportObject* assetItem);
 
    /// <summary>
    /// Process a specific ShapeAsset AssetImportObject with a material id in order to parse and handle the materials listed in the shape file
@@ -790,9 +868,10 @@ public:
    /// <summary>
    /// Runs the import process on a single file in-place. Intended primarily for autoimporting a loose file that's in the game directory.
    /// <para>@param filePath, The filePath of the file to be imported in as an asset</para>
+   /// <para>@param typeHint, Optional. A string that provides a hint of the intended asset type. Such as an image being intended for GUI use.</para>
    /// <para>@return AssetId of the asset that was imported. If import failed, it will be empty.</para>
    /// </summary>
-   StringTableEntry autoImportFile(Torque::Path filePath);
+   StringTableEntry autoImportFile(Torque::Path filePath, String typeHint);
 
    /// <summary>
    /// Runs the import process in the current session
@@ -835,6 +914,12 @@ public:
    /// </summary>
    Torque::Path importShapeAnimationAsset(AssetImportObject* assetItem);
 
+   /// <summary>
+   /// Iterates over all the items in the current session and acquires them, which jumpstarts the loading/init'ng process on them, making the available for use immediately
+   /// <para>@param assetItem, if null, will loop over and recurse the main import asset items, if a specific AssetImportObject is passed in, it will recurse it's children</para>
+   /// </summary>
+   void acquireAssets(AssetImportObject* assetItem = nullptr);
+
    //
    /// <summary>
    /// Gets the currently active import configuration
@@ -842,10 +927,22 @@ public:
    /// </summary>
    AssetImportConfig* getImportConfig() { return activeImportConfig; }
 
-   void setImportConfig(AssetImportConfig* importConfig) {
-      if(importConfig != nullptr)
+   void setImportConfig(AssetImportConfig* importConfig)
+   {
+      if (importConfig != nullptr)
+      {
+         dSprintf(importLogBuffer, sizeof(importLogBuffer), "Loading import config: %s!", importConfig->getName());
+         activityLog.push_back(importLogBuffer);
+
          activeImportConfig = importConfig;
+      }
    }
+
+   /// <summary>
+   /// Resets the active import config to whatever the default is. Either a clean slate if one isn't defined
+   /// or loading one if defined via the editor config
+   /// </summary>
+   void resetImportConfig();
 
    //
    static String getTrueFilename(const String& fileName);
@@ -873,12 +970,30 @@ public:
       return imagePath;
    }
 
-   static inline const char* makeFullPath(const String& path)
+   //
+   void setTargetModuleId(const String& moduleId) { targetModuleId = moduleId; }
+   const String& getTargetModuleId() { return targetModuleId; }
+
+   String getFolderPrefixedName(AssetImportObject* assetItem)
    {
-      char qualifiedFilePath[2048];
+      String renamedAssetName = assetItem->assetName;
+      S32 dirIndex = assetItem->filePath.getDirectoryCount() - 1;
+      while (dirIndex > -1)
+      {
+         renamedAssetName = assetItem->assetName;
+         String owningFolder = assetItem->filePath.getDirectory(dirIndex);
 
-      Platform::makeFullPathName(path.c_str(), qualifiedFilePath, sizeof(qualifiedFilePath));
+         renamedAssetName = owningFolder + "_" + renamedAssetName;
 
-      return qualifiedFilePath;
+         if (AssetDatabase.isDeclaredAsset(renamedAssetName))
+         {
+            dirIndex--;
+            continue;
+         }
+
+         break;
+      }
+
+      return renamedAssetName;
    }
 };

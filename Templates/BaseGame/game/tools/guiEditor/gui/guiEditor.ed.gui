@@ -3,7 +3,7 @@
 // Copyright (C) GarageGames.com, Inc.
 //---------------------------------------------------------------------------------------------
 
-%guiContent = new GuiControl(GuiEditorGui, EditorGuiGroup) {
+$guiContent = new GuiControl(GuiEditorGui, EditorGuiGroup) {
    canSaveDynamicFields = "0";
    isContainer = "1";
    Profile = "ToolsGuiDefaultProfile";
@@ -22,8 +22,8 @@
       Profile = "ToolsGuiFrameSetProfile";
       HorizSizing = "width";
       VertSizing = "height";
-      Position = "0 0";
-      Extent = "800 583";
+      Position = "-1 -1";
+      Extent = "801 584";
       MinExtent = "8 2";
       canSave = "1";
       Visible = "1";
@@ -49,30 +49,56 @@
          canSave = "1";
          Visible = "1";
          hovertime = "1000";
+         
+         new GuiBitmapButtonCtrl(GHLogo) {
+            canSaveDynamicFields = "0";
+            Enabled = "1";
+            isContainer = "0";
+            Profile = "ToolsGuiButtonProfile";
+            HorizSizing = "right";
+            VertSizing = "bottom";
+            Position = "8 2";
+            Extent = "24 24";
+            MinExtent = "24 24";
+            canSave = "1";
+            Visible = "1";
+            Command = "";
+            tooltipprofile = "ToolsGuiToolTipProfile";
+            ToolTip = "Torque3D";
+            hovertime = "1000";
+            bitmapAsset = "ToolsModule:menu_logo";
+            groupNum = "0";
+            buttonType = "PushButton";
+            useMouseEvents = "0";
+         };
 
-         new GuiContainer(GHToolBar) {
-            margin = "0 0 0 0";
-            padding = "0 0 0 0";
-            anchorTop = "1";
-            anchorBottom = "0";
-            anchorLeft = "1";
-            anchorRight = "0";
-            isContainer = "1";
-            profile = "ToolsMenubarProfile";
+         new GuiStackControl(GuiEditorToolbarStack) {
+            stackingType = "Horizontal";
+            horizStacking = "Left to Right";
+            vertStacking = "Top to Bottom";
+            padding = "0";
+            dynamicSize = "1";
+            dynamicNonStackExtent = "0";
+            dynamicPos = "0";
+            changeChildSizeToFit = "0";
+            changeChildPosition = "1";
+            position = "36 2";
+            extent = "885" SPC getWord(EditorGuiToolbar.extent, 1) -2;
+            minExtent = "16 16";
             horizSizing = "right";
             vertSizing = "bottom";
-            position = "0 0";
-            extent = "16000 32";
-            minExtent = "8 2";
-            canSave = "1";
+            profile = "ToolsGuiDefaultProfile";
             visible = "1";
-            tooltipProfile = "ToolsGuiToolTipProfile";
+            active = "1";
+            tooltipProfile = "GuiToolTipProfile";
             hovertime = "1000";
+            isContainer = "1";
+            canSave = "1";
             canSaveDynamicFields = "0";
 
             new GuiBitmapButtonCtrl(GHWorldEditor) {
-               bitmap = "tools/worldEditor/images/toolbar/world";
-               bitmapMode = "Stretched";
+               bitmapAsset = "ToolsModule:world_n_image";
+               bitmapMode = "Centered";
                autoFitExtents = "0";
                groupNum = "0";
                buttonType = "RadioButton";
@@ -93,8 +119,8 @@
                canSaveDynamicFields = "0";
             };
             new GuiBitmapButtonCtrl(GHGuiEditor) {
-               bitmap = "tools/worldEditor/images/toolbar/gui";
-               bitmapMode = "Stretched";
+               bitmapAsset = "ToolsModule:gui_n_image";
+               bitmapMode = "Centered";
                autoFitExtents = "0";
                groupNum = "0";
                buttonType = "RadioButton";
@@ -114,8 +140,8 @@
                canSaveDynamicFields = "0";
             };
             new GuiBitmapButtonCtrl() {
-               bitmap = "tools/worldEditor/images/toolbar/playbutton";
-               bitmapMode = "Stretched";
+               bitmapAsset = "ToolsModule:playbutton_n_image";
+               bitmapMode = "Centered";
                autoFitExtents = "0";
                groupNum = "0";
                buttonType = "PushButton";
@@ -135,15 +161,44 @@
                hovertime = "1000";
                canSaveDynamicFields = "0";
             };
+            new GuiBitmapButtonCtrl() {
+               BitmapAsset = "ToolsModule:settings_n_image";
+               bitmapMode = "Centered";
+               autoFitExtents = "0";
+               useModifiers = "0";
+               useStates = "1";
+               masked = "0";
+               groupNum = "-1";
+               buttonType = "PushButton";
+               useMouseEvents = "0";
+               position = "150 0";
+               extent = "29 27";
+               minExtent = "8 8";
+               horizSizing = "right";
+               vertSizing = "bottom";
+               profile = "ToolsGuiButtonProfile";
+               visible = "1";
+               active = "1";
+               command = "ESettingsWindow.toggleEditorSettings();";
+               tooltipProfile = "ToolsGuiToolTipProfile";
+               tooltip = "Open Editor Settings";
+               hovertime = "1000";
+               isContainer = "0";
+               internalName = "editorSettingsBtn";
+               canSave = "1";
+               canSaveDynamicFields = "0";
+            };
+            
             new GuiBitmapCtrl() {
-               bitmap = "tools/gui/images/separator-h.png";
+               bitmapAsset = "ToolsModule:separator_xt_h_image";
+               bitmapMode = "Centered";
                wrap = "0";
                isContainer = "0";
                profile = "ToolsGuiDefaultProfile";
                horizSizing = "right";
                vertSizing = "bottom";
-               position = "98 3";
-               extent = "2 26";
+               position = "130 3";
+               extent = "9 26";
                minExtent = "1 1";
                canSave = "1";
                visible = "1";
@@ -151,21 +206,44 @@
                hovertime = "1000";
                canSaveDynamicFields = "0";
             };
-         };
-         new GuiControl() {
-            isContainer = "1";
-            profile = "ToolsGuiDefaultProfile";
-            horizSizing = "width";
-            vertSizing = "bottom";
-            position = "99 0";
-            extent = "723 32";
-            minExtent = "8 2";
-            canSave = "1";
-            visible = "1";
-            tooltipProfile = "ToolsGuiToolTipProfile";
-            hovertime = "1000";
-            canSaveDynamicFields = "0";
 
+            new GuiBitmapButtonCtrl() {
+               bitmapAsset = "ToolsModule:assetBrowser_n_image";
+               bitmapMode = "Centered";
+               autoFitExtents = "0";
+               useModifiers = "0";
+               useStates = "1";
+               masked = "0";
+               groupNum = "-1";
+               buttonType = "ToggleButton";
+               useMouseEvents = "0";
+               position = "98 3";
+               Extent = "33 27";
+               minExtent = "8 8";
+               horizSizing = "right";
+               vertSizing = "bottom";
+               profile = "ToolsGuiButtonProfile";
+               visible = "1";
+               active = "1";
+               Command = "AssetBrowser.toggleDialog();";
+               tooltipProfile = "ToolsGuiToolTipProfile";
+               tooltip = "Open the Asset Browser";
+               hovertime = "1000";
+               isContainer = "0";
+               internalName = "AssetBrowserBtn";
+               canSave = "1";
+               canSaveDynamicFields = "0";
+            };            
+            
+            new GuiBitmapCtrl() {
+               Enabled = "1";
+               Profile = "ToolsGuiDefaultProfile";
+               position = "160 3";
+               Extent = "9 26";
+               MinExtent = "1 1";
+               bitmapAsset = "ToolsModule:separator_xt_h_image";
+               bitmapMode = "Centered";
+            };
             new GuiPopUpMenuCtrl(GuiEditorContentList) {
                maxPopupHeight = "200";
                sbUsesNAColor = "0";
@@ -182,9 +260,9 @@
                isContainer = "0";
                profile = "ToolsGuiPopUpMenuProfile";
                horizSizing = "right";
-               vertSizing = "bottom";
-               position = "8 7";
-               extent = "145 18";
+               vertSizing = "center";
+               position = "8 0";
+               extent = "145 27";
                minExtent = "8 2";
                canSave = "1";
                visible = "1";
@@ -208,9 +286,9 @@
                isContainer = "0";
                profile = "ToolsGuiPopUpMenuProfile";
                horizSizing = "right";
-               vertSizing = "bottom";
-               position = "161 7";
-               extent = "136 18";
+               vertSizing = "center";
+               position = "161 0";
+               extent = "136 27";
                minExtent = "8 2";
                canSave = "1";
                visible = "1";
@@ -219,14 +297,15 @@
                canSaveDynamicFields = "0";
             };
             new GuiBitmapCtrl() {
-               bitmap = "tools/gui/images/separator-h.png";
+               bitmapAsset = "ToolsModule:separator_xt_h_image";
+               bitmapMode = "Centered";
                wrap = "0";
                isContainer = "0";
                profile = "ToolsGuiDefaultProfile";
                horizSizing = "right";
-               vertSizing = "bottom";
+               vertSizing = "center";
                position = "307 3";
-               extent = "2 26";
+               extent = "9 26";
                minExtent = "1 1";
                canSave = "1";
                visible = "1";
@@ -234,23 +313,9 @@
                hovertime = "1000";
                canSaveDynamicFields = "0";
             };
-            new GuiControl() {
-               isContainer = "1";
-               profile = "ToolsGuiDefaultProfile";
-               horizSizing = "right";
-               vertSizing = "bottom";
-               position = "312 3";
-               extent = "95 27";
-               minExtent = "8 2";
-               canSave = "1";
-               visible = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-
                new GuiBitmapButtonCtrl(GuiEditorSnapCheckBox) {
-                  bitmap = "tools/gui/images/GUI-editor/snap-grid";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:snap_grid_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "ToggleButton";
@@ -270,8 +335,8 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl(GuiEditorEdgeSnapping_btn) {
-                  bitmap = "tools/gui/images/GUI-editor/edgesnap";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:edgesnap_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "ToggleButton";
@@ -279,10 +344,10 @@
                   isContainer = "0";
                   profile = "ToolsGuiButtonProfile";
                   horizSizing = "right";
-                  vertSizing = "bottom";
+                  vertSizing = "center";
                   position = "31 0";
                   extent = "29 27";
-                  minExtent = "120 21";
+                  minExtent = "21 21";
                   canSave = "1";
                   visible = "1";
                   command = "GuiEditor.toggleEdgeSnap();";
@@ -292,8 +357,8 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl(GuiEditorCenterSnapping_btn) {
-                  bitmap = "tools/gui/images/GUI-editor/centersnap";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:centersnap_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "ToggleButton";
@@ -301,10 +366,10 @@
                   isContainer = "0";
                   profile = "ToolsGuiButtonProfile";
                   horizSizing = "right";
-                  vertSizing = "bottom";
+                  vertSizing = "center";
                   position = "62 0";
                   extent = "29 27";
-                  minExtent = "120 21";
+                  minExtent = "21 21";
                   canSave = "1";
                   visible = "1";
                   command = "GuiEditor.toggleCenterSnap();";
@@ -313,40 +378,25 @@
                   hovertime = "1000";
                   canSaveDynamicFields = "0";
                };
-            };
-            new GuiBitmapCtrl() {
-               bitmap = "tools/gui/images/separator-h.png";
-               wrap = "0";
-               isContainer = "0";
-               profile = "ToolsGuiDefaultProfile";
-               horizSizing = "right";
-               vertSizing = "bottom";
-               position = "415 3";
-               extent = "2 26";
-               minExtent = "1 1";
-               canSave = "1";
-               visible = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-            };
-            new GuiControl() {
-               isContainer = "1";
-               profile = "ToolsGuiDefaultProfile";
-               horizSizing = "right";
-               vertSizing = "bottom";
-               position = "422 3";
-               extent = "95 27";
-               minExtent = "8 2";
-               canSave = "1";
-               visible = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-
+               new GuiBitmapCtrl() {
+                  bitmapAsset = "ToolsModule:separator_xt_h_image";
+                  wrap = "0";
+                  isContainer = "0";
+                  profile = "ToolsGuiDefaultProfile";
+                  horizSizing = "right";
+                  vertSizing = "bottom";
+                  position = "415 3";
+                  extent = "9 26";
+                  minExtent = "1 1";
+                  canSave = "1";
+                  visible = "1";
+                  tooltipProfile = "ToolsGuiToolTipProfile";
+                  hovertime = "1000";
+                  canSaveDynamicFields = "0";
+               };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/align-left";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:align_left_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -357,7 +407,7 @@
                   vertSizing = "bottom";
                   position = "0 0";
                   extent = "29 27";
-                  minExtent = "120 21";
+                  minExtent = "21 21";
                   canSave = "1";
                   visible = "1";
                   command = "GuiEditor.Justify(0);";
@@ -367,8 +417,8 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/vertical-center";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:vertical_center_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -389,8 +439,8 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/align-right";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:align_right_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -410,24 +460,9 @@
                   hovertime = "1000";
                   canSaveDynamicFields = "0";
                };
-            };
-            new GuiControl() {
-               isContainer = "1";
-               profile = "ToolsGuiDefaultProfile";
-               horizSizing = "right";
-               vertSizing = "bottom";
-               position = "498 3";
-               extent = "95 27";
-               minExtent = "8 2";
-               canSave = "1";
-               visible = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/align-top";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:align_top_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -438,7 +473,7 @@
                   vertSizing = "bottom";
                   position = "0 0";
                   extent = "29 27";
-                  minExtent = "120 21";
+                  minExtent = "21 21";
                   canSave = "1";
                   visible = "1";
                   command = "GuiEditor.Justify(3);";
@@ -448,8 +483,8 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/horizontal-center";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:horizontal_center_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -470,8 +505,8 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/align-bottom";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:align_bottom_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -491,56 +526,25 @@
                   hovertime = "1000";
                   canSaveDynamicFields = "0";
                };
-            };
-            new GuiBitmapCtrl() {
-               bitmap = "tools/gui/images/separator-h.png";
-               wrap = "0";
-               isContainer = "0";
-               profile = "ToolsGuiDefaultProfile";
-               horizSizing = "right";
-               vertSizing = "bottom";
-               position = "582 3";
-               extent = "2 26";
-               minExtent = "1 1";
-               canSave = "1";
-               visible = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-            };
-            new GuiBitmapCtrl() {
-               bitmap = "tools/gui/images/separator-h.png";
-               wrap = "0";
-               isContainer = "0";
-               profile = "ToolsGuiDefaultProfile";
-               horizSizing = "right";
-               vertSizing = "bottom";
-               position = "639 3";
-               extent = "2 26";
-               minExtent = "1 1";
-               canSave = "1";
-               visible = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-            };
-            new GuiControl() {
-               isContainer = "1";
-               profile = "ToolsGuiDefaultProfile";
-               horizSizing = "right";
-               vertSizing = "bottom";
-               position = "615 3";
-               extent = "117 27";
-               minExtent = "8 2";
-               canSave = "1";
-               visible = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-
+               new GuiBitmapCtrl() {
+                  bitmapAsset = "ToolsModule:separator_xt_h_image";
+                  wrap = "0";
+                  isContainer = "0";
+                  profile = "ToolsGuiDefaultProfile";
+                  horizSizing = "right";
+                  vertSizing = "bottom";
+                  position = "582 3";
+                  extent = "9 26";
+                  minExtent = "1 1";
+                  canSave = "1";
+                  visible = "1";
+                  tooltipProfile = "ToolsGuiToolTipProfile";
+                  hovertime = "1000";
+                  canSaveDynamicFields = "0";
+               };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/send-to-back";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:send_to_back_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -561,8 +565,8 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/bring-to-front";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:bring_to_front_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -582,24 +586,25 @@
                   hovertime = "1000";
                   canSaveDynamicFields = "0";
                };
-            };
-            new GuiControl() {
-               isContainer = "1";
-               profile = "ToolsGuiDefaultProfile";
-               horizSizing = "right";
-               vertSizing = "bottom";
-               position = "583 3";
-               extent = "60 27";
-               minExtent = "8 2";
-               canSave = "1";
-               visible = "1";
-               tooltipProfile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-
+               new GuiBitmapCtrl() {
+                  bitmapAsset = "ToolsModule:separator_xt_h_image";
+                  wrap = "0";
+                  isContainer = "0";
+                  profile = "ToolsGuiDefaultProfile";
+                  horizSizing = "right";
+                  vertSizing = "bottom";
+                  position = "639 3";
+                  extent = "9 26";
+                  minExtent = "1 1";
+                  canSave = "1";
+                  visible = "1";
+                  tooltipProfile = "ToolsGuiToolTipProfile";
+                  hovertime = "1000";
+                  canSaveDynamicFields = "0";
+               };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/distribute-horizontal";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:distribute_horizontal_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -620,8 +625,8 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/GUI-editor/distribute-vertical";
-                  bitmapMode = "Stretched";
+                  bitmapAsset = "ToolsModule:distribute_vertical_n_image";
+                  bitmapMode = "Centered";
                   autoFitExtents = "0";
                   groupNum = "-1";
                   buttonType = "PushButton";
@@ -640,7 +645,6 @@
                   ToolTip = "Distribute Vertically";
                   hovertime = "1000";
                   canSaveDynamicFields = "0";
-               };
             };
          };
          //---------------------
@@ -720,7 +724,7 @@
                   canSave = "1";
                   Visible = "1";
                   hovertime = "1000";
-                  bitmap = "tools/guiEditor/gui/gridTiny2";
+                  bitmapAsset = "ToolsModule:gridTiny2_image";
                   wrap = "1";
                };
                new GuiControl(GuiEditorContent) {
@@ -851,6 +855,7 @@
                   new GuiPanel() {
                      position = "0 0";
                      extent = "222 337";
+                     Profile = "ToolsGuiPaneProfile";
                      
                      new GuiTextEditCtrl( GuiEditorTreeFilter ) {
                         position = "2 4";
@@ -863,7 +868,7 @@
                      };
                      
                      new GuiBitmapButtonCtrl() {
-                        bitmap = "tools/gui/images/clear-icon";
+                        bitmapAsset = "ToolsModule:clear_icon_n_image";
                         groupNum = "-1";
                         buttonType = "PushButton";
                         useMouseEvents = "0";
@@ -1025,7 +1030,7 @@
                         Profile = "GuiInspectorFieldInfoMLTextProfile";
                         HorizSizing = "width";
                         VertSizing = "top";
-                        position = "0 349";
+                        position = "8 349";
                         Extent = "213 13";
                         MinExtent = "8 2";
                         canSave = "1";
@@ -1038,76 +1043,6 @@
                };
             };
             
-            new GuiTabPageCtrl() {
-               fitBook = "1";
-               text = "Library";
-               maxLength = "1024";
-               docking = "client";
-               Margin = "-1 0 0 0";
-               Padding = "0 0 0 0";
-               AnchorTop = "1";
-               AnchorBottom = "0";
-               AnchorLeft = "1";
-               AnchorRight = "0";
-               isContainer = "1";
-               Profile = "ToolsGuiTabPageProfile";
-               HorizSizing = "width";
-               VertSizing = "height";
-               position = "0 20";
-               Extent = "223 734";
-               MinExtent = "8 2";
-               canSave = "1";
-               Visible = "0";
-               tooltipprofile = "ToolsGuiToolTipProfile";
-               hovertime = "1000";
-               canSaveDynamicFields = "0";
-               internalName = "toolboxPage";
-
-               new GuiScrollCtrl() {
-                  canSaveDynamicFields = "0";
-                  Enabled = "1";
-                  isContainer = "1";
-                  Profile = "ToolsGuiScrollProfile";
-                  HorizSizing = "width";
-                  VertSizing = "height";
-                  position = "0 0";
-                  MinExtent = "8 2";
-                  canSave = "1";
-                  Visible = "1";
-                  hovertime = "1000";
-                  willFirstRespond = "1";
-                  hScrollBar = "alwaysOff";
-                  vScrollBar = "dynamic";
-                  lockHorizScroll = "true";
-                  lockVertScroll = "false";
-                  constantThumbHeight = "0";
-                  childMargin = "0 0";
-                  docking = "client";
-
-                  new GuiStackControl(GuiEditorToolbox) {
-                     StackingType = "Vertical";
-                     HorizStacking = "Left to Right";
-                     VertStacking = "Top to Bottom";
-                     Padding = "2";
-                     DynamicSize = "1";
-                     ChangeChildSizeToFit = "1";
-                     ChangeChildPosition = "1";
-                     isContainer = "1";
-                     Profile = "ToolsGuiDefaultProfile";
-                     HorizSizing = "width";
-                     VertSizing = "bottom";
-                     position = "3 3";
-                     Extent = "419 10008";
-                     MinExtent = "16 16";
-                     canSave = "1";
-                     Visible = "1";
-                     tooltipprofile = "ToolsGuiToolTipProfile";
-                     hovertime = "1000";
-                     canSaveDynamicFields = "0";
-                  };
-               };
-            };
-         
             new GuiTabPageCtrl() {
                fitBook = "1";
                text = "Profiles";
@@ -1164,6 +1099,7 @@
                   new GuiPanel() {
                      position = "0 0";
                      extent = "222 337";
+                     Profile = "ToolsGuiPaneProfile";
                      
                      new GuiTextEditCtrl( GuiEditorProfilesTreeFilter ) {
                         position = "2 4";
@@ -1176,7 +1112,7 @@
                      };
                      
                      new GuiBitmapButtonCtrl() {
-                        bitmap = "tools/gui/images/clear-icon";
+                        bitmapAsset = "ToolsModule:clear_icon_n_image";
                         groupNum = "-1";
                         buttonType = "PushButton";
                         useMouseEvents = "0";
@@ -1299,7 +1235,7 @@
                         canSaveDynamicFields = "0";
                      };
                      new GuiBitmapButtonCtrl() {
-                        bitmap = "tools/gui/images/save-icon";
+                        bitmapAsset = "ToolsModule:save_icon_n_image";
                         groupNum = "-1";
                         buttonType = "PushButton";
                         useMouseEvents = "0";
@@ -1319,7 +1255,7 @@
                         canSaveDynamicFields = "0";
                      };
                      new GuiBitmapButtonCtrl() {
-                        bitmap = "tools/gui/images/save-as";
+                        bitmapAsset = "ToolsModule:save_as_n_image";
                         groupNum = "-1";
                         buttonType = "PushButton";
                         useMouseEvents = "0";
@@ -1401,7 +1337,7 @@
                         Profile = "GuiInspectorFieldInfoMLTextProfile";
                         HorizSizing = "width";
                         VertSizing = "top";
-                        position = "0 349";
+                        position = "8" SPC getWord(GuiEditorSidebar.extent, 1) - 38;
                         Extent = "213 13";
                         MinExtent = "8 2";
                         canSave = "1";
@@ -1416,7 +1352,7 @@
          };
 
          new GuiBitmapButtonCtrl() {
-            bitmap = "tools/gui/images/delete";
+            bitmapAsset = "ToolsModule:reset_icon_n_image";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
@@ -1435,7 +1371,7 @@
             canSaveDynamicFields = "0";
          };
          new GuiBitmapButtonCtrl() {
-            bitmap = "tools/gui/images/delete";
+            bitmapAsset = "ToolsModule:copy_btn_n_image";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
@@ -1454,7 +1390,7 @@
             canSaveDynamicFields = "0";
          };
          new GuiBitmapButtonCtrl() {
-            bitmap = "tools/gui/images/delete";
+            bitmapAsset = "ToolsModule:iconNew_image";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
@@ -1473,7 +1409,7 @@
             canSaveDynamicFields = "0";
          };
          new GuiBitmapButtonCtrl() {
-            bitmap = "tools/gui/images/delete";
+            bitmapAsset = "ToolsModule:delete_n_image";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";

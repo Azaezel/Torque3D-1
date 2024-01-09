@@ -60,6 +60,7 @@ DefineEngineStaticMethod( TerrainBlock, createNew, S32, (String terrainName, U32
    if( !terrain->setFile( terrFileName ) )
    {
       Con::errorf( "TerrainBlock::createNew - error creating '%s'", terrFileName.c_str() );
+      delete terrain;
       return 0;
    }
    
@@ -117,7 +118,7 @@ DefineEngineStaticMethod( TerrainBlock, createNew, S32, (String terrainName, U32
    return terrain->getId();
 }
 
-DefineEngineStaticMethod( TerrainBlock, import, S32, (String terrainName, String heightMapFile, F32 metersPerPixel, F32 heightScale, String opacityLayerFiles, String materialsStr, bool flipYAxis), (true),
+DefineEngineStaticMethod( TerrainBlock, import, S32, (S32 terrainObjectId, String heightMapFile, F32 metersPerPixel, F32 heightScale, String opacityLayerFiles, String materialsStr, bool flipYAxis), (true),
    "" )
 {
    // First load the height map and validate it.
@@ -237,13 +238,12 @@ DefineEngineStaticMethod( TerrainBlock, import, S32, (String terrainName, String
    }
 
    // Do we have an existing terrain with that name... then update it!
-   TerrainBlock *terrain = dynamic_cast<TerrainBlock*>( Sim::findObject( terrainName.c_str() ) );
+   TerrainBlock *terrain = dynamic_cast<TerrainBlock*>( Sim::findObject( terrainObjectId ) );
    if ( terrain )
       terrain->import( (*heightmap), heightScale, metersPerPixel, layerMap, materials, flipYAxis );
    else
    {
       terrain = new TerrainBlock();
-      terrain->assignName( terrainName );
       terrain->import( (*heightmap), heightScale, metersPerPixel, layerMap, materials, flipYAxis );
       terrain->registerObject();
 

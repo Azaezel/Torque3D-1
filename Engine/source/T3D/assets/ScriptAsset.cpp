@@ -40,6 +40,7 @@
 #endif
 
 // Debug Profiling.
+#include "console/script.h"
 #include "platform/profiler.h"
 
 //-----------------------------------------------------------------------------
@@ -89,6 +90,15 @@ ConsoleSetType(TypeScriptAssetPtr)
 
 //-----------------------------------------------------------------------------
 
+IMPLEMENT_CALLBACK(ScriptAsset, onInitializeAsset, void, (), (),
+   "@brief When the ScriptAsset is initialized(loaded) by the AssetManager.\n\n");
+
+IMPLEMENT_CALLBACK(ScriptAsset, onRefreshAsset, void, (), (),
+   "@brief When the ScriptAsset is refreshed by the AssetManager.\n\n");
+
+IMPLEMENT_CALLBACK(ScriptAsset, onUnloadAsset, void, (), (),
+   "@brief When the ScriptAsset is unloaded by the AssetManager.\n\n");
+
 ScriptAsset::ScriptAsset() : AssetBase(), mIsServerSide(true)
 {
    mScriptFile = StringTable->EmptyString();
@@ -105,6 +115,7 @@ ScriptAsset::~ScriptAsset()
 
 void ScriptAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -122,9 +133,15 @@ void ScriptAsset::copyTo(SimObject* object)
 
 void ScriptAsset::initializeAsset()
 {
-   mScriptPath = expandAssetFilePath(mScriptFile);
+   if (mpAssetDefinition->mAssetType != StringTable->insert("ScriptAsset"))
+   {
+      //if we've got a custom type, treat it as our namespace, too
+      setClassNamespace(mpAssetDefinition->mAssetType);
+   }
 
-   if (Platform::isFile(mScriptPath))
+   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
+
+   if (Con::isScriptFile(mScriptPath))
    {
       //We're initialized properly, so we'll go ahead and kick along any dependencies we may have as well
       AssetManager::typeAssetDependsOnHash::Iterator assetDependenciesItr = mpOwningAssetManager->getDependedOnAssets()->find(mpAssetDefinition->mAssetId);
@@ -137,7 +154,7 @@ void ScriptAsset::initializeAsset()
          {
             AssetPtr<ScriptAsset> scriptAsset = assetDependenciesItr->value;
 
-            mScriptAssets.push_front(scriptAsset);
+            mScriptAssetDependencies.push_front(scriptAsset);
 
             // Next dependency.
             assetDependenciesItr++;
@@ -146,22 +163,31 @@ void ScriptAsset::initializeAsset()
 
       Con::executeFile(mScriptPath, false, false);
    }
+
+   onInitializeAsset_callback();
 }
 
 void ScriptAsset::onAssetRefresh()
 {
-   mScriptPath = expandAssetFilePath(mScriptFile);
+   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
 
-   if (Platform::isFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
    {
       //Refresh any dependencies we may have
-      for (U32 i = 0; i < mScriptAssets.size(); i++)
+      for (U32 i = 0; i < mScriptAssetDependencies.size(); i++)
       {
-         mScriptAssets[i]->onAssetRefresh();
+         mScriptAssetDependencies[i]->onAssetRefresh();
       }
 
       Con::executeFile(mScriptPath, false, false);
    }
+
+   onRefreshAsset_callback();
+}
+
+void ScriptAsset::unloadAsset()
+{
+   onUnloadAsset_callback();
 }
 
 void ScriptAsset::setScriptFile(const char* pScriptFile)
@@ -170,14 +196,14 @@ void ScriptAsset::setScriptFile(const char* pScriptFile)
    AssertFatal(pScriptFile != NULL, "Cannot use a NULL script file.");
 
    // Fetch image file.
-   pScriptFile = StringTable->insert(pScriptFile);
+   pScriptFile = StringTable->insert(pScriptFile, true);
 
    // Ignore no change,
    if (pScriptFile == mScriptFile)
       return;
 
    // Update.
-   mScriptFile = StringTable->insert(pScriptFile);
+   mScriptFile = getOwned() ? expandAssetFilePath(pScriptFile) : pScriptFile;
 
    // Refresh the asset.
    refreshAsset();
@@ -190,17 +216,12 @@ bool ScriptAsset::execScript()
    if (handle)
       return true;
 
-   return false;
-
-   if (Platform::isFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
    {
       return Con::executeFile(mScriptPath, false, false);
    }
-   else
-   {
-      Con::errorf("ScriptAsset:execScript() - Script asset must have a valid file to exec");
-      return false;
-   }
+   Con::errorf("ScriptAsset:execScript() - Script asset must have a valid file to exec");
+   return false;
 }
 
 DefineEngineMethod(ScriptAsset, execScript, bool, (), ,
@@ -209,3 +230,4 @@ DefineEngineMethod(ScriptAsset, execScript, bool, (), ,
 {
    return object->execScript();
 }
+

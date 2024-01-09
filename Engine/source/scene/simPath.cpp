@@ -171,6 +171,7 @@ Path::~Path()
 //--------------------------------------------------------------------------
 void Path::initPersistFields()
 {
+   docsURL;
    addField("isLooping",   TypeBool, Offset(mIsLooping, Path), "If this is true, the loop is closed, otherwise it is open.\n");
    addField("Speed",   TypeF32, Offset(mPathSpeed, Path), "Speed.\n");
    addProtectedField("mPathShape", TYPEID< PathShapeData >(), Offset(mDataBlock, Path),
@@ -248,8 +249,7 @@ void Path::updatePath()
       }
    }
 
-   // DMMTODO: Looping paths.
-   gServerPathManager->updatePath(mPathIndex, positions, rotations, times, smoothingTypes);
+   gServerPathManager->updatePath(mPathIndex, positions, rotations, times, smoothingTypes, mIsLooping);
 }
 
 void Path::addObject(SimObject* obj)
@@ -390,7 +390,7 @@ Marker::Marker()
    mNetFlags.clear(Ghostable);
 
    mTypeMask |= MarkerObjectType;
-
+   mHitCommand = String::EmptyString;
    mSeqNum   = 0;
    mMSToNext = 1000;
    mSmoothingType = SmoothingTypeSpline;
@@ -422,8 +422,10 @@ EndImplementEnumType;
 
 void Marker::initPersistFields()
 {
+   docsURL;
    addGroup( "Misc" );
    addField("seqNum",   TypeS32, Offset(mSeqNum,   Marker), "Marker position in sequence of markers on this path.\n");
+   addField("hitCommand", TypeCommand, Offset(mHitCommand, Marker), "The command to execute when a path follower reaches this marker.");
    addField("type", TYPEID< KnotType >(), Offset(mKnotType, Marker), "Type of this marker/knot. A \"normal\" knot will have a smooth camera translation/rotation effect.\n\"Position Only\" will do the same for translations, leaving rotation un-touched.\nLastly, a \"Kink\" means the rotation will take effect immediately for an abrupt rotation change.\n");
    addField("msToNext", TypeS32, Offset(mMSToNext, Marker), "Milliseconds to next marker in sequence.\n");
    addField("smoothingType", TYPEID< SmoothingType >(), Offset(mSmoothingType, Marker), "Path smoothing at this marker/knot. \"Linear\" means no smoothing, while \"Spline\" means to smooth.\n");

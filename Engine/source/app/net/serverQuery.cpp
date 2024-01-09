@@ -107,6 +107,7 @@
 #include "sim/netInterface.h"
 
 // cafTODO: breaks T2D
+#include "console/script.h"
 #include "T3D/gameBase/gameConnection.h"
 
 // This is basically the server query protocol version now:
@@ -508,14 +509,14 @@ void queryMasterServer(U8 flags, const char* gameType, const char* missionType,
       sActiveFilter.type = ServerFilter::Normal;
 
       // Update the active filter:
-      if ( !sActiveFilter.gameType || dStrcmp( sActiveFilter.gameType, gameType ) != 0 )
+      if ( !sActiveFilter.gameType || String::compare( sActiveFilter.gameType, gameType ) != 0 )
       {
          dsize_t gameTypeLen = dStrlen(gameType) + 1;
          sActiveFilter.gameType = (char*) dRealloc( sActiveFilter.gameType, gameTypeLen );
          dStrcpy( sActiveFilter.gameType, gameType, gameTypeLen );
       }
 
-      if ( !sActiveFilter.missionType || dStrcmp( sActiveFilter.missionType, missionType ) != 0 )
+      if ( !sActiveFilter.missionType || String::compare( sActiveFilter.missionType, missionType ) != 0 )
       {
          dsize_t missionTypeLen = dStrlen(missionType) + 1;
          sActiveFilter.missionType = (char*) dRealloc( sActiveFilter.missionType, missionTypeLen );
@@ -1855,7 +1856,7 @@ static void handleGamePingResponse( const NetAddress* address, BitStream* stream
    // Verify the version:
    char buf[256];
    stream->readString( buf );
-   if ( dStrcmp( buf, versionString ) != 0 )
+   if ( String::compare( buf, versionString ) != 0 )
    {
       // Version is different, so remove it from consideration:
       Con::printf( "Server %s is a different version.", addrString );
@@ -2020,7 +2021,7 @@ static void handleGameInfoRequest( const NetAddress* address, U32 key, U8 flags 
          out->writeString( Con::getVariable( "pref::Server::Info" ) );
       else
          writeCString( out, Con::getVariable( "pref::Server::Info" ) );
-      writeLongCString( out, Con::evaluate( "onServerInfoQuery();" ) );
+      writeLongCString( out, Con::executef( "onServerInfoQuery" ) );
 
       BitStream::sendPacketStream(address);
    }
@@ -2070,7 +2071,7 @@ static void handleGameInfoResponse( const NetAddress* address, BitStream* stream
 
    // Get the mission type:
    stream->readString( stringBuf );
-   if ( !si->missionType || dStrcmp( si->missionType, stringBuf ) != 0 )
+   if ( !si->missionType || String::compare( si->missionType, stringBuf ) != 0 )
    {
       dsize_t missionTypeLen = dStrlen(stringBuf) + 1;
       si->missionType = (char*) dRealloc( (void*) si->missionType, missionTypeLen );
@@ -2092,7 +2093,7 @@ static void handleGameInfoResponse( const NetAddress* address, BitStream* stream
    char* temp = dStrstr( static_cast<char*>( stringBuf ), const_cast<char*>( ".mis" ) );
    if ( temp )
       *temp = '\0';
-   if ( !si->missionName || dStrcmp( si->missionName, stringBuf ) != 0 )
+   if ( !si->missionName || String::compare( si->missionName, stringBuf ) != 0 )
    {
       dsize_t missionNameLen = dStrlen(stringBuf) + 1;
       si->missionName = (char*) dRealloc( (void*) si->missionName, missionNameLen );
@@ -2162,7 +2163,7 @@ static void handleGameInfoResponse( const NetAddress* address, BitStream* stream
 
    // Get the server info:
    stream->readString( stringBuf );
-   if ( !si->statusString || ( isUpdate && dStrcmp( si->statusString, stringBuf ) != 0 ) )
+   if ( !si->statusString || ( isUpdate && String::compare( si->statusString, stringBuf ) != 0 ) )
    {
       dsize_t infoLen = dStrlen(stringBuf) + 1;
       si->infoString = (char*) dRealloc( (void*) si->infoString, infoLen );
@@ -2171,7 +2172,7 @@ static void handleGameInfoResponse( const NetAddress* address, BitStream* stream
 
    // Get the content string:
    readLongCString( stream, stringBuf );
-   if ( !si->statusString || ( isUpdate && dStrcmp( si->statusString, stringBuf ) != 0 ) )
+   if ( !si->statusString || ( isUpdate && String::compare( si->statusString, stringBuf ) != 0 ) )
    {
       dsize_t statusLen = dStrlen(stringBuf) + 1;
       si->statusString = (char*) dRealloc( (void*) si->statusString, statusLen );

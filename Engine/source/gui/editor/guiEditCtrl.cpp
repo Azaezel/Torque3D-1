@@ -31,6 +31,7 @@
 #include "gui/containers/guiScrollCtrl.h"
 #include "core/strings/stringUnit.h"
 #include "console/engineAPI.h"
+#include "console/script.h"
 
 
 IMPLEMENT_CONOBJECT( GuiEditCtrl );
@@ -139,6 +140,7 @@ GuiEditCtrl::GuiEditCtrl()
 
 void GuiEditCtrl::initPersistFields()
 {
+   docsURL;
    addGroup( "Snapping" );
    addField( "snapToControls",      TypeBool,   Offset( mSnapToControls, GuiEditCtrl ),
       "If true, edge and center snapping will work against controls." );
@@ -2872,7 +2874,7 @@ class GuiEditorRuler : public GuiControl
       
       void onRender(Point2I offset, const RectI &updateRect)
       {
-         GFX->getDrawUtil()->drawRectFill(updateRect, ColorI::WHITE);
+         GFX->getDrawUtil()->drawRectFill(updateRect, ColorI::DARK);
          
          Point2I choffset(0,0);
          if( mRefCtrl != NULL )
@@ -2892,7 +2894,7 @@ class GuiEditorRuler : public GuiControl
                      start = 4;
                   if(!(pos % 100))
                      start = 1;
-                  GFX->getDrawUtil()->drawLine(x, offset.y + start, x, offset.y + 10, ColorI::BLACK);
+                  GFX->getDrawUtil()->drawLine(x, offset.y + start, x, offset.y + 10, ColorI::LIGHT);
                }
             }
          }
@@ -2910,7 +2912,7 @@ class GuiEditorRuler : public GuiControl
                      start = 4;
                   if(!(pos % 100))
                      start = 1;
-                  GFX->getDrawUtil()->drawLine(offset.x + start, y, offset.x + 10, y, ColorI::BLACK);
+                  GFX->getDrawUtil()->drawLine(offset.x + start, y, offset.x + 10, y, ColorI::LIGHT);
                }
             }
          }

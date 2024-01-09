@@ -76,7 +76,7 @@ class WorldEditor : public EditTSCtrl
          Point3F p2;
       };
 
-      void ignoreObjClass(U32 argc, ConsoleValueRef* argv);
+      void ignoreObjClass(U32 argc, ConsoleValue* argv);
       void clearIgnoreList();
 
       static bool setObjectsUseBoxCenter( void *object, const char *index, const char *data ) { static_cast<WorldEditor*>(object)->setObjectsUseBoxCenter( dAtob( data ) ); return false; };
@@ -327,9 +327,14 @@ class WorldEditor : public EditTSCtrl
       bool              mRenderPopupBackground;
       ColorI            mPopupBackgroundColor;
       ColorI            mPopupTextColor;
-      StringTableEntry  mSelectHandle;
-      StringTableEntry  mDefaultHandle;
-      StringTableEntry  mLockedHandle;
+
+      DECLARE_IMAGEASSET(WorldEditor, SelectHandle, onSelectHandleChanged, GFXStaticTextureSRGBProfile);
+      DECLARE_ASSET_SETGET(WorldEditor, SelectHandle);
+      DECLARE_IMAGEASSET(WorldEditor, DefaultHandle, onDefaultHandleChanged, GFXStaticTextureSRGBProfile);
+      DECLARE_ASSET_SETGET(WorldEditor, DefaultHandle);
+      DECLARE_IMAGEASSET(WorldEditor, LockedHandle, onLockedHandleChanged, GFXStaticTextureSRGBProfile);
+      DECLARE_ASSET_SETGET(WorldEditor, LockedHandle);
+
       ColorI            mObjectTextColor;
       bool              mObjectsUseBoxCenter;
       ColorI            mObjSelectColor;
@@ -420,6 +425,10 @@ class WorldEditor : public EditTSCtrl
 
       void setEditorTool(EditorTool*);
       EditorTool* getActiveEditorTool() { return mActiveEditorTool; }
+
+      void onSelectHandleChanged() {}
+      void onDefaultHandleChanged() {}
+      void onLockedHandleChanged() {}
 };
 
 typedef WorldEditor::DropType WorldEditorDropType;

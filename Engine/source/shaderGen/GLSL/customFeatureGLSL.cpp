@@ -184,7 +184,7 @@ void CustomFeatureGLSL::addVariable(String name, String type, String defaultValu
 void CustomFeatureGLSL::addConnector(String name, String type, String elementName)
 {
    // grab connector texcoord register
-   ShaderConnector* connectComp = dynamic_cast<ShaderConnector*>(mComponentList[C_CONNECTOR]);
+   //ShaderConnector* connectComp = dynamic_cast<ShaderConnector*>(mComponentList[C_CONNECTOR]);
 
    //Get element
    S32 element = -1;
@@ -238,7 +238,7 @@ void CustomFeatureGLSL::addVertTexCoord(String name)
    mVars.push_back(newVarHolder);
 }
 
-void CustomFeatureGLSL::writeLine(String format, S32 argc, ConsoleValueRef * argv)
+void CustomFeatureGLSL::writeLine(String format, S32 argc, ConsoleValue * argv)
 {
    //do the var/arg fetching here
    Vector<Var*> varList;
@@ -246,7 +246,7 @@ void CustomFeatureGLSL::writeLine(String format, S32 argc, ConsoleValueRef * arg
 
    for (U32 i = 0; i < argc; i++)
    {
-      String varName = argv[i].getStringValue();
+      String varName = argv[i].getString();
       Var* newVar = (Var*)LangElement::find(varName.c_str());
       if (!newVar)
       {
@@ -304,7 +304,7 @@ void CustomFeatureGLSL::writeLine(String format, S32 argc, ConsoleValueRef * arg
          if (!newVar)
          {
             //couldn't find that variable, bail out
-            Con::errorf("CustomShaderFeature::writeLine: unable to find variable %s, meaning it was not declared before being used!", argv[i].getStringValue());
+            Con::errorf("CustomShaderFeature::writeLine: unable to find variable %s, meaning it was not declared before being used!", argv[i].getString());
             return;
          }
       }

@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiContainer(EWToolsToolbar) {
+$guiContent = new GuiContainer(EWToolsToolbar) {
    canSaveDynamicFields = "0";
    Enabled = "0";
    internalName = "ToolsToolbar";
@@ -7,7 +7,7 @@
    Profile = "ToolsMenubarProfile";
    HorizSizing = "right";
    VertSizing = "bottom";
-   Position = "0 31";
+   Position = "0 38";
    Extent = "0 33";
    MinExtent = "8 2";
    canSave = "1";
@@ -15,7 +15,7 @@
    hovertime = "1000";
    isClosed = "0";
    isDynamic = "0";
-  
+   
    new GuiDynamicCtrlArrayControl(ToolsToolbarArray) {
       canSaveDynamicFields = "0";
       Enabled = "1";
@@ -54,7 +54,7 @@
       hovertime = "750";
       buttonType = "PushButton";
       useMouseEvents = "0";
-      bitmap = "tools/gui/images/collapse-toolbar";
+      bitmapAsset = "ToolsModule:collapse_toolbar_n_image";
    };
    new GuiDecoyCtrl(EWToolsToolbarDecoy) {
       profile = "ToolsGuiDefaultProfile";

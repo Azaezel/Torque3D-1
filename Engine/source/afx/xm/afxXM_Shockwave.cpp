@@ -58,7 +58,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_ShockwaveData);
-  DECLARE_CATEGORY("AFX");
 };
 
 class afxConstraint;
@@ -103,6 +102,7 @@ afxXM_ShockwaveData::afxXM_ShockwaveData(const afxXM_ShockwaveData& other, bool 
 
 void afxXM_ShockwaveData::initPersistFields()
 {
+   docsURL;
   addField("rate",      TypeF32,      Offset(rate, afxXM_ShockwaveData),
     "...");
   addField("aimZOnly",  TypeBool,     Offset(aim_z_only, afxXM_ShockwaveData),

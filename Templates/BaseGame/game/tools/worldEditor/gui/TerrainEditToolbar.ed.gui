@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(EWTerrainEditToolbar,EditorGuiGroup) {
+$guiContent = new GuiControl(EWTerrainEditToolbar,EditorGuiGroup) {
    canSaveDynamicFields = "0";
    internalName = "TerrainEditToolbar";
    Enabled = "1";
@@ -18,7 +18,7 @@
       profile = "ToolsGuiTextProfile";
       horizSizing = "right";
       vertSizing = "bottom";
-      position = "6 7";
+      position = "6 4";
       extent = "70 16";
       minExtent = "8 8";
       visible = "1";
@@ -44,7 +44,7 @@
       new GuiControl(EWTerrainEditToolbarBrushType){
          isContainer = "1";
          profile = "ToolsGuiDefaultProfile";
-         Position = "83 2";
+         Position = "83 0";
          Extent = "94 27";
          
          new GuiBitmapButtonCtrl() {
@@ -67,7 +67,7 @@
             groupNum = "0";
             buttonType = "RadioButton";
             useMouseEvents = "0";
-            bitmap = "tools/worldEditor/images/circleBrush";
+            bitmapAsset = "ToolsModule:circleBrush_n_image";
          };
          new GuiBitmapButtonCtrl() {
             canSaveDynamicFields = "0";
@@ -89,7 +89,7 @@
             groupNum = "0";
             buttonType = "RadioButton";
             useMouseEvents = "0";
-            bitmap = "tools/worldEditor/images/boxBrush";
+            bitmapAsset = "ToolsModule:boxBrush_n_image";
          };
          
          /*
@@ -113,19 +113,19 @@
             groupNum = "0";
             buttonType = "RadioButton";
             useMouseEvents = "0";
-            bitmap = "tools/worldEditor/images/maskBrush";
+            bitmapAsset = "ToolsModule:maskBrush_n_image";
          };
          */
       };
-      
-  new GuiBitmapCtrl() {
-      Enabled = "1";
-      Profile = "ToolsGuiDefaultProfile";
-      position = "152 3";
-      Extent = "2 26";
-      MinExtent = "1 1";
-      bitmap = "tools/gui/images/separator-h.png";
-   };
+            
+     new GuiBitmapCtrl() {
+         Enabled = "1";
+         Profile = "ToolsGuiDefaultProfile";
+         position = "152 0";
+         Extent = "2 26";
+         MinExtent = "1 1";
+         bitmapAsset = "ToolsModule:separator_h_image";
+      };
      
       new GuiControl(TerrainBrushSizeTextEditContainer) {
          canSaveDynamicFields = "0";
@@ -133,7 +133,7 @@
          Profile = "ToolsGuiTransparentProfile";
          HorizSizing = "right";
          VertSizing = "bottom";
-         position = "145 5";
+         position = "145 2";
          Extent = "120 50";
          MinExtent = "8 2";
          canSave = "1";
@@ -203,16 +203,17 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };
+      
       new GuiBitmapCtrl() {
-      Enabled = "1";
-      Profile = "ToolsGuiDefaultProfile";
-      position = "272 3";
-      Extent = "2 26";
-      MinExtent = "1 1";
-      bitmap = "tools/gui/images/separator-h.png";
+         Enabled = "1";
+         Profile = "ToolsGuiDefaultProfile";
+         position = "272 0";
+         Extent = "2 26";
+         MinExtent = "1 1";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
             
       new GuiControl(TerrainBrushPressureTextEditContainer) {
@@ -221,7 +222,7 @@
          Profile = "ToolsGuiTransparentProfile";
          HorizSizing = "right";
          VertSizing = "bottom";
-         position = "287 5";
+         position = "287 2";
          Extent = "120 50";
          MinExtent = "8 2";
          canSave = "1";
@@ -290,16 +291,17 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };
+      
       new GuiBitmapCtrl() {
          Enabled = "1";
          Profile = "ToolsGuiDefaultProfile";
-         position = "412 3";
+         position = "412 0";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
 
       new GuiControl(TerrainBrushSoftnessTextEditContainer) {
@@ -308,7 +310,7 @@
          Profile = "ToolsGuiTransparentProfile";
          HorizSizing = "right";
          VertSizing = "bottom";
-         position = "429 5";
+         position = "429 2";
          Extent = "120 50";
          MinExtent = "8 2";
          canSave = "1";
@@ -377,7 +379,7 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };
 
@@ -388,7 +390,7 @@
          Profile = "ToolsGuiDefaultProfile";
          HorizSizing = "right";
          VertSizing = "bottom";
-         Position = "547 3";
+         Position = "547 0";
          Extent = "29 27";
          MinExtent = "8 2";
          canSave = "1";
@@ -400,16 +402,16 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         bitmap = "tools/worldEditor/images/softCurve";
+         bitmapAsset = "ToolsModule:softCurve_n_image";
       };
 
       new GuiBitmapCtrl() {
          Enabled = "1";
          Profile = "ToolsGuiDefaultProfile";
-         position = "589 3";
+         position = "589 0";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
 
       new GuiControl(TerrainSetHeightTextEditContainer) {
@@ -418,7 +420,7 @@
          Profile = "ToolsGuiTransparentProfile";
          HorizSizing = "right";
          VertSizing = "bottom";
-         position = "605 5";
+         position = "605 2";
          Extent = "120 50";
          MinExtent = "8 2";
          canSave = "1";
@@ -487,7 +489,7 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };
    };
@@ -510,8 +512,8 @@ new GuiMouseEventCtrl(TerrainBrushSizeSliderCtrlContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(TerrainBrushSizeTextEditContainer.position) + firstWord(EWTerrainEditToolbar.position)+11 SPC 
-         (getWord(TerrainBrushSizeTextEditContainer, 1)) + 25;
+      position = TerrainBrushSizeTextEditContainer.position.x + EWTerrainEditToolbar.position.x + 50 SPC 
+         TerrainBrushSizeTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";
@@ -540,8 +542,8 @@ new GuiMouseEventCtrl(TerrainBrushPressureSliderCtrlContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(TerrainBrushPressureTextEditContainer.position) + firstWord(EWTerrainEditToolbar.position) SPC 
-         (getWord(TerrainBrushPressureTextEditContainer, 1)) + 25;
+      position = TerrainBrushPressureTextEditContainer.position.x + EWTerrainEditToolbar.position.x + 50 SPC 
+         TerrainBrushPressureTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";
@@ -570,8 +572,8 @@ new GuiMouseEventCtrl(TerrainBrushSoftnessSliderCtrlContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(TerrainBrushSoftnessTextEditContainer.position) + firstWord(EWTerrainEditToolbar.position) SPC 
-         (getWord(TerrainBrushSoftnessTextEditContainer, 1)) + 25;
+      position = TerrainBrushSoftnessTextEditContainer.position.x + EWTerrainEditToolbar.position.x + 50 SPC 
+         TerrainBrushSoftnessTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";
@@ -600,8 +602,8 @@ new GuiMouseEventCtrl(TerrainSetHeightSliderCtrlContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(TerrainSetHeightTextEditContainer.position) + firstWord(EWTerrainEditToolbar.position) SPC 
-         (getWord(TerrainSetHeightTextEditContainer, 1)) + 25;
+      position = TerrainSetHeightTextEditContainer.position.x + EWTerrainEditToolbar.position.x SPC 
+         TerrainSetHeightTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";

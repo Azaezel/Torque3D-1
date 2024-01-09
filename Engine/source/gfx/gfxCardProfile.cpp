@@ -25,6 +25,7 @@
 
 #include "console/console.h"
 #include "console/engineAPI.h"
+#include "console/script.h"
 #include "core/volume.h"
 
 // NOTE: The script class docs are in 
@@ -46,7 +47,7 @@ void GFXCardProfiler::loadProfileScript(const char* aScriptName)
 
    if(data == NULL)
    {
-#if TORQUE_DEBUG
+#ifdef TORQUE_DEBUG
       Con::warnf("      - No card profile %s exists", scriptName.c_str());
 #endif
       return;
@@ -54,7 +55,7 @@ void GFXCardProfiler::loadProfileScript(const char* aScriptName)
 
    const char  *script = static_cast<const char *>(data);
 
-#if TORQUE_DEBUG
+#ifdef TORQUE_DEBUG
    Con::printf("      - Loaded card profile %s", scriptName.c_str());
 #endif
 
@@ -64,16 +65,16 @@ void GFXCardProfiler::loadProfileScript(const char* aScriptName)
 
 void GFXCardProfiler::loadProfileScripts(const String& render, const String& vendor, const String& card, const String& version)
 {
-   String script = render + ".cs";
+   String script = render + "." TORQUE_SCRIPT_EXTENSION;
    loadProfileScript(script);
 
-   script = render + "." + vendor + ".cs";
+   script = render + "." + vendor + "." TORQUE_SCRIPT_EXTENSION;
    loadProfileScript(script);
 
-   script = render + "." + vendor + "." + card + ".cs";
+   script = render + "." + vendor + "." + card + "." TORQUE_SCRIPT_EXTENSION;
    loadProfileScript(script);
 
-   script = render + "." + vendor + "." + card + "." + version + ".cs";
+   script = render + "." + vendor + "." + card + "." + version + "." TORQUE_SCRIPT_EXTENSION;
    loadProfileScript(script);
 }
 

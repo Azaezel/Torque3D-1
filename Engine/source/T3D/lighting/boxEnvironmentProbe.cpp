@@ -77,7 +77,7 @@ ConsoleDocClass(BoxEnvironmentProbe,
 BoxEnvironmentProbe::BoxEnvironmentProbe() : ReflectionProbe()
 {
    mCaptureMask = REFLECTION_PROBE_CAPTURE_TYPEMASK;
-   mProbeShapeType = ProbeRenderInst::Box;
+   mProbeShapeType = ProbeInfo::Box;
    mAtten = 0.0;
 }
 
@@ -90,6 +90,7 @@ BoxEnvironmentProbe::~BoxEnvironmentProbe()
 //-----------------------------------------------------------------------------
 void BoxEnvironmentProbe::initPersistFields()
 {
+   docsURL;
    // SceneObject already handles exposing the transform
    Parent::initPersistFields();
 
@@ -158,11 +159,8 @@ void BoxEnvironmentProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
 
 void BoxEnvironmentProbe::updateProbeParams()
 {
-   if (!mProbeInfo)
-      return;
-
-   mProbeShapeType = ProbeRenderInst::Box;
-   mProbeInfo->mAtten = mAtten;
+   mProbeShapeType = ProbeInfo::Box;
+   mProbeInfo.mAtten = mAtten;
 
    Parent::updateProbeParams();
 }

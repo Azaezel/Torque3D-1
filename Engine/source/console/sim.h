@@ -107,6 +107,8 @@ namespace Sim
    DeclareNamedSet(SFXAmbienceSet);
    DeclareNamedSet(TerrainMaterialSet);
    DeclareNamedSet(DataBlockSet);
+   DeclareNamedSet(ForestBrushSet);
+   DeclareNamedSet(ForestItemDataSet);
    DeclareNamedGroup(ActionMapGroup)
    DeclareNamedGroup(ClientGroup)
    DeclareNamedGroup(GuiGroup)
@@ -125,21 +127,28 @@ namespace Sim
    SimDataBlockGroup *getDataBlockGroup();
    SimGroup* getRootGroup();
 
-   SimObject* findObject(ConsoleValueRef&);
    SimObject* findObject(SimObjectId);
+   SimObject* findObject(const ConsoleValue&);
+   SimObject* findObject(ConsoleValue*);
    SimObject* findObject(const char* name);
    SimObject* findObject(const char* fileName, S32 declarationLine);
-   template<class T> inline bool findObject(ConsoleValueRef &ref,T*&t)
+
+   inline SimObject* findObject(const String& name)
    {
-      t = dynamic_cast<T*>(findObject(ref));
-      return t != NULL;
+      return findObject(name.c_str());
    }
+
    template<class T> inline bool findObject(SimObjectId iD,T*&t)
    {
       t = dynamic_cast<T*>(findObject(iD));
       return t != NULL;
    }
    template<class T> inline bool findObject(const char *objectName,T*&t)
+   {
+      t = dynamic_cast<T*>(findObject(objectName));
+      return t != NULL;
+   }
+   template<class T> inline bool findObject(const String& objectName, T*& t)
    {
       t = dynamic_cast<T*>(findObject(objectName));
       return t != NULL;

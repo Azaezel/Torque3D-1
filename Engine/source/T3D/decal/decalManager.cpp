@@ -87,6 +87,7 @@ const U32 DecalManager::smMaxIndices = 10000;
 DecalManager *gDecalManager = NULL;
 
 IMPLEMENT_CONOBJECT(DecalManager);
+DECLARE_CATEGORY("UNLISTED");
 
 ConsoleDoc(
    "@defgroup Decals\n"
@@ -186,7 +187,7 @@ S32 QSORT_CALLBACK cmpDecalRenderOrder( const void *p1, const void *p2 )
 
       if ( (*pd2)->mFlags & SaveDecal )
       {
-         S32 id = ( (*pd1)->mDataBlock->getMaterial()->getId() - (*pd2)->mDataBlock->getMaterial()->getId() );      
+         S32 id = ( (*pd1)->mDataBlock->getMaterialDefinition()->getId() - (*pd2)->mDataBlock->getMaterialDefinition()->getId() );
          if ( id != 0 )
             return id;
 
@@ -1225,7 +1226,7 @@ void DecalManager::prepRenderImage( SceneRenderState* state )
    {
       DecalInstance *decal = mDecalQueue[i];      
       DecalData *data = decal->mDataBlock;
-      Material *mat = data->getMaterial();
+      Material *mat = data->getMaterialDefinition();
 
       if ( currentBatch == NULL )
       {
@@ -1425,6 +1426,7 @@ void DecalManager::prepRenderImage( SceneRenderState* state )
       ri->prim->numPrimitives = currentBatch->iCount / 3;
       ri->prim->startVertex = 0;
       ri->prim->numVertices = currentBatch->vCount;
+      ri->translucentSort = !currentBatch->matInst->getMaterial()->isTranslucent();
 
       // Ugly hack for ProjectedShadow!
       if ( customTex )

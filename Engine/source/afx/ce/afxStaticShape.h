@@ -54,7 +54,6 @@ public:
   static void initPersistFields();
 
   DECLARE_CONOBJECT(afxStaticShapeData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
@@ -86,11 +85,11 @@ public:
   virtual U32           packUpdate(NetConnection*, U32, BitStream*);
   virtual void          unpackUpdate(NetConnection*, BitStream*);
 
-  const char*           getShapeFileName() const { return mDataBlock->shapeName; }
+  const char*           getShapeFileName() const { return mDataBlock->mShapeAsset->getShapeFileName(); }
   void                  setVisibility(bool flag) { mIs_visible = flag; }
 
   DECLARE_CONOBJECT(afxStaticShape);
-  DECLARE_CATEGORY("AFX");
+  DECLARE_CATEGORY("UNLISTED");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//

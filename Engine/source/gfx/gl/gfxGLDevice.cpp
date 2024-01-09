@@ -22,6 +22,8 @@
 
 #include "platform/platform.h"
 #include "gfx/gl/gfxGLDevice.h"
+
+#include "gfxGLTextureArray.h"
 #include "platform/platformGL.h"
 
 #include "gfx/gfxCubemap.h"
@@ -48,6 +50,12 @@
 #include "gfx/gl/gfxGLVertexDecl.h"
 #include "shaderGen/shaderGen.h"
 #include "gfxGLUtils.h"
+
+#if defined(TORQUE_OS_WIN)
+#include "gfx/gl/tGL/tWGL.h"
+#elif defined(TORQUE_OS_LINUX)
+#include "gfx/gl/tGL/tXGL.h"
+#endif
 
 GFXAdapter::CreateDeviceInstanceDelegate GFXGLDevice::mCreateDeviceInstance(GFXGLDevice::createInstance); 
 
@@ -172,24 +180,33 @@ void GFXGLDevice::initGLState()
    }
 #endif
 
-   PlatformGL::setVSync(smDisableVSync ? 0 : 1);
+   PlatformGL::setVSync(smEnableVSync);
 
    //install vsync callback
    Con::NotifyDelegate clbk(this, &GFXGLDevice::vsyncCallback);
-   Con::addVariableNotify("$pref::Video::disableVerticalSync", clbk);
+   Con::addVariableNotify("$pref::Video::enableVerticalSync", clbk);
 
    //OpenGL 3 need a binded VAO for render
    GLuint vao;
    glGenVertexArrays(1, &vao);
    glBindVertexArray(vao);
 
+   // MacOS uses OGL 4.1. This workaround is functional, but will not provide the improvied depth performance.
+#if defined(__MACOSX__)
+   glDepthRangef(0.0, 1.0);
+#else
+   glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+#endif
    //enable sRGB
    glEnable(GL_FRAMEBUFFER_SRGB);
+
+   //enable seamless cubemapping
+   glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 void GFXGLDevice::vsyncCallback()
 {
-   PlatformGL::setVSync(smDisableVSync ? 0 : 1);
+   PlatformGL::setVSync(smEnableVSync);
 }
 
 GFXGLDevice::GFXGLDevice(U32 adapterIndex) :
@@ -232,11 +249,10 @@ GFXGLDevice::GFXGLDevice(U32 adapterIndex) :
    mTextureManager = new GFXGLTextureManager();
    gScreenShot = new ScreenShotGL();
 
-   for(U32 i = 0; i < TEXTURE_STAGE_COUNT; i++)
+   for(U32 i = 0; i < GFX_TEXTURE_STAGE_COUNT; i++)
       mActiveTextureType[i] = GL_ZERO;
 
    mNumVertexStream = 2;
-   mSupportsAnisotropic = false;
 
    for(int i = 0; i < GS_COUNT; ++i)
       mModelViewProjSC[i] = NULL;
@@ -258,7 +274,7 @@ GFXGLDevice::~GFXGLDevice()
       mVolatilePBs[i] = NULL;
 
    // Clear out our current texture references
-   for (U32 i = 0; i < TEXTURE_STAGE_COUNT; i++)
+   for (U32 i = 0; i < GFX_TEXTURE_STAGE_COUNT; i++)
    {
       mCurrentTexture[i] = NULL;
       mNewTexture[i] = NULL;
@@ -455,6 +471,13 @@ GFXCubemapArray *GFXGLDevice::createCubemapArray()
    GFXGLCubemapArray* cubeArray = new GFXGLCubemapArray();
    cubeArray->registerResourceWithDevice(this);
    return cubeArray;
+}
+
+GFXTextureArray* GFXGLDevice::createTextureArray()
+{
+   GFXGLTextureArray* textureArray = new GFXGLTextureArray();
+   textureArray->registerResourceWithDevice(this);
+   return textureArray;
 }
 
 void GFXGLDevice::endSceneInternal() 
@@ -702,21 +725,6 @@ void GFXGLDevice::setPB(GFXGLPrimitiveBuffer* pb)
    mCurrentPB = pb;
 }
 
-void GFXGLDevice::setLightInternal(U32 lightStage, const GFXLightInfo light, bool lightEnable)
-{
-   // ONLY NEEDED ON FFP
-}
-
-void GFXGLDevice::setLightMaterialInternal(const GFXLightMaterial mat)
-{
-   // ONLY NEEDED ON FFP
-}
-
-void GFXGLDevice::setGlobalAmbientInternal(LinearColorF color)
-{
-   // ONLY NEEDED ON FFP
-}
-
 void GFXGLDevice::setTextureInternal(U32 textureUnit, const GFXTextureObject*texture)
 {
    GFXGLTextureObject *tex = static_cast<GFXGLTextureObject*>(const_cast<GFXTextureObject*>(texture));
@@ -766,9 +774,20 @@ void GFXGLDevice::setCubemapArrayInternal(U32 textureUnit, const GFXGLCubemapArr
    }
 }
 
-void GFXGLDevice::setMatrix( GFXMatrixType mtype, const MatrixF &mat )
+void GFXGLDevice::setTextureArrayInternal(U32 textureUnit, const GFXGLTextureArray* texture)
 {
-   // ONLY NEEDED ON FFP
+   if (texture)
+   {
+      mActiveTextureType[textureUnit] = GL_TEXTURE_2D_ARRAY;
+      texture->bind(textureUnit);
+   }
+   else if (mActiveTextureType[textureUnit] != GL_ZERO)
+   {
+      glActiveTexture(GL_TEXTURE0 + textureUnit);
+      glBindTexture(mActiveTextureType[textureUnit], 0);
+      getOpenglCache()->setCacheBindedTex(textureUnit, mActiveTextureType[textureUnit], 0);
+      mActiveTextureType[textureUnit] = GL_ZERO;
+   }
 }
 
 void GFXGLDevice::setClipRect( const RectI &inRect )
@@ -781,39 +800,25 @@ void GFXGLDevice::setClipRect( const RectI &inRect )
    mClip = inRect;
    mClip.intersect(maxRect);
 
-   // Create projection matrix.  See http://www.opengl.org/documentation/specs/man_pages/hardcopy/GL/html/gl/ortho.html
-   const F32 left = mClip.point.x;
-   const F32 right = mClip.point.x + mClip.extent.x;
-   const F32 bottom = mClip.extent.y;
-   const F32 top = 0.0f;
-   const F32 nearPlane = 0.0f;
-   const F32 farPlane = 1.0f;
-   
-   const F32 tx = -(right + left)/(right - left);
-   const F32 ty = -(top + bottom)/(top - bottom);
-   const F32 tz = -(farPlane + nearPlane)/(farPlane - nearPlane);
-   
    static Point4F pt;
-   pt.set(2.0f / (right - left), 0.0f, 0.0f, 0.0f);
+   F32 l = F32(mClip.point.x);
+   F32 r = F32(mClip.point.x + mClip.extent.x);
+   F32 b = F32(mClip.point.y + mClip.extent.y);
+   F32 t = F32(mClip.point.y);
+   
+   // Set up projection matrix, 
+   //static Point4F pt;
+   pt.set(2.0f / (r - l), 0.0f, 0.0f, 0.0f);
    mProjectionMatrix.setColumn(0, pt);
    
-   pt.set(0.0f, 2.0f/(top - bottom), 0.0f, 0.0f);
+   pt.set(0.0f, 2.0f / (t - b), 0.0f, 0.0f);
    mProjectionMatrix.setColumn(1, pt);
    
-   pt.set(0.0f, 0.0f, -2.0f/(farPlane - nearPlane), 0.0f);
+   pt.set(0.0f, 0.0f, 1.0f, 0.0f);
    mProjectionMatrix.setColumn(2, pt);
    
-   pt.set(tx, ty, tz, 1.0f);
+   pt.set((l + r) / (l - r), (t + b) / (b - t), 1.0f, 1.0f);
    mProjectionMatrix.setColumn(3, pt);
-   
-   // Translate projection matrix.
-   static MatrixF translate(true);
-   pt.set(0.0f, -mClip.point.y, 0.0f, 1.0f);
-   translate.setColumn(3, pt);
-   
-   mProjectionMatrix *= translate;
-   
-   setMatrix(GFXMatrixProjection, mProjectionMatrix);
    
    MatrixF mTempMatrix(true);
    setViewMatrix( mTempMatrix );
@@ -930,7 +935,7 @@ void GFXGLDevice::setupGenericShaders( GenericShaderType type )
 }
 GFXShader* GFXGLDevice::createShader()
 {
-   GFXGLShader* shader = new GFXGLShader();
+   GFXGLShader* shader = new GFXGLShader(this);
    shader->registerResourceWithDevice( this );
    return shader;
 }
@@ -960,7 +965,7 @@ void GFXGLDevice::setShaderConstBufferInternal(GFXShaderConstBuffer* buffer)
 
 U32 GFXGLDevice::getNumSamplers() const
 {
-   return getMin((U32)TEXTURE_STAGE_COUNT,mPixelShaderVersion > 0.001f ? mMaxShaderTextures : mMaxFFTextures);
+   return getMin((U32)GFX_TEXTURE_STAGE_COUNT,mPixelShaderVersion > 0.001f ? mMaxShaderTextures : mMaxFFTextures);
 }
 
 GFXTextureObject* GFXGLDevice::getDefaultDepthTex() const 
@@ -1070,8 +1075,36 @@ U32 GFXGLDevice::getTotalVideoMemory_GL_EXT()
       return mem / 1024;
    }
 
-   // TODO OPENGL, add supprt for INTEL cards.
-   
+
+#if defined(TORQUE_OS_WIN)
+   else if( (gglHasWExtension(AMD_gpu_association)) )
+   {
+      // Just assume 1 AMD gpu. Who uses crossfire anyways now? And, crossfire doesn't double
+      // vram anyways, so does it really matter?
+      UINT id;
+      if (wglGetGPUIDsAMD(1, &id) != 0)
+      {
+         S32 memorySize;
+         if (wglGetGPUInfoAMD(id, WGL_GPU_RAM_AMD, GL_INT, 1, &memorySize) != -1)
+         {
+            // memory size is returned in MB
+            return memorySize;
+         }
+      }
+   }
+#endif
+
+#if defined(TORQUE_OS_LINUX)
+   else if ( (gglHasXExtension(NULL, NULL, MESA_query_renderer)) )
+   {
+      // memory size is in mb
+      U32 memorySize;
+      glXQueryCurrentRendererIntegerMESA(GLX_RENDERER_VIDEO_MEMORY_MESA, &memorySize);
+      return memorySize;
+   }
+#endif
+
+   // No other way, sad. Probably windows Intel.
    return 0;
 }
 

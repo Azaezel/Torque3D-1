@@ -33,7 +33,7 @@ bool PopupMenu::smSelectionEventHandled = false;
 
 /// Event class used to remove popup menus from the event notification in a safe way
 class PopUpNotifyRemoveEvent : public SimEvent
-{   
+{
 public:
    void process(SimObject *object)
    {
@@ -46,7 +46,7 @@ public:
 //-----------------------------------------------------------------------------
 PopupMenu::PopupMenu()
 {
-	mMenuItems = NULL;
+   mMenuItems = 0;
 	mMenuBarCtrl = nullptr;
 
 	mBarTitle = StringTable->EmptyString();
@@ -82,6 +82,7 @@ ConsoleDocClass( PopupMenu,
 //-----------------------------------------------------------------------------
 void PopupMenu::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 
    addField("barTitle", TypeCaseString, Offset(mBarTitle, PopupMenu), "");
@@ -114,18 +115,20 @@ void PopupMenu::onMenuSelect()
 
 //-----------------------------------------------------------------------------
 void PopupMenu::handleSelectEvent(U32 popID, U32 command)
-{  
+{
 }
 
 //-----------------------------------------------------------------------------
 bool PopupMenu::onMessageReceived(StringTableEntry queue, const char* event, const char* data)
 {
-   return Con::executef(this, "onMessageReceived", queue, event, data);
+   ConsoleValue returnValue = Con::executef(this, "onMessageReceived", queue, event, data);
+   return returnValue.getBool();
 }
 
 bool PopupMenu::onMessageObjectReceived(StringTableEntry queue, Message *msg )
 {
-   return Con::executef(this, "onMessageReceived", queue, Con::getIntArg(msg->getId()));
+   ConsoleValue returnValue = Con::executef(this, "onMessageReceived", queue, Con::getIntArg(msg->getId()));
+   return returnValue.getBool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -196,7 +199,7 @@ bool PopupMenu::setItem(S32 pos, const char *title, const char* accelerator, con
       {
          mMenuItems[i].mID = pos;
          mMenuItems[i].mCMD = cmd;
-         
+
          if (accelerator && accelerator[0])
             mMenuItems[i].mAccelerator = dStrdup(accelerator);
          else
@@ -204,7 +207,7 @@ bool PopupMenu::setItem(S32 pos, const char *title, const char* accelerator, con
          return true;
       }
    }
-   
+
    return false;
 }
 
@@ -286,7 +289,8 @@ bool PopupMenu::canHandleID(U32 id)
 
 bool PopupMenu::handleSelect(U32 command, const char *text /* = NULL */)
 {
-   return dAtob(Con::executef(this, "onSelectItem", Con::getIntArg(command), text ? text : ""));
+   ConsoleValue cValue = Con::executef(this, "onSelectItem", Con::getIntArg(command), text ? text : "");
+   return cValue.getBool();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -299,7 +303,7 @@ void PopupMenu::showPopup(GuiCanvas *owner, S32 x /* = -1 */, S32 y /* = -1 */)
    Sim::findObject("PopUpMenuControl", backgroundCtrl);
 
    GuiControlProfile* profile;
-   Sim::findObject("ToolsGuiMenuBarProfile", profile);
+   Sim::findObject("ToolsGuiPopupMenuProfile", profile);
 
    if (!profile)
       return;
@@ -425,7 +429,7 @@ void PopupMenu::showPopup(GuiCanvas *owner, S32 x /* = -1 */, S32 y /* = -1 */)
    Point2I pos = Point2I::Zero;
 
    if (x == -1 && y == -1)
-      pos = owner->getCursorPos();
+      pos = owner->getCursorPosLocal();
    else
       pos = Point2I(x, y);
 

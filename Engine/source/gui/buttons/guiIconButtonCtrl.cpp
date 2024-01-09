@@ -68,11 +68,12 @@ ConsoleDocClass( GuiIconButtonCtrl,
     " makeIconSquare = \"1\";\n"
     " textLocation = \"Bottom\";\n"
     " textMargin = \"-2\";\n"
-   "  autoSize = \"0\";\n"
-   "  text = \"Lag Icon\";\n"
-   "  textID = \"\"STR_LAG\"\";\n"
-   "  buttonType = \"PushButton\";\n"
-   "  profile = \"GuiIconButtonProfile\";\n"
+    " bitmapMargin = \"0\";\n"
+    " autoSize = \"0\";\n"
+    " text = \"Lag Icon\";\n"
+    " textID = \"\"STR_LAG\"\";\n"
+    " buttonType = \"PushButton\";\n"
+    " profile = \"GuiIconButtonProfile\";\n"
    "};\n"
    "@endtsexample\n\n"
 
@@ -85,7 +86,7 @@ ConsoleDocClass( GuiIconButtonCtrl,
 
 GuiIconButtonCtrl::GuiIconButtonCtrl()
 {
-   mBitmapName = StringTable->EmptyString();
+   INIT_ASSET(Bitmap);
    mTextLocation = TextLocLeft;
    mIconLocation = IconLocLeft;
    mTextMargin = 4;
@@ -94,10 +95,9 @@ GuiIconButtonCtrl::GuiIconButtonCtrl()
    mFitBitmapToButton = false;
    mMakeIconSquare = false;
 
-   mErrorBitmapName = StringTable->EmptyString();
-   mErrorTextureHandle = NULL;
-
    mAutoSize = false;
+
+   mBitmapMargin = 0;
 
    setExtent(140, 30);
 }
@@ -124,8 +124,12 @@ EndImplementEnumType;
 
 void GuiIconButtonCtrl::initPersistFields()
 {
+   docsURL;
    addField( "buttonMargin",     TypePoint2I,   Offset( mButtonMargin, GuiIconButtonCtrl ),"Margin area around the button.\n");
-   addField( "iconBitmap",       TypeFilename,  Offset( mBitmapName, GuiIconButtonCtrl ),"Bitmap file for the icon to display on the button.\n");
+
+   addProtectedField( "iconBitmap", TypeImageFilename,  Offset( mBitmapName, GuiIconButtonCtrl ), &_setBitmapData, &defaultProtectedGetFn, "Bitmap file for the icon to display on the button.\n", AbstractClassRep::FIELD_HideInInspectors);
+   INITPERSISTFIELD_IMAGEASSET(Bitmap, GuiIconButtonCtrl, "Bitmap file for the icon to display on the button.\n");
+
    addField( "iconLocation",     TYPEID< IconLocation >(), Offset( mIconLocation, GuiIconButtonCtrl ),"Where to place the icon on the control. Options are 0 (None), 1 (Left), 2 (Right), 3 (Center).\n");
    addField( "sizeIconToButton", TypeBool,      Offset( mFitBitmapToButton, GuiIconButtonCtrl ),"If true, the icon will be scaled to be the same size as the button.\n");
    addField( "makeIconSquare",   TypeBool,      Offset( mMakeIconSquare, GuiIconButtonCtrl ),"If true, will make sure the icon is square.\n");
@@ -133,6 +137,8 @@ void GuiIconButtonCtrl::initPersistFields()
                                                                                  "Options are 0 (None), 1 (Bottom), 2 (Right), 3 (Top), 4 (Left), 5 (Center).\n");
    addField( "textMargin",       TypeS32,       Offset( mTextMargin, GuiIconButtonCtrl ),"Margin between the icon and the text.\n");
    addField( "autoSize",         TypeBool,      Offset( mAutoSize, GuiIconButtonCtrl ),"If true, the text and icon will be automatically sized to the size of the control.\n");
+   addField( "bitmapMargin",     TypeS32,       Offset( mBitmapMargin, GuiIconButtonCtrl), "Margin between the icon and the border.\n");
+
    Parent::initPersistFields();
 }
 
@@ -152,7 +158,6 @@ bool GuiIconButtonCtrl::onWake()
 
 void GuiIconButtonCtrl::onSleep()
 {
-   mTextureNormal = NULL;
    Parent::onSleep();
 }
 
@@ -176,8 +181,8 @@ bool GuiIconButtonCtrl::resize(const Point2I &newPosition, const Point2I &newExt
 
    if ( mIconLocation != IconLocNone )
    {      
-      autoExtent.y = mTextureNormal.getHeight() + mButtonMargin.y * 2;
-      autoExtent.x = mTextureNormal.getWidth() + mButtonMargin.x * 2;
+      autoExtent.y = mBitmap.getHeight() + mButtonMargin.y * 2;
+      autoExtent.x = mBitmap.getWidth() + mButtonMargin.x * 2;
    }
 
    if ( mTextLocation != TextLocNone && mButtonText && mButtonText[0] )
@@ -201,18 +206,10 @@ bool GuiIconButtonCtrl::resize(const Point2I &newPosition, const Point2I &newExt
 
 void GuiIconButtonCtrl::setBitmap(const char *name)
 {
-   mBitmapName = StringTable->insert(name);
    if(!isAwake())
       return;
 
-   if (*mBitmapName)
-   {
-      mTextureNormal = GFXTexHandle( name, &GFXTexturePersistentSRGBProfile, avar("%s() - mTextureNormal (line %d)", __FUNCTION__, __LINE__) );
-   }
-   else
-   {
-      mTextureNormal = NULL;
-   }
+   _setBitmap(getBitmap());
 
    // So that extent is recalculated if autoSize is set.
    resize( getPosition(), getExtent() );
@@ -227,11 +224,20 @@ void GuiIconButtonCtrl::onRender(Point2I offset, const RectI& updateRect)
 
 void GuiIconButtonCtrl::renderButton( Point2I &offset, const RectI& updateRect )
 {
-   bool highlight = mMouseOver;
+   bool highlight = mHighlighted;
    bool depressed = mDepressed;
    
    ColorI fontColor   = mActive ? (highlight ? mProfile->mFontColorHL : mProfile->mFontColor) : mProfile->mFontColorNA;
-   
+   ColorI borderColor = mActive ? (highlight ? mProfile->mBorderColorHL : mProfile->mBorderColor) : mProfile->mBorderColorNA;
+   ColorI fillColor = mActive ? (highlight ? mProfile->mFillColorHL : mProfile->mFillColor) : mProfile->mFillColorNA;
+
+   if (mActive && (depressed || mStateOn))
+   {
+      fontColor = mProfile->mFontColorSEL;
+      fillColor = mProfile->mFillColorSEL;
+      borderColor = mProfile->mBorderColorSEL;
+   }
+
    RectI boundsRect(offset, getExtent());
 
    GFXDrawUtil *drawer = GFX->getDrawUtil();
@@ -240,25 +246,37 @@ void GuiIconButtonCtrl::renderButton( Point2I &offset, const RectI& updateRect )
    {
       // If there is a bitmap array then render using it.  
       // Otherwise use a standard fill.
-      if(mProfile->mUseBitmapArray && mProfile->mBitmapArrayRects.size())
+      if(mProfile->mUseBitmapArray && !mProfile->mBitmapArrayRects.empty())
          renderBitmapArray(boundsRect, statePressed);
       else
-         renderSlightlyLoweredBox(boundsRect, mProfile);
+      {
+         if (mProfile->mBorder != 0)
+            renderFilledBorder(boundsRect, borderColor, fillColor, mProfile->mBorderThickness);
+         else
+            GFX->getDrawUtil()->drawRectFill(boundsRect, fillColor);
+      }
    }
-   else if(mMouseOver && mActive)
+   else if(mHighlighted && mActive)
    {
       // If there is a bitmap array then render using it.  
       // Otherwise use a standard fill.
-      if(mProfile->mUseBitmapArray && mProfile->mBitmapArrayRects.size())
+      if (mProfile->mUseBitmapArray && !mProfile->mBitmapArrayRects.empty())
+      {
          renderBitmapArray(boundsRect, stateMouseOver);
+      }
       else
-         renderSlightlyRaisedBox(boundsRect, mProfile);
+      {
+         if (mProfile->mBorder != 0)
+            renderFilledBorder(boundsRect, borderColor, fillColor, mProfile->mBorderThickness);
+         else
+            GFX->getDrawUtil()->drawRectFill(boundsRect, fillColor);
+      }
    }
    else
    {
       // If there is a bitmap array then render using it.  
       // Otherwise use a standard fill.
-      if(mProfile->mUseBitmapArray && mProfile->mBitmapArrayRects.size())
+      if(mProfile->mUseBitmapArray && !mProfile->mBitmapArrayRects.empty())
       {
          if(mActive)
             renderBitmapArray(boundsRect, stateNormal);
@@ -267,8 +285,10 @@ void GuiIconButtonCtrl::renderButton( Point2I &offset, const RectI& updateRect )
       }
       else
       {
-         drawer->drawRectFill(boundsRect, mProfile->mFillColorNA);
-         drawer->drawRect(boundsRect, mProfile->mBorderColorNA);
+         if (mProfile->mBorder != 0)
+            renderFilledBorder(boundsRect, borderColor, fillColor, mProfile->mBorderThickness);
+         else
+            GFX->getDrawUtil()->drawRectFill(boundsRect, mProfile->mFillColor);
       }
    }
 
@@ -279,15 +299,21 @@ void GuiIconButtonCtrl::renderButton( Point2I &offset, const RectI& updateRect )
    RectI iconRect( 0, 0, 0, 0 );
 
    // Render the icon
-   if ( mTextureNormal && mIconLocation != GuiIconButtonCtrl::IconLocNone )
+   if ( mBitmap && mIconLocation != GuiIconButtonCtrl::IconLocNone )
    {
       // Render the normal bitmap
       drawer->clearBitmapModulation();
 
+      // Size of the bitmap
+      Point2I textureSize(mBitmap->getWidth(), mBitmap->getHeight());
+
+      // Reduce the size with the margin (if set)
+      textureSize.x = textureSize.x - (mBitmapMargin * 2);
+      textureSize.y = textureSize.y - (mBitmapMargin * 2);
+
       // Maintain the bitmap size or fill the button?
       if ( !mFitBitmapToButton )
       {
-         Point2I textureSize( mTextureNormal->getWidth(), mTextureNormal->getHeight() );
          iconRect.set( offset + mButtonMargin, textureSize );
 
          if ( mIconLocation == IconLocRight )    
@@ -306,12 +332,16 @@ void GuiIconButtonCtrl::renderButton( Point2I &offset, const RectI& updateRect )
             iconRect.point.y = offset.y + ( getHeight() - textureSize.y ) / 2;
          }
 
-         drawer->drawBitmapStretch( mTextureNormal, iconRect );
+         drawer->drawBitmapStretch(mBitmap, iconRect );
 
       } 
       else
       {
-         iconRect.set( offset + mButtonMargin, getExtent() - (mButtonMargin * 2) );
+         // adding offset with the bitmap margin next to the button margin
+         Point2I bitMapOffset(mBitmapMargin, mBitmapMargin);
+
+         // set the offset
+         iconRect.set( offset + mButtonMargin + bitMapOffset, getExtent() - (Point2I(mAbs(mButtonMargin.x - (mBitmapMargin * 2)), mAbs(mButtonMargin.y - (mBitmapMargin * 2))) * 2) );
          
          if ( mMakeIconSquare )
          {
@@ -322,7 +352,21 @@ void GuiIconButtonCtrl::renderButton( Point2I &offset, const RectI& updateRect )
                iconRect.extent.x = iconRect.extent.y;            
          }
 
-         drawer->drawBitmapStretch( mTextureNormal, iconRect );
+         if (mIconLocation == IconLocRight)
+         {
+            iconRect.point.x = (offset.x + getWidth()) - iconRect.extent.x + mButtonMargin.x;
+         }
+         else if (mIconLocation == IconLocLeft)
+         {
+            //default state presumes left positioning
+         }
+         else if (mIconLocation == IconLocCenter)
+         {
+            iconRect.point.x = offset.x + (getWidth() / 2) - (iconRect.extent.x / 2) + mButtonMargin.x;
+            iconRect.point.y = offset.y + (getHeight() / 2) - (iconRect.extent.y / 2) + mButtonMargin.y;
+         }
+
+         drawer->drawBitmapStretch( mBitmap, iconRect );
       }
    }
 
@@ -339,11 +383,12 @@ void GuiIconButtonCtrl::renderButton( Point2I &offset, const RectI& updateRect )
       if ( mTextLocation == TextLocRight )
       {
          Point2I start( mTextMargin, ( getHeight() - mProfile->mFont->getHeight() ) / 2 );
-         if ( mTextureNormal && mIconLocation != IconLocNone )
+         if (mBitmap && mIconLocation != IconLocNone )
          {
             start.x = iconRect.extent.x + mButtonMargin.x + mTextMargin;
          }
 
+         drawer->setBitmapModulation(fontColor);
          drawer->drawText( mProfile->mFont, start + offset, text, mProfile->mFontColors );
       }
 
@@ -351,19 +396,21 @@ void GuiIconButtonCtrl::renderButton( Point2I &offset, const RectI& updateRect )
       {
          Point2I start( mTextMargin, ( getHeight() - mProfile->mFont->getHeight() ) / 2 );
 
+         drawer->setBitmapModulation(fontColor);
          drawer->drawText( mProfile->mFont, start + offset, text, mProfile->mFontColors );
       }
 
       if ( mTextLocation == TextLocCenter )
       {
          Point2I start;
-         if ( mTextureNormal && mIconLocation == IconLocLeft )
+         if (mBitmap && mIconLocation == IconLocLeft )
          {
             start.set( ( getWidth() - textWidth - iconRect.extent.x ) / 2 + iconRect.extent.x, 
                        ( getHeight() - mProfile->mFont->getHeight() ) / 2 );
          }
          else
             start.set( ( getWidth() - textWidth ) / 2, ( getHeight() - mProfile->mFont->getHeight() ) / 2 );
+
          drawer->setBitmapModulation( fontColor );
          drawer->drawText( mProfile->mFont, start + offset, text, mProfile->mFontColors );
       }
@@ -421,19 +468,4 @@ void GuiIconButtonCtrl::renderBitmapArray(RectI &bounds, S32 state)
    }
 }
 
-DefineEngineMethod( GuiIconButtonCtrl, setBitmap, void, (const char* buttonFilename),,
-   "@brief Set the bitmap to use for the button portion of this control.\n\n"
-   "@param buttonFilename Filename for the image\n"
-   "@tsexample\n"
-   "// Define the button filename\n"
-   "%buttonFilename = \"pearlButton\";\n\n"
-   "// Inform the GuiIconButtonCtrl control to update its main button graphic to the defined bitmap\n"
-   "%thisGuiIconButtonCtrl.setBitmap(%buttonFilename);\n"
-   "@endtsexample\n\n"
-   "@see GuiControl\n"
-   "@see GuiButtonCtrl\n\n")
-{
-   char* argBuffer = Con::getArgBuffer( 512 );
-   Platform::makeFullPathName( buttonFilename, argBuffer, 512 );
-   object->setBitmap( argBuffer );
-}
+DEF_ASSET_BINDS(GuiIconButtonCtrl, Bitmap);

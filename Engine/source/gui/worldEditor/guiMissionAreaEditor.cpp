@@ -50,6 +50,7 @@ bool GuiMissionAreaEditorCtrl::onAdd()
 
 void GuiMissionAreaEditorCtrl::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 
@@ -97,7 +98,7 @@ void GuiMissionAreaEditorCtrl::setSelectedMissionArea( MissionArea *missionArea 
 
 DefineEngineMethod( GuiMissionAreaEditorCtrl, setSelectedMissionArea, void, (const char * missionAreaName), (""), "" )
 {
-   if ( dStrcmp( missionAreaName, "" )==0 )
+   if ( String::compare( missionAreaName, "" )==0 )
       object->setSelectedMissionArea(NULL);
    else
    {

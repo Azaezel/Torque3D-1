@@ -277,7 +277,10 @@ GuiPopUpMenuCtrl::GuiPopUpMenuCtrl(void)
    mRenderScrollInNA = false; //  Added
    mBackgroundCancel = false; //  Added
    mReverseTextList = false; //  Added - Don't reverse text list if displaying up
-   mBitmapName = StringTable->EmptyString(); //  Added
+
+   INIT_IMAGEASSET_ARRAY(Bitmap, GFXDefaultGUIProfile, 0);
+   INIT_IMAGEASSET_ARRAY(Bitmap, GFXDefaultGUIProfile, 1);
+
    mBitmapBounds.set(16, 16); //  Added
    mIdMax = -1;
    mBackground = NULL;
@@ -294,13 +297,25 @@ GuiPopUpMenuCtrl::~GuiPopUpMenuCtrl()
 //------------------------------------------------------------------------------
 void GuiPopUpMenuCtrl::initPersistFields(void)
 {
+   docsURL;
    addField("maxPopupHeight",           TypeS32,          Offset(mMaxPopupHeight, GuiPopUpMenuCtrl));
    addField("sbUsesNAColor",            TypeBool,         Offset(mRenderScrollInNA, GuiPopUpMenuCtrl));
    addField("reverseTextList",          TypeBool,         Offset(mReverseTextList, GuiPopUpMenuCtrl));
-   addField("bitmap",                   TypeFilename,     Offset(mBitmapName, GuiPopUpMenuCtrl));
+
+   addProtectedField("bitmap", TypeImageFilename, Offset(mBitmapName, GuiPopUpMenuCtrl), _setBitmaps, defaultProtectedGetFn, "");
+   addProtectedField("bitmapAsset", TypeImageAssetId, Offset(mBitmapAssetId, GuiPopUpMenuCtrl), _setBitmaps, defaultProtectedGetFn, "");
+
    addField("bitmapBounds",             TypePoint2I,      Offset(mBitmapBounds, GuiPopUpMenuCtrl));
 
    Parent::initPersistFields();
+}
+
+bool GuiPopUpMenuCtrl::_setBitmaps(void* obj, const char* index, const char* data)
+{
+   GuiPopUpMenuCtrl* object = static_cast<GuiPopUpMenuCtrl*>(obj);
+
+   object->setBitmap(data);
+   return true;
 }
 
 //------------------------------------------------------------------------------
@@ -459,7 +474,7 @@ bool GuiPopUpMenuCtrl::onWake()
       return false;
 
    // Set the bitmap for the popup.
-   setBitmap( mBitmapName );
+   setBitmap(getBitmap(Normal));
 
    // Now update the Form Control's bitmap array, and possibly the child's too
    mProfile->constructBitmapArray();
@@ -483,8 +498,6 @@ bool GuiPopUpMenuCtrl::onAdd()
 //------------------------------------------------------------------------------
 void GuiPopUpMenuCtrl::onSleep()
 {
-   mTextureNormal = NULL; //  Added
-   mTextureDepressed = NULL; //  Added
    Parent::onSleep();
    closePopUp();  // Tests in function.
 }
@@ -562,30 +575,30 @@ static S32 QSORT_CALLBACK idCompare(const void *a,const void *b)
 //  Added
 void GuiPopUpMenuCtrl::setBitmap( const char *name )
 {
-   mBitmapName = StringTable->insert( name );
-   if ( !isAwake() )
-      return;
+   StringTableEntry bitmapName = StringTable->insert(name);
 
-   if ( *mBitmapName )
+   if ( bitmapName != StringTable->EmptyString() )
    {
       char buffer[1024];
       char *p;
-      dStrcpy(buffer, name, 1024);
+      dStrcpy(buffer, bitmapName, 1024);
       p = buffer + dStrlen(buffer);
       S32 pLen = 1024 - dStrlen(buffer);
 
       dStrcpy(p, "_n", pLen);
-      mTextureNormal = GFXTexHandle( (StringTableEntry)buffer, &GFXDefaultGUIProfile, avar("%s() - mTextureNormal (line %d)", __FUNCTION__, __LINE__) );
+
+      _setBitmap((StringTableEntry)buffer, Normal);
 
       dStrcpy(p, "_d", pLen);
-      mTextureDepressed = GFXTexHandle( (StringTableEntry)buffer, &GFXDefaultGUIProfile, avar("%s() - mTextureDepressed (line %d)", __FUNCTION__, __LINE__) );
-      if ( !mTextureDepressed )
-         mTextureDepressed = mTextureNormal;
+      _setBitmap((StringTableEntry)buffer, Depressed);
+
+      if ( !mBitmap[Depressed] )
+         mBitmap[Depressed] = mBitmap[Normal];
    }
    else
    {
-      mTextureNormal = NULL;
-      mTextureDepressed = NULL;
+      _setBitmap(StringTable->EmptyString(), Normal);
+      _setBitmap(StringTable->EmptyString(), Depressed);
    }
    setUpdate();
 }   
@@ -629,7 +642,7 @@ void GuiPopUpMenuCtrl::addEntry( const char *buf, S32 id, U32 scheme )
    // Ensure that there are no other entries with exactly the same name
    for ( U32 i = 0; i < mEntries.size(); i++ )
    {
-      if ( dStrcmp( mEntries[i].buf, buf ) == 0 )
+      if ( String::compare( mEntries[i].buf, buf ) == 0 )
          return;
    }
 
@@ -745,7 +758,7 @@ S32 GuiPopUpMenuCtrl::findText( const char* text )
 {
    for ( U32 i = 0; i < mEntries.size(); i++ )
    {
-      if ( dStrcmp( text, mEntries[i].buf ) == 0 )
+      if ( String::compare( text, mEntries[i].buf ) == 0 )
          return( mEntries[i].id );        
    }
    return( -1 );
@@ -866,8 +879,14 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
       S32 top = baseRect.point.y, bottom = baseRect.point.y + baseRect.extent.y - 1;
 
       // Do we render a bitmap border or lines?
-      if ( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() )
+      if ( mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
       {
+         if (mProfile->mBitmapArrayRects[0].extent.y < baseRect.extent.y)
+         {
+            //if our bitmap is smaller than the height of our ctrl, we'll nudge it towards the center
+            U32 nudge = (baseRect.extent.y - mProfile->mBitmapArrayRects[0].extent.y) / 2;
+            baseRect.point.y += nudge;
+         }
          // Render the fixed, filled in border
          renderFixedBitmapBordersFilled(baseRect, 3, mProfile );
 
@@ -879,21 +898,21 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
       }
 
       //  Draw a bitmap over the background?
-      if ( mTextureDepressed )
+      if ( mBitmap[Depressed] )
       {
          RectI rect(offset, mBitmapBounds);
          drawUtil->clearBitmapModulation();
-         drawUtil->drawBitmapStretch( mTextureDepressed, rect );
+         drawUtil->drawBitmapStretch( mBitmap[Depressed], rect );
       } 
-      else if ( mTextureNormal )
+      else if ( mBitmap[Normal] )
       {
          RectI rect(offset, mBitmapBounds);
          drawUtil->clearBitmapModulation();
-         drawUtil->drawBitmapStretch( mTextureNormal, rect );
+         drawUtil->drawBitmapStretch( mBitmap[Normal], rect );
       }
 
       // Do we render a bitmap border or lines?
-      if ( !( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() ) )
+      if (!mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
       {
          drawUtil->drawLine(left, top, left, bottom, colorWhite );
          drawUtil->drawLine(left, top, right, top, colorWhite );
@@ -911,8 +930,14 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
          S32 top = baseRect.point.y, bottom = baseRect.point.y + baseRect.extent.y - 1;
 
          // Do we render a bitmap border or lines?
-         if ( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() )
+         if ( mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
          {
+            if (mProfile->mBitmapArrayRects[0].extent.y < baseRect.extent.y)
+            {
+               //if our bitmap is smaller than the height of our ctrl, we'll nudge it towards the center
+               U32 nudge = (baseRect.extent.y - mProfile->mBitmapArrayRects[0].extent.y) / 2;
+               baseRect.point.y += nudge;
+            }
             // Render the fixed, filled in border
             renderFixedBitmapBordersFilled(baseRect, 2, mProfile );
 
@@ -923,15 +948,15 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
          }
 
          //  Draw a bitmap over the background?
-         if ( mTextureNormal )
+         if ( mBitmap[Normal] )
          {
             RectI rect( offset, mBitmapBounds );
             drawUtil->clearBitmapModulation();
-            drawUtil->drawBitmapStretch( mTextureNormal, rect );
+            drawUtil->drawBitmapStretch( mBitmap[Normal], rect );
          }
 
          // Do we render a bitmap border or lines?
-         if ( !( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() ) )
+         if (!mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
          {
 			 drawUtil->drawLine(left, top, left, bottom, colorWhite);
 			 drawUtil->drawLine(left, top, right, top, colorWhite);
@@ -942,8 +967,14 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
       else
       {
          // Do we render a bitmap border or lines?
-         if ( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() )
+         if ( mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
          {
+            if (mProfile->mBitmapArrayRects[0].extent.y < baseRect.extent.y)
+            {
+               //if our bitmap is smaller than the height of our ctrl, we'll nudge it towards the center
+               U32 nudge = (baseRect.extent.y - mProfile->mBitmapArrayRects[0].extent.y) / 2;
+               baseRect.point.y += nudge;
+            }
             // Render the fixed, filled in border
             renderFixedBitmapBordersFilled(baseRect, 1, mProfile );
          } 
@@ -953,16 +984,22 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
          }
 
          //  Draw a bitmap over the background?
-         if ( mTextureNormal )
+         if ( mBitmap[Normal] )
          {
             RectI rect(offset, mBitmapBounds);
             drawUtil->clearBitmapModulation();
-            drawUtil->drawBitmapStretch( mTextureNormal, rect );
+            drawUtil->drawBitmapStretch( mBitmap[Normal], rect );
          }
 
          // Do we render a bitmap border or lines?
-         if ( !( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() ) )
+         if (!mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
          {
+            if (mProfile->mBitmapArrayRects[0].extent.y < baseRect.extent.y)
+            {
+               //if our bitmap is smaller than the height of our ctrl, we'll nudge it towards the center
+               U32 nudge = (baseRect.extent.y - mProfile->mBitmapArrayRects[0].extent.y) / 2;
+               baseRect.point.y += nudge;
+            }
             drawUtil->drawRect( baseRect, mProfile->mBorderColorNA );
          }
       }
@@ -976,7 +1013,7 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
       switch (mProfile->mAlignment)
       {
       case GuiControlProfile::RightJustify:
-         if ( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() )
+         if ( mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
          {
             // We're making use of a bitmap border, so take into account the
             // right cap of the border.
@@ -989,7 +1026,7 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
          }
          break;
       case GuiControlProfile::CenterJustify:
-         if ( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() )
+         if ( mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
          {
             // We're making use of a bitmap border, so take into account the
             // right cap of the border.
@@ -1008,7 +1045,7 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
             //  The width of the text is greater than the width of the control.
             // In this case we will right justify the text and leave some space
             // for the down arrow.
-            if ( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() )
+            if ( mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
             {
                // We're making use of a bitmap border, so take into account the
                // right cap of the border.
@@ -1060,7 +1097,7 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
          // Draw the second column to the right
          getColumn( mText, buff, 1, "\t" );
          S32 colTxt_w = mProfile->mFont->getStrWidth( buff );
-         if ( mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size() )
+         if ( mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
          {
             // We're making use of a bitmap border, so take into account the
             // right cap of the border.
@@ -1080,8 +1117,15 @@ void GuiPopUpMenuCtrl::onRender( Point2I offset, const RectI &updateRect )
       }
 
       // If we're rendering a bitmap border, then it will take care of the arrow.
-      if ( !(mProfile->getChildrenProfile() && mProfile->mBitmapArrayRects.size()) )
+      if (!mProfile->getChildrenProfile() && !mProfile->mBitmapArrayRects.empty())
       {
+         if (mProfile->mBitmapArrayRects[0].extent.y < baseRect.extent.y)
+         {
+            //if our bitmap is smaller than the height of our ctrl, we'll nudge it towards the center
+            U32 nudge = (baseRect.extent.y - mProfile->mBitmapArrayRects[0].extent.y) / 2;
+            baseRect.point.y += nudge;
+         }
+
          //  Draw a triangle (down arrow)
          S32 left = baseRect.point.x + baseRect.extent.x - 12;
          S32 right = left + 8;

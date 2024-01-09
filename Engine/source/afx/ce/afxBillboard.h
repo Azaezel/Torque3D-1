@@ -46,15 +46,10 @@ public:
      BlendUser,
    };
 
-   enum TexFuncType {
-     TexFuncReplace,
-     TexFuncModulate,
-     TexFuncAdd,
-   };  
-
 public:
-  StringTableEntry  txr_name;
-  GFXTexHandle      txr;
+   DECLARE_IMAGEASSET(afxBillboardData, Texture, onChangeTexture, GFXStaticTextureSRGBProfile);
+   DECLARE_ASSET_SETGET(afxBillboardData, Texture);
+
 
   LinearColorF            color;
   Point2F           texCoords[4];
@@ -62,7 +57,6 @@ public:
   S32               blendStyle; 
   GFXBlend          srcBlendFactor;
   GFXBlend          dstBlendFactor;
-  S32               texFunc;
 
 public:
   /*C*/             afxBillboardData();
@@ -77,15 +71,14 @@ public:
 
   static void       initPersistFields();
 
+  void onChangeTexture() {}
+
   DECLARE_CONOBJECT(afxBillboardData);
-  DECLARE_CATEGORY("AFX");
 };
 
 typedef afxBillboardData::BlendStyle afxBillboard_BlendStyle;
 DefineEnumType( afxBillboard_BlendStyle );
 
-typedef afxBillboardData::TexFuncType afxBillboard_TexFuncType;
-DefineEnumType( afxBillboard_TexFuncType );
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // afxBillboard
@@ -123,7 +116,7 @@ public:
   void              _renderBillboard(ObjectRenderInst*, SceneRenderState*, BaseMatInstance*);
 
   DECLARE_CONOBJECT(afxBillboard);
-  DECLARE_CATEGORY("AFX");
+  DECLARE_CATEGORY("UNLISTED");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//

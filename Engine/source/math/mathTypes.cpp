@@ -88,30 +88,59 @@ END_IMPLEMENT_STRUCT;
 IMPLEMENT_STRUCT( RectI,
    RectI, MathTypes,
    "" )
+
+   FIELD( point,  point,  1, "The XY coordinate of the Rect." )
+   FIELD( extent, extent, 1, "The width and height of the Rect." )
+
 END_IMPLEMENT_STRUCT;
 IMPLEMENT_STRUCT( RectF,
    RectF, MathTypes,
    "" )
+
+   FIELD( point,  point,  1, "The XY coordinate of the Rect.")
+   FIELD( extent, extent, 1, "The width and height of the Rect.")
+
 END_IMPLEMENT_STRUCT;
 IMPLEMENT_STRUCT( MatrixF,
    MatrixF, MathTypes,
    "" )
+
+   MatrixFEngineExport::getMatrixField(),
+
 END_IMPLEMENT_STRUCT;
 IMPLEMENT_STRUCT( AngAxisF,
    AngAxisF, MathTypes,
    "" )
+
+   FIELD( axis,  axis,  1, "")
+   FIELD( angle, angle, 1, "")
+
 END_IMPLEMENT_STRUCT;
 IMPLEMENT_STRUCT( TransformF,
    TransformF, MathTypes,
    "" )
+
+   FIELD(mPosition,    position,    1, "")
+   FIELD(mOrientation, orientation, 1, "")
+   FIELD(mHasRotation, hasRotation, 1, "")
+
 END_IMPLEMENT_STRUCT;
 IMPLEMENT_STRUCT( Box3F,
    Box3F, MathTypes,
    "" )
+
+   FIELD(minExtents, minExtents, 1, "Minimum extents of box")
+   FIELD(maxExtents, maxExtents, 1, "Maximum extents of box")
+
 END_IMPLEMENT_STRUCT;
 IMPLEMENT_STRUCT( EaseF,
    EaseF, MathTypes,
    "" )
+
+   FIELD(mDir, dir, 1, "inout, in, out")
+   FIELD(mType, type, 1, "linear, etc...")
+   FIELD_AS(F32, mParam, param, 2, "optional params")
+
 END_IMPLEMENT_STRUCT;
 IMPLEMENT_STRUCT(RotationF,
    RotationF, MathTypes,
@@ -347,7 +376,7 @@ ConsoleSetType( TypeMatrixF )
 //-----------------------------------------------------------------------------
 // TypeMatrixPosition
 //-----------------------------------------------------------------------------
-ConsoleType(MatrixPosition, TypeMatrixPosition, MatrixF, "")
+ConsoleMappedType(MatrixPosition, TypeMatrixPosition, Point3F, MatrixF, "")
 
 ConsoleGetType( TypeMatrixPosition )
 {
@@ -382,7 +411,7 @@ ConsoleSetType( TypeMatrixPosition )
 //-----------------------------------------------------------------------------
 // TypeMatrixRotation
 //-----------------------------------------------------------------------------
-ConsoleType(MatrixRotation, TypeMatrixRotation, MatrixF, "")
+ConsoleMappedType(MatrixRotation, TypeMatrixRotation, AngAxisF, MatrixF, "")
 
 ConsoleGetType( TypeMatrixRotation )
 {
@@ -591,8 +620,16 @@ ConsoleGetType(TypeRotationF)
    static const U32 bufSize = 256;
    char* returnBuffer = Con::getReturnBuffer(bufSize);
 
-   EulerF out = pt->asEulerF(RotationF::Degrees);
-   dSprintf(returnBuffer, bufSize, "%g %g %g", out.x, out.y, out.z);
+   if (pt->mRotationType == RotationF::Euler)
+   {
+      EulerF out = pt->asEulerF(RotationF::Degrees);
+      dSprintf(returnBuffer, bufSize, "%g %g %g", out.x, out.y, out.z);
+   }
+   else if (pt->mRotationType == RotationF::AxisAngle)
+   {
+      AngAxisF out = pt->asAxisAngle(RotationF::Degrees);
+      dSprintf(returnBuffer, bufSize, "%g %g %g %g", out.axis.x, out.axis.y, out.axis.z, out.angle);
+   }
 
    return returnBuffer;
 }
@@ -974,6 +1011,11 @@ DefineEngineFunction( VectorOrthoBasis, MatrixF, ( AngAxisF aa ),,
    return mat;
 }
 
+DefineEngineFunction(toEuler, VectorF, (MatrixF _in), ,
+   "#Brief get the rotation of a matrix\n")
+{
+   return _in.getForwardVector();
+}
 //-----------------------------------------------------------------------------
 
 //ConsoleFunction(VectorRot, const char*, 3, 3, "(Vector3F, float) rotate a vector in 2d")
@@ -1210,4 +1252,38 @@ DefineEngineFunction(getRandom, F32, (S32 a, S32 b), (S32_MAX, S32_MAX),
    return gRandGen.randF();
 }
 
+DefineEngineFunction(mAddS32, const char *, (S32 v1, S32 v2), , "Add 2 large numbers")
+{
+   S32 res = v1 + v2;
+   char *ret = Con::getReturnBuffer(64);
+   dSprintf(ret, 64, "%i", res);
+
+   return ret;
+}
+DefineEngineFunction(mSubS32, const char *, (S32 v1, S32 v2), , "Subtract 2 large numbers")
+{
+   S32 res = v1 - v2;
+   char *ret = Con::getReturnBuffer(64);
+   dSprintf(ret, 64, "%i", res);
+
+   return ret;
+}
+
+DefineEngineFunction(mMulS32, const char *, (S32 v1, S32 v2), , "Multiply 2 large numbers")
+{
+   S32 res = v1 * v2;
+   char *ret = Con::getReturnBuffer(64);
+   dSprintf(ret, 64, "%i", res);
+
+   return ret;
+}
+
+DefineEngineFunction(mDivS32, const char *, (S32 v1, S32 v2), , "Divide 2 large numbers")
+{
+   S32 res = v1 / v2;
+   char *ret = Con::getReturnBuffer(64);
+   dSprintf(ret, 64, "%i", res);
+
+   return ret;
+}
 //------------------------------------------------------------------------------

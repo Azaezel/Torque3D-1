@@ -90,6 +90,12 @@ ConsoleSetType(TypeShapeAnimationAssetPtr)
    Con::warnf("(TypeShapeAnimationAssetPtr) - Cannot set multiple args to a single asset.");
 }
 
+const String ShapeAnimationAsset::mErrCodeStrings[] =
+{
+   "TooManyBones",
+   "UnKnown"
+};
+
 //-----------------------------------------------------------------------------
 
 ShapeAnimationAsset::ShapeAnimationAsset() : 
@@ -112,6 +118,7 @@ ShapeAnimationAsset::~ShapeAnimationAsset()
 
 void ShapeAnimationAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -147,11 +154,11 @@ void ShapeAnimationAsset::initializeAsset(void)
    if (!mIsEmbedded)
    {
       //If we're not embedded, we need to load in our initial shape and do some prepwork
-      mFilePath = expandAssetFilePath(mFileName);
+      mFilePath = getOwned() ? expandAssetFilePath(mFileName) : mFilePath;
 
       mSourceShape = ResourceManager::get().load(mFilePath);
 
-      if (!mSourceShape->addSequence("ambient", "", mAnimationName, mStartFrame, mEndFrame, mPadRotation, mPadTransforms))
+      if (!mSourceShape || !mSourceShape->addSequence("ambient", "", mAnimationName, mStartFrame, mEndFrame, mPadRotation, mPadTransforms))
       {
          Con::errorf("ShapeAnimationAsset::initializeAsset - Unable to do initial setup of the animation clip named %s for asset %s", mAnimationName, getAssetName());
          return;
@@ -177,14 +184,14 @@ void ShapeAnimationAsset::setAnimationFile(const char* pAnimationFile)
    AssertFatal(pAnimationFile != NULL, "Cannot use a NULL animation file.");
 
    // Fetch image file.
-   pAnimationFile = StringTable->insert(pAnimationFile);
+   pAnimationFile = StringTable->insert(pAnimationFile, true);
 
    // Ignore no change,
    if (pAnimationFile == mFileName)
       return;
 
    // Update.
-   mFileName = StringTable->insert(pAnimationFile);
+   mFileName = getOwned() ? expandAssetFilePath(pAnimationFile) : pAnimationFile;
 
    // Refresh the asset.
    refreshAsset();
@@ -203,4 +210,10 @@ DefineEngineMethod(ShapeAnimationAsset, getAnimationCount, S32, (), ,
    "@return Animation count.\n")
 {
    return object->getAnimationCount();
+}
+
+DefineEngineMethod(ShapeAnimationAsset, getAnimationPath, const char*, (), ,
+   "Gets the Animation file path associated to this asset.")
+{
+   return object->getAnimationPath();
 }

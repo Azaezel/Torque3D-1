@@ -36,6 +36,8 @@
 #include "T3D/lightFlareData.h"
 #endif
 
+#include "T3D/assets/MaterialAsset.h"
+
 class TimeOfDay;
 class MatrixSet;
 
@@ -75,7 +77,10 @@ protected:
    F32 mFlareScale;
 
    bool mCoronaEnabled;
-   String mCoronaMatName;
+
+   DECLARE_MATERIALASSET(Sun, CoronaMaterial);
+   DECLARE_ASSET_NET_SETGET(Sun, CoronaMaterial, UpdateMask);
+
    BaseMatInstance *mCoronaMatInst;
    MatrixSet *mMatrixSet;   
    F32 mCoronaScale;
@@ -111,7 +116,8 @@ public:
    virtual void onRemove();
 
    // ConsoleObject
-   DECLARE_CONOBJECT(Sun);   
+   DECLARE_CONOBJECT(Sun);
+   DECLARE_CATEGORY("Lighting \t Lights");
    static void initPersistFields();
    void inspectPostApply();
 

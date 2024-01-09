@@ -67,7 +67,6 @@ public:
   afxXM_Base*     create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_PathConformData);
-  DECLARE_CATEGORY("AFX");
 };
 
 class afxPath3D;
@@ -128,6 +127,7 @@ afxXM_PathConformData::afxXM_PathConformData(const afxXM_PathConformData& other,
 
 void afxXM_PathConformData::initPersistFields()
 {
+   docsURL;
   addField("paths",           TypeString,   Offset(paths_string, afxXM_PathConformData),
     "...");
   addField("pathMult",        TypeF32,      Offset(path_mult, afxXM_PathConformData),

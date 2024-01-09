@@ -52,7 +52,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_HeightSamplerData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
@@ -91,6 +90,7 @@ afxXM_HeightSamplerData::afxXM_HeightSamplerData(const afxXM_HeightSamplerData& 
 
 void afxXM_HeightSamplerData::initPersistFields()
 {
+   docsURL;
   Parent::initPersistFields();
 }
 

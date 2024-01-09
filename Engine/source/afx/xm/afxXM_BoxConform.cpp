@@ -53,7 +53,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_BoxConformData);
-  DECLARE_CATEGORY("AFX");
 };
 
 class afxXM_BoxConform : public afxXM_Base
@@ -105,6 +104,7 @@ EndImplementEnumType;
 
 void afxXM_BoxConformData::initPersistFields()
 {
+   docsURL;
   addField("boxAlignment",    TYPEID< afxXM_BoxConformType >(),    Offset(aabb_alignment, afxXM_BoxConformData),
     "...");
 

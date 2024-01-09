@@ -66,6 +66,11 @@ IMPLEMENT_CALLBACK( GuiWindowCtrl, onCollapse, void, (), (),
    "Called when the window is collapsed by clicking its title bar." );
 IMPLEMENT_CALLBACK( GuiWindowCtrl, onRestore, void, (), (),
    "Called when the window is restored from minimized, maximized, or collapsed state." );
+IMPLEMENT_CALLBACK(GuiWindowCtrl, onResize, void, (S32 posX, S32 posY, S32 width, S32 height), (0, 0, 0, 0),
+   "Called when the window is resized in a regular manner by mouse manipulation.");
+IMPLEMENT_CALLBACK(GuiWindowCtrl, onMouseDragged, void, (), (),
+   "Called when the height has changed.");
+
 
 //-----------------------------------------------------------------------------
 
@@ -74,7 +79,7 @@ GuiWindowCtrl::GuiWindowCtrl()
       mResizeEdge(edgeNone),
       mResizeHeight(true),
       mCanMove(true),
-      mResizeMargin(2.f),
+      mResizeMargin(5.f),
       mCanClose(true),
       mCanMinimize(true),
       mCanMaximize(true),
@@ -84,7 +89,8 @@ GuiWindowCtrl::GuiWindowCtrl()
       mCollapseGroup(-1),
       mCollapseGroupNum(-1),
       mIsCollapsed(false),
-      mIsMouseResizing(false)
+      mIsMouseResizing(false),
+      mButtonOffset(0, 3)
 {
    // mTitleHeight will change in instanciation most likely...
    mTitleHeight = 24;
@@ -128,6 +134,7 @@ GuiWindowCtrl::GuiWindowCtrl()
 
 void GuiWindowCtrl::initPersistFields()
 {
+   docsURL;
    addGroup( "Window" );
    
       addField( "text",              TypeRealString,   Offset( mText, GuiWindowCtrl ),
@@ -136,6 +143,8 @@ void GuiWindowCtrl::initPersistFields()
          "Whether the window can be resized horizontally." );
       addField( "resizeHeight",      TypeBool,         Offset( mResizeHeight, GuiWindowCtrl ),
          "Whether the window can be resized vertically." );
+      addField("resizeMargin", TypeF32, Offset(mResizeMargin, GuiWindowCtrl),
+         "Margin along the window edge to allow grabbing.");
       addField( "canMove",           TypeBool,         Offset( mCanMove, GuiWindowCtrl ),
          "Whether the window can be moved by dragging its titlebar." );
       addField( "canClose",          TypeBool,         Offset( mCanClose, GuiWindowCtrl ),
@@ -150,6 +159,8 @@ void GuiWindowCtrl::initPersistFields()
          "Script code to execute when the window is closed." );
       addField( "edgeSnap",          TypeBool,         Offset( mEdgeSnap,GuiWindowCtrl ),
          "If true, the window will snap to the edges of other windows when moved close to them." );
+      addField( "buttonOffset",      TypePoint2I,       Offset (mButtonOffset, GuiWindowCtrl),
+         "Margin between window edge and the button(s).");
          
    endGroup( "Window" );
 
@@ -678,7 +689,6 @@ bool GuiWindowCtrl::onWake()
       return false;
 
    //get the texture for the close, minimize, and maximize buttons
-   mTextureObject = mProfile->mTextureObject;
    bool result = mProfile->constructBitmapArray() >= NumBitmaps;
    if( !result )
    {
@@ -686,8 +696,10 @@ bool GuiWindowCtrl::onWake()
       return false;
    }
 
+   mTextureObject = mProfile->getBitmapResource();
+
    mBitmapBounds = mProfile->mBitmapArrayRects.address();
-   S32 buttonHeight = mBitmapBounds[BmpStates * BmpClose].extent.y;
+   S32 buttonHeight = mBitmapBounds[(U32)BmpStates * (U32)BmpClose].extent.y;
 
    mTitleHeight = buttonHeight + 4;
 
@@ -866,11 +878,13 @@ void GuiWindowCtrl::onMouseDragged(const GuiEvent &event)
          GuiCanvas* guiCanvas = getRoot();
          if (guiCanvas)
          {
+#ifdef TORQUE_TOOLS
             GuiMenuBar* menuBar = dynamic_cast<GuiMenuBar*>(guiCanvas->getMenuBar());
             if (menuBar)
             {
                menuBarHeight = menuBar->getHeight();
             }
+#endif
          }
          
          // Build valid snap and window vectors to compare against
@@ -1012,6 +1026,9 @@ void GuiWindowCtrl::onMouseDragged(const GuiEvent &event)
    }
    else // Normal window sizing functionality
       resize(newPosition, newExtent);
+
+   // Add a callback for the GUI scripts
+   onMouseDragged_callback();
 }
 
 //-----------------------------------------------------------------------------
@@ -1390,7 +1407,7 @@ void GuiWindowCtrl::onRender(Point2I offset, const RectI &updateRect)
    // Draw the close button
    Point2I tempUL;
    Point2I tempLR;
-   S32 bmp = BmpStates * BmpClose;
+   S32 bmp = (U32)BmpStates * (U32)BmpClose;
 
    if( mCanClose ) {
       if( mCloseButton.pointInRect( mMousePosition ) )
@@ -1402,14 +1419,14 @@ void GuiWindowCtrl::onRender(Point2I offset, const RectI &updateRect)
       }
 
       drawUtil->clearBitmapModulation();
-      drawUtil->drawBitmapSR(mTextureObject, offset + mCloseButton.point, mBitmapBounds[bmp]);
+      drawUtil->drawBitmapSR(mTextureObject, mButtonOffset + offset + mCloseButton.point, mBitmapBounds[bmp]);
    }
 
    // Draw the maximize button
    if( mMaximized )
-      bmp = BmpStates * BmpNormal;
+      bmp = (U32)BmpStates * (U32)BmpNormal;
    else
-      bmp = BmpStates * BmpMaximize;
+      bmp = (U32)BmpStates * (U32)BmpMaximize;
 
    if( mCanMaximize ) {
       if( mMaximizeButton.pointInRect( mMousePosition ) )
@@ -1421,14 +1438,14 @@ void GuiWindowCtrl::onRender(Point2I offset, const RectI &updateRect)
       }
 
       drawUtil->clearBitmapModulation();
-      drawUtil->drawBitmapSR( mTextureObject, offset + mMaximizeButton.point, mBitmapBounds[bmp] );
+      drawUtil->drawBitmapSR( mTextureObject, mButtonOffset + offset + mMaximizeButton.point, mBitmapBounds[bmp] );
    }
 
    // Draw the minimize button
    if( mMinimized )
-      bmp = BmpStates * BmpNormal;
+      bmp = (U32)BmpStates * (U32)BmpNormal;
    else
-      bmp = BmpStates * BmpMinimize;
+      bmp = (U32)BmpStates * (U32)BmpMinimize;
 
    if( mCanMinimize ) {
       if( mMinimizeButton.pointInRect( mMousePosition ) )
@@ -1440,7 +1457,7 @@ void GuiWindowCtrl::onRender(Point2I offset, const RectI &updateRect)
       }
 
       drawUtil->clearBitmapModulation();
-      drawUtil->drawBitmapSR( mTextureObject, offset + mMinimizeButton.point, mBitmapBounds[bmp] );
+      drawUtil->drawBitmapSR( mTextureObject, mButtonOffset + offset + mMinimizeButton.point, mBitmapBounds[bmp] );
    }
 
    if( !mMinimized )
@@ -1475,7 +1492,7 @@ const RectI GuiWindowCtrl::getClientRect()
    // Finally, inset it by padding
    // Inset by padding.  margin is specified for all t/b/l/r but 
    // uses only pointx pointy uniformly on both ends. This should be fixed. - JDD
-   // winRect.inset( mSizingOptions.mPadding.point.x, mSizingOptions.mPadding.point.y );
+   winRect.inset(mResizeMargin, mResizeMargin);
 
    return winRect;
 }
@@ -1495,8 +1512,8 @@ void GuiWindowCtrl::positionButtons(void)
    if( !mBitmapBounds || !mAwake )
       return;
 
-   S32 buttonWidth = mBitmapBounds[BmpStates * BmpClose].extent.x;
-   S32 buttonHeight = mBitmapBounds[BmpStates * BmpClose].extent.y;
+   S32 buttonWidth = mBitmapBounds[(U32)BmpStates * (U32)BmpClose].extent.x;
+   S32 buttonHeight = mBitmapBounds[(U32)BmpStates * (U32)BmpClose].extent.y;
    Point2I mainOff = mProfile->mTextOffset;
 
    // Until a pref, if alignment is LEFT, put buttons RIGHT justified.
@@ -1555,6 +1572,8 @@ bool GuiWindowCtrl::resize(const Point2I &newPosition, const Point2I &newExtent)
 
    // Set the button coords
    positionButtons();
+
+   onResize_callback(newPosition.x, newPosition.y, newExtent.x, newExtent.y);
 
    return true;
 }

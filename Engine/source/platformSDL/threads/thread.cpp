@@ -23,6 +23,7 @@
 #include "platform/threads/thread.h"
 #include "platform/threads/semaphore.h"
 #include "platform/threads/mutex.h"
+#include "platform/platformIntrinsics.h"
 #include <stdlib.h>
 #include <SDL.h>
 #include <SDL_thread.h>
@@ -33,10 +34,20 @@ public:
    ThreadRunFunction       mRunFunc;
    void*                   mRunArg;
    Thread*                 mThread;
-   Semaphore               mGateway; // default count is 1
+   Semaphore               mGateway;
    SDL_threadID            mThreadID;
    SDL_Thread*             mSdlThread;
-   bool                    mDead;
+   U32                     mDead;
+
+   PlatformThreadData()
+   {
+      mRunFunc    = NULL;
+      mRunArg     = 0;
+      mThread     = 0;
+      mThreadID   = 0;
+      mSdlThread  = NULL;
+      mDead       = false;
+   }
 };
 
 ThreadManager::MainThreadId ThreadManager::smMainThreadId;
@@ -50,22 +61,19 @@ ThreadManager::MainThreadId ThreadManager::smMainThreadId;
 static int ThreadRunHandler(void * arg)
 {
    PlatformThreadData *mData = reinterpret_cast<PlatformThreadData*>(arg);
-   Thread *thread = mData->mThread;
-
    mData->mThreadID = SDL_ThreadID();
    
-   ThreadManager::addThread(thread);
-   thread->run(mData->mRunArg);
-   ThreadManager::removeThread(thread);
+   ThreadManager::addThread(mData->mThread);
+   mData->mThread->run(mData->mRunArg);
+   ThreadManager::removeThread(mData->mThread);
 
-   bool autoDelete = thread->autoDelete;
+   bool autoDelete = mData->mThread->autoDelete;
    
-   mData->mThreadID = 0;
-   mData->mDead = true;
+   dCompareAndSwap(mData->mDead, false, true);
    mData->mGateway.release();
    
    if( autoDelete )
-      delete thread;
+      delete mData->mThread;
       
    return 0;
 }
@@ -134,9 +142,9 @@ bool Thread::isAlive()
    return ( !mData->mDead );
 }
 
-U32 Thread::getId()
+dsize_t Thread::getId()
 {
-   return (U32)mData->mThreadID;
+   return (dsize_t)mData->mThreadID;
 }
 
 void Thread::_setName( const char* )
@@ -145,12 +153,12 @@ void Thread::_setName( const char* )
    // that one thread you are looking for is just so much fun.
 }
 
-U32 ThreadManager::getCurrentThreadId()
+dsize_t ThreadManager::getCurrentThreadId()
 {
-   return (U32)SDL_ThreadID();
+   return (dsize_t)SDL_ThreadID();
 }
 
-bool ThreadManager::compare(U32 threadId_1, U32 threadId_2)
+bool ThreadManager::compare(dsize_t threadId_1, dsize_t threadId_2)
 {
    return (threadId_1 == threadId_2);
 }

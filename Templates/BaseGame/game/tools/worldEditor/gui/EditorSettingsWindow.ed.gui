@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(EditorSettingsWindow,EditorGuiGroup) {
+$guiContent = new GuiControl(EditorSettingsWindow,EditorGuiGroup) {
    isContainer = "1";
    Profile = "ToolsGuiDefaultProfile";
    HorizSizing = "right";
@@ -23,7 +23,7 @@
       canMaximize = "0";
       minSize = "50 50";
       EdgeSnap = "1";
-      text = "Editor Settings";
+      text = "::  Editor Settings";
       closeCommand = "ESettingsWindow.hideDialog();";
       Margin = "0 0 0 0";
       Padding = "0 0 0 0";

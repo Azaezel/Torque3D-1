@@ -57,9 +57,13 @@ public:
    virtual ~Prefab();
 
    DECLARE_CONOBJECT(Prefab);
+   DECLARE_CATEGORY("Object \t Collection");
   
    static void initPersistFields();
 
+   /// returns the filename for this object
+   StringTableEntry getTypeHint() const override;
+   
    // SimObject
    virtual bool onAdd();
    virtual void onRemove();
@@ -90,7 +94,7 @@ public:
    void render( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
 
    ///
-   void setFile( String file );
+   void setFile(StringTableEntry file );
 
    /// Removes all children from this Prefab and puts them into a SimGroup
    /// which is added to the Scene and returned to the caller.
@@ -101,6 +105,13 @@ public:
    bool buildExportPolyList(ColladaUtils::ExportData* exportData, const Box3F &box, const SphereF &);
 
    virtual void getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList);
+
+   S32 getChildGroup() {
+      if (mChildGroup.isValid())
+         return mChildGroup->getId();
+
+      return 0;
+   }
 
 protected:
 
@@ -122,7 +133,7 @@ protected:
 protected:
 
    /// Prefab file which defines our children objects.
-   String mFilename;
+   StringTableEntry mFilename;
 
    /// Group which holds all children objects.
    SimObjectPtr<SimGroup> mChildGroup;

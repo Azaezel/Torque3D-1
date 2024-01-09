@@ -1060,7 +1060,7 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *refTable,
    #ifdef TORQUE_DEBUG
          AssertFatal(constantBufferDesc.Type == D3D_CT_CBUFFER, "Only scalar cbuffers supported for now.");
 
-         if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 && dStrcmp(constantBufferDesc.Name, "$Params") != 0)
+         if (String::compare(constantBufferDesc.Name, "$Globals") != 0 && String::compare(constantBufferDesc.Name, "$Params") != 0)
             AssertFatal(false, "Only $Global and $Params cbuffer supported for now.");
    #endif
    #ifdef D3D11_DEBUG_SPEW
@@ -1385,7 +1385,8 @@ void GFXD3D11Shader::_buildSamplerShaderConstantHandles( Vector<GFXShaderConstDe
 
       AssertFatal(   desc.constType == GFXSCT_Sampler || 
                      desc.constType == GFXSCT_SamplerCube || 
-                     desc.constType == GFXSCT_SamplerCubeArray,
+                     desc.constType == GFXSCT_SamplerCubeArray ||
+                     desc.constType == GFXSCT_SamplerTextureArray,
                      "GFXD3D11Shader::_buildSamplerShaderConstantHandles - Invalid samplerDescription type!" );
 
       GFXD3D11ShaderConstHandle *handle;

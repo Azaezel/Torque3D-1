@@ -420,7 +420,10 @@ void NormalsOutFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
    {
       // Transform the normal to world space.
       Var *objTrans = getObjTrans( componentList, fd.features[MFT_UseInstancing], meta );
-      meta->addStatement( new GenOp( "   @ = mul( @, normalize( @ ) );\r\n", outNormal, objTrans, inNormal ) );
+      if (String::compare((const char*)objTrans->type, "float4x4") == 0)
+         meta->addStatement(new GenOp("   @ = mul( @, normalize( float4(@,0) ) ).xyz;\r\n", outNormal, objTrans, inNormal));
+      else
+         meta->addStatement(new GenOp("   @ = mul( @, normalize( @ ) );\r\n", outNormal, objTrans, inNormal));
    }
    else
    {
@@ -457,7 +460,7 @@ void NormalsOutFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    }
 
    LangElement *normalOut;
-   Var *outColor = (Var*)LangElement::find( "col" );
+   Var *outColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
    if ( outColor && !fd.features[MFT_AlphaTest] )
       normalOut = new GenOp( "float4( ( -@ + 1 ) * 0.5, @.a )", wsNormal, outColor );
    else

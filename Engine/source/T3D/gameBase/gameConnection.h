@@ -62,8 +62,8 @@ struct AuthInfo;
 
 // To disable datablock caching, remove or comment out the AFX_CAP_DATABLOCK_CACHE define below.
 // Also, at a minimum, the following script preferences should be set to false:
-//   $pref::Client::EnableDatablockCache = false; (in arcane.fx/client/defaults.cs)
-//   $Pref::Server::EnableDatablockCache = false; (in arcane.fx/server/defaults.cs)
+//   $pref::Client::EnableDatablockCache = false; (in arcane.fx/client/defaults.tscript)
+//   $Pref::Server::EnableDatablockCache = false; (in arcane.fx/server/defaults.tscript)
 // Alternatively, all script code marked with "DATABLOCK CACHE CODE" can be removed or
 // commented out.
 //
@@ -352,8 +352,8 @@ public:
    /// @name Sound
    /// @{
 
-   void play2D(SFXProfile *profile);
-   void play3D(SFXProfile *profile, const MatrixF *transform);
+   void play2D(StringTableEntry assetId);
+   void play3D(StringTableEntry assetId, const MatrixF *transform);
    /// @}
 
    /// @name Misc.
@@ -403,7 +403,7 @@ protected:
 public:   
    void          setRolloverObj(SceneObject*);   
    SceneObject*  getRolloverObj() { return  mRolloverObj; }   
-   void          setSelectedObj(SceneObject*, bool propagate_to_client=false);   
+   void          setSelectedObj(SceneObject*, bool propagate_to_client=false);
    SceneObject*  getSelectedObj() { return  mSelectedObj; }  
    void          setPreSelectedObjFromRollover();
    void          clearPreSelectedObj();

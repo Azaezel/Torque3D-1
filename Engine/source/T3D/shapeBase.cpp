@@ -68,6 +68,7 @@
 #include "renderInstance/renderOcclusionMgr.h"
 #include "core/stream/fileStream.h"
 #include "T3D/accumulationVolume.h"
+#include "console/persistenceManager.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(ShapeBaseData);
 
@@ -152,18 +153,16 @@ static const char *sDamageStateName[] =
 //----------------------------------------------------------------------------
 
 ShapeBaseData::ShapeBaseData()
- : shadowEnable( false ),
+ :
    shadowSize( 128 ),
    shadowMaxVisibleDistance( 80.0f ),
    shadowProjectionDistance( 10.0f ),
    shadowSphereAdjust( 1.0f ),
-   shapeName( StringTable->EmptyString() ),
    cloakTexName( StringTable->EmptyString() ),
    cubeDescId( 0 ),
    reflectorDesc( NULL ),
    debris( NULL ),
    debrisID( 0 ),
-   debrisShapeName( StringTable->EmptyString() ),
    explosion( NULL ),
    explosionID( 0 ),
    underwaterExplosion( NULL ),
@@ -197,7 +196,10 @@ ShapeBaseData::ShapeBaseData()
    isInvincible( false ),
    renderWhenDestroyed( true ),
    inheritEnergyFromMount( false )
-{      
+{
+   INIT_ASSET(Shape);
+   INIT_ASSET(DebrisShape);
+
    dMemset( mountPointNode, -1, sizeof( S32 ) * SceneObject::NumMountPoints );
    remap_txr_tags = NULL;
    remap_buffer = NULL;
@@ -206,20 +208,18 @@ ShapeBaseData::ShapeBaseData()
 
 ShapeBaseData::ShapeBaseData(const ShapeBaseData& other, bool temp_clone) : GameBaseData(other, temp_clone)
 {
-   shadowEnable = other.shadowEnable;
    shadowSize = other.shadowSize;
    shadowMaxVisibleDistance = other.shadowMaxVisibleDistance;
    shadowProjectionDistance = other.shadowProjectionDistance;
    shadowSphereAdjust = other.shadowSphereAdjust;
-   shapeName = other.shapeName;
    cloakTexName = other.cloakTexName;
+   CLONE_ASSET(Shape);
    cubeDescName = other.cubeDescName;
    cubeDescId = other.cubeDescId;
    reflectorDesc = other.reflectorDesc;
    debris = other.debris;
    debrisID = other.debrisID; // -- for pack/unpack of debris ptr
-   debrisShapeName = other.debrisShapeName;
-   debrisShape = other.debrisShape; // -- TSShape loaded using debrisShapeName
+   CLONE_ASSET(DebrisShape);
    explosion = other.explosion;
    explosionID = other.explosionID; // -- for pack/unpack of explosion ptr
    underwaterExplosion = other.underwaterExplosion;
@@ -336,49 +336,29 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
             "ShapeBaseData::preload: invalid debris data");
       }
 
-
-      if( debrisShapeName && debrisShapeName[0] != '\0' && !bool(debrisShape) )
+      if( bool(mDebrisShape))
       {
-         debrisShape = ResourceManager::get().load(debrisShapeName);
-         if( bool(debrisShape) == false )
-         {
-            errorStr = String::ToString("ShapeBaseData::load: Couldn't load shape \"%s\"", debrisShapeName);
-            return false;
-         }
-         else
-         {
-            if(!server && !debrisShape->preloadMaterialList(debrisShape.getPath()) && NetConnection::filesWereDownloaded())
-               shapeError = true;
-
-            TSShapeInstance* pDummy = new TSShapeInstance(debrisShape, !server);
-            delete pDummy;
-         }
+         TSShapeInstance* pDummy = new TSShapeInstance(mDebrisShape, !server);
+         delete pDummy;
       }
    }
 
-   //
-   if (shapeName && shapeName[0]) {
-      S32 i;
-
-      // Resolve shapename
-      mShape = ResourceManager::get().load(shapeName);
-      if (bool(mShape) == false)
-      {
-         errorStr = String::ToString("ShapeBaseData: Couldn't load shape \"%s\"",shapeName);
-         return false;
-      }
-      if(!server && !mShape->preloadMaterialList(mShape.getPath()) && NetConnection::filesWereDownloaded())
+   S32 i;
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus == AssetBase::Ok|| assetStatus == AssetBase::UsingFallback)
+   {
+      if (!server && !mShape->preloadMaterialList(mShape.getPath()) && NetConnection::filesWereDownloaded())
          shapeError = true;
 
       if(computeCRC)
       {
-         Con::printf("Validation required for shape: %s", shapeName);
+         Con::printf("Validation required for shape asset: %s", mShapeAsset.getAssetId());
 
-         Torque::FS::FileNodeRef    fileRef = Torque::FS::GetFileNode(mShape.getPath());
+         Torque::FS::FileNodeRef    fileRef = Torque::FS::GetFileNode(mShapeAsset->getShapePath());
 
          if (!fileRef)
          {
-            errorStr = String::ToString("ShapeBaseData: Couldn't load shape \"%s\"",shapeName);
+            errorStr = String::ToString("ShapeBaseData: Couldn't load shape asset \"%s\"", mShapeAsset.getAssetId());
             return false;
          }
 
@@ -386,7 +366,7 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
             mCRC = fileRef->getChecksum();
          else if(mCRC != fileRef->getChecksum())
          {
-            errorStr = String::ToString("Shape \"%s\" does not match version on server.",shapeName);
+            errorStr = String::ToString("Shape asset \"%s\" does not match version on server.", mShapeAsset.getAssetId());
             return false;
          }
       }
@@ -408,13 +388,13 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
             if (!mShape->mBounds.isContained(collisionBounds.last()))
             {
                if (!silent_bbox_check)
-               Con::warnf("Warning: shape %s collision detail %d (Collision-%d) bounds exceed that of shape.", shapeName, collisionDetails.size() - 1, collisionDetails.last());
+               Con::warnf("Warning: shape asset %s collision detail %d (Collision-%d) bounds exceed that of shape.", mShapeAsset.getAssetId(), collisionDetails.size() - 1, collisionDetails.last());
                collisionBounds.last() = mShape->mBounds;
             }
             else if (collisionBounds.last().isValidBox() == false)
             {
                if (!silent_bbox_check)
-               Con::errorf("Error: shape %s-collision detail %d (Collision-%d) bounds box invalid!", shapeName, collisionDetails.size() - 1, collisionDetails.last());
+               Con::errorf("Error: shape asset %s-collision detail %d (Collision-%d) bounds box invalid!", mShapeAsset.getAssetId(), collisionDetails.size() - 1, collisionDetails.last());
                collisionBounds.last() = mShape->mBounds;
             }
 
@@ -555,32 +535,17 @@ bool ShapeBaseData::_setMass( void* object, const char* index, const char* data 
 
 void ShapeBaseData::initPersistFields()
 {
-   addGroup( "Shadows" );
+   docsURL;
+   addGroup( "Shapes" );
+      INITPERSISTFIELD_SHAPEASSET(Shape, ShapeBaseData, "The source shape asset.");
+      addField("computeCRC", TypeBool, Offset(computeCRC, ShapeBaseData),
+         "If true, verify that the CRC of the client's shape model matches the "
+         "server's CRC for the shape model when loaded by the client.");
+      addField("silentBBoxValidation", TypeBool, Offset(silent_bbox_check, ShapeBaseData));
+      INITPERSISTFIELD_SHAPEASSET(DebrisShape, ShapeBaseData, "The shape asset to use for auto-generated breakups via blowup(). @note may not be functional.");
+   endGroup( "Shapes" );
 
-      addField( "shadowEnable", TypeBool, Offset(shadowEnable, ShapeBaseData),
-         "Enable shadows for this shape (currently unused, shadows are always enabled)." );
-      addField( "shadowSize", TypeS32, Offset(shadowSize, ShapeBaseData),
-         "Size of the projected shadow texture (must be power of 2)." );
-      addField( "shadowMaxVisibleDistance", TypeF32, Offset(shadowMaxVisibleDistance, ShapeBaseData),
-         "Maximum distance at which shadow is visible (currently unused)." );
-      addField( "shadowProjectionDistance", TypeF32, Offset(shadowProjectionDistance, ShapeBaseData),
-         "Maximum height above ground to project shadow. If the object is higher "
-         "than this no shadow will be rendered." );
-      addField( "shadowSphereAdjust", TypeF32, Offset(shadowSphereAdjust, ShapeBaseData),
-         "Scalar applied to the radius of spot shadows (initial radius is based "
-         "on the shape bounds but can be adjusted with this field)." );
-
-   endGroup( "Shadows" );
-
-   addGroup( "Render" );
-
-      addField( "shapeFile", TypeShapeFilename, Offset(shapeName, ShapeBaseData),
-         "The DTS or DAE model to use for this object." );
-
-   endGroup( "Render" );
-
-   addGroup( "Destruction", "Parameters related to the destruction effects of this object." );
-
+   addGroup("Particle Effects");
       addField( "explosion", TYPEID< ExplosionData >(), Offset(explosion, ShapeBaseData),
          "%Explosion to generate when this shape is blown up." );
       addField( "underwaterExplosion", TYPEID< ExplosionData >(), Offset(underwaterExplosion, ShapeBaseData),
@@ -589,23 +554,17 @@ void ShapeBaseData::initPersistFields()
          "%Debris to generate when this shape is blown up." );
       addField( "renderWhenDestroyed", TypeBool, Offset(renderWhenDestroyed, ShapeBaseData),
          "Whether to render the shape when it is in the \"Destroyed\" damage state." );
-      addField( "debrisShapeName", TypeShapeFilename, Offset(debrisShapeName, ShapeBaseData),
-         "The DTS or DAE model to use for auto-generated breakups. @note may not be functional." );
+   endGroup("Particle Effects");
 
-   endGroup( "Destruction" );
-
-   addGroup( "Physics" );
-   
+   addGroup( "Physics" );   
       addProtectedField("mass", TypeF32, Offset(mass, ShapeBaseData), &_setMass, &defaultProtectedGetFn, "Shape mass.\nUsed in simulation of moving objects.\n"  );
       addField( "drag", TypeF32, Offset(drag, ShapeBaseData),
          "Drag factor.\nReduces velocity of moving objects." );
       addField( "density", TypeF32, Offset(density, ShapeBaseData),
          "Shape density.\nUsed when computing buoyancy when in water.\n" );
-
    endGroup( "Physics" );
 
    addGroup( "Damage/Energy" );
-
       addField( "maxEnergy", TypeF32, Offset(maxEnergy, ShapeBaseData),
          "Maximum energy level for this object." );
       addField( "maxDamage", TypeF32, Offset(maxDamage, ShapeBaseData),
@@ -626,11 +585,9 @@ void ShapeBaseData::initPersistFields()
       addField( "isInvincible", TypeBool, Offset(isInvincible, ShapeBaseData),
          "Invincible flag; when invincible, the object cannot be damaged or "
          "repaired." );
-
    endGroup( "Damage/Energy" );
 
    addGroup( "Camera", "The settings used by the shape when it is the camera." );
-
       addField( "cameraMaxDist", TypeF32, Offset(cameraMaxDist, ShapeBaseData),
          "The maximum distance from the camera to the object.\n"
          "Used when computing a custom camera transform for this object.\n\n"
@@ -659,35 +616,38 @@ void ShapeBaseData::initPersistFields()
          "Observe this object through its camera transform and default fov.\n"
          "If true, when this object is the camera it can provide a custom camera "
          "transform and FOV (instead of the default eye transform)." );
-
    endGroup("Camera");
 
-   addGroup( "Misc" );
-
-      addField( "computeCRC", TypeBool, Offset(computeCRC, ShapeBaseData),
-         "If true, verify that the CRC of the client's shape model matches the "
-         "server's CRC for the shape model when loaded by the client." );
-
-   endGroup( "Misc" );
-
    addGroup( "Reflection" );
-
       addField( "cubeReflectorDesc", TypeRealString, Offset( cubeDescName, ShapeBaseData ), 
          "References a ReflectorDesc datablock that defines performance and quality properties for dynamic reflections.\n");
       //addField( "reflectMaxRateMs", TypeS32, Offset( reflectMaxRateMs, ShapeBaseData ), "reflection will not be updated more frequently than this" );
       //addField( "reflectMaxDist", TypeF32, Offset( reflectMaxDist, ShapeBaseData ), "distance at which reflection is never updated" );
       //addField( "reflectMinDist", TypeF32, Offset( reflectMinDist, ShapeBaseData ), "distance at which reflection is always updated" );
       //addField( "reflectDetailAdjust", TypeF32, Offset( reflectDetailAdjust, ShapeBaseData ), "scale up or down the detail level for objects rendered in a reflection" );
-
    endGroup( "Reflection" );
 
    addField("remapTextureTags",      TypeString,   Offset(remap_txr_tags, ShapeBaseData));
-   addField("silentBBoxValidation",  TypeBool,     Offset(silent_bbox_check, ShapeBaseData));
+
    // disallow some field substitutions
    onlyKeepClearSubstitutions("debris"); // subs resolving to "~~", or "~0" are OK
    onlyKeepClearSubstitutions("explosion");
    onlyKeepClearSubstitutions("underwaterExplosion");
    Parent::initPersistFields();
+
+   addGroup("BL Projected Shadows");
+      addField("shadowSize", TypeS32, Offset(shadowSize, ShapeBaseData),
+         "Size of the projected shadow texture (must be power of 2).");
+      addField("shadowMaxVisibleDistance", TypeF32, Offset(shadowMaxVisibleDistance, ShapeBaseData),
+         "Maximum distance at which shadow is visible (currently unused).");
+      addField("shadowProjectionDistance", TypeF32, Offset(shadowProjectionDistance, ShapeBaseData),
+         "Maximum height above ground to project shadow. If the object is higher "
+         "than this no shadow will be rendered.");
+      addField("shadowSphereAdjust", TypeF32, Offset(shadowSphereAdjust, ShapeBaseData),
+         "Scalar applied to the radius of spot shadows (initial radius is based "
+         "on the shape bounds but can be adjusted with this field).");
+   endGroup("BL Projected Shadows");
+
 }
 
 DefineEngineMethod( ShapeBaseData, checkDeployPos, bool, ( TransformF txfm ),,
@@ -772,14 +732,14 @@ void ShapeBaseData::packData(BitStream* stream)
    if(stream->writeFlag(computeCRC))
       stream->write(mCRC);
 
-   stream->writeFlag(shadowEnable);
    stream->write(shadowSize);
    stream->write(shadowMaxVisibleDistance);
    stream->write(shadowProjectionDistance);
    stream->write(shadowSphereAdjust);
 
+   PACKDATA_ASSET(Shape);
+   PACKDATA_ASSET(DebrisShape);
 
-   stream->writeString(shapeName);
    stream->writeString(cloakTexName);
    if(stream->writeFlag(mass != gShapeBaseDataProto.mass))
       stream->write(mass);
@@ -802,7 +762,6 @@ void ShapeBaseData::packData(BitStream* stream)
       stream->write(cameraMaxFov);
    stream->writeFlag(cameraCanBank);
    stream->writeFlag(mountedImagesBank);
-   stream->writeString( debrisShapeName );
 
    stream->writeFlag(observeThroughObject);
 
@@ -850,13 +809,14 @@ void ShapeBaseData::unpackData(BitStream* stream)
    if(computeCRC)
       stream->read(&mCRC);
 
-   shadowEnable = stream->readFlag();
    stream->read(&shadowSize);
    stream->read(&shadowMaxVisibleDistance);
    stream->read(&shadowProjectionDistance);
    stream->read(&shadowSphereAdjust);
 
-   shapeName = stream->readSTString();
+   UNPACKDATA_ASSET(Shape);
+   UNPACKDATA_ASSET(DebrisShape);
+
    cloakTexName = stream->readSTString();
    if(stream->readFlag())
       stream->read(&mass);
@@ -905,9 +865,6 @@ void ShapeBaseData::unpackData(BitStream* stream)
 
    cameraCanBank = stream->readFlag();
    mountedImagesBank = stream->readFlag();
-
-   debrisShapeName = stream->readSTString();
-
    observeThroughObject = stream->readFlag();
 
    if( stream->readFlag() )
@@ -1000,7 +957,7 @@ ShapeBase::ShapeBase()
    mLiquidHeight( 0.0f ),
    mWaterCoverage( 0.0f ),
    mAppliedForce( Point3F::Zero ),
-   mGravityMod( 1.0f ),
+   mNetGravity( 1.0f ),
    mDamageFlash( 0.0f ),
    mWhiteOut( 0.0f ),
    mFlipFadeVal( false ),
@@ -1031,7 +988,7 @@ ShapeBase::ShapeBase()
 
    for (i = 0; i < MaxSoundThreads; i++) {
       mSoundThread[i].play = false;
-      mSoundThread[i].profile = 0;
+      mSoundThread[i].asset = 0;
       mSoundThread[i].sound = 0;
    }
 
@@ -1078,6 +1035,7 @@ ShapeBase::~ShapeBase()
 
 void ShapeBase::initPersistFields()
 {
+   docsURL;
    addProtectedField( "skin", TypeRealString, Offset(mAppliedSkinName, ShapeBase), &_setFieldSkin, &_getFieldSkin,
       "@brief The skin applied to the shape.\n\n"
 
@@ -1594,7 +1552,7 @@ void ShapeBase::setControllingClient( GameConnection* client )
          
          gSFX3DWorld->setListener( NULL );
       }
-      else if( client && client->isConnectionToServer() && !getControllingObject() )
+      else if( client && client->isConnectionToServer() && (getControllingObject() != this) )
       {
          // We're on the local client and not controlled by another object, so make
          // us the current SFX listener.
@@ -1768,7 +1726,7 @@ void ShapeBase::updateContainer()
    // Set default values.
    mDrag = mDataBlock->drag;
    mBuoyancy = 0.0f;      
-   mGravityMod = 1.0;
+   mNetGravity = gGravity;
    mAppliedForce.set(0,0,0);
    
    ContainerQueryInfo info;
@@ -1797,7 +1755,7 @@ void ShapeBase::updateContainer()
    }
 
    mAppliedForce = info.appliedForce;
-   mGravityMod = info.gravityScale;
+   mNetGravity = (1.0-mBuoyancy)*info.gravityScale* gGravity;
 
    //Con::printf( "WaterCoverage: %f", mWaterCoverage );
    //Con::printf( "Drag: %f", mDrag );
@@ -1986,13 +1944,13 @@ void ShapeBase::blowUp()
 
    TSShapeInstance *debShape = NULL;
 
-   if( mDataBlock->debrisShape == NULL )
+   if( mDataBlock->mDebrisShape == NULL )
    {
       return;
    }
    else
    {
-      debShape = new TSShapeInstance( mDataBlock->debrisShape, true);
+      debShape = new TSShapeInstance( mDataBlock->mDebrisShape, true);
    }
 
 
@@ -2062,6 +2020,41 @@ Point3F ShapeBase::getAIRepairPoint()
 }
 
 //----------------------------------------------------------------------------
+void ShapeBase::getNodeTransform(const char* nodeName, MatrixF* outMat)
+{
+   S32 nodeIDx = mDataBlock->getShapeResource()->findNode(nodeName);
+   const MatrixF& xfm = isMounted() ? mMount.xfm : MatrixF::Identity;
+
+   MatrixF nodeTransform(xfm);
+   const Point3F& scale = getScale();
+   if (nodeIDx != -1)
+   {
+      nodeTransform = mShapeInstance->mNodeTransforms[nodeIDx];
+      nodeTransform.mul(xfm);
+   }
+   // The position of the mount point needs to be scaled.
+   Point3F position = nodeTransform.getPosition();
+   position.convolve(scale);
+   nodeTransform.setPosition(position);
+   // Also we would like the object to be scaled to the model.
+   outMat->mul(mObjToWorld, nodeTransform);
+   return;
+}
+
+void ShapeBase::getNodeVector(const char* nodeName, VectorF* vec)
+{
+   MatrixF mat;
+   getNodeTransform(nodeName, &mat);
+
+   mat.getColumn(1, vec);
+}
+
+void ShapeBase::getNodePoint(const char* nodeName, Point3F* pos)
+{
+   MatrixF mat;
+   getNodeTransform(nodeName, &mat);
+   mat.getColumn(3, pos);
+}
 
 void ShapeBase::getEyeTransform(MatrixF* mat)
 {
@@ -2255,16 +2248,22 @@ void ShapeBase::applyImpulse(const Point3F&,const VectorF&)
 
 //----------------------------------------------------------------------------
 
-void ShapeBase::playAudio(U32 slot,SFXTrack* profile)
+void ShapeBase::playAudio(U32 slot, StringTableEntry assetId)
 {
    AssertFatal( slot < MaxSoundThreads, "ShapeBase::playAudio() bad slot index" );
-   Sound& st = mSoundThread[slot];
-   if( profile && ( !st.play || st.profile != profile ) ) 
+   if (AssetDatabase.isDeclaredAsset(assetId))
+   {
+      AssetPtr<SoundAsset> tempSoundAsset;
+      tempSoundAsset = assetId;
+
+      SoundThread& st = mSoundThread[slot];
+      if (tempSoundAsset && (!st.play || st.asset != tempSoundAsset))
    {
       setMaskBits(SoundMaskN << slot);
       st.play = true;
-      st.profile = profile;
+         st.asset = tempSoundAsset;
       updateAudioState(st);
+   }
    }
 }
 
@@ -2272,7 +2271,7 @@ void ShapeBase::stopAudio(U32 slot)
 {
    AssertFatal( slot < MaxSoundThreads, "ShapeBase::stopAudio() bad slot index" );
 
-   Sound& st = mSoundThread[slot];
+   SoundThread& st = mSoundThread[slot];
    if ( st.play ) 
    {
       st.play = false;
@@ -2285,7 +2284,7 @@ void ShapeBase::updateServerAudio()
 {
    // Timeout non-looping sounds
    for (S32 i = 0; i < MaxSoundThreads; i++) {
-      Sound& st = mSoundThread[i];
+      SoundThread& st = mSoundThread[i];
       if (st.play && st.timeout && st.timeout < Sim::getCurrentTime()) {
          clearMaskBits(SoundMaskN << i);
          st.play = false;
@@ -2293,19 +2292,23 @@ void ShapeBase::updateServerAudio()
    }
 }
 
-void ShapeBase::updateAudioState(Sound& st)
+void ShapeBase::updateAudioState(SoundThread& st)
 {
    SFX_DELETE( st.sound );
 
-   if ( st.play && st.profile ) 
+   if ( st.play && st.asset ) 
    {
       if ( isGhost() ) 
       {
-         if ( Sim::findObject( SimObjectId((uintptr_t)st.profile), st.profile ) )
+         // if asset is valid, play
+         if (st.asset->isAssetValid() )
          {
-            st.sound = SFX->createSource( st.profile, &getTransform() );
-            if ( st.sound )
-               st.sound->play();
+            if (st.asset->load() == AssetBase::Ok)
+            {
+               st.sound = SFX->createSource(st.asset->getSFXTrack(), &getTransform());
+               if (st.sound)
+                  st.sound->play();
+            }
          }
          else
             st.play = false;
@@ -2314,12 +2317,17 @@ void ShapeBase::updateAudioState(Sound& st)
       {
          // Non-looping sounds timeout on the server
          st.timeout = 0;
-         if ( !st.profile->getDescription()->mIsLooping )
+         if ( !st.asset->getSfxDescription()->mIsLooping )
             st.timeout = Sim::getCurrentTime() + sAudioTimeout;
       }
    }
    else
+   {
+      // st.sound was not stopped before. If this causes issues remove.
       st.play = false;
+      if (st.sound)
+         st.sound->stop();
+   }
 }
 
 void ShapeBase::updateAudioPos()
@@ -3144,12 +3152,14 @@ U32 ShapeBase::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 
    if (stream->writeFlag(mask & SoundMask)) {
       for (S32 i = 0; i < MaxSoundThreads; i++) {
-         Sound& st = mSoundThread[i];
+         SoundThread& st = mSoundThread[i];
          if (stream->writeFlag(mask & (SoundMaskN << i)))
             if (stream->writeFlag(st.play))
-               stream->writeRangedU32(st.profile->getId(),DataBlockObjectIdFirst,
-                                      DataBlockObjectIdLast);
+            {
+               NetStringHandle assetIdStr = st.asset->getAssetId();
+               con->packNetStringHandleU(stream, assetIdStr);
       }
+   }
    }
 
    if (stream->writeFlag(mask & ImageMask)) {
@@ -3264,12 +3274,18 @@ void ShapeBase::unpackUpdate(NetConnection *con, BitStream *stream)
       {
          if ( stream->readFlag() ) 
          {
-            Sound& st = mSoundThread[i];
+            SoundThread& st = mSoundThread[i];
             st.play = stream->readFlag();
             if ( st.play ) 
             {
-               st.profile = (SFXTrack*)(uintptr_t)stream->readRangedU32(  DataBlockObjectIdFirst,
-                                                                DataBlockObjectIdLast );
+               StringTableEntry temp = StringTable->insert(con->unpackNetStringHandleU(stream).getString());
+               if (AssetDatabase.isDeclaredAsset(temp))
+               {
+                  AssetPtr<SoundAsset> tempSoundAsset;
+                  tempSoundAsset = temp;
+
+                  st.asset = temp;
+               }
             }
 
             if ( isProperlyAdded() )
@@ -3799,7 +3815,7 @@ DefineEngineMethod( ShapeBase, isHidden, bool, (),,
 }
 
 //----------------------------------------------------------------------------
-DefineEngineMethod( ShapeBase, playAudio, bool, ( S32 slot, SFXTrack* track ),,
+DefineEngineMethod( ShapeBase, playAudio, bool, ( S32 slot, StringTableEntry assetId),,
    "@brief Attach a sound to this shape and start playing it.\n\n"
 
    "@param slot Audio slot index for the sound (valid range is 0 - 3)\n" // 3 = ShapeBase::MaxSoundThreads-1
@@ -3808,8 +3824,8 @@ DefineEngineMethod( ShapeBase, playAudio, bool, ( S32 slot, SFXTrack* track ),,
    
    "@see stopAudio()\n")
 {
-   if (track && slot >= 0 && slot < ShapeBase::MaxSoundThreads) {
-      object->playAudio(slot,track);
+   if (assetId && slot >= 0 && slot < ShapeBase::MaxSoundThreads) {
+      object->playAudio(slot, assetId);
       return true;
    }
    return false;
@@ -5375,3 +5391,37 @@ void ShapeBase::setSelectionFlags(U8 flags)
    }  
 }
 
+DefineEngineMethod(ShapeBase, getNodeTransform, MatrixF, (const char* nodeName), ,
+   "@brief Get the node/bone transform.\n\n"
+
+   "@param node/bone name to query\n"
+   "@return the node position\n\n")
+{
+   MatrixF mat;
+   object->getNodeTransform(nodeName, &mat);
+   return mat;
+}
+
+DefineEngineMethod(ShapeBase, getNodeVector, VectorF, (const char* nodeName), ,
+   "@brief Get the node/bone vector.\n\n"
+
+   "@param node/bone name to query\n"
+   "@return the node vector\n\n")
+{
+   VectorF vec(0, 1, 0);
+   object->getNodeVector(nodeName, &vec);
+
+   return vec;
+}
+
+DefineEngineMethod(ShapeBase, getNodePoint, Point3F, (const char* nodeName), ,
+   "@brief Get the node/bone position.\n\n"
+
+   "@param node/bone name to query\n"
+   "@return the node position\n\n")
+{
+   Point3F pos(0, 0, 0);
+   object->getNodePoint(nodeName, &pos);
+
+   return pos;
+}

@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(ManageSFXParametersContainer,EditorGuiGroup) {
+$guiContent = new GuiControl(ManageSFXParametersContainer,EditorGuiGroup) {
    isContainer = "1";
    Profile = "ToolsGuiModelessDialogProfile";
    HorizSizing = "right";
@@ -27,7 +27,7 @@
       minSize = "50 50";
       closeCommand = "EManageSFXParameters.setVisible( false );";
       EdgeSnap = "0";
-      text = "Audio Parameters";
+      text = "::  Audio Parameters";
       Margin = "5 5 5 5";
       Padding = "5 5 5 5";
       AnchorTop = "1";
@@ -112,7 +112,7 @@
             canSaveDynamicFields = "0";
          };
          new GuiBitmapButtonCtrl() {
-            bitmap = "tools/gui/images/new";
+            bitmapAsset = "ToolsModule:new_n_image";
             autoFit = "0";
             text = "Create";
             groupNum = "-1";

@@ -27,6 +27,7 @@
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
 #include "collision/boxConvex.h"
+#include "console/script.h"
 
 #include "core/stream/bitStream.h"
 #include "math/mathIO.h"
@@ -98,6 +99,7 @@ bool TriggerData::onAdd()
 
 void TriggerData::initPersistFields()
 {
+   docsURL;
    addGroup("Callbacks");
 
       addField( "tickPeriodMS",  TypeS32,    Offset( tickPeriodMS, TriggerData ),
@@ -170,6 +172,16 @@ Trigger::Trigger()
    mConvexList = new Convex;
 
    mPhysicsRep = NULL;
+   mTripOnce = false;
+   mTrippedBy = 0xFFFFFFFF;
+   mTripCondition = "";
+
+   //Default up a basic square
+   Point3F vecs[3] = { Point3F(1.0, 0.0, 0.0),
+      Point3F(0.0, -1.0, 0.0),
+      Point3F(0.0, 0.0, 1.0) };
+
+   mTriggerPolyhedron = Polyhedron(Point3F(-0.5, 0.5, 0.0), vecs);
 }
 
 Trigger::~Trigger()
@@ -235,6 +247,11 @@ bool Trigger::castRay(const Point3F &start, const Point3F &end, RayInfo* info)
 DECLARE_STRUCT( Polyhedron );
 IMPLEMENT_STRUCT( Polyhedron, Polyhedron,,
    "" )
+
+   FIELD(mPointList, pointList, 1, "")
+   FIELD(mPlaneList, planeList, 1, "")
+   FIELD(mEdgeList, edgeList, 1, "")
+
 END_IMPLEMENT_STRUCT;
 ConsoleType(floatList, TypeTriggerPolyhedron, Polyhedron, "")
 
@@ -355,12 +372,16 @@ void Trigger::consoleInit()
 
 void Trigger::initPersistFields()
 {
+   docsURL;
    addField("polyhedron", TypeTriggerPolyhedron, Offset(mTriggerPolyhedron, Trigger),
       "@brief Defines a non-rectangular area for the trigger.\n\n"
       "Rather than the standard rectangular bounds, this optional parameter defines a quadrilateral "
       "trigger area.  The quadrilateral is defined as a corner point followed by three vectors "
       "representing the edges extending from the corner.\n");
 
+   addField("TripOnce", TypeBool, Offset(mTripOnce, Trigger),"Do we trigger callacks just the once?");
+   addField("TripCondition", TypeRealString, Offset(mTripCondition, Trigger),"evaluation condition to trip callbacks (true/false)");
+   addField("TrippedBy", TypeS32, Offset(mTrippedBy, Trigger), "typemask filter");
    addProtectedField("enterCommand", TypeCommand, Offset(mEnterCommand, Trigger), &setEnterCmd, &defaultProtectedGetFn,
       "The command to execute when an object enters this trigger. Object id stored in %%obj. Maximum 1023 characters." );
    addProtectedField("leaveCommand", TypeCommand, Offset(mLeaveCommand, Trigger), &setLeaveCmd, &defaultProtectedGetFn,
@@ -396,7 +417,7 @@ void Trigger::testObjects()
    Vector<SceneObject*> foundobjs;
    foundobjs.clear();
    if (getSceneManager() && getSceneManager()->getContainer() && getSceneManager()->getZoneManager())
-      getSceneManager()->getContainer()->findObjectList(getWorldBox(), 0xFFFFFFFF, &foundobjs);
+      getSceneManager()->getContainer()->findObjectList(getWorldBox(), mTrippedBy, &foundobjs);
    else return;
 
    for (S32 i = 0; i < foundobjs.size(); i++)
@@ -418,7 +439,7 @@ bool Trigger::onAdd()
 
    Polyhedron temp = mTriggerPolyhedron;
    setTriggerPolyhedron(temp);
-
+   mTripped = false;
    addToScene();
 
    if (isServerObject())
@@ -517,7 +538,6 @@ void Trigger::buildConvex(const Box3F& box, Convex* convex)
    cp->mSize.z = mObjBox.len_z() / 2.0f;
 }
 
-
 //------------------------------------------------------------------------------
 
 void Trigger::setTransform(const MatrixF & mat)
@@ -535,7 +555,7 @@ void Trigger::setTransform(const MatrixF & mat)
       base.mul(mWorldToObj);
       mClippedList.setBaseTransform(base);
 
-      setMaskBits(TransformMask | ScaleMask);
+      setMaskBits((U32)TransformMask | (U32)ScaleMask);
    }
 
    testObjects();
@@ -545,7 +565,7 @@ void Trigger::onUnmount( SceneObject *obj, S32 node )
 {
     Parent::onUnmount( obj, node );
    // Make sure the client get's the final server pos.
-   setMaskBits(TransformMask | ScaleMask);
+   setMaskBits((U32)TransformMask | (U32)ScaleMask);
 }
 
 void Trigger::prepRenderImage( SceneRenderState *state )
@@ -655,6 +675,9 @@ bool Trigger::testObject(GameBase* enter)
    if (mTriggerPolyhedron.mPointList.size() == 0)
       return false;
 
+   if (!(enter->getTypeMask() & mTrippedBy))
+      return false; //not the right type of object
+   
    mClippedList.clear();
 
    SphereF sphere;
@@ -666,6 +689,39 @@ bool Trigger::testObject(GameBase* enter)
    return mClippedList.isEmpty() == false;
 }
 
+bool Trigger::testTrippable()
+{
+   if ((mTripOnce == true) && (mTripped == true))
+      return false; // we've already fired the once
+   return true;
+}
+
+bool Trigger::testCondition()
+{
+   if (mTripCondition.isEmpty())
+      return true; //we've got no tests to run so just do it
+
+   //test the mapper plugged in condition line
+   String resVar = getIdString() + String(".result");
+   Con::setBoolVariable(resVar.c_str(), false);
+   String command = resVar + "=" + mTripCondition + ";";
+   Con::evaluatef(command.c_str());
+   if (Con::getBoolVariable(resVar.c_str()) == 1)
+   {
+      return true;
+   }
+   return false;
+}
+
+bool Trigger::evalCmD(String* cmd)
+{
+   if (!testTrippable()) return false;
+   if (cmd && cmd->isNotEmpty())//do we have a callback?
+   {
+      return testCondition();
+   }
+   return false;
+}
 
 void Trigger::potentialEnterObject(GameBase* enter)
 {
@@ -683,14 +739,16 @@ void Trigger::potentialEnterObject(GameBase* enter)
       mObjects.push_back(enter);
       deleteNotify(enter);
 
-      if(!mEnterCommand.isEmpty())
+      if(evalCmD(&mEnterCommand))
       {
-         String command = String("%obj = ") + enter->getIdString() + ";" + mEnterCommand;
+         String command = String("%obj = ") + enter->getIdString() + ";";
+         command = command + String("%this = ") + getIdString() + ";" + mEnterCommand;
          Con::evaluate(command.c_str());
       }
 
-      if( mDataBlock )
+      if( mDataBlock && testTrippable() && testCondition())
          mDataBlock->onEnterTrigger_callback( this, enter );
+      mTripped = true;
    }
 }
 
@@ -730,20 +788,22 @@ void Trigger::processTick(const Move* move)
             mObjects.erase(i);
             clearNotify(remove);
             
-            if (!mLeaveCommand.isEmpty())
+            if (evalCmD(&mLeaveCommand))
             {
-               String command = String("%obj = ") + remove->getIdString() + ";" + mLeaveCommand;
+               String command = String("%obj = ") + remove->getIdString() + ";";
+               command = command + String("%this = ") + getIdString() + ";" + mLeaveCommand;
                Con::evaluate(command.c_str());
             }
-
-            mDataBlock->onLeaveTrigger_callback( this, remove );
+            if (testTrippable() && testCondition())
+               mDataBlock->onLeaveTrigger_callback( this, remove );
+            mTripped = true;
          }
       }
 
-      if (!mTickCommand.isEmpty())
+      if (evalCmD(&mTickCommand))
          Con::evaluate(mTickCommand.c_str());
 
-      if (mObjects.size() != 0)
+      if (mObjects.size() != 0 && testTrippable() && testCondition())
          mDataBlock->onTickTrigger_callback( this );
    }
    else

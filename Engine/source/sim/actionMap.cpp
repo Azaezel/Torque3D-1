@@ -28,6 +28,7 @@
 #include "core/stream/fileStream.h"
 #include "math/mMathFn.h"
 #include "console/engineAPI.h"
+#include "console/script.h"
 #include "math/mQuat.h"
 #include "math/mAngAxis.h"
 
@@ -728,7 +729,8 @@ bool ActionMap::nextBoundNode( const char* function, U32 &devMapIndex, U32 &node
       for ( U32 j = nodeIndex; j < dvcMap->nodeMap.size(); j++ )
       {
          const Node* node = &dvcMap->nodeMap[j];
-         if ( !( node->flags & Node::BindCmd ) && ( dStricmp( function, node->consoleFunction ) == 0 ) )
+         if ( ( (node->flags & Node::BindCmd) && (dStricmp(function, node->makeConsoleCommand) == 0 || dStricmp(function, node->breakConsoleCommand) == 0) )
+            || (!(node->flags & Node::BindCmd) && dStricmp( function, node->consoleFunction ) == 0 ) )
          {
             devMapIndex = i;
             nodeIndex = j;
@@ -1804,6 +1806,7 @@ bool ActionMap::handleEvent(const InputEventInfo* pEvent)
    for (SimSet::iterator itr = pActionMapSet->end() - 1;
         itr > pActionMapSet->begin(); itr--) {
       ActionMap* pMap = static_cast<ActionMap*>(*itr);
+
       if (pMap->processAction(pEvent) == true)
          return true;
    }
@@ -1962,7 +1965,7 @@ void ContextAction::processTick()
    if (mActive)
    {
       F32 currTime = Sim::getCurrentTime();
-      static const char *argv[2];
+      static const char *argv[3];
 
       //see if this key even is still active  
       if (!mBreakEvent)
@@ -2080,7 +2083,7 @@ static ConsoleDocFragment _ActionMapbind2(
 DefineEngineStringlyVariadicMethod( ActionMap, bind, bool, 5, 10, "actionMap.bind( device, action, [modifier, spec, mod...], command )"
            "@hide")
 {
-   StringStackWrapper args(argc - 2, argv + 2);
+   ConsoleValueToStringArrayWrapper args(argc - 2, argv + 2);
    return object->processBind( args.count(), args, NULL );
 }
 
@@ -2136,7 +2139,7 @@ DefineEngineStringlyVariadicMethod( ActionMap, bindObj, bool, 6, 11, "(device, a
       return false;
    }
 
-   StringStackWrapper args(argc - 3, argv + 2);
+   ConsoleValueToStringArrayWrapper args(argc - 3, argv + 2);
    return object->processBind( args.count(), args, simObject );
 }
 
@@ -2218,8 +2221,8 @@ DefineEngineMethod( ActionMap, save, void, ( const char* fileName, bool append )
    " the ActionMap will be dumped to the console.\n"
    "@param append Whether to write the ActionMap at the end of the file or overwrite it.\n"
    "@tsexample\n"
-   "// Write out the actionmap into the config.cs file\n"
-   "moveMap.save( \"scripts/client/config.cs\" );"
+   "// Write out the actionmap into the config." TORQUE_SCRIPT_EXTENSION " file\n"
+   "moveMap.save( \"scripts/client/config." TORQUE_SCRIPT_EXTENSION "\" );"
    "@endtsexample\n\n")
 {
    char buffer[1024];

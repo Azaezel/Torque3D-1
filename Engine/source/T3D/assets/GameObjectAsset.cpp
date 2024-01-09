@@ -41,6 +41,7 @@
 #endif
 
 // Debug Profiling.
+#include "console/script.h"
 #include "platform/profiler.h"
 
 //-----------------------------------------------------------------------------
@@ -109,6 +110,7 @@ GameObjectAsset::~GameObjectAsset()
 
 void GameObjectAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -133,7 +135,7 @@ void GameObjectAsset::initializeAsset()
    //Ensure we have an expanded filepath
    mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
 
-   if (Platform::isFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
       Con::executeFile(mScriptPath, false, false);
 
    mTAMLPath = getOwned() ? expandAssetFilePath(mTAMLFile) : mTAMLPath;
@@ -144,7 +146,7 @@ void GameObjectAsset::onAssetRefresh()
    //Ensure we have an expanded filepath
    mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
 
-   if (Platform::isFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
       Con::executeFile(mScriptPath, false, false);
 
    mTAMLPath = getOwned() ? expandAssetFilePath(mTAMLFile) : mTAMLPath;
@@ -156,10 +158,10 @@ void GameObjectAsset::setScriptFile(const char* pScriptFile)
    AssertFatal(pScriptFile != NULL, "Cannot use a NULL script file.");
 
    // Fetch image file.
-   pScriptFile = StringTable->insert(pScriptFile);
+   pScriptFile = StringTable->insert(pScriptFile, true);
 
    // Ignore no change,
-   if (pScriptFile == mScriptFile)
+   if (pScriptFile == mTAMLFile)
       return;
 
    // Update.
@@ -176,7 +178,7 @@ void GameObjectAsset::setTAMLFile(const char* pTAMLFile)
    AssertFatal(pTAMLFile != NULL, "Cannot use a NULL TAML file.");
 
    // Fetch image file.
-   pTAMLFile = StringTable->insert(pTAMLFile);
+   pTAMLFile = StringTable->insert(pTAMLFile, true);
 
    // Ignore no change,
    if (pTAMLFile == mTAMLFile)
@@ -192,7 +194,7 @@ void GameObjectAsset::setTAMLFile(const char* pTAMLFile)
 
 const char* GameObjectAsset::create()
 {
-   if (!Platform::isFile(mTAMLFile))
+   if (!Torque::FS::IsFile(mTAMLFile))
       return "";
 
    // Set the format mode.
@@ -231,6 +233,7 @@ DefineEngineMethod(GameObjectAsset, createObject, const char*, (),,
    return object->create();
 }
 
+#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // GuiInspectorTypeAssetId
 //-----------------------------------------------------------------------------
@@ -316,3 +319,4 @@ bool GuiInspectorTypeGameObjectAssetPtr::updateRects()
 
    return resized;
 }
+#endif

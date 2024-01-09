@@ -133,13 +133,31 @@ DefineEngineMethod(ModuleManager, findModule, String, (const char* pModuleId, U3
 
 //-----------------------------------------------------------------------------
 
-DefineEngineMethod(ModuleManager, findModules, String, (bool loadedOnly), (false),
+DefineEngineMethod(ModuleManager, findModuleByFilePath, String, (const char* filePath), (""),
+   "Find the specific module Id optionally at the specified version Id.\n"
+   "@param moduleId The module Id to find.\n"
+   "@param versionId The version Id to find.\n"
+   "@return The module definition object or NULL if not found.\n")
+{
+   // Find module definition.
+   ModuleDefinition* pModuleDefinition = object->findModuleByFilePath(StringTable->insert(filePath));
+
+   // Return nothing if not found.
+   if (pModuleDefinition == NULL)
+      return StringTable->EmptyString();
+
+   return pModuleDefinition->getIdString();
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineMethod(ModuleManager, findModules, String, (bool loadedOnly), (true),
    "Find all the modules registered with the specified loaded state.\n"
    "@param loadedOnly Whether to return only modules that are loaded or not.\n"
    "@return A list of space - separated module definition object Ids.\n")
 {
     // Find module type definitions.
-    Vector<const ModuleDefinition*> moduleDefinitions;
+    Vector<ModuleDefinition*> moduleDefinitions;
 
     // Find modules.
     object->findModules( loadedOnly, moduleDefinitions );
@@ -380,7 +398,7 @@ DefineEngineMethod(ModuleManager, removeListener, void, (const char* listenerObj
 //-----------------------------------------------------------------------------
 
 DefineEngineMethod(ModuleManager, ignoreLoadedGroups, void, (bool doIgnore), (false),
-   "Sets if the Module Manager should ingore laoded groups.\n"
+   "Sets if the Module Manager should ingore loaded groups.\n"
    "@param doIgnore Whether we should or should not ignore loaded groups.\n"
    "@return No return value.\n")
 {

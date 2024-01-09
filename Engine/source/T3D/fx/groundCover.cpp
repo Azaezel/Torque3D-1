@@ -49,6 +49,8 @@
 #include "materials/matInstance.h"
 #include "renderInstance/renderDeferredMgr.h"
 #include "console/engineAPI.h"
+#include "T3D/assets/MaterialAsset.h"
+#include "T3D/assets/TerrainMaterialAsset.h"
 
 /// This is used for rendering ground cover billboards.
 GFXImplementVertexFormat( GCVertex )
@@ -458,8 +460,9 @@ GroundCover::GroundCover()
 
    mRandomSeed = 1;
 
-   mMaterial = NULL;
-   mMatInst = NULL;
+   INIT_ASSET(Material);
+   mMaterialInst = NULL;
+
    mMatParams = NULL;
    mTypeRectsParam = NULL;
    mFadeParams = NULL;
@@ -518,7 +521,8 @@ GroundCover::GroundCover()
       mBillboardRects[i].point.set( 0.0f, 0.0f );
       mBillboardRects[i].extent.set( 1.0f, 1.0f );
 
-      mShapeFilenames[i] = NULL;
+      INIT_ASSET_ARRAY(Shape, i);
+
       mShapeInstances[i] = NULL;
 
       mBillboardAspectScales[i] = 1.0f;
@@ -529,16 +533,17 @@ GroundCover::GroundCover()
 
 GroundCover::~GroundCover()
 {
-   SAFE_DELETE( mMatInst );
+   SAFE_DELETE( mMaterialInst );
 }
 
 IMPLEMENT_CO_NETOBJECT_V1(GroundCover);
 
 void GroundCover::initPersistFields()
 {
+   docsURL;
    addGroup( "GroundCover General" );
-      
-      addField( "material",      TypeMaterialName, Offset( mMaterialName, GroundCover ),        "Material used by all GroundCover segments." );
+
+      INITPERSISTFIELD_MATERIALASSET(Material, GroundCover, "Material used by all GroundCover segments.");
 
       addField( "radius",        TypeF32,          Offset( mRadius, GroundCover ),              "Outer generation radius from the current camera position." );
       addField( "dissolveRadius",TypeF32,          Offset( mFadeRadius, GroundCover ),          "This is less than or equal to radius and defines when fading of cover elements begins." );
@@ -558,9 +563,10 @@ void GroundCover::initPersistFields()
 
          addField( "billboardUVs",  TypeRectUV,    Offset( mBillboardRects, GroundCover ), MAX_COVERTYPES,  "Subset material UV coordinates for this cover billboard." );
 
-         addField( "shapeFilename", TypeFilename,  Offset( mShapeFilenames, GroundCover ), MAX_COVERTYPES,  "The cover shape filename. [Optional]" );
+         addField("shapeFilename", TypeFilename, Offset(mShapeName, GroundCover), MAX_COVERTYPES, "The cover shape filename. [Optional]", AbstractClassRep::FIELD_HideInInspectors);
+         INITPERSISTFIELD_SHAPEASSET_ARRAY(Shape, MAX_COVERTYPES, GroundCover, "The cover shape. [Optional]");
 
-         addField( "layer",         TypeTerrainMaterialName, Offset( mLayer, GroundCover ), MAX_COVERTYPES, "Terrain material name to limit coverage to, or blank to not limit." );
+         addField( "layer",         TypeTerrainMaterialAssetId, Offset( mLayer, GroundCover ), MAX_COVERTYPES,      "Terrain material assetId to limit coverage to, or blank to not limit." );
 
          addField( "invertLayer",   TypeBool,      Offset( mInvertLayer, GroundCover ), MAX_COVERTYPES,     "Indicates that the terrain material index given in 'layer' is an exclusion mask." );
 
@@ -709,7 +715,7 @@ U32 GroundCover::packUpdate( NetConnection *connection, U32 mask, BitStream *str
       // TODO: We could probably optimize a few of these
       // based on reasonable units at some point.
 
-      stream->write( mMaterialName );
+      PACK_ASSET(connection, Material);
 
       stream->write( mRadius );
       stream->write( mZOffset );
@@ -740,11 +746,11 @@ U32 GroundCover::packUpdate( NetConnection *connection, U32 mask, BitStream *str
          
          stream->write( mMinSlope[i] );
          stream->write( mMaxSlope[i] );
-		 stream->writeFlag(mConformToNormal[i]);
-		 stream->write(mMinRotX[i]);
-		 stream->write(mMaxRotX[i]);
-		 stream->write(mMinRotY[i]);
-		 stream->write(mMaxRotY[i]);
+         stream->writeFlag(mConformToNormal[i]);
+         stream->write(mMinRotX[i]);
+         stream->write(mMaxRotX[i]);
+         stream->write(mMinRotY[i]);
+         stream->write(mMaxRotY[i]);
          
          stream->write( mMinElevation[i] );
          stream->write( mMaxElevation[i] );     
@@ -762,7 +768,7 @@ U32 GroundCover::packUpdate( NetConnection *connection, U32 mask, BitStream *str
          stream->write( mBillboardRects[i].extent.x );
          stream->write( mBillboardRects[i].extent.y );
 
-         stream->writeString( mShapeFilenames[i] );
+         PACK_ASSET_ARRAY(connection, Shape, i);
       }
 
       stream->writeFlag( mDebugRenderCells );
@@ -780,7 +786,7 @@ void GroundCover::unpackUpdate( NetConnection *connection, BitStream *stream )
 
    if (stream->readFlag())
    {
-      stream->read( &mMaterialName );
+      UNPACK_ASSET(connection, Material);
 
       stream->read( &mRadius );
       stream->read( &mZOffset );
@@ -811,11 +817,11 @@ void GroundCover::unpackUpdate( NetConnection *connection, BitStream *stream )
 
          stream->read( &mMinSlope[i] );
          stream->read( &mMaxSlope[i] );
-		 mConformToNormal[i] = stream->readFlag();
-		 stream->read(&mMinRotX[i]);
-		 stream->read(&mMaxRotX[i]);
-		 stream->read(&mMinRotY[i]);
-		 stream->read(&mMaxRotY[i]);
+         mConformToNormal[i] = stream->readFlag();
+         stream->read(&mMinRotX[i]);
+         stream->read(&mMaxRotX[i]);
+         stream->read(&mMinRotY[i]);
+         stream->read(&mMaxRotY[i]);
 
          stream->read( &mMinElevation[i] );
          stream->read( &mMaxElevation[i] );     
@@ -833,7 +839,7 @@ void GroundCover::unpackUpdate( NetConnection *connection, BitStream *stream )
          stream->read( &mBillboardRects[i].extent.x );
          stream->read( &mBillboardRects[i].extent.y );
 
-         mShapeFilenames[i] = stream->readSTString();
+         UNPACK_ASSET_ARRAY(connection, Shape, i);
       }
 
       mDebugRenderCells    = stream->readFlag();
@@ -852,17 +858,13 @@ void GroundCover::unpackUpdate( NetConnection *connection, BitStream *stream )
 }
 
 void GroundCover::_initMaterial()
-{   
-   SAFE_DELETE( mMatInst );
-   
-   if ( mMaterialName.isNotEmpty() )
-      if ( !Sim::findObject( mMaterialName, mMaterial ) )
-         Con::errorf( "GroundCover::_initMaterial - Material %s was not found.", mMaterialName.c_str() );
+{
+   SAFE_DELETE(mMaterialInst);
 
-   if ( mMaterial )
-      mMatInst = mMaterial->createMatInstance();
+   if (mMaterialAsset.notNull() && mMaterialAsset->getStatus() == MaterialAsset::Ok)
+      mMaterialInst = mMaterial->createMatInstance();
    else
-      mMatInst = MATMGR->createMatInstance( "WarningMaterial" );
+      mMaterialInst = MATMGR->createMatInstance("WarningMaterial");
    
    // Add our special feature that makes it all work...
    FeatureSet features = MATMGR->getDefaultFeatures();
@@ -870,10 +872,10 @@ void GroundCover::_initMaterial()
    
    // Our feature requires a pointer back to this object
    // to properly setup its shader consts.
-   mMatInst->setUserObject( this );
+   mMaterialInst->setUserObject( this );
 
    // DO IT!
-   mMatInst->init( features, getGFXVertexFormat<GCVertex>() );
+   mMaterialInst->init( features, getGFXVertexFormat<GCVertex>() );
 }
 
 void GroundCover::_initShapes()
@@ -882,25 +884,17 @@ void GroundCover::_initShapes()
 
    for ( S32 i=0; i < MAX_COVERTYPES; i++ )
    {
-      if ( !mShapeFilenames[i] || !mShapeFilenames[i][0] )
+      if ( mShapeAsset[i].isNull() || mShape[i] == nullptr)
          continue;
 
-      // Load the shape.
-      Resource<TSShape> shape = ResourceManager::get().load(mShapeFilenames[i]);
-      if ( !(bool)shape )
+      if ( isClientObject() && !mShape[i]->preloadMaterialList(mShape[i].getPath()) && NetConnection::filesWereDownloaded() )
       {
-         Con::warnf( "GroundCover::_initShapes() unable to load shape: %s", mShapeFilenames[i] );
-         continue;
-      }
-
-      if ( isClientObject() && !shape->preloadMaterialList(shape.getPath()) && NetConnection::filesWereDownloaded() )
-      {
-         Con::warnf( "GroundCover::_initShapes() material preload failed for shape: %s", mShapeFilenames[i] );
+         Con::warnf( "GroundCover::_initShapes() material preload failed for shape: %s", mShapeAssetId[i] );
          continue;
       }
 
       // Create the shape instance.
-      mShapeInstances[i] = new TSShapeInstance( shape, isClientObject() );
+      mShapeInstances[i] = new TSShapeInstance(mShape[i], isClientObject() );
    }
 }
 
@@ -969,16 +963,16 @@ void GroundCover::_initialize( U32 cellCount, U32 cellPlacementCount )
 
    // Rebuild the texture aspect scales for each type.
    F32 textureAspect = 1.0f;
-   if( mMatInst && mMatInst->isValid())
+   if( mMaterialInst && mMaterialInst->isValid())
    {
-      Material* mat = dynamic_cast<Material*>(mMatInst->getMaterial());
+      Material* mat = dynamic_cast<Material*>(mMaterialInst->getMaterial());
       if(mat)
       {
          GFXTexHandle tex;
-         if (!mat->mDiffuseMapFilename[0].isEmpty())
-            tex = GFXTexHandle(mat->mDiffuseMapFilename[0], &GFXStaticTextureSRGBProfile, "GroundCover texture aspect ratio check");
-         else if (!mat->mDiffuseMapAsset[0].isNull())
-            tex = mat->mDiffuseMapAsset[0]->getImage(GFXStaticTextureSRGBProfile);
+         if (mat->getDiffuseMapResource(0))
+            tex = mat->getDiffuseMapResource(0);
+         else if (mat->getDiffuseMap(0) != StringTable->EmptyString())
+            tex = GFXTexHandle(mat->getDiffuseMap(0), &GFXStaticTextureSRGBProfile, "GroundCover texture aspect ratio check");
 
          if(tex.isValid())
          {
@@ -1186,6 +1180,7 @@ GroundCoverCell* GroundCover::_generateCell( const Point2I& index,
       const bool typeIsShape = mShapeInstances[ type ] != NULL;
       const Box3F typeShapeBounds = typeIsShape ? mShapeInstances[ type ]->getShape()->mBounds : Box3F();
       const F32 typeWindScale = mWindScale[type];
+
       StringTableEntry typeLayer = mLayer[type];
       const bool typeInvertLayer = mInvertLayer[type];
 
@@ -1567,6 +1562,8 @@ void GroundCover::_updateCoverGrid( const Frustum &culler )
 void GroundCover::prepRenderImage( SceneRenderState *state )
 {
    // Reset stats each time we hit the diffuse pass.
+   if (mMaterialInst == nullptr)
+      return;
 
    if( state->isDiffusePass() )
    {
@@ -1602,7 +1599,7 @@ void GroundCover::prepRenderImage( SceneRenderState *state )
 
    // Render billboards but not into shadow passes.
 
-   if ( !state->isShadowPass() && mMatInst->isValid() && !mDebugNoBillboards )
+   if ( !state->isShadowPass() && mMaterialInst->isValid() && !mDebugNoBillboards )
    {
       PROFILE_SCOPE( GroundCover_RenderBillboards );
 
@@ -1677,7 +1674,7 @@ void GroundCover::prepRenderImage( SceneRenderState *state )
          if ( mCuller.isCulled( cell->getRenderBounds() ) )
             continue;
 
-         cell->renderBillboards( state, mMatInst, &mPrimBuffer );
+         cell->renderBillboards( state, mMaterialInst, &mPrimBuffer );
       }     
    }
 

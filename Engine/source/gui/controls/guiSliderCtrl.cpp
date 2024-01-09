@@ -111,6 +111,7 @@ GuiSliderCtrl::GuiSliderCtrl()
 
 void GuiSliderCtrl::initPersistFields()
 {
+   docsURL;
    addGroup( "Slider" );
    
       addField( "range", TypePoint2F, Offset( mRange, GuiSliderCtrl ),
@@ -204,6 +205,9 @@ void GuiSliderCtrl::onMouseDown(const GuiEvent &event)
    setFirstResponder();
    mDepressed = true;
 
+   if (mProfile->isSoundButtonDownValid())
+      SFX->playOnce(mProfile->getSoundButtonDownProfile());
+
    Point2I curMousePos = globalToLocalCoord( event.mousePoint );
    F32 value;
    if (getWidth() >= getHeight())
@@ -261,7 +265,8 @@ void GuiSliderCtrl::onMouseEnter(const GuiEvent &event)
       if( mActive && mProfile->mSoundButtonOver )
       {
          //F32 pan = (F32(event.mousePoint.x)/F32(getRoot()->getWidth())*2.0f-1.0f)*0.8f;
-         SFX->playOnce( mProfile->mSoundButtonOver );
+         if (mProfile->isSoundButtonOverValid())
+            SFX->playOnce(mProfile->getSoundButtonOverProfile());
       }
       
       mMouseOver = true;
@@ -407,7 +412,7 @@ void GuiSliderCtrl::onRender(Point2I offset, const RectI &updateRect)
          PrimBuild::end();
          // TODO: it would be nice, if the primitive builder were a little smarter,
          // so that we could change colors midstream.
-         PrimBuild::color4f(0.9f, 0.9f, 0.9f, 1.0f);
+         PrimBuild::color4f(0.6f, 0.6f, 0.6f, 1.0f);
          PrimBuild::begin( GFXLineList, ( mTicks + 2 ) * 2 );
          // tick marks
          for (U32 t = 0; t <= (mTicks+1); t++)
@@ -427,9 +432,9 @@ void GuiSliderCtrl::onRender(Point2I offset, const RectI &updateRect)
       drawUtil->clearBitmapModulation();
 
       //left border
-      drawUtil->drawBitmapSR(mProfile->mTextureObject, Point2I(offset.x,offset.y), mBitmapBounds[SliderLineLeft]);
+      drawUtil->drawBitmapSR(mProfile->getBitmapResource(), Point2I(offset.x,offset.y), mBitmapBounds[SliderLineLeft]);
       //right border
-      drawUtil->drawBitmapSR(mProfile->mTextureObject, Point2I(offset.x + getWidth() - mBitmapBounds[SliderLineRight].extent.x, offset.y), mBitmapBounds[SliderLineRight]);
+      drawUtil->drawBitmapSR(mProfile->getBitmapResource(), Point2I(offset.x + getWidth() - mBitmapBounds[SliderLineRight].extent.x, offset.y), mBitmapBounds[SliderLineRight]);
 
 
       //draw our center piece to our slider control's border and stretch it
@@ -443,11 +448,11 @@ void GuiSliderCtrl::onRender(Point2I offset, const RectI &updateRect)
       stretchRect = mBitmapBounds[SliderLineCenter];
       stretchRect.inset(1,0);
 
-      drawUtil->drawBitmapStretchSR(mProfile->mTextureObject, destRect, stretchRect);
+      drawUtil->drawBitmapStretchSR(mProfile->getBitmapResource(), destRect, stretchRect);
 
       //draw our control slider button	
       thumb.point += pos;
-      drawUtil->drawBitmapSR(mProfile->mTextureObject,Point2I(thumb.point.x,offset.y ),mBitmapBounds[index]);
+      drawUtil->drawBitmapSR(mProfile->getBitmapResource(),Point2I(thumb.point.x,offset.y ),mBitmapBounds[index]);
 
    }
    else if (getWidth() >= getHeight())

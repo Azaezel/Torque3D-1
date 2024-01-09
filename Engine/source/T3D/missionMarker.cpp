@@ -179,7 +179,9 @@ void MissionMarker::unpackUpdate(NetConnection * con, BitStream * stream)
    }
 }
 
-void MissionMarker::initPersistFields() {
+void MissionMarker::initPersistFields()
+{
+   docsURL;
    Parent::initPersistFields();
 }
 
@@ -281,6 +283,7 @@ void WayPoint::unpackUpdate(NetConnection * con, BitStream * stream)
 
 void WayPoint::initPersistFields()
 {
+   docsURL;
    addGroup("Misc"); 
    addField("markerName", TypeCaseString, Offset(mName, WayPoint), "Unique name representing this waypoint");
    endGroup("Misc");
@@ -374,8 +377,9 @@ bool SpawnSphere::onAdd()
 
 SimObject* SpawnSphere::spawnObject(String additionalProps)
 {
+   String command = String("%this = ") + getIdString() + ";" + mSpawnScript;
    SimObject* spawnObject = Sim::spawnObject(mSpawnClass, mSpawnDataBlock, mSpawnName,
-                                             mSpawnProperties + " " + additionalProps, mSpawnScript);
+                                             mSpawnProperties + " " + additionalProps, command);
 
    // If we have a spawnObject add it to the MissionCleanup group
    if (spawnObject)
@@ -433,7 +437,23 @@ void SpawnSphere::unpackUpdate(NetConnection * con, BitStream * stream)
       mSpawnTransform = stream->readFlag();
 
       stream->read(&mSpawnClass);
+
+      String oldSDB = mSpawnDataBlock;
       stream->read(&mSpawnDataBlock);
+      if (oldSDB != mSpawnDataBlock)
+      {
+         delete mShapeInstance;
+         ShapeBaseData *spawnedDatablock = dynamic_cast<ShapeBaseData *>(Sim::findObject(mSpawnDataBlock.c_str()));
+         if (spawnedDatablock && spawnedDatablock->mShape)
+         {
+               mShapeInstance = new TSShapeInstance(spawnedDatablock->mShape);
+         }
+         else if (mDataBlock)
+         {
+            if (mDataBlock->mShape)
+               mShapeInstance = new TSShapeInstance(mDataBlock->mShape);
+         }
+      }
       stream->read(&mSpawnName);
       stream->read(&mSpawnProperties);
       stream->read(&mSpawnScript);
@@ -452,6 +472,7 @@ void SpawnSphere::advanceTime( F32 timeDelta )
 
 void SpawnSphere::initPersistFields()
 {
+   docsURL;
    addGroup( "Spawn" );
    addField( "spawnClass", TypeRealString, Offset(mSpawnClass, SpawnSphere),
       "Object class to create (eg. Player, AIPlayer, Debris etc)" );
@@ -595,6 +616,7 @@ void CameraBookmark::unpackUpdate(NetConnection * con, BitStream * stream)
 
 void CameraBookmark::initPersistFields()
 {
+   docsURL;
    //addGroup("Misc");  
    //addField("name", TypeCaseString, Offset(mName, CameraBookmark));
    //endGroup("Misc");

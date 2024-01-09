@@ -41,6 +41,7 @@
 #endif
 
 // Debug Profiling.
+#include "console/script.h"
 #include "platform/profiler.h"
 
 //-----------------------------------------------------------------------------
@@ -111,6 +112,7 @@ CubemapAsset::~CubemapAsset()
 
 void CubemapAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -134,18 +136,21 @@ void CubemapAsset::copyTo(SimObject* object)
 
 void CubemapAsset::initializeAsset()
 {
-   mScriptFile = expandAssetFilePath(mScriptFile);
+   // Call parent.
+   Parent::initializeAsset();
 
-   if(Platform::isFile(mScriptFile))
-      Con::executeFile(mScriptFile, false, false);
+   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
+
+   if (Con::isScriptFile(mScriptPath))
+      Con::executeFile(mScriptPath, false, false);
 }
 
 void CubemapAsset::onAssetRefresh()
 {
-   mScriptFile = expandAssetFilePath(mScriptFile);
+   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
 
-   if (Platform::isFile(mScriptFile))
-      Con::executeFile(mScriptFile, false, false);
+   if (Con::isScriptFile(mScriptPath))
+      Con::executeFile(mScriptPath, false, false);
 }
 
 void CubemapAsset::setScriptFile(const char* pScriptFile)
@@ -154,19 +159,19 @@ void CubemapAsset::setScriptFile(const char* pScriptFile)
    AssertFatal(pScriptFile != NULL, "Cannot use a NULL script file.");
 
    // Fetch image file.
-   pScriptFile = StringTable->insert(pScriptFile);
+   pScriptFile = StringTable->insert(pScriptFile, true);
 
    // Ignore no change,
    if (pScriptFile == mScriptFile)
       return;
 
    // Update.
-   mScriptFile = getOwned() ? expandAssetFilePath(pScriptFile) : StringTable->insert(pScriptFile);
+   mScriptFile = getOwned() ? expandAssetFilePath(pScriptFile) : pScriptFile;
 
    // Refresh the asset.
    refreshAsset();
 }
-
+#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // GuiInspectorTypeAssetId
 //-----------------------------------------------------------------------------
@@ -196,7 +201,7 @@ GuiControl* GuiInspectorTypeCubemapAssetPtr::constructEditControl()
    // Change filespec
    char szBuffer[512];
    dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"CubemapAsset\", \"AssetBrowser.changeAsset\", %d, %s);",
-      mInspector->getInspectObject(), mCaption);
+      mInspector->getIdString(), mCaption);
    mBrowseButton->setField("Command", szBuffer);
 
    setDataField(StringTable->insert("object"), NULL, String::ToString(mInspector->getInspectObject()).c_str());
@@ -207,8 +212,8 @@ GuiControl* GuiInspectorTypeCubemapAssetPtr::constructEditControl()
    dSprintf(szBuffer, sizeof(szBuffer), "CubemapEditor.openCubemapAsset(%d.getText());", retCtrl->getId());
    mShapeEdButton->setField("Command", szBuffer);
 
-   char bitmapName[512] = "tools/worldEditor/images/toolbar/shape-editor";
-   mShapeEdButton->setBitmap(bitmapName);
+   char bitmapName[512] = "ToolsModule:shape_editor_n_image";
+   mShapeEdButton->setBitmap(StringTable->insert(bitmapName));
 
    mShapeEdButton->setDataField(StringTable->insert("Profile"), NULL, "GuiButtonProfile");
    mShapeEdButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
@@ -246,3 +251,4 @@ bool GuiInspectorTypeCubemapAssetPtr::updateRects()
 
    return resized;
 }
+#endif

@@ -169,7 +169,7 @@ protected:
    void _renderObject( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *matInst );
 
    bool _cursorCast( const Gui3DMouseEvent &event, ConvexShape **hitShape, S32 *hitFace );
-   static bool _cursorCastCallback( RayInfo* ri );
+   static bool _cursorCastCallback( SceneObject* object );
 
 protected:
 
@@ -248,7 +248,7 @@ class GuiConvexEditorUndoAction : public UndoAction
    friend class GuiConvexEditorCtrl;
 public:
 
-   GuiConvexEditorUndoAction( const UTF8* actionName ) : UndoAction( actionName ), mEditor(NULL), mObjId(NULL)
+   GuiConvexEditorUndoAction( const UTF8* actionName ) : UndoAction( actionName ), mEditor(NULL), mObjId(0)
    {
    }
 

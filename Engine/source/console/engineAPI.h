@@ -104,20 +104,6 @@ namespace engineAPI {
    extern bool gIsInitialized;
 }
 
-
-//FIXME: this allows const char* to be used as a struct field type
-
-// Temp support for allowing const char* to remain in the API functions as long as we
-// still have the console system around.  When that is purged, these definitions should
-// be deleted and all const char* uses be replaced with String.
-template<> struct EngineTypeTraits< const char* > : public EngineTypeTraits< String > {};
-template<> inline const EngineTypeInfo* TYPE< const char* >() { return TYPE< String >(); }
-
-
-
-
-
-
 /// @name Marshalling
 ///
 /// Functions for converting to/from string-based data representations.
@@ -162,55 +148,45 @@ inline const char* EngineMarshallData( U32 value )
 /// Marshal data from native into client form stored directly in
 /// client function invocation vector.
 template< typename T >
-inline void EngineMarshallData( const T& arg, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( const T& arg, S32& argc, ConsoleValue *argv )
 {
-   argv[ argc ] = castConsoleTypeToString( arg );
-   argc ++;
+   const char* str = castConsoleTypeToString(arg);;
+   argv[ argc++ ].setString(str);
 }
-inline void EngineMarshallData( bool arg, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( bool arg, S32& argc, ConsoleValue *argv )
 {
-   if( arg )
-      argv[ argc ] = 1;
-   else
-      argv[ argc ] = 0;
-   argc ++;
+   argv[ argc++ ].setBool(arg);
 }
-inline void EngineMarshallData( S32 arg, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( S32 arg, S32& argc, ConsoleValue *argv )
 {
-   argv[ argc ] = arg;
-   argc ++;
+   argv[ argc++ ].setInt(arg);
 }
-inline void EngineMarshallData( U32 arg, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( U32 arg, S32& argc, ConsoleValue *argv )
 {
    EngineMarshallData( S32( arg ), argc, argv );
 }
-inline void EngineMarshallData( F32 arg, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( F32 arg, S32& argc, ConsoleValue *argv )
 {
-   argv[ argc ] = arg;
-   argc ++;
+   argv[ argc++ ].setFloat(arg);
 }
-inline void EngineMarshallData( const char* arg, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( const char* arg, S32& argc, ConsoleValue *argv )
 {
-   argv[ argc ] = arg;
-   argc ++;
+   argv[ argc++ ].setString(arg);
 }
-inline void EngineMarshallData( char* arg, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( char* arg, S32& argc, ConsoleValue *argv )
 {
-   argv[ argc ] = arg;
-   argc ++;
+   argv[ argc++ ].setString(arg);
 }
 
 template< typename T >
-inline void EngineMarshallData( T* object, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( T* object, S32& argc, ConsoleValue *argv )
 {
-   argv[ argc ] = object ? object->getId() : 0;
-   argc ++;
+   argv[ argc++ ].setInt(object ? object->getId() : 0);
 }
 template< typename T >
-inline void EngineMarshallData( const T* object, S32& argc, ConsoleValueRef *argv )
+inline void EngineMarshallData( const T* object, S32& argc, ConsoleValue *argv )
 {
-   argv[ argc ] = object ? object->getId() : 0;
-   argc ++;
+   argv[ argc++ ].setInt(object ? object->getId() : 0);
 }
 
 /// Unmarshal data from client form to engine form.
@@ -230,9 +206,9 @@ struct EngineUnmarshallData
 template<>
 struct EngineUnmarshallData< S32 >
 {
-   S32 operator()( ConsoleValueRef &ref ) const
+   S32 operator()( ConsoleValue &ref ) const
    {
-      return (S32)ref;
+      return (S32)ref.getInt();
    }
 
    S32 operator()( const char* str ) const
@@ -243,9 +219,9 @@ struct EngineUnmarshallData< S32 >
 template<>
 struct EngineUnmarshallData< U32 >
 {
-   U32 operator()( ConsoleValueRef &ref ) const
+   U32 operator()( ConsoleValue &ref ) const
    {
-      return (U32)((S32)ref);
+      return (U32)ref.getInt();
    }
 
    U32 operator()( const char* str ) const
@@ -256,9 +232,9 @@ struct EngineUnmarshallData< U32 >
 template<>
 struct EngineUnmarshallData< F32 >
 {
-   F32 operator()( ConsoleValueRef &ref ) const
+   F32 operator()( ConsoleValue &ref ) const
    {
-      return (F32)ref;
+      return (F32)ref.getFloat();
    }
 
    F32 operator()( const char* str ) const
@@ -269,9 +245,9 @@ struct EngineUnmarshallData< F32 >
 template<>
 struct EngineUnmarshallData< U8 >
 {
-   U8 operator()( ConsoleValueRef &ref ) const
+   U8 operator()( ConsoleValue &ref ) const
    {
-      return (U8)((S32)ref);
+      return (U8)((S32)ref.getInt());
    }
 
    U8 operator()( const char* str ) const
@@ -282,9 +258,9 @@ struct EngineUnmarshallData< U8 >
 template<>
 struct EngineUnmarshallData< const char* >
 {
-   const char* operator()( ConsoleValueRef &ref ) const
+   const char* operator()( ConsoleValue &ref ) const
    {
-      return ref.getStringValue();
+      return ref.getString();
    }
 
    const char* operator()( const char* str ) const
@@ -295,9 +271,9 @@ struct EngineUnmarshallData< const char* >
 template< typename T >
 struct EngineUnmarshallData< T* >
 {
-   T* operator()( ConsoleValueRef &ref ) const
+   T* operator()( ConsoleValue &ref ) const
    {
-      return dynamic_cast< T* >( Sim::findObject( ref.getStringValue() ) );
+      return dynamic_cast< T* >( Sim::findObject( ref ) );
    }
 
    T* operator()( const char* str ) const
@@ -308,17 +284,17 @@ struct EngineUnmarshallData< T* >
 template<>
 struct EngineUnmarshallData< void >
 {
-   void operator()( ConsoleValueRef& ) const {}
+   void operator()( ConsoleValue& ) const {}
    void operator()( const char* ) const {}
 };
 
 
 template<>
-struct EngineUnmarshallData< ConsoleValueRef >
+struct EngineUnmarshallData< ConsoleValue >
 {
-   ConsoleValueRef operator()( ConsoleValueRef ref ) const
+   ConsoleValue operator()( ConsoleValue ref ) const
    {
-      return ref;
+      return std::move(ref);
    }
 };
 
@@ -349,10 +325,9 @@ template<typename T> struct _EngineTrampoline {
 template< typename R, typename ...ArgTs >
 struct _EngineTrampoline< R( ArgTs ... ) >
 {
-   typedef std::tuple<ArgTs ...> Args;
-   std::tuple<ArgTs ...> argT;
-   typedef fixed_tuple<ArgTs ...> FixedArgs;
-   fixed_tuple<ArgTs ...> fixedArgT;
+   template<typename T> using AVT = typename EngineTypeTraits<T>::ArgumentValueType;
+   typedef fixed_tuple<AVT<ArgTs> ...> Args;
+   Args argT;
 };
 
 template< typename T >
@@ -370,31 +345,26 @@ struct _EngineFunctionTrampoline< R(ArgTs...) > : public _EngineFunctionTrampoli
 {
 private:
    using Super = _EngineFunctionTrampolineBase< R(ArgTs...) >;
-   using ArgsType = typename Super::Args;
-   using FixedArgsType = typename Super::FixedArgs;
+   using SelfType = _EngineFunctionTrampoline< R(ArgTs...) >;
+   using ArgsType = typename _EngineFunctionTrampolineBase< R(ArgTs ...) >::Args;
    
    template<size_t ...> struct Seq {};
    template<size_t N, size_t ...S> struct Gens : Gens<N-1, N-1, S...> {};
    template<size_t ...I> struct Gens<0, I...>{ typedef Seq<I...> type; };
-   
+
+   template<size_t I>
+   static typename fixed_tuple_element<I, fixed_tuple<ArgTs...>>::type getAndToType(const ArgsType& args) {
+      return EngineTypeTraits<typename fixed_tuple_element<I, fixed_tuple<ArgTs...>>::type>::ArgumentToValue(fixed_tuple_accessor<I>::get(args));
+   }
+
    template<size_t ...I>
    static R dispatchHelper(typename Super::FunctionType fn, const ArgsType& args, Seq<I...>)  {
-      return R( fn(std::get<I>(args) ...) );
-   }
-   
-   template<size_t ...I>
-   static R dispatchHelper(typename Super::FunctionType fn, const FixedArgsType& args, Seq<I...>)  {
-      return R( fn(fixed_tuple_accessor<I>::get(args) ...) );
+      return R( fn(SelfType::template getAndToType<I>(args) ...) );
    }
 
    using SeqType = typename Gens<sizeof...(ArgTs)>::type;
 public:
    static R jmp(typename Super::FunctionType fn, const ArgsType& args )
-   {
-      return dispatchHelper(fn, args, SeqType());
-   }
-
-   static R jmp(typename Super::FunctionType fn, const FixedArgsType& args )
    {
       return dispatchHelper(fn, args, SeqType());
    }
@@ -414,34 +384,26 @@ struct _EngineMethodTrampoline< Frame, R(ArgTs ...) > : public _EngineMethodTram
    using FunctionType = R( typename Frame::ObjectType*, ArgTs ...);
 private:
    using Super = _EngineMethodTrampolineBase< R(ArgTs ...) >;
-   using ArgsType = typename _EngineFunctionTrampolineBase< R(ArgTs ...) >::Args;
-   using FixedArgsType = typename Super::FixedArgs;
+   using SelfType = _EngineMethodTrampoline< Frame, R(ArgTs ...) >;
+   using ArgsType = typename _EngineMethodTrampolineBase< R(ArgTs ...) >::Args;
    
    template<size_t ...> struct Seq {};
    template<size_t N, size_t ...S> struct Gens : Gens<N-1, N-1, S...> {};
    template<size_t ...I> struct Gens<0, I...>{ typedef Seq<I...> type; };
-   
-   template<size_t ...I>
-   static R dispatchHelper(Frame f, const ArgsType& args, Seq<I...>)  {
-      return R( f._exec(std::get<I>(args) ...) );
+
+   template<size_t I>
+   static typename fixed_tuple_element<I, fixed_tuple<ArgTs...>>::type getAndToType(const ArgsType& args) {
+      return EngineTypeTraits<typename fixed_tuple_element<I, fixed_tuple<ArgTs...>>::type>::ArgumentToValue(fixed_tuple_accessor<I>::get(args));
    }
-   
+
    template<size_t ...I>
-   static R dispatchHelper(Frame f, const FixedArgsType& args, Seq<I...>)  {
-      return R( f._exec(fixed_tuple_accessor<I>::get(args) ...) );
+   static R dispatchHelper(Frame f, const ArgsType& args, Seq<I...>) {
+      return R(f._exec(SelfType::template getAndToType<I>(args) ...));
    }
    
    using SeqType = typename Gens<sizeof...(ArgTs)>::type;
 public:
    static R jmp( typename Frame::ObjectType* object, const ArgsType& args )
-   {
-      
-      Frame f;
-      f.object = object;
-      return dispatchHelper(f, args, SeqType());
-   }
-
-   static R jmp( typename Frame::ObjectType* object, const FixedArgsType& args )
    {
       
       Frame f;
@@ -576,23 +538,23 @@ namespace engineAPI{
          static const S32 NUM_ARGS = sizeof...(ArgTs) + startArgc;
          
          template<size_t index, size_t method_offset = 0, typename ...RealArgTs>
-         static IthArgType<index> getRealArgValue(S32 argc, ConsoleValueRef *argv, const _EngineFunctionDefaultArguments< void(RealArgTs...) >& defaultArgs)
+         static IthArgType<index> getRealArgValue(S32 argc, ConsoleValue *argv, const _EngineFunctionDefaultArguments< void(RealArgTs...) >& defaultArgs)
          {
             if((startArgc + index) < argc)
             {
                return EngineUnmarshallData< IthArgType<index> >()( argv[ startArgc + index ] );
             } else {
-               return std::get<index + method_offset>(defaultArgs.mArgs);
+               return fixed_tuple_accessor<index + method_offset>::get(defaultArgs.mArgs);
             }
          }
          
          template<size_t ...I>
-         static R dispatchHelper(S32 argc, ConsoleValueRef *argv, FunctionType fn, const _EngineFunctionDefaultArguments< void(ArgTs...) >& defaultArgs, Seq<I...>){
+         static R dispatchHelper(S32 argc, ConsoleValue *argv, FunctionType fn, const _EngineFunctionDefaultArguments< void(ArgTs...) >& defaultArgs, Seq<I...>){
             return fn(SelfType::getRealArgValue<I>(argc, argv, defaultArgs) ...);
          }
          
          template<typename Frame, size_t ...I>
-         static R dispatchHelper(S32 argc, ConsoleValueRef *argv, MethodType<Frame> fn, Frame* frame, const _EngineFunctionDefaultArguments< void( typename Frame::ObjectType*, ArgTs...) >& defaultArgs, Seq<I...>){
+         static R dispatchHelper(S32 argc, ConsoleValue *argv, MethodType<Frame> fn, Frame* frame, const _EngineFunctionDefaultArguments< void( typename Frame::ObjectType*, ArgTs...) >& defaultArgs, Seq<I...>){
             return (frame->*fn)(SelfType::getRealArgValue<I,1>(argc, argv, defaultArgs) ...);
          }
          
@@ -607,9 +569,9 @@ namespace engineAPI{
          }
       };
       
-      template<> struct MarshallHelpers<ConsoleValueRef> {
-         template<typename ...ArgTs> static void marshallEach(S32 &argc, ConsoleValueRef *argv, const ArgTs& ...args){}
-         template<typename H, typename ...Tail> static void marshallEach(S32 &argc, ConsoleValueRef *argv, const H& head, const Tail& ...tail){
+      template<> struct MarshallHelpers<ConsoleValue> {
+         template<typename ...ArgTs> static void marshallEach(S32 &argc, ConsoleValue *argv, const ArgTs& ...args){}
+         template<typename H, typename ...Tail> static void marshallEach(S32 &argc, ConsoleValue *argv, const H& head, const Tail& ...tail){
             EngineMarshallData(head, argc, argv);
             marshallEach(argc, argv, tail...);
          }
@@ -632,12 +594,12 @@ public:
    template<typename Frame> using MethodType = typename Helper::template MethodType<Frame>;
    static const S32 NUM_ARGS = Helper::NUM_ARGS;
    
-   static ReturnType thunk( S32 argc, ConsoleValueRef *argv, FunctionType fn, const _EngineFunctionDefaultArguments< void(ArgTs...) >& defaultArgs)
+   static ReturnType thunk( S32 argc, ConsoleValue *argv, FunctionType fn, const _EngineFunctionDefaultArguments< void(ArgTs...) >& defaultArgs)
    {
       return _EngineConsoleThunkReturnValue( Helper::dispatchHelper(argc, argv, fn, defaultArgs, SeqType()));
    }
    template< typename Frame >
-   static ReturnType thunk( S32 argc, ConsoleValueRef *argv, MethodType<Frame> fn, Frame* frame, const _EngineFunctionDefaultArguments< void( typename Frame::ObjectType*, ArgTs...) >& defaultArgs)
+   static ReturnType thunk( S32 argc, ConsoleValue *argv, MethodType<Frame> fn, Frame* frame, const _EngineFunctionDefaultArguments< void( typename Frame::ObjectType*, ArgTs...) >& defaultArgs)
    {
       return _EngineConsoleThunkReturnValue( Helper::dispatchHelper(argc, argv, fn, frame, defaultArgs, SeqType()));
    }
@@ -655,12 +617,12 @@ public:
    template<typename Frame> using MethodType = typename Helper::template MethodType<Frame>;
    static const S32 NUM_ARGS = Helper::NUM_ARGS;
    
-   static void thunk( S32 argc, ConsoleValueRef *argv, FunctionType fn, const _EngineFunctionDefaultArguments< void(ArgTs...) >& defaultArgs)
+   static void thunk( S32 argc, ConsoleValue *argv, FunctionType fn, const _EngineFunctionDefaultArguments< void(ArgTs...) >& defaultArgs)
    {
       Helper::dispatchHelper(argc, argv, fn, defaultArgs, SeqType());
    }
    template< typename Frame >
-   static void thunk( S32 argc, ConsoleValueRef *argv, MethodType<Frame> fn, Frame* frame, const _EngineFunctionDefaultArguments< void( typename Frame::ObjectType*, ArgTs...) >& defaultArgs)
+   static void thunk( S32 argc, ConsoleValue *argv, MethodType<Frame> fn, Frame* frame, const _EngineFunctionDefaultArguments< void( typename Frame::ObjectType*, ArgTs...) >& defaultArgs)
    {
       Helper::dispatchHelper(argc, argv, fn, frame, defaultArgs, SeqType());
    }
@@ -714,7 +676,7 @@ public:
 #define DefineEngineFunction( name, returnType, args, defaultArgs, usage )                                                       \
    static inline returnType _fn ## name ## impl args;                                                                            \
    TORQUE_API EngineTypeTraits< returnType >::ReturnValueType fn ## name                                                         \
-      ( _EngineFunctionTrampoline< returnType args >::FixedArgs a )                                                              \
+      ( _EngineFunctionTrampoline< returnType args >::Args a )                                                              \
    {                                                                                                                             \
       _CHECK_ENGINE_INITIALIZED( name, returnType );                                                                             \
       return EngineTypeTraits< returnType >::ReturnValue(                                                                        \
@@ -733,7 +695,7 @@ public:
       ( void* ) &fn ## name,                                                                                                     \
       0                                                                                                                          \
    );                                                                                                                            \
-   static _EngineConsoleThunkType< returnType >::ReturnType _ ## name ## caster( SimObject*, S32 argc, ConsoleValueRef *argv )   \
+   static _EngineConsoleThunkType< returnType >::ReturnType _ ## name ## caster( SimObject*, S32 argc, ConsoleValue *argv )      \
    {                                                                                                                             \
       return _EngineConsoleThunkType< returnType >::ReturnType( _EngineConsoleThunk< 1, returnType args >::thunk(                \
          argc, argv, &_fn ## name ## impl, _fn ## name ## DefaultArgs                                                            \
@@ -768,7 +730,7 @@ public:
 
 #define _DefineMethodTrampoline( className, name, returnType, args ) \
    TORQUE_API EngineTypeTraits< returnType >::ReturnValueType \
-      fn ## className ## _ ## name ( className* object, _EngineMethodTrampoline< _ ## className ## name ## frame, returnType args >::FixedArgs a )\
+      fn ## className ## _ ## name ( className* object, _EngineMethodTrampoline< _ ## className ## name ## frame, returnType args >::Args a )\
    {                                                                                                                                            \
       _CHECK_ENGINE_INITIALIZED( className::name, returnType );                                                                                 \
       return EngineTypeTraits< returnType >::ReturnValue(                                                                                       \
@@ -813,7 +775,7 @@ public:
       ( void* ) &fn ## className ## _ ## name,                                                                                                  \
       0                                                                                                                                         \
    );                                                                                                                                           \
-   static _EngineConsoleThunkType< returnType >::ReturnType _ ## className ## name ## caster( SimObject* object, S32 argc, ConsoleValueRef *argv )  \
+   static _EngineConsoleThunkType< returnType >::ReturnType _ ## className ## name ## caster( SimObject* object, S32 argc, ConsoleValue *argv )  \
    {                                                                                                                                            \
       _ ## className ## name ## frame frame;                                                                                                    \
       frame.object = static_cast< className* >( object );                                                                                       \
@@ -851,7 +813,7 @@ public:
 #define DefineEngineStaticMethod( className, name, returnType, args, defaultArgs, usage )                                              \
    static inline returnType _fn ## className ## name ## impl args;                                                                     \
    TORQUE_API EngineTypeTraits< returnType >::ReturnValueType fn ## className ## _ ## name                                             \
-      ( _EngineFunctionTrampoline< returnType args >::FixedArgs a )                                                                    \
+      ( _EngineFunctionTrampoline< returnType args >::Args a )                                                                    \
    {                                                                                                                                   \
       _CHECK_ENGINE_INITIALIZED( className::name, returnType );                                                                        \
       return EngineTypeTraits< returnType >::ReturnValue(                                                                              \
@@ -870,7 +832,7 @@ public:
       ( void* ) &fn ## className ## _ ## name,                                                                                         \
       0                                                                                                                                \
    );                                                                                                                                  \
-   static _EngineConsoleThunkType< returnType >::ReturnType _ ## className ## name ## caster( SimObject*, S32 argc, ConsoleValueRef *argv )\
+   static _EngineConsoleThunkType< returnType >::ReturnType _ ## className ## name ## caster( SimObject*, S32 argc, ConsoleValue *argv )\
    {                                                                                                                                   \
       return _EngineConsoleThunkType< returnType >::ReturnType( _EngineConsoleThunk< 1, returnType args >::thunk(                      \
          argc, argv, &_fn ## className ## name ## impl, _fn ## className ## name ## DefaultArgs                                        \
@@ -886,61 +848,71 @@ public:
       );                                                                                                                               \
    static inline returnType _fn ## className ## name ## impl args
 
-#  define DefineEngineStringlyVariadicFunction(name,returnType,minArgs,maxArgs,usage) \
-   static inline returnType _fn ## name ## impl (SimObject *, S32 argc, ConsoleValueRef *argv);                                  \
+#  define DefineEngineStringlyVariadicFunction(name,returnType,minArgs,maxArgs,usage)                                            \
+   static inline returnType _fn ## name ## impl (SimObject *, S32 argc, ConsoleValue *argv);                                     \
    TORQUE_API EngineTypeTraits< returnType >::ReturnValueType fn ## name                                                         \
-      (S32 argc, const char** argv)                                                                                              \
+      (Vector<const char*>* vec)                                                                                                 \
    {                                                                                                                             \
       _CHECK_ENGINE_INITIALIZED( name, returnType );                                                                             \
-      StringStackConsoleWrapper args(argc, argv);                                                                                \
+      StringArrayToConsoleValueWrapper args(vec->size(), vec->address());                                                               \
       return EngineTypeTraits< returnType >::ReturnValue(                                                                        \
          _fn ## name ## impl(NULL, args.count(), args)                                                                           \
       );                                                                                                                         \
    }                                                                                                                             \
-   static _EngineFunctionDefaultArguments< void (S32 argc, const char** argv) > _fn ## name ## DefaultArgs;                      \
+   static _EngineFunctionDefaultArguments< void (Vector<const char*>* vec) > _fn ## name ## DefaultArgs;                         \
    static EngineFunctionInfo _fn ## name ## FunctionInfo(                                                                        \
       #name,                                                                                                                     \
       &_SCOPE<>()(),                                                                                                             \
       usage,                                                                                                                     \
-      #returnType " " #name "(S32 argc, const char** argv)",                                                                     \
+      #returnType " " #name "(Vector<String> args)",                                                                             \
       "fn" #name,                                                                                                                \
-      TYPE< returnType (S32 argc, const char** argv) >(),                                                                        \
+      TYPE< returnType (Vector<const char*>* vec) >(),                                                                           \
       &_fn ## name ## DefaultArgs,                                                                                               \
       ( void* ) &fn ## name,                                                                                                     \
       0                                                                                                                          \
    );                                                                                                                            \
    ConsoleConstructor cc_##name##_obj(NULL,#name,_fn ## name ## impl,usage,minArgs,maxArgs); \
-      returnType _fn ## name ## impl(SimObject *, S32 argc, ConsoleValueRef *argv)
+      returnType _fn ## name ## impl(SimObject *, S32 argc, ConsoleValue *argv)
 
 #  define DefineEngineStringlyVariadicMethod(className, name,returnType,minArgs,maxArgs,usage)                                   \
-   static inline returnType _fn ## className ## _ ## name ## impl (className* object, S32 argc, ConsoleValueRef* argv);          \
+   struct _ ## className ## name ## frame                                                                                        \
+   {                                                                                                                             \
+      typedef className ObjectType;                                                                                              \
+      className* object;                                                                                                         \
+      inline returnType _exec (S32 argc, ConsoleValue* argv) const;                                                              \
+   };                                                                                                                            \
    TORQUE_API EngineTypeTraits< returnType >::ReturnValueType fn ## className ## _ ## name                                       \
-      (className* object, S32 argc, const char** argv)                                                                           \
+      (className* object, Vector<const char*>* vec)                                                                              \
    {                                                                                                                             \
       _CHECK_ENGINE_INITIALIZED( name, returnType );                                                                             \
-      StringStackConsoleWrapper args(argc, argv);                                                                                \
+      StringArrayToConsoleValueWrapper args(vec->size(), vec->address());                                                               \
+      _ ## className ## name ## frame frame {};                                                                                  \
+      frame.object = static_cast< className* >( object );                                                                        \
       return EngineTypeTraits< returnType >::ReturnValue(                                                                        \
-         _fn ## className ## _ ## name ## impl(object, args.count(), args)                                                       \
+         frame._exec(args.count(), args)                                                                                         \
       );                                                                                                                         \
    }                                                                                                                             \
-   static _EngineFunctionDefaultArguments< void (className* object, S32 argc, const char** argv) > _fn ## className ## _ ## name ## DefaultArgs;   \
-   static EngineFunctionInfo _fn ## className ## _ ## name ## FunctionInfo(                                                      \
+   static _EngineFunctionDefaultArguments< void (className* object, S32 argc, const char** argv) >                               \
+      _fn ## className ## name ## DefaultArgs;                                                                                   \
+   static EngineFunctionInfo _fn ## className ## name ## FunctionInfo(                                                           \
       #name,                                                                                                                     \
-      &_SCOPE<>()(),                                                                                                             \
+      &_SCOPE< className >()(),                                                                                                  \
       usage,                                                                                                                     \
-      #returnType " " #name "(SimObject* object, S32 argc, const char** argv)",                                                  \
+      "virtual " #returnType " " #name "(Vector<String> args)",                                                                  \
       "fn" #className "_" #name,                                                                                                 \
-      TYPE< returnType (SimObject* object, S32 argc, const char** argv) >(),                                                     \
-      &_fn ## className ## _ ## name ## DefaultArgs,                                                                             \
+      TYPE< _EngineMethodTrampoline< _ ## className ## name ## frame, returnType (Vector<const char*> vec) >::FunctionType >(),  \
+      &_fn ## className ## name ## DefaultArgs,                                                                                  \
       ( void* ) &fn ## className ## _ ## name,                                                                                   \
       0                                                                                                                          \
    );                                                                                                                            \
-   returnType cm_##className##_##name##_caster(SimObject* object, S32 argc, ConsoleValueRef* argv) {                             \
+   returnType cm_##className##_##name##_caster(SimObject* object, S32 argc, ConsoleValue* argv) {                                \
       AssertFatal( dynamic_cast<className*>( object ), "Object passed to " #name " is not a " #className "!" );                  \
-      conmethod_return_##returnType ) _fn ## className ## _ ## name ## impl(static_cast<className*>(object),argc,argv);          \
+      _ ## className ## name ## frame frame {};                                                                                  \
+      frame.object = static_cast< className* >( object );                                                                        \
+      conmethod_return_##returnType ) frame._exec(argc,argv);                                                                    \
    };                                                                                                                            \
    ConsoleConstructor cc_##className##_##name##_obj(#className,#name,cm_##className##_##name##_caster,usage,minArgs,maxArgs);    \
-   static inline returnType _fn ## className ## _ ## name ## impl(className *object, S32 argc, ConsoleValueRef *argv)
+   inline returnType _ ## className ## name ## frame::_exec(S32 argc, ConsoleValue *argv) const
 
 
 
@@ -951,7 +923,7 @@ public:
 #define DefineNewEngineFunction( name, returnType, args, defaultArgs, usage )                                                    \
    static inline returnType _fn ## name ## impl args;                                                                            \
    TORQUE_API EngineTypeTraits< returnType >::ReturnValueType fn ## name                                                         \
-      ( _EngineFunctionTrampoline< returnType args >::FixedArgs a )                                                              \
+      ( _EngineFunctionTrampoline< returnType args >::Args a )                                                                   \
    {                                                                                                                             \
       _CHECK_ENGINE_INITIALIZED( name, returnType );                                                                             \
       return EngineTypeTraits< returnType >::ReturnValue(                                                                        \
@@ -998,7 +970,7 @@ public:
 #define DefineNewEngineStaticMethod( className, name, returnType, args, defaultArgs, usage )                                           \
    static inline returnType _fn ## className ## name ## impl args;                                                                     \
    TORQUE_API EngineTypeTraits< returnType >::ReturnValueType fn ## className ## _ ## name                                             \
-      ( _EngineFunctionTrampoline< returnType args >::FixedArgs a )                                                                    \
+      ( _EngineFunctionTrampoline< returnType args >::Args a )                                                                         \
    {                                                                                                                                   \
       _CHECK_ENGINE_INITIALIZED( className::name, returnType );                                                                        \
       return EngineTypeTraits< returnType >::ReturnValue(                                                                              \
@@ -1185,10 +1157,10 @@ public:
    S32 mInitialArgc;
    S32 mArgc;
    StringTableEntry mCallbackName;
-   ConsoleValueRef mArgv[ MAX_ARGUMENTS + 2 ];
+   ConsoleValue mArgv[ MAX_ARGUMENTS + 2 ];
 
-   ConsoleValueRef _exec();
-   ConsoleValueRef _execLater(SimConsoleThreadExecEvent *evt);
+   ConsoleValue _exec();
+   ConsoleValue _execLater(SimConsoleThreadExecEvent *evt);
 
    _BaseEngineConsoleCallbackHelper(): mThis(NULL), mInitialArgc(0), mArgc(0), mCallbackName(StringTable->EmptyString()){;}
 };
@@ -1199,7 +1171,7 @@ public:
 struct _EngineConsoleCallbackHelper : public _BaseEngineConsoleCallbackHelper
 {
 private:
-   using Helper = engineAPI::detail::MarshallHelpers<ConsoleValueRef>;
+   using Helper = engineAPI::detail::MarshallHelpers<ConsoleValue>;
 public:
 
    _EngineConsoleCallbackHelper( StringTableEntry callbackName, SimObject* pThis )
@@ -1215,8 +1187,7 @@ public:
       if (Con::isMainThread())
       {
          ConsoleStackFrameSaver sav; sav.save();
-         CSTK.reserveValues(mArgc + sizeof...(ArgTs), mArgv);
-         mArgv[ 0 ].value->setStackStringValue(mCallbackName);
+         mArgv[ 0 ].setStringTableEntry(mCallbackName);
         
         Helper::marshallEach(mArgc, mArgv, args...);
         
@@ -1227,7 +1198,7 @@ public:
          SimConsoleThreadExecCallback cb;
          SimConsoleThreadExecEvent *evt = new SimConsoleThreadExecEvent(mArgc + sizeof...(ArgTs), NULL, false, &cb);
          evt->populateArgs(mArgv);
-         mArgv[ 0 ].value->setStackStringValue(mCallbackName);
+         mArgv[ 0 ].setStringTableEntry(mCallbackName);
         
         Helper::marshallEach(mArgc, mArgv, args...);
         
@@ -1244,7 +1215,7 @@ public:
 template<typename P1> struct _EngineConsoleExecCallbackHelper : public _BaseEngineConsoleCallbackHelper
 {
 private:
-   using Helper = engineAPI::detail::MarshallHelpers<ConsoleValueRef>;
+   using Helper = engineAPI::detail::MarshallHelpers<ConsoleValue>;
 public:
 
    _EngineConsoleExecCallbackHelper( SimObject* pThis )
@@ -1261,8 +1232,7 @@ public:
       if (Con::isMainThread())
       {
          ConsoleStackFrameSaver sav; sav.save();
-         CSTK.reserveValues(mArgc+sizeof...(ArgTs), mArgv);
-         mArgv[ 0 ].value->setStackStringValue(simCB);
+         mArgv[ 0 ].setString(simCB);
 
         Helper::marshallEach(mArgc, mArgv, args...);
 
@@ -1273,7 +1243,7 @@ public:
          SimConsoleThreadExecCallback cb;
          SimConsoleThreadExecEvent *evt = new SimConsoleThreadExecEvent(mArgc+sizeof...(ArgTs), NULL, true, &cb);
          evt->populateArgs(mArgv);
-         mArgv[ 0 ].value->setStackStringValue(simCB);
+         mArgv[ 0 ].setString(simCB);
         
         Helper::marshallEach(mArgc, mArgv, args...);
 
@@ -1288,7 +1258,7 @@ public:
 template<> struct _EngineConsoleExecCallbackHelper<const char*> : public _BaseEngineConsoleCallbackHelper
 {
 private:
-   using Helper = engineAPI::detail::MarshallHelpers<ConsoleValueRef>;
+   using Helper = engineAPI::detail::MarshallHelpers<ConsoleValue>;
 public:
    _EngineConsoleExecCallbackHelper( const char *callbackName )
    {
@@ -1303,10 +1273,9 @@ public:
       if (Con::isMainThread())
       {
          ConsoleStackFrameSaver sav; sav.save();
-         CSTK.reserveValues(mArgc+sizeof...(ArgTs), mArgv);
-         mArgv[ 0 ].value->setStackStringValue(mCallbackName);
+         mArgv[ 0 ].setStringTableEntry(mCallbackName);
         
-        Helper::marshallEach(mArgc, mArgv, args...);
+         Helper::marshallEach(mArgc, mArgv, args...);
         
          return R( EngineUnmarshallData< R >()( _exec() ) );
       }
@@ -1315,7 +1284,7 @@ public:
          SimConsoleThreadExecCallback cb;
          SimConsoleThreadExecEvent *evt = new SimConsoleThreadExecEvent(mArgc+sizeof...(ArgTs), NULL, false, &cb);
          evt->populateArgs(mArgv);
-         mArgv[ 0 ].value->setStackStringValue(mCallbackName);
+         mArgv[ 0 ].setStringTableEntry(mCallbackName);
         
         Helper::marshallEach(mArgc, mArgv, args...);
 

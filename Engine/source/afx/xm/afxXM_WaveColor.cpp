@@ -181,7 +181,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_WaveColorData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
@@ -216,6 +215,7 @@ afxXM_WaveColorData::afxXM_WaveColorData(const afxXM_WaveColorData& other, bool 
 
 void afxXM_WaveColorData::initPersistFields()
 {
+   docsURL;
   addField("a",               TypeColorF,      Offset(a, afxXM_WaveColorData),
     "...");
   addField("b",               TypeColorF,      Offset(b, afxXM_WaveColorData),
@@ -296,7 +296,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_WaveRiderColorData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
@@ -331,6 +330,7 @@ afxXM_WaveRiderColorData::afxXM_WaveRiderColorData(const afxXM_WaveRiderColorDat
 
 void afxXM_WaveRiderColorData::initPersistFields()
 {
+   docsURL;
   addField("a",               TypeColorF,      Offset(a, afxXM_WaveRiderColorData),
     "...");
   addField("b",               TypeColorF,      Offset(b, afxXM_WaveRiderColorData),

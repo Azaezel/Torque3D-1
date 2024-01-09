@@ -51,7 +51,7 @@ ConsoleDocClass( afxBillboardData,
 afxBillboardData::afxBillboardData()
 {
   color.set(1.0f, 1.0f, 1.0f, 1.0f);
-  txr_name = ST_NULLSTRING;
+  INIT_ASSET(Texture);
   dimensions.set(1.0f, 1.0f);
   texCoords[0].set(0.0f, 0.0f);
   texCoords[1].set(0.0f, 1.0f);
@@ -60,15 +60,13 @@ afxBillboardData::afxBillboardData()
   blendStyle = BlendUndefined;
   srcBlendFactor = BLEND_UNDEFINED;
   dstBlendFactor = BLEND_UNDEFINED;
-  texFunc = TexFuncModulate;
 }
 
 afxBillboardData::afxBillboardData(const afxBillboardData& other, bool temp_clone)
   : GameBaseData(other, temp_clone)
 {
   color = other.color;
-  txr_name = other.txr_name;
-  txr = other.txr;
+  CLONE_ASSET(Texture);
   dimensions = other.dimensions;
   texCoords[0] = other.texCoords[0];
   texCoords[1] = other.texCoords[1];
@@ -77,7 +75,6 @@ afxBillboardData::afxBillboardData(const afxBillboardData& other, bool temp_clon
   blendStyle = other.blendStyle;
   srcBlendFactor = other.srcBlendFactor;
   dstBlendFactor = other.dstBlendFactor;
-  texFunc = other.texFunc;
 }
 
 #define myOffset(field) Offset(field, afxBillboardData)
@@ -92,19 +89,15 @@ ImplementEnumType( afxBillboard_BlendStyle, "Possible blending types.\n" "@ingro
     { afxBillboardData::BlendPremultAlpha,   "PREMULTALPHA",   "..." },
 EndImplementEnumType;
 
-ImplementEnumType( afxBillboard_TexFuncType, "Possible texture function types.\n" "@ingroup afxBillboard\n\n" )
-    { afxBillboardData::TexFuncReplace,   "replace",     "..." },
-    { afxBillboardData::TexFuncModulate,  "modulate",    "..." },
-    { afxBillboardData::TexFuncAdd,       "add",         "..." },
-EndImplementEnumType;
-
 void afxBillboardData::initPersistFields()
 {
+   docsURL;
   addField("color",           TypeColorF,     myOffset(color),
     "The color assigned to the quadrangle geometry. The way it combines with the given "
     "texture varies according to the setting of the textureFunction field.");
-  addField("texture",         TypeFilename,   myOffset(txr_name),
-    "An image to use as the billboard's texture.");
+
+  INITPERSISTFIELD_IMAGEASSET(Texture, afxBillboardData, "An image to use as the billboard's texture.");
+
   addField("dimensions",      TypePoint2F,    myOffset(dimensions),
     "A value-pair that specifies the horizontal and vertical dimensions of the billboard "
     "in scene units.");
@@ -123,11 +116,6 @@ void afxBillboardData::initPersistFields()
     "Specifies destination blend factor when blendStyle is set to 'user'.\n"
     "Possible values: GFXBlendZero, GFXBlendOne, GFXBlendSrcColor, GFXBlendInvSrcColor, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha, GFXBlendDestAlpha, or GFXBlendInvDestAlpha");
 
-  addField("textureFunction", TYPEID<afxBillboardData::TexFuncType>(),  myOffset(texFunc),
-    "Selects a texture function that determines how the texture pixels are combined "
-    "with the shaded color of the billboard's quadrangle geometry.\n"
-    "Possible values: replace, modulate, or add.");
-
   Parent::initPersistFields();
 }
 
@@ -136,7 +124,8 @@ void afxBillboardData::packData(BitStream* stream)
 	Parent::packData(stream);
 
   stream->write(color);
-  stream->writeString(txr_name);
+  PACKDATA_ASSET(Texture);
+
   mathWrite(*stream, dimensions);
   mathWrite(*stream, texCoords[0]);
   mathWrite(*stream, texCoords[1]);
@@ -145,7 +134,6 @@ void afxBillboardData::packData(BitStream* stream)
 
   stream->writeInt(srcBlendFactor, 4);
   stream->writeInt(dstBlendFactor, 4);
-  stream->writeInt(texFunc, 4);
 }
 
 void afxBillboardData::unpackData(BitStream* stream)
@@ -153,8 +141,7 @@ void afxBillboardData::unpackData(BitStream* stream)
   Parent::unpackData(stream);
 
   stream->read(&color);
-  txr_name = stream->readSTString();
-  txr = GFXTexHandle();
+  UNPACKDATA_ASSET(Texture);
   mathRead(*stream, &dimensions);
   mathRead(*stream, &texCoords[0]);
   mathRead(*stream, &texCoords[1]);
@@ -163,21 +150,12 @@ void afxBillboardData::unpackData(BitStream* stream)
 
   srcBlendFactor = (GFXBlend) stream->readInt(4);
   dstBlendFactor = (GFXBlend) stream->readInt(4);
-  texFunc = stream->readInt(4);
 }
 
 bool afxBillboardData::preload(bool server, String &errorStr)
 {
   if (!Parent::preload(server, errorStr))
     return false;
-
-  if (!server)
-  {
-    if (txr_name && txr_name[0] != '\0')
-    {
-      txr.set(txr_name, &GFXStaticTextureSRGBProfile, "Billboard Texture");
-    }
-  }
 
    // if blend-style is set to User, check for defined blend-factors
    if (blendStyle == BlendUser && (srcBlendFactor == BLEND_UNDEFINED || dstBlendFactor == BLEND_UNDEFINED))

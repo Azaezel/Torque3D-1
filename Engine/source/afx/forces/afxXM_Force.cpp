@@ -64,7 +64,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_ForceData);
-  DECLARE_CATEGORY("AFX");
 };
 
 class afxXM_Force : public afxXM_WeightedBase, public afxEffectDefs
@@ -118,6 +117,7 @@ afxXM_ForceData::afxXM_ForceData(const afxXM_ForceData& other, bool temp_clone) 
 
 void afxXM_ForceData::initPersistFields()
 {
+   docsURL;
   addField("forceSetName",    TypeString, Offset(force_set_name, afxXM_ForceData),
     "...");
   addField("updateDT",        TypeF32,    Offset(update_dt, afxXM_ForceData),

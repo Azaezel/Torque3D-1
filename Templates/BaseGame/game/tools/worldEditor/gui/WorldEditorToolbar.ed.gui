@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(EWorldEditorToolbar, EditorGuiGroup) {
+$guiContent = new GuiControl(EWorldEditorToolbar, EditorGuiGroup) {
    canSaveDynamicFields = "0";
    internalName = "WorldEditorToolbar";
    Enabled = "1";
@@ -8,7 +8,7 @@
    HorizSizing = "right";
    VertSizing = "bottom";
    Position = "306 0";
-   Extent = "550" SPC getWord(EditorGuiToolbar.extent, 1);
+   Extent = "600" SPC getWord(EditorGuiToolbar.extent, 1) -2;
    MinExtent = "8 2";
    canSave = "1";
    Visible = "1";
@@ -24,7 +24,7 @@
       Profile = "ToolsMenubarProfile";
       HorizSizing = "width";
       VertSizing = "bottom";
-      Position = "0 3";
+      Position = "0 0";
       Extent = "190 31";
       MinExtent = "16 16";
       canSave = "1";
@@ -52,7 +52,7 @@
          tooltipprofile = "ToolsGuiToolTipProfile";
          ToolTip = "Fit View To Selection (F)";
          hovertime = "1000";
-         bitmap = "tools/gui/images/menubar/fit-selection";
+         bitmapAsset = "ToolsModule:fit_selection_n_image";
          text = "";
          groupNum = "-1";
          buttonType = "PushButton";
@@ -65,7 +65,7 @@
          position = "34 3";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
       
       new GuiTextCtrl() {
@@ -109,7 +109,7 @@
          buttonType = "ToggleButton";
          useMouseEvents = "0";
          buttonMargin = "0 0";
-         bitmap = "tools/gui/images/menubar/snapping-settings";
+         bitmapAsset = "ToolsModule:snapping_settings_n_image";
          
          new GuiBitmapCtrl(){
             HorizSizing = "left";
@@ -117,7 +117,7 @@
             Position = "23 21";
             Extent = "4 4";
             MinExtent = "4 4";
-            bitmap = "tools/gui/images/dropdown-button-arrow";
+            bitmapAsset = "ToolsModule:dropdown_button_arrow_image";
          };
       }; 
          
@@ -142,7 +142,7 @@
             buttonType = "toggleButton";
             useMouseEvents = "0";
             groupNum = "-1";
-            bitmap = "tools/gui/images/menubar/snap-grid";
+            bitmapAsset = "ToolsModule:menubar_snap_grid_n_image";
             textMargin = "4";
          };
          new GuiBitmapButtonCtrl() {
@@ -166,7 +166,7 @@
             buttonType = "toggleButton";
             useMouseEvents = "0";
             groupNum = "-1";
-            bitmap = "tools/gui/images/menubar/snap-terrain";
+            bitmapAsset = "ToolsModule:snap_terrain_n_image";
             textMargin = "4";
          };
          new GuiBitmapButtonCtrl() {
@@ -190,7 +190,7 @@
             buttonType = "toggleButton";
             useMouseEvents = "0";
             groupNum = "-1";
-            bitmap = "tools/gui/images/menubar/snap-objects";
+            bitmapAsset = "ToolsModule:snap_objects_n_image";
             textMargin = "4";
          };
       };
@@ -249,7 +249,7 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };
       new GuiBitmapCtrl() {
@@ -258,7 +258,7 @@
          position = "269 3";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
          
       new GuiBitmapButtonCtrl() {
@@ -279,7 +279,7 @@
          tooltipprofile = "ToolsGuiToolTipProfile";
          ToolTip = "Object bounds selection toggle (V)";
          hovertime = "1000";
-         bitmap = "tools/gui/images/menubar/select-bounds";
+         bitmapAsset = "ToolsModule:select_bounds_n_image";
          groupNum = "-1";
          buttonType = "ToggleButton";
          useMouseEvents = "0";
@@ -291,7 +291,7 @@
          position = "307 3";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
       
       new GuiControl(ToggleButtonBar){
@@ -317,7 +317,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Toggles object center (O) and bounds center (P)";
             hovertime = "1000";
-            bitmap = "tools/gui/images/menubar/object-center";
+            bitmapAsset = "ToolsModule:object_center_n_image";
             text = "Button";
             groupNum = "-1";
             buttonType = "ToggleButton";
@@ -329,7 +329,7 @@
                Position = "23 21";
                Extent = "4 4";
                MinExtent = "4 4";
-               bitmap = "tools/gui/images/dropdown-button-arrow";
+               bitmapAsset = "ToolsModule:dropdown_button_arrow_image";
             };
          };
 
@@ -350,7 +350,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Toggles object transform (K) and world transform (L)";
             hovertime = "1000";
-            bitmap = "tools/gui/images/menubar/world-transform";
+            bitmapAsset = "ToolsModule:world_transform_n_image";
             groupNum = "-1";
             buttonType = "ToggleButton";
             text = "";  
@@ -361,7 +361,7 @@
                Position = "23 21";
                Extent = "4 4";
                MinExtent = "4 4";
-               bitmap = "tools/gui/images/dropdown-button-arrow";
+               bitmapAsset = "ToolsModule:dropdown_button_arrow_image";
             };  
          };
       };
@@ -372,7 +372,7 @@
          position = "379 3";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
             
       new GuiControl(ToggleNodeBar){
@@ -399,7 +399,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Enables Render of Object Node Icons (N)";
             hovertime = "1000";
-            bitmap = "tools/gui/images/menubar/object-node-icon";
+            bitmapAsset = "ToolsModule:object_node_icon_n_image";
             groupNum = "-1";
             buttonType = "ToggleButton";
             useMouseEvents = "0";
@@ -422,7 +422,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Enables Render of Object Node Lables (SHIFT N)";
             hovertime = "1000";
-            bitmap = "tools/gui/images/menubar/object-node-lable";
+            bitmapAsset = "ToolsModule:object_node_lable_n_image";
             text = "";
             groupNum = "-1";
             buttonType = "ToggleButton";
@@ -436,7 +436,7 @@
          position = "379 3";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
             
       new GuiControl(PrefabBar){
@@ -464,7 +464,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Make the Selection a Prefab.";
             hovertime = "1000";
-            bitmap = "tools/gui/images/menubar/selection-to-prefab";
+            bitmapAsset = "ToolsModule:selection_to_prefab_n_image";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
@@ -487,14 +487,39 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Explode the Selected Prefab.";
             hovertime = "1000";
-            bitmap = "tools/gui/images/menubar/explode-prefab";
+            bitmapAsset = "ToolsModule:explode_prefab_n_image";
             text = "";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
          };
       };
-
+      
+      new GuiBitmapButtonCtrl() {
+         canSaveDynamicFields = "0";
+         internalName = "bakeProbesBtn";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "right";
+         VertSizing = "bottom";
+         Position = "452 3";
+         Extent = "29 27";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "1";
+         Variable = "";
+         Command = "updateReflectionProbes();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Update Reflection Probes";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:probe_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+      };
+      
       new GuiContainer(objectCenterDropdown){
          Profile = "IconDropdownProfile";
          Position = getWord(EWorldEditorToolbar.position, 0)+getWord(ToggleButtonBar.Position, 0)+getWord(EWorldEditorToolbar-->centerObject.position, 0)-5 SPC getWord(EditorGuiToolbar.extent, 1)-1;
@@ -519,7 +544,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Use object defined center (O)";
             hovertime = "1000";
-            iconBitmap = "tools/gui/images/menubar/object-center_n";
+            bitmapAsset = "ToolsModule:object_center_n_image";
             text = "Object Center";
             buttonMargin = "0 4";
             textMargin = "38";
@@ -544,7 +569,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Use bounding box center (P)";
             hovertime = "1000";
-            iconBitmap = "tools/gui/images/menubar/bounds-center_n";
+            bitmapAsset = "ToolsModule:bounds_center_n_image";
             text = "Bounds Center";
             buttonMargin = "0 4";
             textMargin = "38";
@@ -591,7 +616,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Use world normal for transformations (L)";
             hovertime = "1000";
-            iconBitmap = "tools/gui/images/menubar/world-transform_n";
+            bitmapAsset = "ToolsModule:world_transform_n_image";
             text = "World Transform";
             buttonMargin = "0 4";
             textMargin = "38";
@@ -617,7 +642,7 @@
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Use object normal for transformations (K)";
             hovertime = "1000";
-            iconBitmap = "tools/gui/images/menubar/object-transform_n";
+            bitmapAsset = "ToolsModule:object_transform_n_image";
             text = "Object Transform";
             buttonMargin = "0 4";
             textMargin = "38";
@@ -659,8 +684,8 @@ new GuiMouseEventCtrl(softSnapSizeSliderCtrlContainer, EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(EWorldEditorToolbar-->softSnapSizeTextEdit.getGlobalPosition()) - 12 SPC 
-         (getWord(EWorldEditorToolbar-->softSnapSizeTextEdit.getGlobalPosition(), 1)) + 18;
+      position = EWorldEditorToolbar.position.x + EWorldEditorToolbar-->softSnapSizeTextEditContainer.position.x + 50 SPC 
+         EWorldEditorToolbar-->softSnapSizeTextEdit.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";

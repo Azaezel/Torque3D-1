@@ -299,6 +299,8 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       SimObject*       nextManagerNameObject;
       SimObject*       nextIdObject;
 
+      StringTableEntry mInheritFrom;
+      bool    mPrototype;
       /// SimGroup we're contained in, if any.
       SimGroup*   mGroup;
       
@@ -380,10 +382,13 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       // Object name protected set method
       static bool setProtectedName(void *object, const char *index, const char *data);
 
+      // Sets object to inherit default values from
+      static bool setInheritFrom(void* object, const char* index, const char* data);
+
    public:
       inline void setProgenitorFile(const char* pFile) { mProgenitorFile = StringTable->insert(pFile); }
       inline StringTableEntry getProgenitorFile(void) const { return mProgenitorFile; }
-
+      static bool _doPrototype(void* object, const char* index, const char* data);
    protected:
       /// Taml callbacks.
       virtual void onTamlPreWrite(void) {}
@@ -544,6 +549,9 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       /// Get the internal name of this control
       StringTableEntry getInternalName() const { return mInternalName; }
 
+      /// type-specified slot for returning hints for the main difference between object instances
+      virtual StringTableEntry getTypeHint() const { return StringTable->EmptyString(); }
+
       /// Set the original name of this control
       void setOriginalName(const char* originalName);
 
@@ -587,7 +595,7 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       
       virtual ~SimObject();
 
-      virtual bool processArguments(S32 argc, ConsoleValueRef *argv);  ///< Process constructor options. (ie, new SimObject(1,2,3))
+      virtual bool processArguments(S32 argc, ConsoleValue *argv);  ///< Process constructor options. (ie, new SimObject(1,2,3))
 
       /// @}
 
@@ -648,7 +656,7 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       virtual void onEditorDisable(){};
 
       /// Called when the object is inspected via a GuiInspector control
-      virtual void onInspect(GuiInspector*) {};
+      virtual void onInspect(GuiInspector*);
 
       /// @}
 
@@ -724,6 +732,12 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       /// @see registerObject()
       /// @param   name  Name to assign to the object.
       bool registerObject(const char *name);
+
+      /// Register the object, assigning the name.
+      ///
+      /// @see registerObject()
+      /// @param   name  Name to assign to the object.
+      bool registerObject(const String& name);
 
       /// Register the object, assigning a name and ID.
       ///

@@ -68,6 +68,8 @@ namespace Sim
    ImplementNamedSet(SFXAmbienceSet)
    ImplementNamedSet(TerrainMaterialSet)
    ImplementNamedSet(DataBlockSet);
+   ImplementNamedSet(ForestBrushSet);
+   ImplementNamedSet(ForestItemDataSet);
    ImplementNamedGroup(ActionMapGroup)
    ImplementNamedGroup(ClientGroup)
    ImplementNamedGroup(GuiGroup)
@@ -97,7 +99,7 @@ DefineEngineFunction( nameToID, S32, (const char * objectName), ,"nameToID(objec
 
 DefineEngineFunction( isObject, bool, (const char * objectName), ,"isObject(object)")
 {
-   if (!dStrcmp(objectName, "0") || !dStrcmp(objectName, ""))
+   if (!String::compare(objectName, "0") || !String::compare(objectName, ""))
       return false;
    else
       return (Sim::findObject(objectName) != NULL);

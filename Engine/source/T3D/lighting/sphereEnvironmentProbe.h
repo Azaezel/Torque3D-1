@@ -64,6 +64,7 @@ public:
    // Declare this object as a ConsoleObject so that we can
    // instantiate it into the world and network it
    DECLARE_CONOBJECT(SphereEnvironmentProbe);
+   DECLARE_CATEGORY("Lighting \t Probes");
 
    //--------------------------------------------------------------------------
    // Object Editing
@@ -98,10 +99,6 @@ public:
    // use the same Materials.
    //--------------------------------------------------------------------------
    virtual void updateProbeParams();
-
-   // This is the function that allows this object to submit itself for rendering
-   void prepRenderImage(SceneRenderState *state);
-
    void setPreviewMatParameters(SceneRenderState* renderState, BaseMatInstance* mat);
 };
 

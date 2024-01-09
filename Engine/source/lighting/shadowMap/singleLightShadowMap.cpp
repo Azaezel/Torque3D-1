@@ -71,7 +71,8 @@ void SingleLightShadowMap::_render( RenderPassManager* renderPass,
    lightMatrix.inverse();
    GFX->setWorldMatrix(lightMatrix);
 
-   const MatrixF& lightProj = GFX->getProjectionMatrix();
+   MatrixF lightProj = GFX->getProjectionMatrix();
+   lightProj.reverseProjection();
    mWorldToLightProj = lightProj * lightMatrix;
 
    // Render the shadowmap!
@@ -80,7 +81,7 @@ void SingleLightShadowMap::_render( RenderPassManager* renderPass,
    mTarget->attachTexture( GFXTextureTarget::DepthStencil, 
       _getDepthTarget( mShadowMapTex->getWidth(), mShadowMapTex->getHeight() ) );
    GFX->setActiveRenderTarget(mTarget);
-   GFX->clear(GFXClearStencil | GFXClearZBuffer | GFXClearTarget, ColorI(255,255,255), 1.0f, 0);
+   GFX->clear(GFXClearStencil | GFXClearZBuffer | GFXClearTarget, ColorI(255,255,255), 0.0f, 0);
 
    SceneManager* sceneManager = diffuseState->getSceneManager();
    

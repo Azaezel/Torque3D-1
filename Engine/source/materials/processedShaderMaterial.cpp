@@ -59,8 +59,8 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/)
    mDiffuseColorSC = shader->getShaderConstHandle("$diffuseMaterialColor");
    mTexMatSC = shader->getShaderConstHandle(ShaderGenVars::texMat);
    mToneMapTexSC = shader->getShaderConstHandle(ShaderGenVars::toneMap);
-   mPBRConfigSC = shader->getShaderConstHandle(ShaderGenVars::pbrConfig);
-   mSmoothnessSC = shader->getShaderConstHandle(ShaderGenVars::smoothness);
+   mORMConfigSC = shader->getShaderConstHandle(ShaderGenVars::ormConfig);
+   mRoughnessSC = shader->getShaderConstHandle(ShaderGenVars::roughness);
    mMetalnessSC = shader->getShaderConstHandle(ShaderGenVars::metalness);
    mGlowMulSC = shader->getShaderConstHandle(ShaderGenVars::glowMul);
    mAccuScaleSC = shader->getShaderConstHandle("$accuScale");
@@ -94,6 +94,7 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/)
    mEyeMatSC = shader->getShaderConstHandle(ShaderGenVars::eyeMat);
    mOneOverFarplane = shader->getShaderConstHandle(ShaderGenVars::oneOverFarplane);
    mAccumTimeSC = shader->getShaderConstHandle(ShaderGenVars::accumTime);
+   mDampnessSC = shader->getShaderConstHandle(ShaderGenVars::dampness);
    mMinnaertConstantSC = shader->getShaderConstHandle(ShaderGenVars::minnaertConstant);
    mSubSurfaceParamsSC = shader->getShaderConstHandle(ShaderGenVars::subSurfaceParams);
    mDiffuseAtlasParamsSC = shader->getShaderConstHandle(ShaderGenVars::diffuseAtlasParams);
@@ -109,7 +110,7 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/)
    mImposterUVs = shader->getShaderConstHandle( "$imposterUVs" );
    mImposterLimits = shader->getShaderConstHandle( "$imposterLimits" );
 
-   for (S32 i = 0; i < TEXTURE_STAGE_COUNT; ++i)
+   for (S32 i = 0; i < GFX_TEXTURE_STAGE_COUNT; ++i)
       mRTParamsSC[i] = shader->getShaderConstHandle( String::ToString( "$rtParams%d", i ) );
 
    // MFT_HardwareSkinning
@@ -227,9 +228,9 @@ bool ProcessedShaderMaterial::init( const FeatureSet &features,
       mInstancingState = new InstancingState();
       mInstancingState->setFormat( _getRPD( 0 )->shader->getInstancingFormat(), mVertexFormat );
    }
-   if (mMaterial && mMaterial->mDiffuseMapFilename[0].isNotEmpty() && mMaterial->mDiffuseMapFilename[0].substr(0, 1).equal("#"))
+   if (mMaterial && mMaterial->mDiffuseMapName[0] != StringTable->EmptyString() && String(mMaterial->mDiffuseMapName[0]).startsWith("#"))
    {
-      String texTargetBufferName = mMaterial->mDiffuseMapFilename[0].substr(1, mMaterial->mDiffuseMapFilename[0].length() - 1);
+      String texTargetBufferName = String(mMaterial->mDiffuseMapName[0]).substr(1, (U32)strlen(mMaterial->mDiffuseMapName[0]) - 1);
       NamedTexTarget *texTarget = NamedTexTarget::find(texTargetBufferName);
       RenderPassData* rpd = getPass(0);
 
@@ -295,6 +296,7 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
                                                    MaterialFeatureData &fd, 
                                                    const FeatureSet &features )
 {
+   if (GFX->getAdapterType() == NullDevice) return;
    PROFILE_SCOPE( ProcessedShaderMaterial_DetermineFeatures );
 
    const F32 shaderVersion = GFX->getPixelShaderVersion();
@@ -304,8 +306,8 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
 
    // First we add all the features which the 
    // material has defined.
-   if (mMaterial->mInvertSmoothness[stageNum])
-      fd.features.addFeature(MFT_InvertSmoothness);
+   if (mMaterial->mInvertRoughness[stageNum])
+      fd.features.addFeature(MFT_InvertRoughness);
 
    if ( mMaterial->isTranslucent() )
    {
@@ -323,7 +325,7 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
 
    // TODO: This sort of sucks... BL should somehow force this
    // feature on from the outside and not this way.
-   if (dStrcmp(LIGHTMGR->getId(), "BLM") == 0)
+   if (String::compare(LIGHTMGR->getId(), "BLM") == 0)
    {
       fd.features.addFeature(MFT_ForwardShading);
       fd.features.addFeature(MFT_ReflectionProbes);
@@ -351,15 +353,10 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    if ( mMaterial->mAlphaTest )
       fd.features.addFeature( MFT_AlphaTest );
 
-   if (mMaterial->mEmissive[stageNum])
-   {
-      fd.features.addFeature(MFT_IsEmissive);
-   }
-   else
+   if (mMaterial->isTranslucent())
    {
       fd.features.addFeature(MFT_RTLighting);
-	  if (mMaterial->isTranslucent())
-		  fd.features.addFeature(MFT_ReflectionProbes);
+      fd.features.addFeature(MFT_ReflectionProbes);
    }
 
    if ( mMaterial->mAnimFlags[stageNum] )
@@ -429,12 +426,12 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    }
 
    // Deferred Shading : PBR Config
-   if (mStages[stageNum].getTex(MFT_PBRConfigMap))
+   if (mStages[stageNum].getTex(MFT_OrmMap))
    {
-      fd.features.addFeature(MFT_PBRConfigMap);
+      fd.features.addFeature(MFT_OrmMap);
    }
    else
-      fd.features.addFeature(MFT_PBRConfigVars);
+      fd.features.addFeature(MFT_ORMConfigVars);
 
    // Deferred Shading : Material Info Flags
    fd.features.addFeature(MFT_MatInfoFlags);
@@ -450,7 +447,7 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
       fd.features.addFeature(MFT_SkyBox);
 
       fd.features.removeFeature(MFT_ReflectionProbes);
-      fd.features.removeFeature(MFT_PBRConfigVars);
+      fd.features.removeFeature(MFT_ORMConfigVars);
       fd.features.removeFeature(MFT_MatInfoFlags);
    }
 
@@ -1096,6 +1093,7 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
 
    shaderConsts->setSafe( handles->mAccumTimeSC, MATMGR->getTotalTime() );
 
+   shaderConsts->setSafe(handles->mDampnessSC, MATMGR->getDampnessClamped());
    // If the shader constants have not been lost then
    // they contain the content from a previous render pass.
    //
@@ -1109,7 +1107,7 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
    if ( !shaderConsts->wasLost() )
       return;
 
-   shaderConsts->setSafe(handles->mSmoothnessSC, mMaterial->mSmoothness[stageNum]);
+   shaderConsts->setSafe(handles->mRoughnessSC, mMaterial->mRoughness[stageNum]);
    shaderConsts->setSafe(handles->mMetalnessSC, mMaterial->mMetalness[stageNum]);
    shaderConsts->setSafe(handles->mGlowMulSC, mMaterial->mGlowMul[stageNum]);
 
@@ -1201,8 +1199,10 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
 
    // Deferred Shading: Determine Material Info Flags
    S32 matInfoFlags = 
-            (mMaterial->mEmissive[stageNum] ? 1 : 0) | //emissive
-            (mMaterial->mSubSurface[stageNum] ? 2 : 0); //subsurface
+            (mMaterial->mReceiveShadows[stageNum] ? 1 : 0) | //ReceiveShadows 
+            (mMaterial->mSubSurface[stageNum] ? 1 << 2 : 0)| //subsurface
+            (mMaterial->mIgnoreLighting[stageNum] ? 1 << 3 : 0);  //IgnoreLighting 
+   
    mMaterial->mMatInfoFlags[stageNum] = matInfoFlags / 255.0f;
    shaderConsts->setSafe(handles->mMatInfoFlagsSC, mMaterial->mMatInfoFlags[stageNum]);   
    if( handles->mAccuScaleSC->isValid() )
@@ -1290,16 +1290,9 @@ void ProcessedShaderMaterial::setCustomShaderData(Vector<CustomShaderBindingData
 
 	for (U32 i = 0; i < shaderData.size(); i++)
 	{
-		for (U32 h = 0; h < handles->mCustomHandles.size(); ++h)
-		{
-			StringTableEntry handleName = shaderData[i].getHandleName();
-			bool tmp = true;
-		}
 		//roll through and try setting our data!
 		for (U32 h = 0; h < handles->mCustomHandles.size(); ++h)
 		{
-			StringTableEntry handleName = shaderData[i].getHandleName();
-			StringTableEntry rpdHandleName = handles->mCustomHandles[h].handleName;
 			if (handles->mCustomHandles[h].handleName == shaderData[i].getHandleName())
 			{
 				if (handles->mCustomHandles[h].handle->isValid())

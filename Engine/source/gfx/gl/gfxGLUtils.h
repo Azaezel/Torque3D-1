@@ -30,7 +30,7 @@
 
 inline U32 getMaxMipmaps(U32 width, U32 height, U32 depth)
 {
-   return getMax( getBinLog2(depth), getMax(getBinLog2(width), getBinLog2(height)));
+   return getMax( getBinLog2(depth), getMax(getBinLog2(width), getBinLog2(height))) + 1;
 }
 
 inline GLenum minificationFilter(U32 minFilter, U32 mipFilter, U32 /*mipLevels*/)
@@ -194,6 +194,9 @@ GFXGLPreserveTexture TORQUE_CONCAT(preserve_, __LINE__) (GL_TEXTURE_CUBE_MAP, GL
 #define PRESERVE_CUBEMAP_ARRAY_TEXTURE() \
 GFXGLPreserveTexture TORQUE_CONCAT(preserve_, __LINE__) (GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BINDING_CUBE_MAP_ARRAY, (GFXGLPreserveInteger::BindFn)glBindTexture)
 
+#define PRESERVE_2D_TEXTURE_ARRAY() \
+GFXGLPreserveTexture TORQUE_CONCAT(preserve_, __LINE__) (GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BINDING_2D_ARRAY, (GFXGLPreserveInteger::BindFn)glBindTexture)
+
 #define _GET_TEXTURE_BINDING(binding) \
 binding == GL_TEXTURE_2D ? GL_TEXTURE_BINDING_2D : (binding == GL_TEXTURE_3D ?  GL_TEXTURE_BINDING_3D : GL_TEXTURE_BINDING_1D )
 
@@ -205,7 +208,7 @@ GFXGLPreserveInteger TORQUE_CONCAT(preserve_, __LINE__) (GL_READ_FRAMEBUFFER, GL
 GFXGLPreserveInteger TORQUE_CONCAT(preserve2_, __LINE__) (GL_DRAW_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER_BINDING, (GFXGLPreserveInteger::BindFn)glBindFramebuffer)
 
 
-#if TORQUE_DEBUG
+#ifdef TORQUE_DEBUG
 
     // Handy macro for checking the status of a framebuffer.  Framebuffers can fail in 
     // all sorts of interesting ways, these are just the most common.  Further, no existing GL profiling 

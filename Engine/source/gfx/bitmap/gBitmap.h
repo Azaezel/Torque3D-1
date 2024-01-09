@@ -58,17 +58,23 @@ public:
    enum Constants
    {
       /// The maximum mipmap levels we support.  The current
-      /// value lets us support up to 4096 x 4096 images.
-      c_maxMipLevels = 13 
+      /// value lets us support up to 8192 x 8192 images.
+      c_maxMipLevels = 14 
+   };
+
+   enum TextureOp
+   {
+      Add,
+      Subtract
    };
 
    struct Registration
    {
       /// The read function prototype.
-      typedef bool(*ReadFunc)(Stream &stream, GBitmap *bitmap);
+      typedef bool(*ReadFunc)(const Torque::Path& path, GBitmap* bitmap);
 
       /// The write function prototype.  Compression levels are image-specific - see their registration declaration for details.
-      typedef bool(*WriteFunc)(GBitmap *bitmap, Stream &stream, U32 compressionLevel);
+      typedef bool(*WriteFunc)(const Torque::Path& path, GBitmap* bitmap, U32 compressionLevel);
 
       /// Used to sort the registrations so that 
       /// lookups occur in a fixed order.
@@ -205,7 +211,7 @@ public:
    /// the bitmap bits and to check for alpha values less than 255
    bool        checkForTransparency();
 
-   LinearColorF      sampleTexel(F32 u, F32 v) const;
+   LinearColorF      sampleTexel(F32 u, F32 v, bool retAlpha = false) const;
    bool        getColor(const U32 x, const U32 y, ColorI& rColor) const;
    bool        setColor(const U32 x, const U32 y, const ColorI& rColor);
    U8          getChanelValueAt(U32 x, U32 y, U32 chan);
@@ -218,7 +224,7 @@ public:
    ///
    /// @note There are some restrictions on ops and formats that will probably change
    /// based on how we use this function.
-   bool combine( const GBitmap *bitmapA, const GBitmap *bitmapB, const GFXTextureOp combineOp );
+   bool combine( const GBitmap *bitmapA, const GBitmap *bitmapB, const TextureOp combineOp );
 
    /// Fills the first mip level of the bitmap with the specified color.
    void fill( const ColorI &rColor );
@@ -235,13 +241,16 @@ public:
    /// Read a bitmap from a stream
    /// @param bmType This is a file extension to describe the type of the data [i.e. "png" for PNG file, etc]
    /// @param ioStream The stream to read from
-   bool  readBitmap( const String &bmType, Stream &ioStream );
+   bool  readBitmap(const String& bmType, const Torque::Path& path);
 
    /// Write a bitmap to a stream
    /// @param bmType This is a file extension to describe the type of the data [i.e. "png" for PNG file, etc]
    /// @param ioStream The stream to read from
-   /// @param compressionLevel Image format-specific compression level.  If set to U32_MAX, we use the default compression defined when the format was registered.
-   bool  writeBitmap( const String &bmType, Stream &ioStream, U32 compressionLevel = U32_MAX );
+   /// @param compressionLevel Image format specific compression level. For JPEG sets the quality level percentage, range 0 to 100.
+   /// For PNG compression level is 0 - 10
+   /// Not used for other image formats.
+   
+   bool  writeBitmap( const String &bmType, const Torque::Path& path, U32 compressionLevel = U32_MAX );
 
    bool readMNG(Stream& io_rStream);               // located in bitmapMng.cc
    bool writeMNG(Stream& io_rStream) const;
@@ -317,7 +326,7 @@ inline U8* GBitmap::getWritableBits(const U32 in_mipLevel)
 
 inline U8* GBitmap::getAddress(const S32 in_x, const S32 in_y, const U32 mipLevel)
 {
-   return (getWritableBits(mipLevel) + ((in_y * getWidth(mipLevel)) + in_x) * mBytesPerPixel);
+   return (getWritableBits(mipLevel) + (U64)(((in_y * getWidth(mipLevel)) + in_x) * mBytesPerPixel));
 }
 
 inline const U8* GBitmap::getAddress(const S32 in_x, const S32 in_y, const U32 mipLevel) const

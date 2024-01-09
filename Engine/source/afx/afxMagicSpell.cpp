@@ -210,6 +210,7 @@ void afxMagicSpellData::reloadReset()
 
 void afxMagicSpellData::initPersistFields()
 {
+   docsURL;
   static ewValidator _castingPhrase(CASTING_PHRASE);
   static ewValidator _launchPhrase(LAUNCH_PHRASE);
   static ewValidator _deliveryPhrase(DELIVERY_PHRASE);
@@ -460,7 +461,7 @@ DefineEngineMethod(afxMagicSpellData, reset, void, (),,
   object->reloadReset();
 }
 
-DefineEngineMethod(afxMagicSpellData, addCastingEffect, void, (afxEffectBaseData* effect),,
+DefineEngineMethod(afxMagicSpellData, pushCastingEffect, void, (afxEffectBaseData* effect),,
                    "Adds an effect (wrapper or group) to a spell's casting phase.\n\n"
                    "@ingroup AFX")
 {
@@ -475,7 +476,7 @@ DefineEngineMethod(afxMagicSpellData, addCastingEffect, void, (afxEffectBaseData
   object->mCasting_fx_list.push_back(effect);
 }
 
-DefineEngineMethod(afxMagicSpellData, addLaunchEffect, void, (afxEffectBaseData* effect),,
+DefineEngineMethod(afxMagicSpellData, pushLaunchEffect, void, (afxEffectBaseData* effect),,
                    "Adds an effect (wrapper or group) to a spell's launch phase.\n\n"
                    "@ingroup AFX")
 
@@ -491,7 +492,7 @@ DefineEngineMethod(afxMagicSpellData, addLaunchEffect, void, (afxEffectBaseData*
   object->mLaunch_fx_list.push_back(effect);
 }
 
-DefineEngineMethod(afxMagicSpellData, addDeliveryEffect, void, (afxEffectBaseData* effect),,
+DefineEngineMethod(afxMagicSpellData, pushDeliveryEffect, void, (afxEffectBaseData* effect),,
                    "Adds an effect (wrapper or group) to a spell's delivery phase.\n\n"
                    "@ingroup AFX")
 
@@ -507,7 +508,7 @@ DefineEngineMethod(afxMagicSpellData, addDeliveryEffect, void, (afxEffectBaseDat
   object->mDelivery_fx_list.push_back(effect);
 }
 
-DefineEngineMethod(afxMagicSpellData, addImpactEffect, void, (afxEffectBaseData* effect),,
+DefineEngineMethod(afxMagicSpellData, pushImpactEffect, void, (afxEffectBaseData* effect),,
                    "Adds an effect (wrapper or group) to a spell's impact phase.\n\n"
                    "@ingroup AFX")
 
@@ -523,7 +524,7 @@ DefineEngineMethod(afxMagicSpellData, addImpactEffect, void, (afxEffectBaseData*
   object->mImpact_fx_list.push_back(effect);
 }
 
-DefineEngineMethod(afxMagicSpellData, addLingerEffect, void, (afxEffectBaseData* effect),,
+DefineEngineMethod(afxMagicSpellData, pushLingerEffect, void, (afxEffectBaseData* effect),,
                    "Adds an effect (wrapper or group) to a spell's linger phase.\n\n"
                    "@ingroup AFX")
 
@@ -980,6 +981,7 @@ void afxMagicSpell::onDeleteNotify(SimObject* obj)
 // static
 void afxMagicSpell::initPersistFields()
 {
+   docsURL;
   addField("caster", TYPEID<SimObject>(), Offset(mCaster_field, afxMagicSpell),
     "...");
   addField("target", TYPEID<SimObject>(), Offset(mTarget_field, afxMagicSpell),
@@ -2638,23 +2640,25 @@ DefineEngineStringlyVariadicMethod(afxMagicSpell, setTimeFactor, void, 3, 4, "(F
    "@ingroup AFX")
 {
    if (argc == 3)
-      object->setTimeFactor(dAtof(argv[2]));
+      object->setTimeFactor(argv[2].getFloat());
    else
    {
+      F32 value = argv[3].getFloat();
+
       if (dStricmp(argv[2], "overall") == 0)
          object->setTimeFactor(dAtof(argv[3]));
       else if (dStricmp(argv[2], "casting") == 0)
-         object->setTimeFactor(afxMagicSpell::CASTING_PHRASE, dAtof(argv[3]));
+         object->setTimeFactor(afxMagicSpell::CASTING_PHRASE, value);
       else if (dStricmp(argv[2], "launch") == 0)
-         object->setTimeFactor(afxMagicSpell::LAUNCH_PHRASE, dAtof(argv[3]));
+         object->setTimeFactor(afxMagicSpell::LAUNCH_PHRASE, value);
       else if (dStricmp(argv[2], "delivery") == 0)
-         object->setTimeFactor(afxMagicSpell::DELIVERY_PHRASE, dAtof(argv[3]));
+         object->setTimeFactor(afxMagicSpell::DELIVERY_PHRASE, value);
       else if (dStricmp(argv[2], "impact") == 0)
-         object->setTimeFactor(afxMagicSpell::IMPACT_PHRASE, dAtof(argv[3]));
+         object->setTimeFactor(afxMagicSpell::IMPACT_PHRASE, value);
       else if (dStricmp(argv[2], "linger") == 0)
-         object->setTimeFactor(afxMagicSpell::LINGER_PHRASE, dAtof(argv[3]));
+         object->setTimeFactor(afxMagicSpell::LINGER_PHRASE, value);
       else
-         Con::errorf("afxMagicSpell::setTimeFactor() -- unknown spell phrase [%s].", argv[2].getStringValue());
+         Con::errorf("afxMagicSpell::setTimeFactor() -- unknown spell phrase [%s].", argv[2].getString());
    }
 }
 

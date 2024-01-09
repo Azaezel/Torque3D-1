@@ -126,6 +126,7 @@ GuiShapeNameHud::GuiShapeNameHud()
 
 void GuiShapeNameHud::initPersistFields()
 {
+   docsURL;
    addGroup("Colors");     
    addField( "fillColor",  TypeColorF, Offset( mFillColor, GuiShapeNameHud ), "Standard color for the background of the control." );
    addField( "frameColor", TypeColorF, Offset( mFrameColor, GuiShapeNameHud ), "Color for the control's frame."  );
@@ -208,7 +209,7 @@ void GuiShapeNameHud::onRender( Point2I, const RectI &updateRect)
             // Target pos to test, if it's a player run the LOS to his eye
             // point, otherwise we'll grab the generic box center.
             Point3F shapePos;
-            if (shape->getTypeMask() & PlayerObjectType) 
+            if (shape->getTypeMask() & (PlayerObjectType | VehicleObjectType))
             {
                MatrixF eye;
 

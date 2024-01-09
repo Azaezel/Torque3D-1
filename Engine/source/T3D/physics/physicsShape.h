@@ -42,6 +42,8 @@
    #include "console/simObjectRef.h"
 #endif
 
+#include "T3D/assets/ShapeAsset.h"
+
 class TSShapeInstance;
 class PhysicsBody;
 class PhysicsWorld;
@@ -72,11 +74,8 @@ public:
 
 public:
 
-   /// The shape to load.
-   StringTableEntry shapeName;
-
-   /// The shape resource.
-   Resource<TSShape> shape;
+   DECLARE_SHAPEASSET(PhysicsShapeData, Shape, onShapeChanged);
+   DECLARE_ASSET_SETGET(PhysicsShapeData, Shape);
 
    /// The shared unscaled collision shape.
    PhysicsCollisionRef colShape;
@@ -135,6 +134,8 @@ public:
    SimObjectRef< PhysicsDebrisData > debris;   
    SimObjectRef< ExplosionData > explosion;   
    SimObjectRef< PhysicsShapeData > destroyedShape;
+
+   void onShapeChanged() {}
 };
 
 typedef PhysicsShapeData::SimType PhysicsSimType;
@@ -228,6 +229,7 @@ public:
    virtual ~PhysicsShape();
 
    DECLARE_CONOBJECT( PhysicsShape );
+   DECLARE_CATEGORY("Object \t Destructable");
 
    /// Returns the PhysicsShapeData datablock.
    PhysicsShapeData* getDataBlock() { return static_cast<PhysicsShapeData*>( Parent::getDataBlock() ); }

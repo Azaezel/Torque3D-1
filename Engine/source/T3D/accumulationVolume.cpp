@@ -39,7 +39,6 @@
 #include "console/console.h"
 #include "console/engineAPI.h"
 #include "gfx/gfxTextureHandle.h"
-#include "scene/sceneContainer.h"
 
 #include "math/mPolyhedron.impl.h"
 
@@ -85,19 +84,21 @@ AccumulationVolume::AccumulationVolume()
    mWorldToObj.identity();
 
    // Accumulation Texture.
-   mTextureName = "";
-   mAccuTexture = NULL;
+   INIT_ASSET(Texture);
 
    resetWorldBox();
 }
 
 AccumulationVolume::~AccumulationVolume()
 {
-   mAccuTexture = NULL;
+   mTexture = nullptr;
 }
 
 void AccumulationVolume::initPersistFields()
 {
+   docsURL;
+   addProtectedField("textureAsset", TypeImageAssetId, Offset(mTextureAssetId, AccumulationVolume),
+      &_setTexture, &defaultProtectedGetFn, "Accumulation texture.");
    addProtectedField( "texture", TypeStringFilename, Offset( mTextureName, AccumulationVolume ),
          &_setTexture, &defaultProtectedGetFn, "Accumulation texture." );
 
@@ -235,7 +236,7 @@ U32 AccumulationVolume::packUpdate( NetConnection *connection, U32 mask, BitStre
 
    if (stream->writeFlag(mask & InitialUpdateMask))
    {
-      stream->write( mTextureName );
+      PACK_ASSET(connection, Texture);
    }
 
    return retMask;  
@@ -247,8 +248,8 @@ void AccumulationVolume::unpackUpdate( NetConnection *connection, BitStream *str
 
    if (stream->readFlag())
    {
-      stream->read( &mTextureName );
-      setTexture(mTextureName);
+      UNPACK_ASSET(connection, Texture);
+      //setTexture(mTextureName);
    }
 }
 
@@ -262,13 +263,7 @@ void AccumulationVolume::inspectPostApply()
 
 void AccumulationVolume::setTexture( const String& name )
 {
-   mTextureName = name;
-   if ( isClientObject() && mTextureName.isNotEmpty() )
-   {
-      mAccuTexture.set(mTextureName, &GFXStaticTextureSRGBProfile, "AccumulationVolume::mAccuTexture");
-      if ( mAccuTexture.isNull() )
-         Con::warnf( "AccumulationVolume::setTexture - Unable to load texture: %s", mTextureName.c_str() );
-   }
+   _setTexture(StringTable->insert(name.c_str()));
    refreshVolumes();
 }
 
@@ -312,7 +307,7 @@ void AccumulationVolume::refreshVolumes()
          if ( object.isNull() ) continue;
 
          if ( volume->containsPoint(object->getPosition()) )
-            object->mAccuTex = volume->mAccuTexture;
+            object->mAccuTex = volume->getTextureResource();
       }
    }
 }
@@ -346,6 +341,6 @@ void AccumulationVolume::updateObject(SceneObject* object)
       if ( volume.isNull() ) continue;
 
       if ( volume->containsPoint(object->getPosition()) )
-         object->mAccuTex = volume->mAccuTexture;
+         object->mAccuTex = volume->getTextureResource();
    }
 }

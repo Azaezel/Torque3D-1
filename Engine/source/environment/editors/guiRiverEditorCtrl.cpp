@@ -168,6 +168,7 @@ bool GuiRiverEditorCtrl::onAdd()
 
 void GuiRiverEditorCtrl::initPersistFields()
 {
+   docsURL;
    addField( "DefaultWidth",        TypeF32,    Offset( mDefaultWidth, GuiRiverEditorCtrl ) );
 	addField( "DefaultDepth",        TypeF32,    Offset( mDefaultDepth, GuiRiverEditorCtrl ) );
 	addField( "DefaultNormal",       TypePoint3F,Offset( mDefaultNormal, GuiRiverEditorCtrl ) );
@@ -438,7 +439,8 @@ void GuiRiverEditorCtrl::_process3DMouseDown( const Gui3DMouseEvent& event )
          return;
       }
 
-      const char *res = Con::executef( this, "createRiver" );
+      ConsoleValue cValue = Con::executef( this, "createRiver" );
+      const char* res = cValue.getString();
 
       River *newRiver;
       if ( !Sim::findObject( res, newRiver ) )
@@ -1457,7 +1459,7 @@ DefineEngineMethod( GuiRiverEditorCtrl, setNodeNormal, void, (Point3F normal), ,
 
 DefineEngineMethod( GuiRiverEditorCtrl, setSelectedRiver, void, (const char * objName), (""), "" )
 {
-   if (dStrcmp( objName,"" )==0)
+   if (String::compare( objName,"" )==0)
       object->setSelectedRiver(NULL);
    else
    {
@@ -1471,7 +1473,7 @@ DefineEngineMethod( GuiRiverEditorCtrl, getSelectedRiver, S32, (), , "" )
 {
    River *river = object->getSelectedRiver();
    if ( !river )
-      return NULL;
+      return 0;
 
    return river->getId();
 }

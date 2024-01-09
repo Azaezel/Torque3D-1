@@ -27,7 +27,7 @@
 float M_HALFPI_F   = 1.57079632679489661923;
 float M_PI_F       = 3.14159265358979323846;
 float M_2PI_F      = 6.28318530717958647692;
-float M_1OVER_PI_F  = 0.31830988618f;
+float M_1OVER_PI_F  = 0.31830988618;
 
 /// Calculate fog based on a start and end positions in worldSpace.
 float computeSceneFog(  vec3 startPos,
@@ -166,20 +166,42 @@ vec2 parallaxOffsetDxtnm(sampler2D texMap, vec2 texCoord, vec3 negViewTS, float 
    return offset;
 }
 
+/// Same as the above but for arrays
+vec2 parallaxOffset( sampler2DArray texMap, vec3 texCoord, vec3 negViewTS, float depthScale )
+{
+   float depth = texture( texMap, texCoord ).a/(PARALLAX_REFINE_STEPS*2);
+   vec2 offset = negViewTS.xy * vec2( depth * depthScale )/vec2(PARALLAX_REFINE_STEPS*2);
 
-/// The maximum value for 16bit per component integer HDR encoding.
-const float HDR_RGB16_MAX = 100.0;
+   for ( int i=0; i < PARALLAX_REFINE_STEPS; i++ )
+   {
+      depth = ( depth + texture( texMap, texCoord + vec3(offset, 0.0) ).a )/(PARALLAX_REFINE_STEPS*2);
+      offset = negViewTS.xy * vec2( depth * depthScale )/vec2(PARALLAX_REFINE_STEPS*2);
+   }
+
+   return offset;
+}
+
+vec2 parallaxOffsetDxtnm(sampler2DArray texMap, vec3 texCoord, vec3 negViewTS, float depthScale)
+{
+   float depth = texture(texMap, texCoord).r/(PARALLAX_REFINE_STEPS*2);
+   vec2 offset = negViewTS.xy * vec2(depth * depthScale)/vec2(PARALLAX_REFINE_STEPS*2);
+
+   for (int i = 0; i < PARALLAX_REFINE_STEPS; i++)
+   {
+      depth = (depth + texture(texMap, texCoord + vec3(offset, 0.0)).r)/(PARALLAX_REFINE_STEPS*2);
+      offset = negViewTS.xy * vec2(depth * depthScale)/vec2(PARALLAX_REFINE_STEPS*2);
+   }
+
+   return offset;
+}
+
 /// The maximum value for 10bit per component integer HDR encoding.
 const float HDR_RGB10_MAX = 4.0;
 
 /// Encodes an HDR color for storage into a target.
 vec3 hdrEncode( vec3 _sample )
 {
-   #if defined( TORQUE_HDR_RGB16 )
-
-      return _sample / HDR_RGB16_MAX;
-
-   #elif defined( TORQUE_HDR_RGB10 ) 
+   #if defined( TORQUE_HDR_RGB10 ) 
 
       return _sample / HDR_RGB10_MAX;
 
@@ -200,11 +222,7 @@ vec4 hdrEncode( vec4 _sample )
 /// Decodes an HDR color from a target.
 vec3 hdrDecode( vec3 _sample )
 {
-   #if defined( TORQUE_HDR_RGB16 )
-
-      return _sample * HDR_RGB16_MAX;
-
-   #elif defined( TORQUE_HDR_RGB10 )
+   #if defined( TORQUE_HDR_RGB10 )
 
       return _sample * HDR_RGB10_MAX;
 
@@ -273,8 +291,8 @@ void fizzle(vec2 vpos, float visibility)
    // I'm sure there are many more patterns here to 
    // discover for different effects.
    
-   mat2x2 m = mat2x2( vpos.x, vpos.y, 0.916, 0.350 );
-   if( (visibility - fract( determinant( m ) )) < 0 ) //if(a < 0) discard;
+   mat2x2 m = mat2x2( vpos.x, 0.916, vpos.y, 0.350 );
+   if( (visibility - fract( determinant( m ) )) < 0 )
       discard;
 }
 #endif //TORQUE_PIXEL_SHADER
@@ -293,49 +311,98 @@ bool getFlag(float flags, float num)
    return (mod(process, pow(2.0, squareNum)) >= squareNum); 
 }
 
-// #define TORQUE_STOCK_GAMMA
-#ifdef TORQUE_STOCK_GAMMA
+// RGB -> HSL
+vec3 rgbToHSL(vec3 col)
+{
+	float cmax, cmin, h, s, l;
+	cmax = max(col.r, max(col.g, col.b));
+	cmin = min(col.r, min(col.g, col.b));
+	l = min(1.0, (cmax + cmin) / 2.0);
+
+    if (cmax == cmin) {
+    h = s = 0.0; /* achromatic */
+    }
+    else 
+	{
+        float cdelta = cmax - cmin;
+        s = l > 0.5 ? cdelta / (2.0 - cmax - cmin) : cdelta / (cmax + cmin);
+        if (cmax == col.r) {
+          h = (col.g - col.b) / cdelta + (col.g < col.b ? 6.0 : 0.0);
+        }
+        else if (cmax == col.g) {
+          h = (col.b - col.r) / cdelta + 2.0;
+        }
+        else {
+          h = (col.r - col.b) / cdelta + 4.0;
+        }
+    }
+    h /= 6.0;
+
+	
+	return vec3(h,s,l);
+}
+
+// HSL -> RGB
+vec3 hslToRGB(vec3 hsl)
+{
+	float nr, ng, nb, chroma, h, s, l;
+	h = hsl.r;
+	s = hsl.g;
+	l = hsl.b;
+	
+	nr = abs(h * 6.0 - 3.0) - 1.0;
+	ng = 2.0 - abs(h * 6.0 - 2.0);
+	nb = 2.0 - abs(h * 6.0 - 4.0);
+	
+	nr = clamp(nr, 0.0, 1.0);
+	nb = clamp(nb, 0.0, 1.0);
+	ng = clamp(ng, 0.0, 1.0);
+
+	chroma = (1.0 - abs(2.0 * l - 1.0)) * s;
+	
+	return vec3((nr - 0.5) * chroma + l, (ng - 0.5) * chroma + l, (nb - 0.5) * chroma + l);
+}
+
 // Sample in linear space. Decodes gamma.
+float toLinear(float col)
+{
+	if(col < 0.04045)
+	{
+		return (col < 0.0) ? 0.0 : col * (1.0 / 12.92);
+	}
+	
+	return pow(abs(col + 0.055) * (1.0 / 1.055), 2.4);
+}
 vec4 toLinear(vec4 tex)
 {
-   return tex;
+   return vec4(toLinear(tex.r),toLinear(tex.g),toLinear(tex.b), tex.a);
 }
-// Encodes gamma.
-vec4 toGamma(vec4 tex)
-{
-   return tex;
-}
+
 vec3 toLinear(vec3 tex)
 {
-   return tex;
+   return vec3(toLinear(tex.r),toLinear(tex.g),toLinear(tex.b));
 }
+
 // Encodes gamma.
-vec3 toGamma(vec3 tex)
+float toGamma(float col)
 {
-   return tex;
+	if(col < 0.0031308)
+	{
+		return (col < 0.0) ? 0.0 : col * 12.92;
+	}
+	
+	return 1.055 * pow(abs(col), 1.0 / 2.4) - 0.055;
 }
-#else
-// Sample in linear space. Decodes gamma.
-vec4 toLinear(vec4 tex)
-{
-   return vec4(pow(abs(tex.rgb), vec3(2.2)), tex.a);
-}
-// Encodes gamma.
+
 vec4 toGamma(vec4 tex)
 {
-   return vec4(pow(abs(tex.rgb), vec3(1.0/2.2)), tex.a);
+   return vec4(toGamma(tex.r), toGamma(tex.g), toGamma(tex.b), tex.a);
 }
-// Sample in linear space. Decodes gamma.
-vec3 toLinear(vec3 tex)
-{
-   return pow(abs(tex), vec3(2.2));
-}
-// Encodes gamma.
+
 vec3 toGamma(vec3 tex)
 {
-   return pow(abs(tex), vec3(1.0/2.2));
+   return vec3(toGamma(tex.r), toGamma(tex.g), toGamma(tex.b));
 }
-#endif //
 
 vec3 PBRFresnel(vec3 albedo, vec3 indirect, float metalness, float fresnel)
 {

@@ -30,6 +30,7 @@
 #include "gfx/gfxTextureManager.h"
 #endif
 
+#include "T3D/assets/ImageAsset.h"
 
 /// The GuiIconButtonCtrl draws an icon and text caption within a normal
 /// button control with several layout options.
@@ -41,12 +42,16 @@ private:
 
 protected:
 
-   StringTableEntry  mBitmapName;
-   GFXTexHandle      mTextureNormal;
+   DECLARE_IMAGEASSET(GuiIconButtonCtrl, Bitmap, onImageChanged, GFXDefaultGUIProfile);
+   DECLARE_ASSET_SETGET(GuiIconButtonCtrl, Bitmap);
+
    S32               mIconLocation;
    S32               mTextLocation;
    S32               mTextMargin;
    Point2I           mButtonMargin;
+
+   /// Margin between the icon and the button border
+   S32               mBitmapMargin;
    
    /// Make the bitmap fill the button extent.
    bool mFitBitmapToButton;
@@ -56,10 +61,6 @@ protected:
 
    /// Calculate extent based on icon size, text width, and layout options.
    bool mAutoSize;          
-
-   //  Optional bitmap to be displayed when the proper bitmap cannot be found
-   StringTableEntry mErrorBitmapName;
-   GFXTexHandle mErrorTextureHandle;
 
    void renderButton( Point2I &offset, const RectI& updateRect);
 
@@ -114,6 +115,8 @@ public:
    void setErrorBitmap(const char *name);
 
    void onRender(Point2I offset, const RectI &updateRect);
+
+   void onImageChanged() {}
 };
 
 typedef GuiIconButtonCtrl::TextLocation GuiIconButtonTextLocation;

@@ -425,6 +425,7 @@ U32 GuiTreeViewCtrl::Item::getDisplayTextLength()
 
       StringTableEntry name = obj->getName();
       StringTableEntry internalName = obj->getInternalName();
+      StringTableEntry typeHint = obj->getTypeHint();
       StringTableEntry className = obj->getClassName();      
 
       if( showInternalNameOnly() )
@@ -466,6 +467,15 @@ U32 GuiTreeViewCtrl::Item::getDisplayTextLength()
          if( internalName && internalName[ 0 ] )
             len += dStrlen( internalName ) + 3; // ' [<internalname>]'
       }
+      if ( mState.test(ShowTypeHint) )
+      {
+         if (typeHint && typeHint[0])
+            len += dStrlen(typeHint) + 3;
+      }
+      if( mState.test( Marked ) )
+      {
+         len += 1; // '*<name>'
+      }
 
       return len;
    }
@@ -498,8 +508,10 @@ void GuiTreeViewCtrl::Item::getDisplayText(U32 bufLen, char *buf)
       {
          const char* pObjName = pObject->getName();
          const char* pInternalName = pObject->getInternalName();
+         const char* pTypeHint = pObject->getTypeHint();
 
          bool hasInternalName = pInternalName && pInternalName[0];
+         bool hasTypeHint = pTypeHint && pTypeHint[0];
          bool hasObjectName = pObjName && pObjName[0];
 
          const char* pClassName = pObject->getClassName();
@@ -540,8 +552,14 @@ void GuiTreeViewCtrl::Item::getDisplayText(U32 bufLen, char *buf)
             if( mState.test( ShowObjectName ) )
             {
                S32 n = 0;
-               if( hasObjectName )
-                  n = dSprintf( ptr, len, "%s", pObjName );
+               if (hasObjectName)
+               {
+                  //If it's been marked, reflect that
+                  if (mState.test(Item::Marked))
+                     n = dSprintf(ptr, len, "*%s", pObjName);
+                  else
+                     n = dSprintf(ptr, len, "%s", pObjName);                  
+               }
                else if( mState.test( ShowClassNameForUnnamed ) )
                   n = dSprintf( ptr, len, "%s", pClassName );
                   
@@ -549,8 +567,21 @@ void GuiTreeViewCtrl::Item::getDisplayText(U32 bufLen, char *buf)
                len -= n;
             }
             
-            if( hasInternalName && mState.test( ShowInternalName ) )
-               dSprintf( ptr, len, " [%s]", pInternalName );
+            if (hasInternalName && mState.test(ShowInternalName))
+            {
+               if (mState.test(Item::Marked))
+                  dSprintf(ptr, len, " *[%s]", pInternalName);
+               else
+                  dSprintf(ptr, len, " [%s]", pInternalName);
+            }
+            if (hasTypeHint && mState.test(ShowTypeHint))
+            {
+               if (mState.test(Item::Marked))
+                  dSprintf(ptr, len, " *<%s>", pTypeHint);
+               else
+                  dSprintf(ptr, len, " <%s>", pTypeHint);
+
+            }
          }
       }
       else
@@ -575,8 +606,8 @@ S32 GuiTreeViewCtrl::Item::getDisplayTextWidth(GFont *font)
    if( bufLen == 0 )
       return 0;
 
-   // Add space for the string terminator
-   bufLen++;
+   // Add space for the string terminator and marker
+   bufLen += 2;
 
    char *buf = (char*)txtAlloc.alloc(bufLen);
    getDisplayText(bufLen, buf);
@@ -626,7 +657,9 @@ void GuiTreeViewCtrl::Item::getTooltipText(U32 bufLen, char *buf)
          method += pClassName;
          if(mParentControl->isMethod(method.c_str()))
          {
-            const char* tooltip = Con::executef( mParentControl, method.c_str(), pObject->getIdString() );
+            ConsoleValue cValue = Con::executef( mParentControl, method.c_str(), pObject->getIdString() );
+            const char* tooltip = cValue.getString();
+
             dsize_t len = dStrlen(buf);
             S32 newBufLen = bufLen-len;
             if(dStrlen(tooltip) > 0 && newBufLen > 0)
@@ -818,6 +851,7 @@ GuiTreeViewCtrl::GuiTreeViewCtrl()
    mShowClassNames = true;
    mShowObjectNames = true;
    mShowInternalNames = true;
+   mShowTypeHints = false;
    mShowClassNameForUnnamedObjects = false;
    mFlags.set(RebuildVisible);
 
@@ -846,6 +880,7 @@ GuiTreeViewCtrl::~GuiTreeViewCtrl()
 
 void GuiTreeViewCtrl::initPersistFields()
 {
+   docsURL;
    addGroup( "TreeView" );
 
       addField( "tabSize",              TypeS32,    Offset(mTabSize,              GuiTreeViewCtrl));
@@ -876,7 +911,10 @@ void GuiTreeViewCtrl::initPersistFields()
       addField( "showObjectNames", TypeBool, Offset( mShowObjectNames, GuiTreeViewCtrl ),
          "If true, item text labels for objects will include object names." );
       addField( "showInternalNames", TypeBool, Offset( mShowInternalNames, GuiTreeViewCtrl ),
-         "If true, item text labels for obje ts will include internal names." );
+         "If true, item text labels for objets will include internal names." );
+      addField("showTypeHints", TypeBool, Offset(mShowTypeHints, GuiTreeViewCtrl),
+         "If true, item text labels for objets will include TypeHints.");
+      
       addField( "showClassNameForUnnamedObjects", TypeBool, Offset( mShowClassNameForUnnamedObjects, GuiTreeViewCtrl ),
          "If true, class names will be used as object names for unnamed objects." );
       addField( "compareToObjectID",    TypeBool,   Offset(mCompareToObjectID,    GuiTreeViewCtrl));
@@ -1776,6 +1814,7 @@ bool GuiTreeViewCtrl::onAdd()
          mShowClassNames = false;
          mShowObjectNames = false;
          mShowInternalNames = true;
+         mShowTypeHints = false;
       }
 
       const char* objectNamesOnly = getDataField( sObjectNamesOnly, NULL );
@@ -1785,6 +1824,7 @@ bool GuiTreeViewCtrl::onAdd()
          mShowClassNames = false;
          mShowObjectNames = true;
          mShowInternalNames = false;
+         mShowTypeHints = false;
       }
    }
       
@@ -1867,7 +1907,7 @@ bool GuiTreeViewCtrl::buildIconTable(const char * icons)
          dStrncpy( buf, start, getMin( sizeof( buf ) / sizeof( buf[ 0 ] ) - 1, len ) );
          buf[ len ] = '\0';
                   
-         mIconTable[ numIcons ] = GFXTexHandle( buf, &GFXTexturePersistentProfile, avar( "%s() - mIconTable[%d] (line %d)", __FUNCTION__, numIcons, __LINE__ ) );
+         mIconTable[ numIcons ] = GFXTexHandle( buf, &GFXDefaultGUIProfile, avar( "%s() - mIconTable[%d] (line %d)", __FUNCTION__, numIcons, __LINE__ ) );
       }
       else
          mIconTable[ numIcons ] = GFXTexHandle();
@@ -1969,7 +2009,7 @@ bool GuiTreeViewCtrl::_hitTest(const Point2I & pnt, Item* & item, BitSet32 & fla
    min += mProfile->mTextOffset.x;
 
    FrameAllocatorMarker txtAlloc;
-   U32 bufLen = item->getDisplayTextLength() + 1;
+   U32 bufLen = item->getDisplayTextLength() + 2;
    char *buf = (char*)txtAlloc.alloc(bufLen);
    item->getDisplayText(bufLen, buf);
 
@@ -3685,7 +3725,7 @@ void GuiTreeViewCtrl::onRenderCell(Point2I offset, Point2I cell, bool, bool )
       {
          drawRect.point.x -= mTabSize;
          if ( parent->mNext )
-            drawer->drawBitmapSR( mProfile->mTextureObject, drawRect.point, mProfile->mBitmapArrayRects[BmpLine] );
+            drawer->drawBitmapSR( mProfile->mBitmap, drawRect.point, mProfile->mBitmapArrayRects[BmpLine] );
 
          parent = parent->mParent;
       }
@@ -3696,7 +3736,7 @@ void GuiTreeViewCtrl::onRenderCell(Point2I offset, Point2I cell, bool, bool )
 
    // First, draw the rollover glow, if it's an inner node.
    if ( item->isParent() && item->mState.test( Item::MouseOverBmp ) )
-      drawer->drawBitmapSR( mProfile->mTextureObject, drawRect.point, mProfile->mBitmapArrayRects[BmpGlow] );
+      drawer->drawBitmapSR( mProfile->mBitmap, drawRect.point, mProfile->mBitmapArrayRects[BmpGlow] );
 
    // Now, do we draw a treeview-selected item or an item dependent one?
    S32 newOffset = 0; // This is stored so we can render glow, then update render pos.
@@ -3741,7 +3781,7 @@ void GuiTreeViewCtrl::onRenderCell(Point2I offset, Point2I cell, bool, bool )
    if( ( bitmap >= 0 ) && ( bitmap < mProfile->mBitmapArrayRects.size() ) )
    {
       if( drawBitmap )
-         drawer->drawBitmapSR( mProfile->mTextureObject, drawRect.point, mProfile->mBitmapArrayRects[bitmap] );
+         drawer->drawBitmapSR( mProfile->getBitmapResource(), drawRect.point, mProfile->mBitmapArrayRects[bitmap] );
       newOffset = mProfile->mBitmapArrayRects[bitmap].extent.x;
    }
 
@@ -3789,7 +3829,7 @@ void GuiTreeViewCtrl::onRenderCell(Point2I offset, Point2I cell, bool, bool )
          {
             //Check if we're a SceneObject, and pick the default icon as appropriate
             
-            if (pObject->getClassName() != String("SimGroup"))
+            if (pObject->getClassName() != StringTable->insert("SimGroup"))
             {
                item->mIcon = Icon31;
             }
@@ -4091,6 +4131,10 @@ GuiTreeViewCtrl::Item* GuiTreeViewCtrl::addInspectorDataItem(Item *parent, SimOb
       item->mState.clear( Item::ShowInternalName );
    else
       item->mState.set( Item::ShowInternalName );
+   if (!mShowTypeHints)
+      item->mState.clear(Item::ShowTypeHint);
+   else
+      item->mState.set(Item::ShowTypeHint);
    if( mShowClassNameForUnnamedObjects )
       item->mState.set( Item::ShowClassNameForUnnamed );
 
@@ -4372,7 +4416,7 @@ S32 GuiTreeViewCtrl::findItemByName(const char *name)
          continue;
       if( mItems[i]->mState.test( Item::InspectorData ) )
          continue;
-      if (mItems[i] && dStrcmp(mItems[i]->getText(),name) == 0) 
+      if (mItems[i] && String::compare(mItems[i]->getText(),name) == 0) 
          return mItems[i]->mId;
    }
 
@@ -4389,7 +4433,7 @@ S32 GuiTreeViewCtrl::findItemByValue(const char *name)
          continue;
       if( mItems[i]->mState.test( Item::InspectorData ) )
          continue;
-      if (mItems[i] && dStrcmp(mItems[i]->getValue(),name) == 0) 
+      if (mItems[i] && String::compare(mItems[i]->getValue(),name) == 0) 
          return mItems[i]->mId;
    }
 
@@ -5330,7 +5374,7 @@ DefineEngineMethod( GuiTreeViewCtrl, getTextToRoot, const char*, (S32 itemId, co
    "@param delimiter (Optional) delimiter to use between each branch concatenation."
    "@return text from the current node to the root.")
 {
-   if (!dStrcmp(delimiter, "" ))
+   if (!String::compare(delimiter, "" ))
    {
       Con::warnf("GuiTreeViewCtrl::getTextToRoot - Invalid number of arguments!");
       return ("");

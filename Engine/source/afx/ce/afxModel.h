@@ -27,6 +27,7 @@
 #define _AFX_MODEL_H_
 
 #include "renderInstance/renderPassManager.h"
+#include "T3D/assets/ShapeAsset.h"
 
 class ParticleEmitterData;
 class ParticleEmitter;
@@ -42,8 +43,11 @@ struct afxModelData : public GameBaseData
 {
   typedef GameBaseData Parent;
 
-  StringTableEntry      shapeName;
+  DECLARE_SHAPEASSET(afxModelData, Shape, onShapeChanged);
+  DECLARE_ASSET_SETGET(afxModelData, Shape);
+
   StringTableEntry      sequence;
+
   F32                   seq_rate;
   F32                   seq_offset;
   F32                   alpha_mult;
@@ -63,8 +67,6 @@ struct afxModelData : public GameBaseData
 
   StringTableEntry      remap_txr_tags;
 
-  Resource<TSShape>     shape;
-
   bool                  overrideLightingOptions;
   bool                  receiveSunLight;
   bool                  receiveLMLighting;
@@ -72,7 +74,6 @@ struct afxModelData : public GameBaseData
   bool                  useCustomAmbientLighting;
   bool                  customAmbientForSelfIllumination;
   LinearColorF                customAmbientLighting;
-  bool                  shadowEnable;
 
   U32                   shadowSize;
   F32                   shadowMaxVisibleDistance;
@@ -93,8 +94,10 @@ public:
 
   static void           initPersistFields();
 
+  void onShapeChanged() {}
+  void onSequenceChanged() {}
+
   DECLARE_CONOBJECT(afxModelData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
@@ -148,9 +151,9 @@ public:
   void                  setSequenceRateFactor(F32 factor);
   void                  setSortPriority(S8 priority) { sort_priority = priority; }
 
-  const char*           getShapeFileName() const { return mDataBlock->shapeName; }
+  const char*           getShapeFileName() const { return mDataBlock->getShape(); }
   void                  setVisibility(bool flag) { is_visible = flag; }
-  TSShape*              getTSShape() { return mDataBlock->shape; }
+  TSShape*              getTSShape() { return mDataBlock->getShapeResource(); }
   TSShapeInstance*      getTSShapeInstance() { return shape_inst; }
 
   U32                   setAnimClip(const char* clip, F32 pos, F32 rate, F32 trans);
@@ -158,7 +161,7 @@ public:
   F32                   getAnimClipDuration(const char* clip);
 
   DECLARE_CONOBJECT(afxModel);
-  DECLARE_CATEGORY("AFX");
+  DECLARE_CATEGORY("UNLISTED");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//

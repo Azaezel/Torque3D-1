@@ -110,6 +110,7 @@ void afxEffectronData::reloadReset()
 
 void afxEffectronData::initPersistFields()
 {
+   docsURL;
   addField("duration",    TypeF32,      myOffset(duration),
     "...");
   addField("numLoops",    TypeS32,      myOffset(n_loops),
@@ -216,13 +217,13 @@ DefineEngineMethod(afxEffectronData, reset, void, (),,
   object->reloadReset();
 }
 
-DefineEngineMethod(afxEffectronData, addEffect, void, (afxEffectBaseData* effect),,
+DefineEngineMethod(afxEffectronData, pushEffect, void, (afxEffectBaseData* effect),,
                    "Adds an effect (wrapper or group) to an effectron's phase.\n\n"
                    "@ingroup AFX")
 {
   if (!effect) 
   {
-    Con::errorf("afxEffectronData::addEffect() -- missing afxEffectWrapperData.");
+    Con::errorf("afxEffectronData::pushEffect() -- missing afxEffectWrapperData.");
     return;
   }
   
@@ -989,9 +990,10 @@ afxEffectron::start_effect(afxEffectronData* datablock, SimObject* extra)
   }
 
   // CALL SCRIPT afxEffectronData::onPreactivate(%params, %extra)
-  const char* result = Con::executef(datablock, "onPreactivate", 
+  ConsoleValue cValue = Con::executef(datablock, "onPreactivate", 
                                      Con::getIntArg(param_holder->getId()), 
                                      (extra) ? Con::getIntArg(extra->getId()) : "");
+  const char* result = cValue.getString();
   if (result && result[0] != '\0' && !dAtob(result))
   {
 #if defined(TORQUE_DEBUG)

@@ -35,6 +35,7 @@
 #include "gfx/gfxResource.h"
 #include "gfx/gl/gfxGLStateBlock.h"
 
+class GFXGLTextureArray;
 class GFXGLVertexBuffer;
 class GFXGLPrimitiveBuffer;
 class GFXGLTextureTarget;
@@ -83,6 +84,7 @@ public:
 
    virtual GFXCubemap * createCubemap();
    virtual GFXCubemapArray *createCubemapArray();
+   virtual GFXTextureArray *createTextureArray();
 
    virtual F32 getFillConventionOffset() const { return 0.0f; }
 
@@ -138,8 +140,8 @@ public:
 
    virtual void preDestroy() { Parent::preDestroy(); }
 
-   virtual U32 getMaxDynamicVerts() { return MAX_DYNAMIC_VERTS; }
-   virtual U32 getMaxDynamicIndices() { return MAX_DYNAMIC_INDICES; }
+   virtual U32 getMaxDynamicVerts() { return GFX_MAX_DYNAMIC_VERTS; }
+   virtual U32 getMaxDynamicIndices() { return GFX_MAX_DYNAMIC_INDICES; }
    
    GFXFence *createFence();
    
@@ -150,7 +152,7 @@ public:
    virtual void setupGenericShaders( GenericShaderType type = GSColor );
    
    ///
-   bool supportsAnisotropic() const { return mSupportsAnisotropic; }
+   bool supportsAnisotropic() const { return mCapabilities.anisotropicFiltering; }
 
    GFXGLStateCache* getOpenglCache() { return mOpenglStateCache; }
 
@@ -173,10 +175,7 @@ protected:
    virtual void setTextureInternal(U32 textureUnit, const GFXTextureObject*texture);
    virtual void setCubemapInternal(U32 textureUnit, const GFXGLCubemap* texture);
    virtual void setCubemapArrayInternal(U32 textureUnit, const GFXGLCubemapArray* texture);
-
-   virtual void setLightInternal(U32 lightStage, const GFXLightInfo light, bool lightEnable);
-   virtual void setLightMaterialInternal(const GFXLightMaterial mat);
-   virtual void setGlobalAmbientInternal(LinearColorF color);
+   virtual void setTextureArrayInternal(U32 textureUnit, const GFXGLTextureArray* texture);
 
    /// @name State Initalization.
    /// @{
@@ -184,8 +183,6 @@ protected:
    /// State initalization. This MUST BE CALLED in setVideoMode after the device
    /// is created.
    virtual void initStates() { }
-
-   virtual void setMatrix( GFXMatrixType mtype, const MatrixF &mat );
 
    virtual GFXVertexBuffer *allocVertexBuffer(  U32 numVerts, 
                                                 const GFXVertexFormat *vertexFormat,
@@ -210,6 +207,7 @@ private:
    friend class GFXGLTextureObject;
    friend class GFXGLCubemap;
    friend class GFXGLCubemapArray;
+   friend class GFXGLTextureArray;
    friend class GFXGLWindowTarget;
    friend class GFXGLPrimitiveBuffer;
    friend class GFXGLVertexBuffer;
@@ -237,8 +235,6 @@ private:
    void* mPixelFormat;
 
    F32 mPixelShaderVersion;
-   
-   bool mSupportsAnisotropic;   
 
    U32 mNumVertexStream;
    
@@ -251,7 +247,7 @@ private:
    
    GFXGLStateBlockRef mCurrentGLStateBlock;
    
-   GLenum mActiveTextureType[TEXTURE_STAGE_COUNT];
+   GLenum mActiveTextureType[GFX_TEXTURE_STAGE_COUNT];
    
    Vector< StrongRefPtr<GFXGLVertexBuffer> > mVolatileVBs; ///< Pool of existing volatile VBs so we can reuse previously created ones
    Vector< StrongRefPtr<GFXGLPrimitiveBuffer> > mVolatilePBs; ///< Pool of existing volatile PBs so we can reuse previously created ones

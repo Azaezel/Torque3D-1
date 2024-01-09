@@ -143,6 +143,7 @@ EndImplementEnumType;
 
 void afxXM_WaveBaseData::initPersistFields()
 {
+   docsURL;
   addField("waveform",      TYPEID< afxXM_WaveBaseData::WaveFormType >(),  Offset(waveform_type, afxXM_WaveBaseData),
     "...");
   addField("parameter",     TYPEID< afxXM_WaveBaseData::WaveParamType >(), Offset(parameter, afxXM_WaveBaseData),
@@ -365,6 +366,7 @@ afxXM_WaveRiderBaseData::afxXM_WaveRiderBaseData(const afxXM_WaveRiderBaseData& 
 
 void afxXM_WaveRiderBaseData::initPersistFields()
 {
+   docsURL;
   addField("waveform",      TYPEID< afxXM_WaveBaseData::WaveFormType >(),  Offset(waveform_type, afxXM_WaveRiderBaseData),
     "...");
   addField("parameter",     TYPEID< afxXM_WaveBaseData::WaveParamType >(), Offset(parameter, afxXM_WaveRiderBaseData),
@@ -558,7 +560,7 @@ void afxXM_WaveBase::updateParams(F32 dt, F32 elapsed, afxXM_Params& params)
   else
   {
     F32 wt_factor = calc_weight_factor(elapsed);
-    F32 final_t = afxXM_WaveInterp::lerp(wt_factor, db->off_duty_t, last_t);
+    F32 final_t = mLerp(db->off_duty_t, last_t, wt_factor);
     interpolator->interpolate(final_t, params);
   }
 }
@@ -602,7 +604,7 @@ void afxXM_WaveRiderBase::updateParams(F32 dt, F32 elapsed, afxXM_Params& params
   else
   {
     F32 wt_factor = calc_weight_factor(elapsed);
-    F32 final_t = afxXM_WaveInterp::lerp(wt_factor, db->off_duty_t, t);
+    F32 final_t = mLerp(db->off_duty_t, t, wt_factor);
     interpolator->interpolate(final_t, params);
   }
 }

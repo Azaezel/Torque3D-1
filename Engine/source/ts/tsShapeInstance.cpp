@@ -294,8 +294,6 @@ void TSShapeInstance::reSkin( String newBaseName, String oldBaseName )
    if ( newBaseName.equal( oldBaseName, String::NoCase ) )
       return;
 
-   const U32 oldBaseNameLength = oldBaseName.length();
-
    // Make our own copy of the materials list from the resource if necessary
    if (ownMaterialList() == false)
       cloneMaterialList();
@@ -497,7 +495,7 @@ void TSShapeInstance::setMeshForceHidden( const char *meshName, bool hidden )
       S32 nameIndex = iter->object->nameIndex;
       const char *name = mShape->names[ nameIndex ];
 
-      if ( dStrcmp( meshName, name ) == 0 )
+      if ( String::compare( meshName, name ) == 0 )
       {
          iter->forceHidden = hidden;
          return;
@@ -893,7 +891,7 @@ bool TSShapeInstance::hasAccumulation()
    for ( U32 i = 0; i < mMaterialList->size(); ++i )
    {
       BaseMatInstance* mat = mMaterialList->getMaterialInst(i);
-      if ( mat->hasAccumulation() )
+      if (mat != nullptr && mat->hasAccumulation() )
          result = true;
    }
    return result;

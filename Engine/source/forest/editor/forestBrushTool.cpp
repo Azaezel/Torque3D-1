@@ -39,6 +39,7 @@
 #include "core/strings/stringUnit.h"
 #include "math/mRandomDeck.h"
 #include "math/mRandomSet.h"
+#include "scene/sceneContainer.h"
 
 
 bool ForestBrushTool::protectedSetSize( void *object, const char *index, const char *data )
@@ -104,7 +105,8 @@ ConsoleDocClass( ForestBrushTool,
 );
 
 void ForestBrushTool::initPersistFields()
-{  
+{
+   docsURL;
    addGroup( "ForestBrushTool" );
       
       addField( "mode", TYPEID< BrushMode >(), Offset( mMode, ForestBrushTool) );
@@ -588,7 +590,8 @@ void ForestBrushTool::_collectElements()
    if ( !Sim::findObject( "ForestEditBrushTree", brushTree ) )
       return;
       
-   const char* objectIdList = Con::executef( brushTree, "getSelectedObjectList" );
+   ConsoleValue cValue = Con::executef( brushTree, "getSelectedObjectList" );
+   const char* objectIdList = cValue.getString();
 
    // Collect those objects in a vector and mark them as selected.
 
@@ -609,9 +612,14 @@ void ForestBrushTool::_collectElements()
    }
 
    // Find all ForestBrushElements that are directly or indirectly selected.
+   SimSet* brushSet;
+   if (!Sim::findObject("ForestBrushSet", brushSet))
+   {
+      Con::errorf("ForestBrushTool::_collectElements() - could not find ForestBrushSet!");
+      return;
+   }
 
-   SimGroup *brushGroup = ForestBrush::getGroup();
-   brushGroup->findObjectByCallback( findSelectedElements, mElements );
+   brushSet->findObjectByCallback( findSelectedElements, mElements );
 
    // We just needed to flag these objects as selected for the benefit of our
    // findSelectedElements callback, we can now mark them un-selected again.

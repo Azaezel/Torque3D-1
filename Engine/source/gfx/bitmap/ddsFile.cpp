@@ -123,7 +123,7 @@ U32 DDSFile::getSurfaceSize( U32 height, U32 width, U32 mipLevel ) const
    if(mFlags.test(CompressedData))
    {
       // From the directX docs:
-      // max(1, width ÷ 4) x max(1, height ÷ 4) x 8(DXT1) or 16(DXT2-5)
+      // max(1, width / 4) x max(1, height / 4) x 8(DXT1) or 16(DXT2-5)
 
       U32 sizeMultiple = 0;
 
@@ -178,7 +178,7 @@ U32 DDSFile::getSizeInBytes( GFXFormat format, U32 height, U32 width, U32 mipLev
       "DDSFile::getSizeInBytes - Must be a Block Compression format!" );
 
    // From the directX docs:
-   // max(1, width ÷ 4) x max(1, height ÷ 4) x 8(DXT1) or 16(DXT2-5)
+   // max(1, width / 4) x max(1, height / 4) x 8(DXT1) or 16(DXT2-5)
 
    U32 sizeMultiple = 0;
    if ( format == GFXFormatBC1 || format == GFXFormatBC1_SRGB || format == GFXFormatBC4)
@@ -565,15 +565,10 @@ void DDSFile::SurfaceData::dumpImage(DDSFile *dds, U32 mip, const char *file)
 
    // Copy our data in.
    dMemcpy(foo->getWritableBits(), mMips[mip], dds->getSurfaceSize(dds->mHeight, dds->mWidth, mip) );
-   
-   FileStream  stream;
 
-   stream.open( file, Torque::FS::File::Write );
-
-   if ( stream.getStatus() == Stream::Ok )
+   if(!foo->writeBitmap("png", file))
    {
-      // Write it out.
-      foo->writeBitmap("png", stream);
+      Con::errorf("DDSFile::SurfaceData::dumpImage() - Error writing %s !", file);
    }
 
    // Clean up.
@@ -744,6 +739,7 @@ DDSFile *DDSFile::createDDSCubemapFileFromGBitmaps(GBitmap **gbmps)
    GFXFormat fmt = pBitmap->getFormat();
    if (fmt != GFXFormatR8G8B8A8 && fmt != GFXFormatR16G16B16A16F)
    {
+      delete ret;
       Con::errorf("createDDSCubemapFileFromGBitmaps: unsupported format");
       return NULL;
    }

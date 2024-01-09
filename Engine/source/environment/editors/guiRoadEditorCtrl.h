@@ -103,7 +103,9 @@ class GuiRoadEditorCtrl : public EditTSCtrl
 	
 	public:
 
-		StringTableEntry mMaterialName;
+      DECLARE_MATERIALASSET(GuiRoadEditorCtrl, Material);
+      DECLARE_ASSET_SETGET(GuiRoadEditorCtrl, Material);
+
    protected:
 
       void _drawRoadSpline( DecalRoad *road, const ColorI &color );
@@ -158,7 +160,7 @@ class GuiRoadEditorUndoAction : public UndoAction
       Vector<RoadNode> mNodes;
 
       SimObjectId mObjId;
-      String mMaterialName;
+      StringTableEntry mMaterialAssetId;
       F32 mBreakAngle;
       U32 mSegmentsPerBatch;
       F32 mTextureLength;

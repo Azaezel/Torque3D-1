@@ -35,9 +35,10 @@ class SFXDevice;
 struct SFXDeviceInfo
 {
    String   driver;
+   String   internalName;
    String   name;
-   bool     hasHardware;
-   S32      maxBuffers;
+   bool     hasHardware = false;
+   S32      maxBuffers =0;
 
    virtual ~SFXDeviceInfo() {}
 };

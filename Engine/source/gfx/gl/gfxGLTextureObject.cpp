@@ -45,8 +45,8 @@ GFXGLTextureObject::GFXGLTextureObject(GFXDevice * aDevice, GFXTextureProfile *p
    mFrameAllocatorPtr(NULL)
 {
 
-#if TORQUE_DEBUG
-   mFrameAllocatorMarkGuard == FrameAllocator::getWaterMark();
+#ifdef TORQUE_DEBUG
+   mFrameAllocatorMarkGuard = FrameAllocator::getWaterMark();
 #endif
 
    dMemset(&mLockedRect, 0, sizeof(mLockedRect));
@@ -56,8 +56,8 @@ GFXGLTextureObject::GFXGLTextureObject(GFXDevice * aDevice, GFXTextureProfile *p
    glGenBuffers(1, &mBuffer);
 }
 
-GFXGLTextureObject::~GFXGLTextureObject() 
-{ 
+GFXGLTextureObject::~GFXGLTextureObject()
+{
    glDeleteTextures(1, &mHandle);
    glDeleteBuffers(1, &mBuffer);
    delete[] mZombieCache;
@@ -81,7 +81,7 @@ GFXLockedRect* GFXGLTextureObject::lock(U32 mipLevel, RectI *inRect)
    {
       mLockedRectRect = RectI(0, 0, width, height);
    }
-   
+
    mLockedRect.pitch = mLockedRectRect.extent.x * mBytesPerTexel;
 
    // CodeReview [ags 12/19/07] This one texel boundary is necessary to keep the clipmap code from crashing.  Figure out why.
@@ -90,10 +90,10 @@ GFXLockedRect* GFXGLTextureObject::lock(U32 mipLevel, RectI *inRect)
    mFrameAllocatorMark = FrameAllocator::getWaterMark();
    mFrameAllocatorPtr = (U8*)FrameAllocator::alloc( size );
    mLockedRect.bits = mFrameAllocatorPtr;
-#if TORQUE_DEBUG
+#ifdef TORQUE_DEBUG
    mFrameAllocatorMarkGuard = FrameAllocator::getWaterMark();
 #endif
-   
+
    if( !mLockedRect.bits )
       return NULL;
 
@@ -117,12 +117,12 @@ void GFXGLTextureObject::unlock(U32 mipLevel)
       glTexSubImage3D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y, z,
       mLockedRectRect.extent.x, mLockedRectRect.extent.y, z, GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
    else if(mBinding == GL_TEXTURE_2D)
-	   glTexSubImage2D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y, 
+	   glTexSubImage2D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y,
 		  mLockedRectRect.extent.x, mLockedRectRect.extent.y, GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
    else if(mBinding == GL_TEXTURE_1D)
-		glTexSubImage1D(mBinding, mipLevel, (mLockedRectRect.point.x > 1 ? mLockedRectRect.point.x : mLockedRectRect.point.y), 
+		glTexSubImage1D(mBinding, mipLevel, (mLockedRectRect.point.x > 1 ? mLockedRectRect.point.x : mLockedRectRect.point.y),
 		  (mLockedRectRect.extent.x > 1 ? mLockedRectRect.extent.x : mLockedRectRect.extent.y), GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
-   
+
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
    mLockedRect.bits = NULL;
@@ -138,7 +138,7 @@ void GFXGLTextureObject::release()
 {
    glDeleteTextures(1, &mHandle);
    glDeleteBuffers(1, &mBuffer);
-   
+
    mHandle = 0;
    mBuffer = 0;
 }
@@ -162,8 +162,8 @@ bool GFXGLTextureObject::copyToBmp(GBitmap * bmp)
    if (mFormat != GFXFormatR16G16B16A16F && mFormat != GFXFormatR8G8B8A8 && mFormat != GFXFormatR8G8B8A8_LINEAR_FORCE && mFormat != GFXFormatR8G8B8A8_SRGB)
 	   return false;
 
-   AssertFatal(bmp->getWidth() == getWidth(), "GFXGLTextureObject::copyToBmp - invalid size");
-   AssertFatal(bmp->getHeight() == getHeight(), "GFXGLTextureObject::copyToBmp - invalid size");
+   AssertFatal(bmp->getWidth() == getWidth(), avar("GFXGLTextureObject::copyToBmp - Width mismatch: %i vs %i", bmp->getWidth(), getWidth()));
+   AssertFatal(bmp->getHeight() == getHeight(), avar("GFXGLTextureObject::copyToBmp - Height mismatch: %i vs %i", bmp->getHeight(), getHeight()));
 
    PROFILE_SCOPE(GFXGLTextureObject_copyToBmp);
 
@@ -174,7 +174,7 @@ bool GFXGLTextureObject::copyToBmp(GBitmap * bmp)
    U8 srcBytesPerPixel = GFXFormat_getByteSize( mFormat );
 
    FrameAllocatorMarker mem;
-   
+
 
    U32 mipLevels = getMipLevels();
    for (U32 mip = 0; mip < mipLevels; mip++)
@@ -204,7 +204,7 @@ bool GFXGLTextureObject::copyToBmp(GBitmap * bmp)
          }
       }
    }
-   glBindTexture(mBinding, NULL);
+   glBindTexture(mBinding, 0);
 
    return true;
 }
@@ -219,7 +219,7 @@ void GFXGLTextureObject::initSamplerState(const GFXSamplerStateDesc &ssd)
       glTexParameteri(mBinding, GL_TEXTURE_WRAP_R, GFXGLTextureAddress[ssd.addressModeW]);
    if(static_cast< GFXGLDevice* >( GFX )->supportsAnisotropic() )
       glTexParameterf(mBinding, GL_TEXTURE_MAX_ANISOTROPY_EXT, ssd.maxAnisotropy);
-
+  
    mNeedInitSamplerState = false;
    mSampler = ssd;
 }
@@ -236,8 +236,8 @@ U8* GFXGLTextureObject::getTextureData( U32 mip )
    AssertFatal( mMipLevels, "");
    mip = (mip < mMipLevels) ? mip : 0;
 
-   const U32 dataSize = ImageUtil::isCompressedFormat(mFormat) 
-       ? getCompressedSurfaceSize( mFormat, mTextureSize.x, mTextureSize.y, mip ) 
+   const U32 dataSize = ImageUtil::isCompressedFormat(mFormat)
+       ? getCompressedSurfaceSize( mFormat, mTextureSize.x, mTextureSize.y, mip )
        : (mTextureSize.x >> mip) * (mTextureSize.y >> mip) * mBytesPerTexel;
 
    U8* data = new U8[dataSize];
@@ -258,10 +258,10 @@ void GFXGLTextureObject::copyIntoCache()
    U32 cacheSize = mTextureSize.x * mTextureSize.y;
    if(mBinding == GL_TEXTURE_3D)
       cacheSize *= mTextureSize.z;
-      
+
    cacheSize *= mBytesPerTexel;
    mZombieCache = new U8[cacheSize];
-   
+
    glGetTexImage(mBinding, 0, GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], mZombieCache);
 }
 
@@ -269,7 +269,7 @@ void GFXGLTextureObject::reloadFromCache()
 {
    if(!mZombieCache)
       return;
-      
+
    if(mBinding == GL_TEXTURE_3D)
    {
       static_cast<GFXGLTextureManager*>(TEXMGR)->_loadTexture(this, mZombieCache);
@@ -277,7 +277,7 @@ void GFXGLTextureObject::reloadFromCache()
       mZombieCache = NULL;
       return;
    }
-   
+
    PRESERVE_TEXTURE(mBinding);
    glBindTexture(mBinding, mHandle);
 
@@ -285,10 +285,10 @@ void GFXGLTextureObject::reloadFromCache()
 		glTexSubImage2D(mBinding, 0, 0, 0, mTextureSize.x, mTextureSize.y, GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], mZombieCache);
    else if(mBinding == GL_TEXTURE_1D)
 		glTexSubImage1D(mBinding, 0, 0, (mTextureSize.x > 1 ? mTextureSize.x : mTextureSize.y), GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], mZombieCache);
-   
+
    if(mMipLevels != 1)
       glGenerateMipmap(mBinding);
-      
+
    delete[] mZombieCache;
    mZombieCache = NULL;
    mIsZombie = false;
@@ -298,11 +298,11 @@ void GFXGLTextureObject::zombify()
 {
    if(mIsZombie)
       return;
-      
+
    mIsZombie = true;
    if(!mProfile->doStoreBitmap() && !mProfile->isRenderTarget() && !mProfile->isDynamic() && !mProfile->isZTarget())
       copyIntoCache();
-      
+
    release();
 }
 
@@ -310,7 +310,7 @@ void GFXGLTextureObject::resurrect()
 {
    if(!mIsZombie)
       return;
-      
+
    glGenTextures(1, &mHandle);
    glGenBuffers(1, &mBuffer);
 }
@@ -329,6 +329,6 @@ const String GFXGLTextureObject::describeSelf() const
 {
    String ret = Parent::describeSelf();
    ret += String::ToString("   GL Handle: %i", mHandle);
-   
+
    return ret;
 }

@@ -177,11 +177,12 @@ void AssimpShapeLoader::enumerateScene()
 
       // Setup default units for shape format
       String importFormat;
-      if (getMetaString("SourceAsset_Format", importFormat))
+
+      String fileExt = String::ToLower(shapePath.getExtension());
+      const aiImporterDesc* importerDescription = aiGetImporterDesc(fileExt.c_str());
+      if (importerDescription && StringTable->insert(importerDescription->mName) == StringTable->insert("Autodesk FBX Importer"))
       {
-         // FBX uses cm as standard unit, so convert to meters
-         if (importFormat.equal("Autodesk FBX Importer", String::NoCase))
-            ColladaUtils::getOptions().formatScaleFactor = 0.01f;
+         ColladaUtils::getOptions().formatScaleFactor = 0.01f;
       }
 
       // Set import options (if they are not set to override)
@@ -425,9 +426,11 @@ bool AssimpShapeLoader::fillGuiTreeView(const char* sourceShapePath, GuiTreeView
 
 void AssimpShapeLoader::updateMaterialsScript(const Torque::Path &path)
 {
+   return;
+   /*
    Torque::Path scriptPath(path);
    scriptPath.setFileName("materials");
-   scriptPath.setExtension("cs");
+   scriptPath.setExtension(TORQUE_SCRIPT_EXTENSION);
 
    // First see what materials we need to update
    PersistenceManager persistMgr;
@@ -458,6 +461,7 @@ void AssimpShapeLoader::updateMaterialsScript(const Torque::Path &path)
       return;
 
    persistMgr.saveDirty();
+   */
 }
 
 /// Check if an up-to-date cached DTS is available for this DAE file
@@ -805,7 +809,7 @@ TSShape* assimpLoadShape(const Torque::Path &path)
 
    // Allow TSShapeConstructor object to override properties
    ColladaUtils::getOptions().reset();
-   TSShapeConstructor* tscon = TSShapeConstructor::findShapeConstructor(path.getFullPath());
+   TSShapeConstructor* tscon = TSShapeConstructor::findShapeConstructorByFilename(path.getFullPath());
    if (tscon)
    {
       ColladaUtils::getOptions() = tscon->mOptions;

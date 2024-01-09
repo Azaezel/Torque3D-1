@@ -71,6 +71,7 @@ GuiSwatchButtonCtrl::GuiSwatchButtonCtrl()
 
 void GuiSwatchButtonCtrl::initPersistFields()
 {
+   docsURL;
    addField("color", TypeColorF, Offset(mSwatchColor, GuiSwatchButtonCtrl), "The foreground color of GuiSwatchButtonCtrl");
    addField( "gridBitmap", TypeRealString, Offset( mGridBitmap, GuiSwatchButtonCtrl ), "The bitmap used for the transparent grid" );
    
@@ -90,7 +91,7 @@ bool GuiSwatchButtonCtrl::onWake()
 
 void GuiSwatchButtonCtrl::onRender( Point2I offset, const RectI &updateRect )
 {
-   bool highlight = mMouseOver;
+   bool highlight = mHighlighted;
 
    ColorI borderColor = mActive ? ( highlight ? mProfile->mBorderColorHL : mProfile->mBorderColor ) : mProfile->mBorderColorNA;
 

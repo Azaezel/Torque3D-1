@@ -60,6 +60,8 @@
 #include "materials/matTextureTarget.h"
 #endif
 
+#include "T3D/assets/ImageAsset.h"
+
 class GFXStateBlockData;
 class Frustum;
 class SceneRenderState;
@@ -83,12 +85,14 @@ public:
 
    enum
    {
-      NumTextures = 8,
+      NumTextures = 16,
    };
 
 protected:
 
-   FileName mTexFilename[NumTextures];
+   DECLARE_IMAGEASSET_ARRAY(PostEffect, Texture, NumTextures);
+   DECLARE_IMAGEASSET_ARRAY_SETGET(PostEffect, Texture);
+
    bool mTexSRGB[NumTextures];
 
    enum
@@ -98,7 +102,6 @@ protected:
       CubemapArrayType,
    } mTextureType[NumTextures];
 
-   GFXTexHandle mTextures[NumTextures];
    GFXCubemapHandle mCubemapTextures[NumTextures];
    GFXCubemapArrayHandle mCubemapArrayTextures[NumTextures];
 
@@ -125,6 +128,7 @@ protected:
 
    GFXShaderConstHandle *mRTSizeSC;
    GFXShaderConstHandle *mOneOverRTSizeSC;
+   GFXShaderConstHandle* mRTRatioSC;
 
    GFXShaderConstHandle *mTexSizeSC[NumTextures];
    GFXShaderConstHandle *mRenderTargetParamsSC[NumTextures];
@@ -152,6 +156,7 @@ protected:
    GFXShaderConstHandle *mLightDirectionSC;
    GFXShaderConstHandle *mCameraForwardSC;
    GFXShaderConstHandle *mAccumTimeSC;
+   GFXShaderConstHandle* mDampnessSC;
    GFXShaderConstHandle *mDeltaTimeSC;
    GFXShaderConstHandle *mInvCameraMatSC;
    GFXShaderConstHandle *mMatCameraToWorldSC;

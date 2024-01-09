@@ -81,10 +81,9 @@ public:
 class afxXM_WaveInterp
 {
 public:
+  virtual ~afxXM_WaveInterp() { }
   virtual void interpolate(F32 t, afxXM_Params& params)=0;
   virtual void pulse()=0;
-
-  static F32 lerp(F32 t, F32 a, F32 b) { return a + t * (b - a); }
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
@@ -173,7 +172,6 @@ public:
   static afxXM_Waveform* getWaveform(U32 waveform_type);
 
   DECLARE_CONOBJECT(afxXM_WaveBaseData);
-  DECLARE_CATEGORY("AFX");
 };
 
 typedef afxXM_WaveBaseData::WaveFormType afxXM_WaveFormType;
@@ -211,7 +209,6 @@ public:
   static void     initPersistFields();
 
   DECLARE_CONOBJECT(afxXM_WaveRiderBaseData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
@@ -250,7 +247,7 @@ protected:
 
 public:
   /*C*/                 afxXM_WaveBase(afxXM_WaveBaseData*, afxEffectWrapper*, afxXM_WaveInterp*);
-  /*D*/                 ~afxXM_WaveBase();
+  /*D*/                 virtual ~afxXM_WaveBase();
 
   virtual void          updateParams(F32 dt, F32 elapsed, afxXM_Params& params);
 };

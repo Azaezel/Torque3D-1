@@ -353,6 +353,17 @@ DefineEngineFunction( mLerp, F32, ( F32 v1, F32 v2, F32 time ),,
    return mLerp( v1, v2, time );
 }
 
+DefineEngineFunction(mInvLerp, F32, (F32 v1, F32 v2, F32 point), ,
+   "Calculate the percentage of a point along a line.\n"
+   "@param v1 Interpolate From Input value."
+   "@param v2 Interpolate To Input value."
+   "@param point Point along range."
+   "@returns normalized time used to interpolate values"
+   "@ingroup Math")
+{
+   return mInvLerp(v1, v2, point);
+}
+
 DefineEngineFunction( mPi, F32, (),,
     "Return the value of PI (half-circle in radians).\n"
     "@returns The value of PI."
@@ -423,4 +434,43 @@ DefineEngineFunction(mGetSignedAngleBetweenVectors, F32, (VectorF vecA, VectorF 
    }
 
    return MathUtils::getSignedAngleBetweenVectors(vecA, vecB, norm);
+}
+
+DefineEngineFunction(mBinToDec, S32, (String n),,"convert a binary to decimal")
+{
+   String num = n;
+   int dec_value = 0;
+
+   // Initializing base value to 1, i.e 2^0
+   int base = 1;
+
+   int len = num.length();
+   for (int i = len - 1; i >= 0; i--) {
+      if (num[i] == '1')//pick out our 1s and concatenate
+         dec_value += base;
+      base = base * 2;//next power of 2
+   }
+
+   return dec_value;
+}
+
+DefineEngineFunction(mDecToBin, const char*, (S32 n), , "convert decimal to a binary")
+{
+   String ret;
+   while (n > 0) {
+      int r = n % 2;//modulus aka remainder of 2. nets you a 0 or a 1
+      n /= 2;//next power of 2
+      ret = String::ToString("%i",r) + ret;//add to the front of the stack
+   }
+   return ret.c_str();
+}
+
+DefineEngineFunction(mEulDegToAng, AngAxisF, (EulerF euler), , "convert euler to degrees")
+{
+   return mEulDegToAng(euler);
+}
+
+DefineEngineFunction(mAngToEul, EulerF, (AngAxisF angAx), , "convert degrees to euler")
+{
+   return mAngToEul(angAx);
 }

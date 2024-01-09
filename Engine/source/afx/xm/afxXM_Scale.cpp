@@ -57,7 +57,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_ScaleData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
@@ -98,6 +97,7 @@ afxXM_ScaleData::afxXM_ScaleData(const afxXM_ScaleData& other, bool temp_clone) 
 
 void afxXM_ScaleData::initPersistFields()
 {
+   docsURL;
   addField("scale",  TypePoint3F,   Offset(scale, afxXM_ScaleData),
     "...");
 

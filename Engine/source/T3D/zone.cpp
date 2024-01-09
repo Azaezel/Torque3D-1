@@ -82,21 +82,20 @@ void Zone::consoleInit()
    getStaticClassRep()->mIsRenderEnabled = false;
 }
 
+#ifdef TORQUE_TOOLS
 void Zone::initPersistFields()
 {
+   docsURL;
    addProtectedField("selectAll", TypeBool, Offset(mSelecting, Zone),
       &_doSelect, &defaultProtectedGetFn, "Select all in this zone", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
 
    Parent::initPersistFields();
 }
 
-
 bool Zone::_doSelect(void* object, const char* index, const char* data)
 {
    Zone* zone = reinterpret_cast<Zone*>(object);
-
    zone->selectWithin();
-
    return false;
 }
 
@@ -109,20 +108,31 @@ void Zone::selectWithin()
       SceneZoneSpaceManager* zoneManager = zoneClient->getSceneManager()->getZoneManager();
       if (zoneManager)
       {
+         SceneZoneSpaceManager::ObjectZoneValueIterator itr, itrEnd;
+
          for (U32 zoneId = zoneClient->mZoneRangeStart; zoneId < zoneClient->mZoneRangeStart + zoneClient->mNumZones; ++zoneId)
-            for (SceneZoneSpaceManager::ZoneContentIterator iter(zoneManager, zoneId, false); iter.isValid(); ++iter)
+         {
+            SceneZoneSpaceManager::ZoneObjectList* list = zoneManager->mZoneLists[zoneId];
+            for (SceneObject* zoneObject : list->getObjects())
             {
-               SceneObject* obj = (SceneObject*)iter->getServerObject();
+               SceneObject* obj = (SceneObject*)zoneObject->getServerObject();
                bool fullyEnclosed = true;
 
-            for (SceneObject::ObjectZonesIterator zoneIter(obj); zoneIter.isValid(); ++zoneIter)
-            {
-               if (*zoneIter != zoneId)
-                  fullyEnclosed = false;
+               zoneManager->getObjectZoneValueIterators(obj, itr, itrEnd);
+
+               for (itr; itr != itrEnd; itr++)
+               {
+                  if (*itr != zoneId)
+                  {
+                     fullyEnclosed = false;
+                     break;
+                  }
                }
+
                if (fullyEnclosed)
                   sql.insertObject(obj);
             }
+         }
       }
    }
 
@@ -138,6 +148,7 @@ void Zone::selectWithin()
       }
    }
 }
+#endif
 //=============================================================================
 //    Console API.
 //=============================================================================
@@ -162,9 +173,10 @@ DefineEngineMethod( Zone, dumpZoneState, void, ( bool updateFirst ), ( true ),
 {
    object->dumpZoneState( updateFirst );
 }
-
+#ifdef TORQUE_TOOLS
 DefineEngineMethod(Zone, selectWithin, void, () ,,
    "select a list of all objects assigned to the zone")
 {
    object->selectWithin();
 }
+#endif

@@ -55,7 +55,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_GroundConformData);
-  DECLARE_CATEGORY("AFX");
 };
 
 class afxXM_GroundConform : public afxXM_WeightedBase
@@ -101,6 +100,7 @@ afxXM_GroundConformData::afxXM_GroundConformData(const afxXM_GroundConformData& 
 
 void afxXM_GroundConformData::initPersistFields()
 {
+   docsURL;
   addField("height",              TypeF32,      Offset(height, afxXM_GroundConformData),
     "...");
   addField("conformToTerrain",    TypeBool,     Offset(do_terrain, afxXM_GroundConformData),

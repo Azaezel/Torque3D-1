@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(ObjectEditorSettingsTab,EditorGuiGroup) {
+$guiContent = new GuiControl(ObjectEditorSettingsTab,EditorGuiGroup) {
    isContainer = "1";
    profile = "ToolsGuiDefaultProfile";
    horizSizing = "right";
@@ -929,7 +929,7 @@
                      horizSizing = "right";
                      vertSizing = "bottom";
                      position = "0 0";
-                     extent = "210 14";
+                     extent = "300 14";
                      
                      new GuiCheckBoxCtrl() {
                         useInactiveState = "0";
@@ -963,7 +963,7 @@
                      horizSizing = "right";
                      vertSizing = "bottom";
                      position = "5 70";
-                     extent = "210 18";
+                     extent = "300 18";
 
                      new GuiTextCtrl() {
                         text = "Screen Center Scalar:";
@@ -1027,7 +1027,7 @@
                      horizSizing = "right";
                      vertSizing = "bottom";
                      position = "5 70";
-                     extent = "210 18";
+                     extent = "300 18";
                      
                      new GuiTextCtrl() {
                         text = "Screen Center Max:";

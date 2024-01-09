@@ -35,6 +35,7 @@
 #include "collision/boxConvex.h"
 #endif
 
+#include "T3D/assets/SoundAsset.h"
 #include "T3D/gameBase/gameProcess.h"
 
 class Material;
@@ -75,10 +76,11 @@ struct PlayerData: public ShapeBaseData {
                                                                   ///  that we don't create a TSThread on the player if we don't
                                                                   ///  need to.
 
-   StringTableEntry  shapeNameFP[ShapeBase::MaxMountedImages];    ///< Used to render with mounted images in first person [optional]
+   DECLARE_SHAPEASSET_ARRAY(PlayerData, ShapeFP, ShapeBase::MaxMountedImages); ///< Used to render with mounted images in first person [optional]
+   DECLARE_ASSET_ARRAY_SETGET(PlayerData, ShapeFP);
+
    StringTableEntry  imageAnimPrefixFP;                           ///< Passed along to mounted images to modify
                                                                   ///  animation sequences played in first person. [optional]
-   Resource<TSShape> mShapeFP[ShapeBase::MaxMountedImages];       ///< First person mounted image shape resources [optional]
    U32               mCRCFP[ShapeBase::MaxMountedImages];         ///< Computed CRC values for the first person mounted image shapes
                                                                   ///  Depends on the ShapeBaseData computeCRC field.
    bool              mValidShapeFP[ShapeBase::MaxMountedImages];  ///< Indicates that there is a valid first person mounted image shape
@@ -199,7 +201,7 @@ struct PlayerData: public ShapeBaseData {
       FootHard,
       FootMetal,
       FootSnow,
-      MaxSoundOffsets,
+      WaterStart,
       FootShallowSplash,
       FootWading,
       FootUnderWater,
@@ -207,7 +209,7 @@ struct PlayerData: public ShapeBaseData {
       MoveBubbles,
       WaterBreath,
       ImpactStart,
-      ImpactSoft = ImpactStart,
+      ImpactSoft,
       ImpactHard,
       ImpactMetal,
       ImpactSnow,
@@ -217,7 +219,8 @@ struct PlayerData: public ShapeBaseData {
       ExitWater,
       MaxSounds
    };
-   SFXTrack* sound[MaxSounds];
+
+   DECLARE_SOUNDASSET_ARRAY(PlayerData, PlayerSound, Sounds::MaxSounds);
 
    Point3F boxSize;           ///< Width, depth, height
    Point3F crouchBoxSize;
@@ -444,7 +447,6 @@ protected:
    Point3F mRot;                    ///< Body rotation, uses only z
    VectorF mVelocity;               ///< Velocity
    Point3F mAnchorPoint;            ///< Pos compression anchor
-   static F32 mGravity;             ///< Gravity
    S32 mImpactSound;
 
    bool mUseHeadZCalc;              ///< Including mHead.z in transform calculations
@@ -695,6 +697,7 @@ protected:
 
 public:
    DECLARE_CONOBJECT(Player);
+   DECLARE_CATEGORY("Actor \t Controllable");
 
    Player();
    ~Player();
@@ -877,5 +880,4 @@ public:
 typedef Player::Pose PlayerPose;
 
 DefineEnumType( PlayerPose );
-
 #endif

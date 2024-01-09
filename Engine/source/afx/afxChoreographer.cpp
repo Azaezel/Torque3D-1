@@ -26,9 +26,9 @@
 #include "afx/arcaneFX.h"
 
 #include "console/engineAPI.h"
+#include "console/script.h"
 #include "T3D/gameBase/gameConnection.h"
 #include "math/mathIO.h"
-#include "console/compiler.h"
 
 #include "afx/afxConstraint.h"
 #include "afx/afxChoreographer.h"
@@ -68,6 +68,7 @@ afxChoreographerData::afxChoreographerData(const afxChoreographerData& other, bo
 
 void afxChoreographerData::initPersistFields()
 {
+   docsURL;
   addField("execOnNewClients",    TypeBool,       myOffset(exec_on_new_clients),
     "...");
   addField("echoPacketUsage",     TypeS8,         myOffset(echo_packet_usage),
@@ -107,12 +108,11 @@ bool afxChoreographerData::preload(bool server, String &errorStr)
 
   if (!server && client_script_file != ST_NULLSTRING)
   {
-    Compiler::gSyntaxError = false;
-    Con::evaluate(avar("exec(\"%s\");", client_script_file), false, 0);
-    if (Compiler::gSyntaxError)
+     Con::EvalResult result = Con::evaluate(avar("exec(\"%s\");", client_script_file), false, 0);
+
+    if (!result.valid)
     {
       Con::errorf("afxChoreographerData: failed to exec clientScriptFile \"%s\" -- syntax error", client_script_file);
-      Compiler::gSyntaxError = false;
     }
   }
 
@@ -178,6 +178,7 @@ afxChoreographer::~afxChoreographer()
 
 void afxChoreographer::initPersistFields()
 {
+   docsURL;
   // conditionals
   addField("extra",              TYPEID<SimObject>(), Offset(mExtra, afxChoreographer),
     "...");

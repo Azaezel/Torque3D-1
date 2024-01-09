@@ -1,10 +1,14 @@
 <LevelAsset
-    canSave="true"
-    canSaveDynamicFields="true"
     AssetName="DefaultEditorLevel"
     LevelFile="@assetFile=DefaultEditorLevel.mis"
     LevelName="DefaultEditorLevel"
-    isSubScene="false"
     description="An empty room"
-    staticObjectAssetDependency0="@Asset=FPSGameplay:station01"
-    VersionId="1" />
+    previewImageAsset0="@asset=ToolsModule:DefaultEditorLevel_preview_image"
+    previewImageAsset1="@asset=ToolsModule:DefaultEditorLevel_preview_image"
+    previewImageAsset2="@asset=ToolsModule:DefaultEditorLevel_preview_image"
+    previewImageAsset3="@asset=ToolsModule:DefaultEditorLevel_preview_image"
+    previewImageAsset4="@asset=ToolsModule:DefaultEditorLevel_preview_image"
+    previewImageAsset5="@asset=ToolsModule:DefaultEditorLevel_preview_image"
+    previewImageAsset6="@asset=ToolsModule:DefaultEditorLevel_preview_image"
+    staticObjectAssetDependency0="@asset=Prototyping:FloorGray"
+    VersionId="1"/>

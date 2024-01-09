@@ -35,6 +35,8 @@
 
 #include "console/typeValidators.h"
 
+GFX_DeclareTextureProfile(AFX_GFXZodiacTextureProfile);
+
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // afxZodiacData
 
@@ -54,9 +56,12 @@ public:
 
   static void convertGradientRangeFromDegrees(Point2F& gradrange, const Point2F& gradrange_deg);
 
+  void onImageChanged() {}
+
 public:
-  StringTableEntry  txr_name;
-  GFXTexHandle      txr;
+   DECLARE_IMAGEASSET(afxZodiacData, Texture, onImageChanged, AFX_GFXZodiacTextureProfile);
+   DECLARE_ASSET_SETGET(afxZodiacData, Texture);
+
   F32               radius_xy;
   Point2F           vert_range;
   F32               start_ang;
@@ -119,13 +124,10 @@ public:
   static void       initPersistFields();
 
   DECLARE_CONOBJECT(afxZodiacData);
-  DECLARE_CATEGORY("AFX");
 };
 
 typedef afxZodiacData::BlendType afxZodiac_BlendType;
 DefineEnumType( afxZodiac_BlendType );
-
-GFX_DeclareTextureProfile(AFX_GFXZodiacTextureProfile);
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 

@@ -30,6 +30,7 @@ class ScopeAlwaysShape : public StaticShape
       ScopeAlwaysShape();
       static void initPersistFields();
       DECLARE_CONOBJECT(ScopeAlwaysShape);
+      DECLARE_CATEGORY("UNLISTED");
 };
 
 ScopeAlwaysShape::ScopeAlwaysShape()
@@ -40,6 +41,7 @@ ScopeAlwaysShape::ScopeAlwaysShape()
 
 void ScopeAlwaysShape::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 

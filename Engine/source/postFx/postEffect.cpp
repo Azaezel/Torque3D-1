@@ -492,6 +492,7 @@ PostEffect::PostEffect()
       mLightDirectionSC( NULL ),
       mCameraForwardSC( NULL ),
       mAccumTimeSC( NULL ),
+      mDampnessSC(NULL),   
       mDeltaTimeSC( NULL ),
       mInvCameraMatSC( NULL ),
       mMatCameraToWorldSC( NULL),
@@ -505,6 +506,11 @@ PostEffect::PostEffect()
    dMemset( mActiveTextureViewport, 0, sizeof( RectI ) * NumTextures );
    dMemset( mTexSizeSC, 0, sizeof( GFXShaderConstHandle* ) * NumTextures );
    dMemset( mRenderTargetParamsSC, 0, sizeof( GFXShaderConstHandle* ) * NumTextures );
+
+   for (U32 i = 0; i < NumTextures; i++)
+   {
+      INIT_IMAGEASSET_ARRAY(Texture, PostFxTextureProfile, i);
+   }
 }
 
 PostEffect::~PostEffect()
@@ -516,6 +522,7 @@ PostEffect::~PostEffect()
 
 void PostEffect::initPersistFields()
 {
+   docsURL;
    addField( "shader", TypeRealString, Offset( mShaderName, PostEffect ),
       "Name of a GFXShaderData for this effect." );
 
@@ -548,9 +555,8 @@ void PostEffect::initPersistFields()
    addField( "targetViewport", TYPEID< PFXTargetViewport >(), Offset( mTargetViewport, PostEffect ),
       "Specifies how the viewport should be set up for a target texture." );
 
-   addField( "texture", TypeImageFilename, Offset( mTexFilename, PostEffect ), NumTextures,
-      "Input textures to this effect ( samplers ).\n"
-      "@see PFXTextureIdentifiers" );
+   INITPERSISTFIELD_IMAGEASSET_ARRAY(Texture, NumTextures, PostEffect, "Input textures to this effect ( samplers ).\n"
+      "@see PFXTextureIdentifiers");
 
    addField("textureSRGB", TypeBool, Offset(mTexSRGB, PostEffect), NumTextures,
       "Set input texture to be sRGB");
@@ -567,7 +573,7 @@ void PostEffect::initPersistFields()
    addField( "allowReflectPass", TypeBool, Offset( mAllowReflectPass, PostEffect ), 
       "Is this effect processed during reflection render passes." );
 
-   addProtectedField( "isEnabled", TypeBool, Offset( mEnabled, PostEffect),
+   addProtectedField( "enabled", TypeBool, Offset( mEnabled, PostEffect),
       &PostEffect::_setIsEnabled, &defaultProtectedGetFn,
       "Is the effect on." );
 
@@ -598,26 +604,19 @@ bool PostEffect::onAdd()
    scriptPath.setExtension( String::EmptyString );
 
    // Find additional textures
-   for( S32 i = 0; i < NumTextures; i++ )
+   for (S32 i = 0; i < NumTextures; i++)
    {
       mTextureType[i] = NormalTextureType;
-
-      String texFilename = mTexFilename[i];
+      String texFilename = getTexture(i);
 
       // Skip empty stages or ones with variable or target names.
-      if (  texFilename.isEmpty() ||
-            texFilename[0] == '$' ||
-            texFilename[0] == '#' )
+      if (texFilename.isEmpty() ||
+         texFilename[0] == '$' ||
+         texFilename[0] == '#')
          continue;
 
-      GFXTextureProfile *profile = &PostFxTextureProfile;
-      if (mTexSRGB[i])
-         profile = &PostFxTextureSRGBProfile;
-
-      // Try to load the texture.
-      bool success = mTextures[i].set( texFilename, &PostFxTextureProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );
-      if (!success)
-         Con::errorf("Invalid Texture for PostEffect (%s), The Texture '%s' does not exist!", this->getName(), texFilename.c_str());
+      mTextureProfile[i] = (mTexSRGB[i]) ? &PostFxTextureSRGBProfile : &PostFxTextureProfile;
+      _setTexture(texFilename, i);
    }
 
    // Is the target a named target?
@@ -754,26 +753,12 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
       mRTSizeSC = mShader->getShaderConstHandle( "$targetSize" );
       mOneOverRTSizeSC = mShader->getShaderConstHandle( "$oneOverTargetSize" );
-
-      mTexSizeSC[0] = mShader->getShaderConstHandle( "$texSize0" );
-      mTexSizeSC[1] = mShader->getShaderConstHandle( "$texSize1" );
-      mTexSizeSC[2] = mShader->getShaderConstHandle( "$texSize2" );
-      mTexSizeSC[3] = mShader->getShaderConstHandle( "$texSize3" );
-      mTexSizeSC[4] = mShader->getShaderConstHandle( "$texSize4" );
-      mTexSizeSC[5] = mShader->getShaderConstHandle( "$texSize5" );
-      mTexSizeSC[6] = mShader->getShaderConstHandle( "$texSize6" );
-      mTexSizeSC[7] = mShader->getShaderConstHandle( "$texSize7" );
-
-      mRenderTargetParamsSC[0] = mShader->getShaderConstHandle( "$rtParams0" );
-      mRenderTargetParamsSC[1] = mShader->getShaderConstHandle( "$rtParams1" );
-      mRenderTargetParamsSC[2] = mShader->getShaderConstHandle( "$rtParams2" );
-      mRenderTargetParamsSC[3] = mShader->getShaderConstHandle( "$rtParams3" );
-      mRenderTargetParamsSC[4] = mShader->getShaderConstHandle( "$rtParams4" );
-      mRenderTargetParamsSC[5] = mShader->getShaderConstHandle( "$rtParams5" );
-      mRenderTargetParamsSC[6] = mShader->getShaderConstHandle( "$rtParams6" );
-      mRenderTargetParamsSC[7] = mShader->getShaderConstHandle( "$rtParams7" );
-
-      //mViewportSC = shader->getShaderConstHandle( "$viewport" );
+      mRTRatioSC = mShader->getShaderConstHandle("$targetRatio");
+      for (U32 i = 0; i < NumTextures; i++)
+      {
+         mTexSizeSC[i] = mShader->getShaderConstHandle(String::ToString("$texSize%d", i));
+         mRenderTargetParamsSC[i] = mShader->getShaderConstHandle(String::ToString("$rtParams%d",i));
+      }
 
       mTargetViewportSC = mShader->getShaderConstHandle( "$targetViewport" );
 
@@ -802,6 +787,8 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
       mCameraForwardSC = mShader->getShaderConstHandle( "$camForward" );
 
       mAccumTimeSC = mShader->getShaderConstHandle( "$accumTime" );
+      mDampnessSC = mShader->getShaderConstHandle("$dampness");
+      
       mDeltaTimeSC = mShader->getShaderConstHandle( "$deltaTime" );
 
       mInvCameraMatSC = mShader->getShaderConstHandle( "$invCameraMat" );
@@ -832,7 +819,11 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
       mShaderConsts->set( mOneOverRTSizeSC, oneOverTargetSize );
    }
-
+   if (mRTRatioSC->isValid())
+   {
+      const Point2I& resolution = GFX->getActiveRenderTarget()->getSize();
+      mShaderConsts->set(mRTRatioSC, (F32)resolution.x/ (F32)resolution.y);
+   }
    // Set up additional textures
    Point2F texSizeConst;
    for( U32 i = 0; i < NumTextures; i++ )
@@ -978,7 +969,8 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
    }
    mShaderConsts->setSafe( mAccumTimeSC, MATMGR->getTotalTime() );
    mShaderConsts->setSafe( mDeltaTimeSC, MATMGR->getDeltaTime() );
-
+   mShaderConsts->setSafe(mDampnessSC, MATMGR->getDampnessClamped());
+   
    // Now set all the constants that are dependent on the scene state.
    if ( state )
    {
@@ -1139,7 +1131,7 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
 void PostEffect::_setupTexture( U32 stage, GFXTexHandle &inputTex, const RectI *inTexViewport )
 {
-   const String &texFilename = mTexFilename[ stage ];
+   const String &texFilename = getTexture( stage );
 
    GFXTexHandle theTex;
    NamedTexTarget *namedTarget = NULL;
@@ -1176,7 +1168,7 @@ void PostEffect::_setupTexture( U32 stage, GFXTexHandle &inputTex, const RectI *
    }
    else
    {
-      theTex = mTextures[ stage ];
+      theTex = mTexture[ stage ];
       if ( theTex )
          viewport.set( 0, 0, theTex->getWidth(), theTex->getHeight() );
    }
@@ -1643,8 +1635,8 @@ void PostEffect::reload()
 void PostEffect::setTexture( U32 index, const String &texFilePath )
 {
 	// Set the new texture name.
-	mTexFilename[index] = texFilePath;
-	mTextures[index].free();
+	mTextureName[index] = texFilePath;
+	mTexture[index].free();
 
     // Skip empty stages or ones with variable or target names.
     if (	texFilePath.isEmpty() ||
@@ -1652,8 +1644,8 @@ void PostEffect::setTexture( U32 index, const String &texFilePath )
 			texFilePath[0] == '#' )
 		return;
 
-    // Try to load the texture.
-    mTextures[index].set( texFilePath, &PostFxTextureProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );
+    mTextureProfile[index] = (mTexSRGB[index])? &PostFxTextureSRGBProfile : &PostFxTextureProfile;
+    _setTexture(texFilePath, index);
 
     mTextureType[index] = NormalTextureType;
 }
@@ -1661,15 +1653,15 @@ void PostEffect::setTexture( U32 index, const String &texFilePath )
 void PostEffect::setTexture(U32 index, const GFXTexHandle& texHandle)
 {
    // Set the new texture name.
-   mTexFilename[index] = "";
-   mTextures[index].free();
+   mTextureName[index] = StringTable->EmptyString();
+   mTexture[index].free();
 
    // Skip empty stages or ones with variable or target names.
    if (!texHandle.isValid())
       return;
 
    // Try to load the texture.
-   mTextures[index] = texHandle;
+   mTexture[index] = texHandle;
 
    mTextureType[index] = NormalTextureType;
 }
@@ -1850,7 +1842,7 @@ void PostEffect::_checkRequirements()
    {
       if (mTextureType[i] == NormalTextureType)
       {
-         const String &texFilename = mTexFilename[i];
+         const String &texFilename = mTextureName[i];
 
          if (texFilename.isNotEmpty() && texFilename[0] == '#')
          {

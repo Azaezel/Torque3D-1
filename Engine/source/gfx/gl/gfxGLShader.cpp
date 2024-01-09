@@ -82,6 +82,7 @@ static U32 shaderConstTypeSize(GFXShaderConstType type)
    case GFXSCT_Sampler:
    case GFXSCT_SamplerCube:
    case GFXSCT_SamplerCubeArray:
+   case GFXSCT_SamplerTextureArray:
       return 4;
    case GFXSCT_Float2:
    case GFXSCT_Int2:
@@ -381,10 +382,11 @@ void GFXGLShaderConstBuffer::onShaderReload( GFXGLShader *shader )
    mWasLost = true;
 }
 
-GFXGLShader::GFXGLShader() :
+GFXGLShader::GFXGLShader(GFXGLDevice* device) :
    mVertexShader(0),
    mPixelShader(0),
    mProgram(0),
+   mDevice(device),
    mConstBufferSize(0),
    mConstBuffer(NULL)
 {
@@ -560,6 +562,7 @@ void GFXGLShader::initConstantDescs()
 
    if(!maxNameLength)
       return;
+   maxNameLength++;
 
    FrameTemp<GLchar> uniformName(maxNameLength);
    
@@ -630,6 +633,9 @@ void GFXGLShader::initConstantDescs()
          case GL_SAMPLER_CUBE_MAP_ARRAY_ARB:
             desc.constType = GFXSCT_SamplerCubeArray;
             break;
+         case GL_SAMPLER_2D_ARRAY:
+            desc.constType = GFXSCT_SamplerTextureArray;
+            break;
          default:
             AssertFatal(false, "GFXGLShader::initConstantDescs - unrecognized uniform type");
             // If we don't recognize the constant don't add its description.
@@ -657,11 +663,14 @@ void GFXGLShader::initHandles()
       // Index element 1 of the name to skip the '$' we inserted earier.
       GLint loc = glGetUniformLocation(mProgram, &desc.name.c_str()[1]);
 
-      AssertFatal(loc != -1, "");
+      AssertFatal(loc != -1, avar("uniform %s in shader file Vert: (%s) Frag: (%s)", &desc.name.c_str()[1], mVertexFile.getFullPath().c_str(), mPixelFile.getFullPath().c_str()));
 
       HandleMap::Iterator handle = mHandles.find(desc.name);
       S32 sampler = -1;
-      if(desc.constType == GFXSCT_Sampler || desc.constType == GFXSCT_SamplerCube || desc.constType == GFXSCT_SamplerCubeArray)
+      if(desc.constType == GFXSCT_Sampler ||
+         desc.constType == GFXSCT_SamplerCube ||
+         desc.constType == GFXSCT_SamplerCubeArray ||
+         desc.constType == GFXSCT_SamplerTextureArray)
       {
          S32 idx = mSamplerNamesOrdered.find_next(desc.name);
          AssertFatal(idx != -1, "");
@@ -699,12 +708,17 @@ void GFXGLShader::initHandles()
    dMemset(mConstBuffer, 0, mConstBufferSize);
    
    // Set our program so uniforms are assigned properly.
-   glUseProgram(mProgram);
+   mDevice->setShader(this, false);
+
    // Iterate through uniforms to set sampler numbers.
    for (HandleMap::Iterator iter = mHandles.begin(); iter != mHandles.end(); ++iter)
    {
       GFXGLShaderConstHandle* handle = iter->value;
-      if(handle->isValid() && (handle->getType() == GFXSCT_Sampler || handle->getType() == GFXSCT_SamplerCube || handle->getType() == GFXSCT_SamplerCubeArray))
+      if(handle->isValid() &&
+         (handle->getType() == GFXSCT_Sampler ||
+            handle->getType() == GFXSCT_SamplerCube ||
+            handle->getType() == GFXSCT_SamplerCubeArray ||
+            handle->getType() == GFXSCT_SamplerTextureArray))
       {
          // Set sampler number on our program.
          glUniform1i(handle->mLocation, handle->mSamplerNum);
@@ -712,7 +726,6 @@ void GFXGLShader::initHandles()
          dMemcpy(mConstBuffer + handle->mOffset, &handle->mSamplerNum, handle->getSize());
       }
    }
-   glUseProgram(0);
 
    //instancing
    if (!mInstancingFormat)
@@ -819,6 +832,7 @@ void GFXGLShader::setConstantsFromBuffer(GFXGLShaderConstBuffer* buffer)
          
       // Copy new value into our const buffer and set in GL.
       dMemcpy(mConstBuffer + handle->mOffset, buffer->mBuffer + handle->mOffset, handle->getSize());
+
       switch(handle->mDesc.constType)
       {
          case GFXSCT_Float:
@@ -837,6 +851,7 @@ void GFXGLShader::setConstantsFromBuffer(GFXGLShaderConstBuffer* buffer)
          case GFXSCT_Sampler:
          case GFXSCT_SamplerCube:
          case GFXSCT_SamplerCubeArray:
+         case GFXSCT_SamplerTextureArray:
             glUniform1iv(handle->mLocation, handle->mDesc.arraySize, (GLint*)(mConstBuffer + handle->mOffset));
             break;
          case GFXSCT_Int2:
@@ -1094,9 +1109,12 @@ bool GFXGLShader::initShader( const Torque::Path &file,
       return false;
    }
    
-   if ( !_loadShaderFromStream( activeShader, file, &stream, macros ) )
+   if (!_loadShaderFromStream(activeShader, file, &stream, macros))
+   {
+      if (smLogErrors)
+         Con::errorf("GFXGLShader::initShader - unable to load shader from stream: '%s'.", file.getFullPath().c_str());
       return false;
-   
+   }
    GLint compile;
    glGetShaderiv(activeShader, GL_COMPILE_STATUS, &compile);
 
@@ -1104,17 +1122,13 @@ bool GFXGLShader::initShader( const Torque::Path &file,
    U32 logLength = 0;
    glGetShaderiv(activeShader, GL_INFO_LOG_LENGTH, (GLint*)&logLength);
    
-   GLint compileStatus = GL_TRUE;
    if ( logLength )
    {
       FrameAllocatorMarker fam;
       char* log = (char*)fam.alloc(logLength);
       glGetShaderInfoLog(activeShader, logLength, NULL, log);
 
-      // Always print errors
-      glGetShaderiv( activeShader, GL_COMPILE_STATUS, &compileStatus );
-
-      if ( compileStatus == GL_FALSE )
+      if (compile == GL_FALSE )
       {
          if ( smLogErrors )
          {
@@ -1126,7 +1140,7 @@ bool GFXGLShader::initShader( const Torque::Path &file,
          Con::warnf( "Program %s: %s", file.getFullPath().c_str(), log );
    }
 
-   return compileStatus != GL_FALSE;
+   return compile != GL_FALSE;
 }
 
 /// Returns our list of shader constants, the material can get this and just set the constants it knows about

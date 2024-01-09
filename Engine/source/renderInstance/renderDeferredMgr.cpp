@@ -67,7 +67,7 @@ ConsoleDocClass( RenderDeferredMgr,
    "and render them to the g-buffer for use in lighting the scene and doing effects.\n\n"
    "PostEffect and other shaders can access the output of this bin by using the #deferred "
    "texture target name.  See the edge anti-aliasing post effect for an example.\n\n"
-   "@see game/core/scripts/client/postFx/edgeAA.cs\n"
+   "@see game/core/scripts/client/postFx/edgeAA." TORQUE_SCRIPT_EXTENSION "\n"
    "@ingroup RenderBin\n" );
 
 
@@ -321,7 +321,7 @@ void RenderDeferredMgr::render( SceneRenderState *state )
    const bool isRenderingToTarget = _onPreRender(state);
 
    // Clear z-buffer and g-buffer.
-   GFX->clear(GFXClearZBuffer | GFXClearStencil, LinearColorF::ZERO, 1.0f, 0);
+   GFX->clear(GFXClearZBuffer | GFXClearStencil, LinearColorF::ZERO, 0.0f, 0);
    GFX->clearColorAttachment(0, LinearColorF::ONE);//normdepth
    GFX->clearColorAttachment(1, LinearColorF::ZERO);//albedo
    GFX->clearColorAttachment(2, LinearColorF::ZERO);//matinfo
@@ -593,6 +593,7 @@ void ProcessedDeferredMaterial::_determineFeatures( U32 stageNum,
                                                    MaterialFeatureData &fd,
                                                    const FeatureSet &features )
 {
+   if (GFX->getAdapterType() == NullDevice) return;
    Parent::_determineFeatures( stageNum, fd, features );
    if (fd.features.hasFeature(MFT_ForwardShading))
       return;
@@ -633,16 +634,16 @@ void ProcessedDeferredMaterial::_determineFeatures( U32 stageNum,
    }
    newFeatures.addFeature( MFT_DiffuseColor );
    
-   if (mMaterial->mInvertSmoothness[stageNum])
-      newFeatures.addFeature(MFT_InvertSmoothness);
+   if (mMaterial->mInvertRoughness[stageNum])
+      newFeatures.addFeature(MFT_InvertRoughness);
 
    // Deferred Shading : PBR Config
-   if( mStages[stageNum].getTex( MFT_PBRConfigMap ) )
+   if( mStages[stageNum].getTex( MFT_OrmMap ) )
    {
-       newFeatures.addFeature( MFT_PBRConfigMap );
+       newFeatures.addFeature( MFT_OrmMap );
    }
    else
-       newFeatures.addFeature( MFT_PBRConfigVars );
+       newFeatures.addFeature( MFT_ORMConfigVars );
 
    if (mStages[stageNum].getTex(MFT_GlowMap))
    {
@@ -881,9 +882,10 @@ bool DeferredMatInstance::init( const FeatureSet &features,
 {
    bool vaild = Parent::init(features, vertexFormat);
 
-   if (mMaterial && mMaterial->mDiffuseMapFilename[0].isNotEmpty() && mMaterial->mDiffuseMapFilename[0].substr(0, 1).equal("#"))
+   if (mMaterial && mMaterial->getDiffuseMap(0) != StringTable->EmptyString() && String(mMaterial->getDiffuseMap(0)).startsWith("#"))
    {
-      String texTargetBufferName = mMaterial->mDiffuseMapFilename[0].substr(1, mMaterial->mDiffuseMapFilename[0].length() - 1);
+      String difName = mMaterial->getDiffuseMap(0);
+      String texTargetBufferName = difName.substr(1, difName.length() - 1);
       NamedTexTarget *texTarget = NamedTexTarget::find(texTargetBufferName);
       RenderPassData* rpd = getPass(0);
 

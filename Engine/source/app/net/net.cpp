@@ -108,6 +108,9 @@
 
       // de-tag the command name
 
+      if (mArgc < 1 || mArgv[1][0] != StringTagPrefixByte)
+         return;
+
       for(S32 i = mArgc - 1; i >= 0; i--)
       {
          char *arg = mArgv[i+1];
@@ -220,7 +223,7 @@ DefineEngineStringlyVariadicFunction( commandToServer, void, 2, RemoteCommandEve
 
    "@tsexample\n"
       "// Create a standard function.  Needs to be executed on the client, such \n"
-      "// as within scripts/client/default.bind.cs\n"
+      "// as within scripts/client/default.bind." TORQUE_SCRIPT_EXTENSION "\n"
       "function toggleCamera(%val)\n"
       "{\n"
       "	// If key was down, call a server command named 'ToggleCamera'\n"
@@ -228,7 +231,7 @@ DefineEngineStringlyVariadicFunction( commandToServer, void, 2, RemoteCommandEve
       "		commandToServer('ToggleCamera');\n"
       "}\n\n"
       "// Server command being called from above.  Needs to be executed on the \n"
-      "// server, such as within scripts/server/commands.cs\n"
+      "// server, such as within scripts/server/commands." TORQUE_SCRIPT_EXTENSION "\n"
       "function serverCmdToggleCamera(%client)\n"
       "{\n"
       "   if (%client.getControlObject() == %client.player)\n"
@@ -251,7 +254,7 @@ DefineEngineStringlyVariadicFunction( commandToServer, void, 2, RemoteCommandEve
    NetConnection *conn = NetConnection::getConnectionToServer();
    if(!conn)
       return;
-   StringStackWrapper args(argc - 1, argv + 1);
+   ConsoleValueToStringArrayWrapper args(argc - 1, argv + 1);
    RemoteCommandEvent::sendRemoteCommand(conn, args.count(), args);
 }
 
@@ -264,7 +267,7 @@ DefineEngineStringlyVariadicFunction( commandToClient, void, 3, RemoteCommandEve
 
    "@tsexample\n"
       "// Set up the client command.  Needs to be executed on the client, such as\n"
-      "// within scripts/client/client.cs\n"
+      "// within scripts/client/client." TORQUE_SCRIPT_EXTENSION "\n"
       "// Update the Ammo Counter with current ammo, if not any then hide the counter.\n"
       "function clientCmdSetAmmoAmountHud(%amount)\n"
       "{\n"
@@ -277,7 +280,7 @@ DefineEngineStringlyVariadicFunction( commandToClient, void, 3, RemoteCommandEve
       "   }\n"
       "}\n\n"
       "// Call it from a server function.  Needs to be executed on the server, \n"
-      "//such as within scripts/server/game.cs\n"
+      "//such as within scripts/server/game." TORQUE_SCRIPT_EXTENSION "\n"
       "function GameConnection::setAmmoAmountHud(%client, %amount)\n"
       "{\n"
       "   commandToClient(%client, 'SetAmmoAmountHud', %amount);\n"
@@ -289,7 +292,7 @@ DefineEngineStringlyVariadicFunction( commandToClient, void, 3, RemoteCommandEve
    NetConnection *conn;
    if(!Sim::findObject(argv[1], conn))
       return;
-   StringStackWrapper args(argc - 2, argv + 2);
+   ConsoleValueToStringArrayWrapper args(argc - 2, argv + 2);
    RemoteCommandEvent::sendRemoteCommand(conn, args.count(), args);
 }
 

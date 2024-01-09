@@ -61,7 +61,7 @@ class SFXTrack : public SimDataBlock
       StringTableEntry mParameters[ MaxNumParameters ];
    
       /// Overload this to disable direct instantiation of this class via script 'new'.
-      virtual bool processArguments( S32 argc, ConsoleValueRef *argv );
+      virtual bool processArguments( S32 argc, ConsoleValue *argv );
 
    public:
          
@@ -73,6 +73,7 @@ class SFXTrack : public SimDataBlock
       
       /// Returns the description object for this sound profile.
       SFXDescription* getDescription() const { return mDescription; }
+      void setDescription(SFXDescription* desc) { mDescription = desc; }
 
       ///
       StringTableEntry getParameter( U32 index ) const

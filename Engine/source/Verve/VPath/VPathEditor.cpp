@@ -20,6 +20,9 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+#include "torqueConfig.h"
+
+#ifdef TORQUE_TOOLS
 #include "VPathEditor.h"
 
 #include "console/consoleTypes.h"
@@ -82,8 +85,9 @@ bool VPathEditor::onWake( void )
     return Parent::onWake();
 }
 
-void VPathEditor::initPersistFields( void )
+void VPathEditor::initPersistFields()
 {
+   docsURL;
     addField( "IsDirty",  TypeBool,           Offset( mIsDirty,  VPathEditor ) );
     addField( "EditMode", TYPEID<EditMode>(), Offset( mEditMode, VPathEditor ) );
 
@@ -2188,3 +2192,4 @@ F32 Utility::GetYaw( const VectorF &pVec )
 
     return yaw;
 }
+#endif

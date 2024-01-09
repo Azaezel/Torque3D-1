@@ -84,7 +84,7 @@ GuiConvexEditorCtrl::GuiConvexEditorCtrl()
    mCtrlDown( false ),
    mGridSnap(false)
 {   
-	mMaterialName = StringTable->insert("Grid512_OrangeLines_Mat");
+	mMaterialName = StringTable->insert("Prototyping:WallOrange");
 }
 
 GuiConvexEditorCtrl::~GuiConvexEditorCtrl()
@@ -113,9 +113,10 @@ void GuiConvexEditorCtrl::onRemove()
 }
 
 void GuiConvexEditorCtrl::initPersistFields()
-{   
+{
+   docsURL;
    addField( "isDirty", TypeBool, Offset( mIsDirty, GuiConvexEditorCtrl ) );
-	addField( "materialName", TypeString, Offset(mMaterialName, GuiConvexEditorCtrl) );
+	addField( "materialName", TypeMaterialAssetId, Offset(mMaterialName, GuiConvexEditorCtrl) );
 
    Parent::initPersistFields();
 }
@@ -132,7 +133,7 @@ bool GuiConvexEditorCtrl::onWake()
    SimGroup::iterator itr = scene->begin();
    for ( ; itr != scene->end(); itr++ )
    {
-      if ( dStrcmp( (*itr)->getClassName(), "ConvexShape" ) == 0 )
+      if ( String::compare( (*itr)->getClassName(), "ConvexShape" ) == 0 )
       {
          mConvexSEL = static_cast<ConvexShape*>( *itr );
          mGizmo->set( mConvexSEL->getTransform(), mConvexSEL->getPosition(), mConvexSEL->getScale() );
@@ -204,7 +205,7 @@ void GuiConvexEditorCtrl::setVisible( bool val )
 			mConvexHL = NULL;			
 			mFaceHL = -1;
 
-         setSelection( NULL, -1 );
+            setSelection( NULL, -1 );
 
 			WorldEditor *wedit;
 			if ( Sim::findObject( "EWorldEditor", wedit ) )
@@ -236,7 +237,7 @@ void GuiConvexEditorCtrl::setVisible( bool val )
                bool isPortal = (scene->at(c)->getClassName() == StringTable->insert("Portal"));
                bool isOccluder = (scene->at(c)->getClassName() == StringTable->insert("OcclusionVolume"));
 
-               if (isZone || isPortal || isOccluder)
+               if (isTrigger || isZone || isPortal || isOccluder)
                {
                   SceneObject* sceneObj = static_cast<SceneObject*>(scene->at(c));
                   if (!sceneObj)
@@ -247,15 +248,18 @@ void GuiConvexEditorCtrl::setVisible( bool val )
 
                   ConvexShape* proxyShape = createConvexShapeFrom(sceneObj);
 
+                  if (proxyShape == NULL)
+                     continue;
+
                   //Set the texture to a representatory one so we know what's what
                   if (isTrigger)
-                     proxyShape->mMaterialName = "TriggerProxyMaterial";
+                     proxyShape->_setMaterial(StringTable->insert("ToolsModule:TriggerProxyMaterial"));
                   else if (isPortal)
-                     proxyShape->mMaterialName = "PortalProxyMaterial";
+                     proxyShape->_setMaterial(StringTable->insert("ToolsModule:PortalProxyMaterial"));
                   else if (isZone)
-                     proxyShape->mMaterialName = "ZoneProxyMaterial";
+                     proxyShape->_setMaterial(StringTable->insert("ToolsModule:ZoneProxyMaterial"));
                   else if (isOccluder)
-                     proxyShape->mMaterialName = "OccluderProxyMaterial";
+                     proxyShape->_setMaterial(StringTable->insert("ToolsModule:OccluderProxyMaterial"));
 
                   proxyShape->_updateMaterial();
 
@@ -529,7 +533,7 @@ void GuiConvexEditorCtrl::on3DMouseDragged(const Gui3DMouseEvent & event)
          
          setupShape( newShape );
 
-         newShape->setField("material", mConvexSEL->getMaterialName());
+         newShape->_setMaterial(mConvexSEL->getMaterial());
 
          submitUndo( CreateShape, newShape );
 
@@ -644,17 +648,17 @@ void GuiConvexEditorCtrl::on3DMouseDragged(const Gui3DMouseEvent & event)
 	     F32 scalar = 1;
 		  mConvexSEL->mSurfaceUVs[mFaceSEL].scale += (Point2F(scale.x, scale.y) * scalar);
 
-        if (mConvexSEL->mSurfaceUVs[mFaceSEL].scale.x < 0.01)
-           mConvexSEL->mSurfaceUVs[mFaceSEL].scale.x = 0.01;
+        if (mConvexSEL->mSurfaceUVs[mFaceSEL].scale.x < 0.01f)
+           mConvexSEL->mSurfaceUVs[mFaceSEL].scale.x = 0.01f;
 
-        if (mConvexSEL->mSurfaceUVs[mFaceSEL].scale.y < 0.01)
-           mConvexSEL->mSurfaceUVs[mFaceSEL].scale.y = 0.01;
+        if (mConvexSEL->mSurfaceUVs[mFaceSEL].scale.y < 0.01f)
+           mConvexSEL->mSurfaceUVs[mFaceSEL].scale.y = 0.01f;
 
-        if (mConvexSEL->mSurfaceUVs[mFaceSEL].scale.x > 100)
-           mConvexSEL->mSurfaceUVs[mFaceSEL].scale.x = 100;
+        if (mConvexSEL->mSurfaceUVs[mFaceSEL].scale.x > 100.0f)
+           mConvexSEL->mSurfaceUVs[mFaceSEL].scale.x = 100.0f;
 
-        if (mConvexSEL->mSurfaceUVs[mFaceSEL].scale.y > 100)
-           mConvexSEL->mSurfaceUVs[mFaceSEL].scale.y = 100;
+        if (mConvexSEL->mSurfaceUVs[mFaceSEL].scale.y > 100.0f)
+           mConvexSEL->mSurfaceUVs[mFaceSEL].scale.y = 100.0f;
 
         Point2F test = mConvexSEL->mSurfaceUVs[mFaceSEL].scale;
 		  mConvexSEL->setMaskBits( ConvexShape::UpdateMask );
@@ -706,8 +710,6 @@ void GuiConvexEditorCtrl::on3DMouseDragged(const Gui3DMouseEvent & event)
                EulerF newSufRot = surfMat.toEuler();
 
                float zRot = mRadToDeg(newSufRot.z - curSufRot.z);
-
-               float curZRot = mConvexSEL->mSurfaceUVs[mFaceSEL].zRot;
 
                mConvexSEL->mSurfaceUVs[mFaceSEL].zRot += zRot;
             }
@@ -1074,7 +1076,7 @@ void GuiConvexEditorCtrl::renderScene(const RectI & updateRect)
          Point3F boxPos = objBox.getCenter();
          objMat.mulP( boxPos );
          
-         drawer->drawObjectBox( desc, objBox.getExtents(), boxPos, objMat, ColorI::WHITE );
+         drawer->drawObjectBox( desc, objBox.getExtents() / 2, boxPos, objMat, ColorI::WHITE );
       }
       else
       {
@@ -1459,8 +1461,8 @@ bool GuiConvexEditorCtrl::isShapeValid( ConvexShape *shape )
 
 void GuiConvexEditorCtrl::setupShape( ConvexShape *shape )
 {
-   shape->setField( "material", mMaterialName );
    shape->registerObject();
+   shape->_setMaterial(mMaterialName);
    updateShape( shape );
 
    Scene* scene = Scene::getRootScene();
@@ -1766,10 +1768,10 @@ void GuiConvexEditorCtrl::submitUndo( UndoType type, const Vector<ConvexShape*> 
 	mIsDirty = true;
 }
 
-bool GuiConvexEditorCtrl::_cursorCastCallback( RayInfo* ri )
+bool GuiConvexEditorCtrl::_cursorCastCallback( SceneObject* object )
 {
    // Reject anything that's not a ConvexShape.
-   return dynamic_cast< ConvexShape* >( ri->object );
+   return dynamic_cast< ConvexShape* >( object );
 }
 
 bool GuiConvexEditorCtrl::_cursorCast( const Gui3DMouseEvent &event, ConvexShape **hitShape, S32 *hitFace )
@@ -1910,11 +1912,11 @@ const char* GuiConvexEditorCtrl::getSelectedFaceMaterial()
 
    if (mConvexSEL->mSurfaceUVs[mFaceSEL].matID == 0)
    {
-      return mConvexSEL->mMaterialName;
+      return mConvexSEL->getMaterial();
    }
    else
    {
-      return mConvexSEL->mSurfaceTextures[mConvexSEL->mSurfaceUVs[mFaceSEL].matID - 1].materialName;
+      return mConvexSEL->mSurfaceTextures[mConvexSEL->mSurfaceUVs[mFaceSEL].matID - 1].getMaterial();
    }
 }
 
@@ -1974,11 +1976,11 @@ void GuiConvexEditorCtrl::setSelectedFaceMaterial(const char* materialName)
    bool found = false;
    U32 oldmatID = mConvexSEL->mSurfaceUVs[mFaceSEL].matID;
 
-   if (dStrcmp(materialName, mConvexSEL->getMaterialName().c_str()))
+   if (String::compare(materialName, mConvexSEL->getMaterialName().c_str()))
    {
       for (U32 i = 0; i < mConvexSEL->mSurfaceTextures.size(); i++)
       {
-         if (!dStrcmp(mConvexSEL->mSurfaceTextures[i].materialName, materialName))
+         if (!String::compare(mConvexSEL->mSurfaceTextures[i].getMaterial(), materialName))
          {
             //found a match
             mConvexSEL->mSurfaceUVs[mFaceSEL].matID = i + 1;
@@ -1990,7 +1992,7 @@ void GuiConvexEditorCtrl::setSelectedFaceMaterial(const char* materialName)
       {
          //add a new one
          ConvexShape::surfaceMaterial newMat;
-         newMat.materialName = materialName;
+         newMat._setMaterial(materialName);
 
          mConvexSEL->mSurfaceTextures.push_back(newMat);
 
@@ -2005,8 +2007,6 @@ void GuiConvexEditorCtrl::setSelectedFaceMaterial(const char* materialName)
    //run through and find out if there are any other faces still using the old mat texture
    if (oldmatID != 0)
    {
-      S32 curMatCount = mConvexSEL->mSurfaceTextures.size();
-
       bool used = false;
       for (U32 i = 0; i < mConvexSEL->mSurfaceUVs.size(); i++)
       {
@@ -2284,9 +2284,10 @@ ConvexEditorTool::EventResult ConvexEditorCreateTool::on3DMouseDown( const Gui3D
 
       mNewConvex->setTransform( objMat );   
 		
-		mNewConvex->setField( "material", Parent::mEditor->mMaterialName );
-		
       mNewConvex->registerObject();
+
+      mNewConvex->_setMaterial(Parent::mEditor->mMaterialName);
+
       mPlaneSizes.set( 0.1f, 0.1f, 0.1f );
       mNewConvex->resizePlanes( mPlaneSizes );
       mEditor->updateShape( mNewConvex );
@@ -2509,7 +2510,7 @@ ConvexShape* ConvexEditorCreateTool::extrudeShapeFromFace( ConvexShape *inShape,
    }
 
 	//newShape->setField( "material", Parent::mEditor->mMaterialName );
-   newShape->setField("material", inShape->getMaterialName());
+   newShape->_setMaterial(inShape->getMaterial());
 
    newShape->registerObject();
    mEditor->updateShape( newShape );
@@ -2703,7 +2704,7 @@ SceneObject* GuiConvexEditorCtrl::createPolyhedralObject(const char* className, 
    // Create the object.
 
    SceneObject* object = dynamic_cast< SceneObject* >(classRep->create());
-   if (!Object)
+   if (!object)
    {
       Con::errorf("WorldEditor::createPolyhedralObject - Could not create SceneObject with class '%s'", className);
       return NULL;
@@ -2958,7 +2959,7 @@ DefineEngineMethod(GuiConvexEditorCtrl, setSelectedFaceMaterial, void, (const ch
    "@return true if successful, false if failed (objB is not valid)")
 {
    //return Point2F(0, 0);
-   if (!dStrcmp(materialName, ""))
+   if (!String::compare(materialName, ""))
       return;
 
    object->setSelectedFaceMaterial(materialName);

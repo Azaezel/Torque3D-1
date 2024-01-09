@@ -1,0 +1,208 @@
+//--- OBJECT WRITE BEGIN ---
+$guiContent = new GuiControl(JoinServerMenu) {
+   extent = "1280 720";
+   horizSizing = "width";
+   vertSizing = "height";
+   profile = "GuiMenuBackgroundProfile";
+   tooltipProfile = "GuiToolTipProfile";
+   isContainer = "1";
+   canSaveDynamicFields = "1";
+
+   new GuiInputCtrl(JoinServerInputHandler) {
+      ignoreMouseEvents = "1";
+      ActionMap = "JoinServerActionMap";
+      position = "-50 0";
+      extent = "50 50";
+      horizSizing = "width";
+      vertSizing = "height";
+      profile = "GuiInputCtrlProfile";
+      tooltipProfile = "GuiToolTipProfile";
+   };
+   new GuiPanel(JoinServerTitlePanel) {
+      extent = "1281 60";
+      horizSizing = "width";
+      profile = "GuiMenuPanelProfile";
+      tooltipProfile = "GuiToolTipProfile";
+
+      new GuiTextCtrl() {
+         text = "JOIN SERVER";
+         position = "22 23";
+         extent = "1281 28";
+         profile = "MenuHeaderText";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+   };
+   new GuiContainer() {
+      position = "190 61";
+      extent = "900 30";
+      horizSizing = "center";
+      profile = "GuiDefaultProfile";
+      tooltipProfile = "GuiToolTipProfile";
+
+      new GuiTextCtrl() {
+         text = "Player Name";
+         position = "0 5";
+         extent = "98 23";
+         vertSizing = "center";
+         profile = "MenuMLSubHeaderText";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiTextEditCtrl(JoinServerPlayerNameTxt) {
+         text = "Visitor";
+         position = "606 7";
+         extent = "295 22";
+         horizSizing = "left";
+         vertSizing = "center";
+         profile = "MenuTextEditprofile";
+         variable = "$pref::Player::Name";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+   };
+   new GuiContainer() {
+      position = "190 87";
+      extent = "900 30";
+      horizSizing = "center";
+      profile = "GuiDefaultProfile";
+      tooltipProfile = "GuiToolTipProfile";
+
+      new GuiTextCtrl() {
+         text = "Password";
+         position = "0 5";
+         extent = "78 23";
+         vertSizing = "center";
+         profile = "MenuMLSubHeaderText";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiTextEditCtrl(JoinServerPasswordTxt) {
+         text = "Visitor";
+         position = "606 7";
+         extent = "295 22";
+         horizSizing = "left";
+         vertSizing = "center";
+         profile = "MenuTextEditprofile";
+         variable = "$Client::Password";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+   };
+   new GuiContainer() {
+      position = "190 121";
+      extent = "900 30";
+      horizSizing = "center";
+      profile = "GuiMenuPanelProfile";
+      tooltipProfile = "GuiToolTipProfile";
+
+      new GuiTextCtrl() {
+         text = "Server Details";
+         extent = "700 30";
+         vertSizing = "center";
+         profile = "MenuSubHeaderText";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiTextCtrl() {
+         text = "Ping";
+         position = "700 0";
+         extent = "70 30";
+         horizSizing = "left";
+         vertSizing = "center";
+         profile = "MenuSubHeaderCenteredText";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiTextCtrl() {
+         text = "Player Count";
+         position = "770 0";
+         extent = "130 30";
+         horizSizing = "left";
+         vertSizing = "center";
+         profile = "MenuSubHeaderCenteredText";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+   };
+   new GuiScrollCtrl() {
+      hScrollBar = "alwaysOff";
+      vScrollBar = "dynamic";
+      position = "190 151";
+      extent = "900 532";
+      minExtent = "8 8";
+      horizSizing = "center";
+      vertSizing = "height";
+      profile = "GuiMenuScrollProfile";
+      tooltipProfile = "GuiToolTipProfile";
+
+      new GuiStackControl(JoinServerList) {
+         padding = "10";
+         changeChildSizeToFit = "0";
+         position = "1 1";
+         extent = "888 16";
+         horizSizing = "center";
+         vertSizing = "center";
+         profile = "GuiMenuDefaultProfile";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+   };
+   new GuiPanel(JoinServerButtonPanel) {
+      position = "0 683";
+      extent = "1281 40";
+      horizSizing = "width";
+      vertSizing = "top";
+      profile = "GuiMenuPanelProfile";
+      tooltipProfile = "GuiToolTipProfile";
+
+      new GuiIconButtonCtrl(JoinServerJoinBtn) {
+         BitmapAsset = "UI:Keyboard_Black_Space_image";
+         sizeIconToButton = "1";
+         makeIconSquare = "1";
+         textLocation = "Center";
+         text = "Join";
+         position = "1115 0";
+         extent = "140 40";
+         horizSizing = "left";
+         vertSizing = "center";
+         profile = "GuiMenuButtonProfile";
+         active = "0";
+         command = "JoinServerMenu.join();";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiIconButtonCtrl(JoinServerQLanBtn) {
+         BitmapAsset = "UI:Keyboard_Black_E_image";
+         sizeIconToButton = "1";
+         makeIconSquare = "1";
+         textLocation = "Center";
+         text = "Query Lan";
+         position = "965 0";
+         extent = "140 40";
+         horizSizing = "left";
+         vertSizing = "center";
+         profile = "GuiMenuButtonProfile";
+         command = "JoinServerMenu.queryLan();";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiIconButtonCtrl(JoinServerQServerBtn) {
+         BitmapAsset = "UI:Keyboard_Black_Q_image";
+         sizeIconToButton = "1";
+         makeIconSquare = "1";
+         textLocation = "Center";
+         text = "Query Server";
+         position = "800 0";
+         extent = "160 40";
+         horizSizing = "left";
+         vertSizing = "center";
+         profile = "GuiMenuButtonProfile";
+         command = "JoinServerMenu.query();";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+      new GuiIconButtonCtrl(JoinServerBackBtn) {
+         BitmapAsset = "UI:Keyboard_Black_Escape_image";
+         sizeIconToButton = "1";
+         makeIconSquare = "1";
+         textLocation = "Center";
+         text = "Back";
+         position = "16 0";
+         extent = "140 40";
+         vertSizing = "center";
+         profile = "GuiMenuButtonProfile";
+         command = "Canvas.popDialog();";
+         tooltipProfile = "GuiToolTipProfile";
+      };
+   };
+};
+//--- OBJECT WRITE END ---

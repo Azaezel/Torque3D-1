@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(AssetBrowser_newComponentAsset) {
+$guiContent = new GuiControl(AssetBrowser_newComponentAsset) {
    position = "0 0";
    extent = "1024 768";
    minExtent = "8 2";
@@ -98,7 +98,7 @@
          canSaveDynamicFields = "0";
       };
       new GuiBitmapButtonCtrl() {
-         bitmap = "tools/gui/images/iconAdd.png";
+         bitmapAsset = "ToolsModule:iconAdd_image";
          bitmapMode = "Centered";
          autoFitExtents = "0";
          useModifiers = "0";

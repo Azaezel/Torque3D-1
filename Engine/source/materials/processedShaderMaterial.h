@@ -46,8 +46,8 @@ public:
    GFXShaderConstHandle* mDiffuseColorSC;
    GFXShaderConstHandle* mToneMapTexSC;
    GFXShaderConstHandle* mTexMatSC;
-   GFXShaderConstHandle* mPBRConfigSC;
-   GFXShaderConstHandle* mSmoothnessSC;
+   GFXShaderConstHandle* mORMConfigSC;
+   GFXShaderConstHandle* mRoughnessSC;
    GFXShaderConstHandle* mMetalnessSC;
    GFXShaderConstHandle* mGlowMulSC;
    GFXShaderConstHandle* mParallaxInfoSC;
@@ -81,6 +81,7 @@ public:
    GFXShaderConstHandle* mEyeMatSC;
    GFXShaderConstHandle* mOneOverFarplane;
    GFXShaderConstHandle* mAccumTimeSC;
+   GFXShaderConstHandle* mDampnessSC;
    GFXShaderConstHandle* mMinnaertConstantSC;
    GFXShaderConstHandle* mSubSurfaceParamsSC;
    GFXShaderConstHandle* mDiffuseAtlasParamsSC;
@@ -99,7 +100,7 @@ public:
    GFXShaderConstHandle* mMatInfoFlagsSC;
 
    GFXShaderConstHandle* mTexHandlesSC[Material::MAX_TEX_PER_PASS];
-   GFXShaderConstHandle* mRTParamsSC[TEXTURE_STAGE_COUNT];
+   GFXShaderConstHandle* mRTParamsSC[GFX_TEXTURE_STAGE_COUNT];
 
    GFXShaderConstHandle* mNodeTransforms;
 

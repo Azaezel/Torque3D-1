@@ -157,7 +157,7 @@ new GuiControl(MaterialSelectorOverlay, EditorGuiGroup) {
          Command = "MaterialSelector.showDeleteDialog();";
          hovertime = "1000";
          tooltip = "Delete Material";
-         bitmap = "tools/gui/images/delete";
+         bitmapAsset = "ToolsModule:delete_n_image";
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
@@ -468,7 +468,7 @@ new GuiControl(MaterialSelectorOverlay, EditorGuiGroup) {
             profile = "ToolsGuiDefaultProfile";
             position = "1 18";
             extent = "148 148";
-            bitmap = "";
+            bitmapAsset = "";
          };
       };
       new GuiTextCtrl(){
@@ -486,7 +486,7 @@ new GuiControl(MaterialSelectorOverlay, EditorGuiGroup) {
          profile = "ToolsGuiDefaultProfile";
          position = "612 39";
          extent = "150 150";
-         bitmap = "tools/worldEditor/images/terrainpainter/terrain-painter-border-large";
+         bitmapAsset = "ToolsModule:terrain_painter_border_large_image";
          visible = false;
       };
       new GuiTextCtrl(){
@@ -778,6 +778,8 @@ function MaterialSelector::buildStaticFilters( %this )
    // if you want to add any more containers to staticFilterObjects, here's
    // where to do it
    
+   %filterArray = MaterialSelector-->filterArray;
+
    %staticFilterContainer = new GuiControl (){
       new GuiContainer(){
          profile = "ToolsGuiDefaultProfile";
@@ -894,7 +896,7 @@ function MaterialSelector::buildStaticFilters( %this )
             Command = "MaterialSelector_addFilterWindow.setVisible(1); MaterialSelectorOverlay.pushToBack(MaterialSelector_addFilterWindow);";
             hovertime = "1000";
             tooltip = "Create New Tag";
-            bitmap = "tools/gui/images/new";
+            bitmapAsset = "ToolsModule:new_n_image";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
@@ -914,7 +916,7 @@ function MaterialSelector::buildStaticFilters( %this )
             Command = "MaterialSelector.clearMaterialFilters();";
             hovertime = "1000";
             tooltip = "Clear Selected Tag";
-            bitmap = "tools/gui/images/clear-btn";
+            bitmapAsset = "ToolsModule:clear_btn_n_image";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
@@ -1226,7 +1228,7 @@ function MaterialSelector::buildPreviewArray( %this, %material )
       position = "7 4";
       extent = "64 64";
       buttonType = "PushButton";
-      bitmap = "";
+      bitmapAsset = "";
       Command = "";
       text = "Loading...";
       useStates = false;
@@ -1239,7 +1241,7 @@ function MaterialSelector::buildPreviewArray( %this, %material )
             extent = "64 64";
             Variable = "";
             buttonType = "toggleButton";
-            bitmap = "tools/materialEditor/gui/cubemapBtnBorder";
+            bitmapAsset = "ToolsModule:cubemapBtnBorder_n_image";
             groupNum = "0";
             text = "";
          }; 
@@ -1366,7 +1368,7 @@ function MaterialSelector::loadMaterialFilters( %this )
 // create category and update current material if there is one
 function MaterialSelector::createFilter( %this, %filter )
 {
-   if( %filter $= %existingFilters )
+   if( %filter $= "" )
    {
       toolsMessageBoxOK( "Error", "Can not create blank filter.");
       return;
@@ -1418,15 +1420,13 @@ function MaterialSelector::updateSelection( %this, %material, %previewImagePath 
    // after we move away from the material. eg: if we remove a field from the material,
    // the empty checkbox will still be there until you move fro and to the material again
    
-   %isMaterialBorder = 0;
-   eval("%isMaterialBorder = isObject(MaterialSelector-->"@%material@"Border);");
+   %isMaterialBorder = eval("return isObject(MaterialSelector-->"@%material@"Border);");
    if( %isMaterialBorder )
    {
       eval( "MaterialSelector-->"@%material@"Border.setStateOn(1);");
    }
       
-   %isMaterialBorderPrevious = 0;
-   eval("%isMaterialBorderPrevious = isObject(MaterialSelector-->"@$prevSelectedMaterialHL@"Border);");
+   %isMaterialBorderPrevious = eval("return isObject(MaterialSelector-->"@$prevSelectedMaterialHL@"Border);");
    if( %isMaterialBorderPrevious )
    {
       eval( "MaterialSelector-->"@$prevSelectedMaterialHL@"Border.setStateOn(0);");
@@ -1573,7 +1573,7 @@ function MaterialSelector::updateMaterialTags( %this, %material, %tag, %tagValue
    // their auto-generated or new material
    if( %material.getFilename() !$= "" && 
          %material.getFilename() !$= "tools/gui/MaterialSelector.ed.gui" &&
-         %material.getFilename() !$= "tools/materialEditor/scripts/materialEditor.ed.cs"  )
+         %material.getFilename() !$= "tools/materialEditor/scripts/materialEditor.ed." @ $TorqueScriptFileExtension  )
    {
       MaterialSelectorPerMan.setDirty( %material );
       MaterialSelectorPerMan.saveDirty();
@@ -1662,7 +1662,7 @@ function MaterialSelector::createNewMaterial( %this )
             extent = "64 64";
             Variable = "";
             buttonType = "toggleButton";
-            bitmap = "tools/materialEditor/gui/cubemapBtnBorder";
+            bitmapAsset = "ToolsModule:cubemapBtnBorder_n_image";
             groupNum = "0";
             text = "";
          }; 
@@ -1761,7 +1761,7 @@ function MaterialSelector::deleteMaterial( %this, %materialName, %secondFilter, 
    
    if( %materialName.getFilename() !$= "" && 
          %materialName.getFilename() !$= "tools/gui/MaterialSelector.ed.gui" &&
-         %materialName.getFilename() !$= "tools/materialEditor/scripts/materialEditor.ed.cs" )
+         %materialName.getFilename() !$= "tools/materialEditor/scripts/materialEditor.ed." @ $TorqueScriptFileExtension )
    {
       MaterialSelectorPerMan.removeObjectFromFile(%materialName);
       MaterialSelectorPerMan.saveDirty();

@@ -85,22 +85,23 @@ SFXAmbience::ChangeSignal SFXAmbience::smChangeSignal;
 SFXAmbience::SFXAmbience()
    : mDopplerFactor( 0.5f ),
      mRolloffFactor( 1.f ),
-     mSoundTrack( NULL ),
      mEnvironment( NULL )
 {
    dMemset( mState, 0, sizeof( mState ) );
+   INIT_ASSET(SoundTrack);
 }
 
 //-----------------------------------------------------------------------------
 
 void SFXAmbience::initPersistFields()
 {
+   docsURL;
    addGroup( "Sound" );
    
       addField( "environment",            TypeSFXEnvironmentName, Offset( mEnvironment, SFXAmbience ),
          "Reverb environment active in the ambience zone.\n"
          "@ref SFX_reverb" );
-      addField( "soundTrack",             TypeSFXTrackName,       Offset( mSoundTrack, SFXAmbience ),
+      INITPERSISTFIELD_SOUNDASSET(SoundTrack, SFXAmbience,
          "Sound track to play in the ambience zone." );
       addField( "rolloffFactor",          TypeF32, Offset( mRolloffFactor, SFXAmbience ),
          "The rolloff factor to apply to distance-based volume attenuation in this space.\n"
@@ -131,7 +132,8 @@ bool SFXAmbience::onAdd()
       return false;
       
    Sim::getSFXAmbienceSet()->addObject( this );
-      
+
+   _setSoundTrack(getSoundTrack());
    return true;
 }
 
@@ -150,9 +152,11 @@ bool SFXAmbience::preload( bool server, String& errorStr )
    {
       if( !sfxResolve( &mEnvironment, errorStr ) )
          return false;
-         
-      if( !sfxResolve( &mSoundTrack, errorStr ) )
-         return false;
+
+      if (!isSoundTrackValid())
+      {
+         //return false; -TODO: trigger asset download
+      }
          
       for( U32 i = 0; i < MaxStates; ++ i )
          if( !sfxResolve( &mState[ i ], errorStr ) )
@@ -169,7 +173,7 @@ void SFXAmbience::packData( BitStream* stream )
    Parent::packData( stream );
       
    sfxWrite( stream, mEnvironment );
-   sfxWrite( stream, mSoundTrack );
+   PACKDATA_ASSET(SoundTrack);
    
    stream->write( mRolloffFactor );
    stream->write( mDopplerFactor );
@@ -185,7 +189,7 @@ void SFXAmbience::unpackData( BitStream* stream )
    Parent::unpackData( stream );
       
    sfxRead( stream, &mEnvironment );
-   sfxRead( stream, &mSoundTrack );
+   UNPACKDATA_ASSET(SoundTrack);
    
    stream->read( &mRolloffFactor );
    stream->read( &mDopplerFactor );

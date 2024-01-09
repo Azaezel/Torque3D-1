@@ -60,8 +60,9 @@ VController::~VController( void )
     // Void.
 }
 
-void VController::initPersistFields( void )
+void VController::initPersistFields()
 {
+   docsURL;
     addGroup( "Controller" );
         addProtectedField( "Time",      TypeS32,  Offset( mTime,              VController ), &setTime,      &defaultProtectedGetFn, "Current position of the Controller (in milliseconds)." );
         addProtectedField( "Duration",  TypeS32,  Offset( mDuration,          VController ), &setDuration,  &defaultProtectedGetFn, "Total length of the sequence (in milliseconds)." );
@@ -606,10 +607,10 @@ void VController::sort( void )
 // Write the DataTable out to a TinyXML document.
 // 
 //-----------------------------------------------------------------------------
-bool VController::writeDataTable( TiXmlElement *pElement )
+bool VController::writeDataTable( tinyxml2::XMLElement *pElement )
 {
     // Create Data Table Root.
-    TiXmlElement *dataTableRoot = new TiXmlElement( "DataTable" );
+    tinyxml2::XMLElement *dataTableRoot = pElement->GetDocument()->NewElement( "DataTable" );
     pElement->LinkEndChild( dataTableRoot );
 
     for ( VDataTable::VDataMap::Iterator itr = mDataTable.mDataMap.begin(); itr != mDataTable.mDataMap.end(); ++itr )
@@ -618,11 +619,11 @@ bool VController::writeDataTable( TiXmlElement *pElement )
         VDataTable::sDataItem *data = &itr->value;
 
         // Create Element.
-        TiXmlElement *dataElement = new TiXmlElement( "DataItem" );  
+        tinyxml2::XMLElement* dataElement = pElement->GetDocument()->NewElement( "DataItem" );
 
         // Apply Attributes.
         dataElement->SetAttribute( "Type",  VDataTable::getDataTypeDescription( data->Type ) );
-        dataElement->SetAttribute( "Name",  data->FieldName );
+        dataElement->SetAttribute( "Name",  data->FieldName.c_str() );
         dataElement->SetAttribute( "Value", getDataField( StringTable->insert( data->FieldName.c_str() ), NULL ) );
 
         // Add.
@@ -645,12 +646,12 @@ bool VController::writeDataTable( TiXmlElement *pElement )
 // Read the DataTable from a TinyXML document.
 // 
 //-----------------------------------------------------------------------------
-bool VController::readDataTable( TiXmlElement *pElement )
+bool VController::readDataTable( tinyxml2::XMLElement *pElement )
 {
-    TiXmlElement *dataTableRoot = pElement->FirstChildElement( "DataTable" );
+    tinyxml2::XMLElement *dataTableRoot = pElement->FirstChildElement( "DataTable" );
     if ( dataTableRoot )
     {
-        for ( TiXmlElement *child = dataTableRoot->FirstChildElement(); child != NULL; child = child->NextSiblingElement() )
+        for ( tinyxml2::XMLElement *child = dataTableRoot->FirstChildElement(); child != NULL; child = child->NextSiblingElement() )
         {
             // Get Field Data.
             const char *fieldType  = child->Attribute( "Type" );
@@ -1041,7 +1042,7 @@ DefineEngineMethod( VController, sortGroups, void, (),, "( void ) - Sort Groups 
             }
 
             // Swap?
-            if ( dStrcmp( groupA->getLabel(), groupB->getLabel() ) > 0 )
+            if ( groupA->getLabel().compare(groupB->getLabel()) > 0 )
             {
                 // Get Outer Siblings.
                 ITreeNode *prevNode = groupA->mSiblingPrevNode;
@@ -1100,7 +1101,7 @@ DefineEngineMethod( VController, sortTracks, void, (),, "( void ) - Sort Tracks 
                 }
 
                 // Swap?
-                if ( dStrcmp( trackA->getLabel(), trackB->getLabel() ) > 0 )
+                if ( trackA->getLabel().compare(trackB->getLabel()) > 0 )
                 {
                     // Get Outer Siblings.
                     ITreeNode *prevNode = trackA->mSiblingPrevNode;

@@ -100,7 +100,7 @@ ProjectedShadow::ProjectedShadow( SceneObject *object )
    Sim::findObject( "BL_ProjectedShadowMaterial", customMat );
    if ( customMat )
    {
-      mDecalData->material = customMat;
+      mDecalData->mMaterial = customMat;
       mDecalData->matInst = customMat->createMatInstance();
    }
    else
@@ -395,7 +395,7 @@ void ProjectedShadow::_calcScore( const SceneRenderState *state )
    F32 secs = mFloor( (F32)msSinceLastRender / 1000.0f );
    
    mScore = pct + secs;
-   mClampF( mScore, 0.0f, 2000.0f );
+   mScore = mClampF( mScore, 0.0f, 2000.0f );
 }
 
 void ProjectedShadow::update( const SceneRenderState *state )

@@ -41,6 +41,7 @@
 #ifndef _TSIGNAL_H_
 #include "core/util/tSignal.h"
 #endif
+#include "gfxTextureHandle.h"
 
 
 namespace Torque
@@ -74,10 +75,8 @@ public:
    /// Provide the path to the texture used to warn the developer
    static const String& getWarningTexturePath() { return smWarningTexturePath; }
 
-   static const String& getDefaultIrradianceCubemapPath() { return smDefaultIrradianceCubemapPath; }
-   static const String& getDefaultPrefilterCubemapPath() { return smDefaultPrefilterCubemapPath; }
-
    static const String& getBRDFTexturePath() { return smBRDFTexturePath; }
+   static const String& getWetnessTexturePath() { return smWetnessTexturePath; }
 
    /// Update width and height based on available resources.
    ///
@@ -131,6 +130,7 @@ public:
       S32 antialiasLevel);
 
    Torque::Path validatePath(const Torque::Path &path);
+   GBitmap *loadUncompressedTexture(const Torque::Path& path, GFXTextureProfile* profile, U32 width, U32 height, bool genMips = false);
    GBitmap *loadUncompressedTexture(const Torque::Path &path, GFXTextureProfile *profile);
    virtual GFXTextureObject *createCompositeTexture(const Torque::Path &pathR, const Torque::Path &pathG, const Torque::Path &pathB, const Torque::Path &pathA, U32 inputKey[4],
       GFXTextureProfile *profile);
@@ -215,10 +215,9 @@ protected:
    /// File path to the warning texture
    static String smWarningTexturePath;
 
-   static String smDefaultIrradianceCubemapPath;
-   static String smDefaultPrefilterCubemapPath;
    static String smBRDFTexturePath;
-
+   static String smWetnessTexturePath;
+   
    GFXTextureObject *mListHead;
    GFXTextureObject *mListTail;
 

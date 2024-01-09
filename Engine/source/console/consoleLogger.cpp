@@ -70,6 +70,7 @@ EndImplementEnumType;
 
 void ConsoleLogger::initPersistFields()
 {
+   docsURL;
    addGroup( "Logging" );
    addField( "level",   TYPEID< ConsoleLogEntry::Level >(),     Offset( mLevel,    ConsoleLogger ), "Determines the priority level and attention the logged entry gets when recorded\n\n" );
    endGroup( "Logging" );
@@ -79,18 +80,18 @@ void ConsoleLogger::initPersistFields()
 
 //-----------------------------------------------------------------------------
 
-bool ConsoleLogger::processArguments( S32 argc, ConsoleValueRef *argv )
+bool ConsoleLogger::processArguments( S32 argc, ConsoleValue *argv )
 {
    if( argc == 0 )
       return false;
 
    bool append = false;
 
-   if( argc == 2 )
-      append = dAtob( argv[1] );
+   if (argc == 2)
+      append = argv[1].getBool();
 
    mAppend = append;
-   mFilename = StringTable->insert( argv[0] );
+   mFilename = StringTable->insert( argv[0].getString() );
 
    if( init() )
    {

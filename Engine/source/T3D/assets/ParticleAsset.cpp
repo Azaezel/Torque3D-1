@@ -106,6 +106,7 @@ ParticleAsset::~ParticleAsset()
 
 void ParticleAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -122,6 +123,7 @@ void ParticleAsset::copyTo(SimObject* object)
 }
 
 
+#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // GuiInspectorTypeAssetId
 //-----------------------------------------------------------------------------
@@ -151,7 +153,7 @@ GuiControl* GuiInspectorTypeParticleAssetPtr::constructEditControl()
    // Change filespec
    char szBuffer[512];
    dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"ParticleAsset\", \"AssetBrowser.changeAsset\", %d, %s);",
-      mInspector->getComponentGroupTargetId(), mCaption);
+      mInspector->getIdString(), mCaption);
    mBrowseButton->setField("Command", szBuffer);
 
    // Create "Open in ShapeEditor" button
@@ -160,8 +162,8 @@ GuiControl* GuiInspectorTypeParticleAssetPtr::constructEditControl()
    dSprintf(szBuffer, sizeof(szBuffer), "echo(\"Game Object Editor not implemented yet!\");", retCtrl->getId());
    mSMEdButton->setField("Command", szBuffer);
 
-   char bitmapName[512] = "tools/worldEditor/images/toolbar/shape-editor";
-   mSMEdButton->setBitmap(bitmapName);
+   char bitmapName[512] = "ToolsModule:shape_editor_n_image";
+   mSMEdButton->setBitmap(StringTable->insert(bitmapName));
 
    mSMEdButton->setDataField(StringTable->insert("Profile"), NULL, "GuiButtonProfile");
    mSMEdButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
@@ -199,3 +201,4 @@ bool GuiInspectorTypeParticleAssetPtr::updateRects()
 
    return resized;
 }
+#endif

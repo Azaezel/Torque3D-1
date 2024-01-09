@@ -51,6 +51,8 @@
 #include "math/util/tResponseCurve.h"
 #endif
 
+#include "T3D/assets/MaterialAsset.h"
+
 class LightInfo;
 class SphereMesh;
 class TimeOfDay;
@@ -83,6 +85,7 @@ public:
 
    // ConsoleObject
    DECLARE_CONOBJECT(ScatterSky);
+   DECLARE_CATEGORY("Environment \t Background");
    void inspectPostApply();
    static void initPersistFields();
 
@@ -101,6 +104,27 @@ public:
    F32 getAzimuth() const { return mSunAzimuth; }
    ///
    F32 getElevation() const { return mSunElevation; }
+
+   struct SphereVertex
+   {
+      Point3F pos;
+   };
+
+   Vector<SphereVertex> tmpVertices;
+   Vector<F32> vertsVec;
+
+   struct FinalVertexData
+   {
+      Point3F pos;
+   };
+
+   Vector<FinalVertexData> finalVertData;
+
+   void addVertex(Point3F vert);
+
+   void BuildFinalVert();
+
+   void clearVectors();
 
 protected:
 
@@ -208,13 +232,16 @@ protected:
    F32 mFlareScale;
 
    bool mMoonEnabled;
-   String mMoonMatName;
+
+   DECLARE_MATERIALASSET(ScatterSky, MoonMat);
+   DECLARE_ASSET_NET_SETGET(ScatterSky, MoonMat, UpdateMask);
+
    BaseMatInstance *mMoonMatInst;
    F32 mMoonScale;
    LinearColorF mMoonTint;
    VectorF mMoonLightDir;
    CubemapData *mNightCubemap;
-   String mNightCubemapName;
+   StringTableEntry mNightCubemapName;
    bool mUseNightCubemap;
    MatrixSet *mMatrixSet;
 

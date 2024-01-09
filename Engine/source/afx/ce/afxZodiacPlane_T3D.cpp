@@ -128,8 +128,6 @@ void afxZodiacPlane::_renderZodiacPlane(ObjectRenderInst *ri, SceneRenderState* 
     desc.zFunc = GFXCmpLessEqual;
     desc.zWriteEnable = false;
     desc.samplersDefined = true;
-    desc.samplers[0].textureColorOp = GFXTOPModulate;
-    desc.samplers[1].textureColorOp = GFXTOPDisable;
 
     normal_sb = GFX->createStateBlock(desc);
     if (mDataBlock->double_sided)
@@ -209,7 +207,7 @@ void afxZodiacPlane::_renderZodiacPlane(ObjectRenderInst *ri, SceneRenderState* 
   GFXTransformSaver saver;
   GFX->multWorld(getRenderTransform());
 
-  GFX->setTexture(0, mDataBlock->txr);
+  GFX->setTexture(0, mDataBlock->mTexture);
 
   PrimBuild::begin(GFXTriangleStrip, 4);
   {

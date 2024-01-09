@@ -28,6 +28,10 @@
 
 #include "afx/ce/afxZodiacDefs.h"
 
+#ifndef _AFX_ZODIAC_H_
+#include "afx/ce/afxZodiac.h"
+#endif
+
 class afxZodiacPlaneData : public GameBaseData, public afxZodiacDefs
 {
   typedef GameBaseData  Parent;
@@ -52,9 +56,12 @@ public:
     FACES_BITS = 3
   };
 
+  void onImageChanged() {}
+
 public:
-  StringTableEntry  txr_name;
-  GFXTexHandle      txr;
+   DECLARE_IMAGEASSET(afxZodiacPlaneData, Texture, onImageChanged, AFX_GFXZodiacTextureProfile);
+   DECLARE_ASSET_SETGET(afxZodiacPlaneData, Texture);
+
   F32               radius_xy;
   F32               start_ang;
   F32               ang_per_sec;
@@ -89,7 +96,6 @@ public:
   static void   initPersistFields();
 
   DECLARE_CONOBJECT(afxZodiacPlaneData);
-  DECLARE_CATEGORY("AFX");
 };
 
 typedef afxZodiacPlaneData::BlendType afxZodiacPlane_BlendType;
@@ -135,7 +141,7 @@ public:
   void                  _renderZodiacPlane(ObjectRenderInst*, SceneRenderState*, BaseMatInstance*);
 
   DECLARE_CONOBJECT(afxZodiacPlane);
-  DECLARE_CATEGORY("AFX");
+  DECLARE_CATEGORY("UNLISTED");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//

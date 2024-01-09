@@ -54,6 +54,7 @@
 #include "materials/materialFeatureTypes.h"
 #include "console/engineAPI.h"
 #include "T3D/accumulationVolume.h"
+#include "math/mTransform.h"
 
 #include "gui/editor/inspector/group.h"
 #include "console/typeValidators.h"
@@ -114,7 +115,6 @@ TSStatic::TSStatic()
 
    mTypeMask |= StaticObjectType | StaticShapeObjectType;
 
-   mShapeName = "";
    mShapeInstance = NULL;
 
    mPlayAmbient = true;
@@ -150,8 +150,7 @@ TSStatic::TSStatic()
    mAnimOffset = 0.0f;
    mAnimSpeed = 1.0f;
 
-   mShapeAsset = StringTable->EmptyString();
-   mShapeAssetId = StringTable->EmptyString();
+   INIT_ASSET(Shape);
 }
 
 TSStatic::~TSStatic()
@@ -177,20 +176,14 @@ FRangeValidator speedValidator(0.0f, AnimSpeedMax);
 
 void TSStatic::initPersistFields()
 {
-   addFieldV("AnimOffset", TypeF32, Offset(mAnimOffset, TSStatic), &percentValidator,
-      "Percent Animation Offset.");
-
-   addFieldV("AnimSpeed", TypeF32, Offset(mAnimSpeed, TSStatic), &speedValidator,
-      "Percent Animation Speed.");
+   docsURL;
    addGroup("Shape");
 
-   addProtectedField("shapeAsset", TypeShapeAssetId, Offset(mShapeAssetId, TSStatic),
-      &TSStatic::_setShapeAsset, &defaultProtectedGetFn,
-      "The source shape asset.");
+   INITPERSISTFIELD_SHAPEASSET(Shape, TSStatic, "Model to use for this TSStatic");
 
    addProtectedField("shapeName", TypeShapeFilename, Offset(mShapeName, TSStatic),
-      &TSStatic::_setShapeName, &defaultProtectedGetFn,
-      "%Path and filename of the model file (.DTS, .DAE) to use for this TSStatic. Legacy field. Any loose files assigned here will attempt to be auto-imported in as an asset.");
+      &TSStatic::_setShapeData, &defaultProtectedGetFn,
+      "%Path and filename of the model file (.DTS, .DAE) to use for this TSStatic. Legacy field. Any loose files assigned here will attempt to be auto-imported in as an asset.", AbstractClassRep::FIELD_HideInInspectors);
 
    endGroup("Shape");
 
@@ -222,16 +215,21 @@ void TSStatic::initPersistFields()
       "name as the new target.\n\n");
    endGroup("Materials");
 
-   addGroup("Rendering");
-
+   addGroup("Animation");
    addField("playAmbient", TypeBool, Offset(mPlayAmbient, TSStatic),
       "Enables automatic playing of the animation sequence named \"ambient\" (if it exists) when the TSStatic is loaded.");
+   addFieldV("AnimOffset", TypeF32, Offset(mAnimOffset, TSStatic), &percentValidator,
+      "Percent Animation Offset.");
+   addFieldV("AnimSpeed", TypeF32, Offset(mAnimSpeed, TSStatic), &speedValidator,
+      "Percent Animation Speed.");
+   endGroup("Animation");
+
+   addGroup("Rendering");
    addField("meshCulling", TypeBool, Offset(mMeshCulling, TSStatic),
       "Enables detailed culling of meshes within the TSStatic. Should only be used "
       "with large complex shapes like buildings which contain many submeshes.");
    addField("originSort", TypeBool, Offset(mUseOriginSort, TSStatic),
       "Enables translucent sorting of the TSStatic by its origin instead of the bounds.");
-
    endGroup("Rendering");
 
    addGroup("Reflection");
@@ -285,50 +283,6 @@ void TSStatic::consoleInit()
    Con::addVariable("$pref::staticObjectFadeStart", TypeF32, &TSStatic::smStaticObjectFadeStart, "Distance at which static object fading begins if $pref::useStaticObjectFade is on.\n");
    Con::addVariable("$pref::staticObjectFadeEnd", TypeF32, &TSStatic::smStaticObjectFadeEnd, "Distance at which static object fading should have fully faded if $pref::useStaticObjectFade is on.\n");
    Con::addVariable("$pref::staticObjectUnfadeableSize", TypeF32, &TSStatic::smStaticObjectUnfadeableSize, "Size of object where if the bounds is at or bigger than this, it will be ignored in the $pref::useStaticObjectFade logic. Useful for very large, distance-important objects.\n");
-}
-
-bool TSStatic::_setShapeAsset(void* obj, const char* index, const char* data)
-{
-   TSStatic* ts = static_cast<TSStatic*>(obj);// ->setFile(FileName(data));
-
-   ts->mShapeAssetId = StringTable->insert(data);
-
-   return ts->setShapeAsset(ts->mShapeAssetId);
-}
-
-bool TSStatic::_setShapeName(void* obj, const char* index, const char* data)
-{
-   TSStatic* ts = static_cast<TSStatic*>(obj);// ->setFile(FileName(data));
-
-   StringTableEntry assetId = ShapeAsset::getAssetIdByFilename(StringTable->insert(data));
-   if (assetId != StringTable->EmptyString())
-   {
-      //Special exception case. If we've defaulted to the 'no shape' mesh, don't save it out, we'll retain the original ids/paths so it doesn't break
-      //the TSStatic
-      if (ts->setShapeAsset(assetId))
-      {
-         if (assetId == StringTable->insert("Core_Rendering:noShape"))
-         {
-            ts->mShapeName = data;
-            ts->mShapeAssetId = StringTable->EmptyString();
-
-            return true;
-         }
-         else
-         {
-            ts->mShapeAssetId = assetId;
-            ts->mShapeName = StringTable->EmptyString();
-
-            return false;
-         }
-      }
-    }
-   else
-   {
-      ts->mShapeAsset = StringTable->EmptyString();
-   }
-
-   return true;
 }
 
 bool TSStatic::_setFieldSkin(void* object, const char* index, const char* data)
@@ -425,34 +379,6 @@ bool TSStatic::onAdd()
    return true;
 }
 
-bool TSStatic::setShapeAsset(const StringTableEntry shapeAssetId)
-{
-   if (!mShapeAsset.isNull())
-   {
-      mShapeAsset->getChangedSignal().remove(this, &TSStatic::_onAssetChanged);
-   }
-
-   if (ShapeAsset::getAssetById(shapeAssetId, &mShapeAsset))
-   {
-      //Special exception case. If we've defaulted to the 'no shape' mesh, don't save it out, we'll retain the original ids/paths so it doesn't break
-      //the TSStatic
-      if (mShapeAsset.getAssetId() != StringTable->insert("Core_Rendering:noshape"))
-      {
-         mShapeName = StringTable->EmptyString();
-
-         mShapeAsset->getChangedSignal().notify(this, &TSStatic::_onAssetChanged);
-      }
-
-      _createShape();
-
-      setMaskBits(-1);
-
-      return true;
-   }
-
-   return false;
-}
-
 bool TSStatic::_createShape()
 {
    // Cleanup before we create.
@@ -465,7 +391,8 @@ bool TSStatic::_createShape()
    mAmbientThread = NULL;
    mShape = NULL;
 
-   if(!mShapeAsset.isNull())
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus == AssetBase::Ok || assetStatus == AssetBase::UsingFallback)
    {
       //Special-case handling, usually because we set noShape
       mShape = mShapeAsset->getShapeResource();
@@ -486,14 +413,16 @@ bool TSStatic::_createShape()
    resetWorldBox();
 
    mShapeInstance = new TSShapeInstance(mShape, isClientObject());
-   if (isClientObject())
-      mShapeInstance->cloneMaterialList();
+   mShapeInstance->resetMaterialList();
+   mShapeInstance->cloneMaterialList();
 
    if (isGhost())
    {
       // Reapply the current skin
       mAppliedSkinName = "";
       reSkin();
+
+      updateMaterials();
    }
 
    prepCollision();
@@ -674,9 +603,6 @@ void TSStatic::onRemove()
    if (isClientObject())
       mCubeReflector.unregisterReflector();
 
-   if(!mShapeAsset.isNull())
-      mShapeAsset->getChangedSignal().remove(this, &TSStatic::_onAssetChanged);
-
    Parent::onRemove();
 }
 
@@ -689,7 +615,7 @@ void TSStatic::_onResourceChanged(const Torque::Path& path)
    _updateShouldTick();
 }
 
-void TSStatic::_onAssetChanged()
+void TSStatic::onShapeChanged()
 {
    _createShape();
    _updateShouldTick();
@@ -1037,8 +963,7 @@ U32 TSStatic::packUpdate(NetConnection* con, U32 mask, BitStream* stream)
 
    if (stream->writeFlag(mask & AdvancedStaticOptionsMask))
    {
-      stream->writeString(mShapeAsset.getAssetId());
-      stream->writeString(mShapeName);
+      PACK_ASSET(con, Shape);
 
       stream->write((U32)mDecalType);
 
@@ -1095,7 +1020,7 @@ U32 TSStatic::packUpdate(NetConnection* con, U32 mask, BitStream* stream)
          con->packNetStringHandleU(stream, matNameStr);
       }
 
-      mChangingMaterials.clear();
+      //mChangingMaterials.clear();
    }
 
    return retMask;
@@ -1153,11 +1078,7 @@ void TSStatic::unpackUpdate(NetConnection* con, BitStream* stream)
 
    if (stream->readFlag()) // AdvancedStaticOptionsMask
    {
-      char buffer[256];
-      stream->readString(buffer);
-      setShapeAsset(StringTable->insert(buffer));
-
-      mShapeName = stream->readSTString();
+      UNPACK_ASSET(con, Shape);
 
       stream->read((U32*)&mDecalType);
 
@@ -1169,15 +1090,16 @@ void TSStatic::unpackUpdate(NetConnection* con, BitStream* stream)
 
       stream->read(&mForceDetail);
 
-   if (stream->readFlag())
-      mAnimOffset = stream->readFloat(7);
+      if (stream->readFlag())
+         mAnimOffset = stream->readFloat(7);
 
-   if (stream->readFlag())
-      mAnimSpeed = stream->readSignedFloat(7) * AnimSpeedMax;
+      if (stream->readFlag())
+         mAnimSpeed = stream->readSignedFloat(7) * AnimSpeedMax;
 
       mPlayAmbient = stream->readFlag();
 
-
+      //update our shape, figuring that it likely changed
+      _createShape();
    }
 
    mUseAlphaFade = stream->readFlag();
@@ -1444,7 +1366,7 @@ bool TSStatic::buildExportPolyList(ColladaUtils::ExportData* exportData, const B
          ColladaUtils::ExportData::detailLevel* curDetail = &meshData->meshDetailLevels.last();
 
          //Make sure we denote the size this detail level has
-         curDetail->size = detail.size;
+         curDetail->size = getNextPow2(detail.size);
       }
    }
 
@@ -1669,14 +1591,14 @@ U32 TSStatic::getNumDetails()
 
 void TSStatic::updateMaterials()
 {
-   if (mChangingMaterials.empty() || !mShape)
+   if (mChangingMaterials.empty() || !mShapeInstance)
       return;
 
    TSMaterialList* pMatList = mShapeInstance->getMaterialList();
 
    String path;
    if (mShapeAsset->isAssetValid())
-      path = mShapeAsset->getShapeFilename();
+      path = mShapeAsset->getShapeFileName();
    else
       path = mShapeName;
 
@@ -1701,29 +1623,29 @@ void TSStatic::updateMaterials()
       }
    }
 
-   mChangingMaterials.clear();
-
    // Initialize the material instances
    mShapeInstance->initMaterialList();
 }
 
 void TSStatic::getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList)
 {
-   if(!mShapeAsset.isNull() && mShapeAsset->getAssetId() != StringTable->insert("Core_Rendering:noShape"))
+   U32 assetStatus = ShapeAsset::getAssetErrCode(mShapeAsset);
+   if (assetStatus == AssetBase::Ok)
+   {
       usedAssetsList->push_back_unique(mShapeAsset->getAssetId());
-
+   }
 }
 
 //------------------------------------------------------------------------
 //These functions are duplicated in tsStatic and shapeBase.
 //They each function a little differently; but achieve the same purpose of gathering
 //target names/counts without polluting simObject.
-
+#ifdef TORQUE_TOOLS
 void TSStatic::onInspect(GuiInspector* inspector)
 {
-   if (mShapeAsset == nullptr)
+   //if (mShapeAsset == nullptr)
       return;
-
+/*
    //Put the GameObject group before everything that'd be gameobject-effecting, for orginazational purposes
    GuiInspectorGroup* materialGroup = inspector->findExistentGroup(StringTable->insert("Materials"));
    if (!materialGroup)
@@ -1732,82 +1654,68 @@ void TSStatic::onInspect(GuiInspector* inspector)
    GuiControl* stack = dynamic_cast<GuiControl*>(materialGroup->findObjectByInternalName(StringTable->insert("Stack")));
 
    //Do this on both the server and client
-   S32 materialCount = mShapeAsset->getShape()->materialList->getMaterialNameList().size(); //mMeshAsset->getMaterialCount();
+   TSMaterialList* matList = mShapeInstance->getMaterialList();
+   Vector<String> matListNames = matList->getMaterialNameList();
+   S32 materialCount = matListNames.size();
 
    if (isServerObject())
    {
-      //we need to update the editor
-      /*for (U32 i = 0; i < mFields.size(); i++)
-      {
-         //find any with the materialslot title and clear them out
-         if (FindMatch::isMatch("MaterialSlot*", mFields[i].mFieldName, false))
-         {
-            setDataField(mFields[i].mFieldName, NULL, "");
-            mFields.erase(i);
-            continue;
-         }
-      }*/
-
       //next, get a listing of our materials in the shape, and build our field list for them
       char matFieldName[128];
 
       for (U32 i = 0; i < materialCount; i++)
       {
-         StringTableEntry materialname = StringTable->insert(mShapeAsset->getShape()->materialList->getMaterialName(i).c_str());
+         StringTableEntry materialname = StringTable->insert(mShapeInstance->getMaterialList()->getMaterialName(i).c_str());
 
-         //Iterate through our assetList to find the compliant entry in our matList
-         for (U32 m = 0; m < mShapeAsset->getMaterialCount(); m++)
+         AssetPtr<MaterialAsset> matAsset;
+         if(MaterialAsset::getAssetByMaterialName(materialname, &matAsset) == MaterialAsset::Ok)
          {
-            AssetPtr<MaterialAsset> matAsset = mShapeAsset->getMaterialAsset(m);
+            dSprintf(matFieldName, 128, "MaterialSlot%d", i);
 
-            if (matAsset->getMaterialDefinitionName() == materialname)
+            GuiInspectorField* fieldGui = materialGroup->constructField(TypeMaterialAssetPtr);
+            fieldGui->init(inspector, materialGroup);
+
+            fieldGui->setSpecialEditField(true);
+            fieldGui->setTargetObject(this);
+
+            StringTableEntry fldnm = StringTable->insert(matFieldName);
+
+            fieldGui->setSpecialEditVariableName(fldnm);
+
+            fieldGui->setInspectorField(NULL, fldnm);
+            fieldGui->setDocs("");
+
+            if (fieldGui->registerObject())
             {
-               dSprintf(matFieldName, 128, "MaterialSlot%d", i);
+               StringTableEntry fieldValue = matAsset->getAssetId();
 
-               //addComponentField(matFieldName, "A material used in the shape file", "Material", matAsset->getAssetId(), "");
-               //Con::executef(this, "onConstructComponentField", mTargetComponent, field->mFieldName);
-               Con::printf("Added material field for MaterialSlot %d", i);
+               GuiInspectorTypeMaterialAssetPtr* matFieldPtr = dynamic_cast<GuiInspectorTypeMaterialAssetPtr*>(fieldGui);
+               matFieldPtr->setPreviewImage(fieldValue);
 
-               GuiInspectorField* fieldGui = materialGroup->constructField(TypeMaterialAssetPtr);
-               fieldGui->init(inspector, materialGroup);
-
-               fieldGui->setSpecialEditField(true);
-               fieldGui->setTargetObject(this);
-
-               StringTableEntry fldnm = StringTable->insert(matFieldName);
-
-               fieldGui->setSpecialEditVariableName(fldnm);
-
-               fieldGui->setInspectorField(NULL, fldnm);
-               fieldGui->setDocs("");
-
-               if (fieldGui->registerObject())
+               //Check if we'd already actually changed it, and display the modified value
+               for (U32 c = 0; c < mChangingMaterials.size(); c++)
                {
-                  fieldGui->setValue(materialname);
-
-                  stack->addObject(fieldGui);
-               }
-               else
-               {
-                  SAFE_DELETE(fieldGui);
+                  if (mChangingMaterials[c].slot == i)
+                  {
+                     fieldValue = StringTable->insert(mChangingMaterials[i].assetId.c_str());
+                     break;
+                  }
                }
 
-               /*if (materialGroup->isMethod("onConstructField"))
-               {
-                  //ensure our stack variable is bound if we need it
-                  //Con::evaluatef("%d.stack = %d;", materialGroup->getId(), materialGroup->at(0)->getId());
+               fieldGui->setValue(fieldValue);
 
-                  Con::executef(materialGroup, "onConstructField", matFieldName,
-                     matFieldName, "material", matFieldName,
-                     materialname, "", "", this);
-               }*/
-               break;
+               stack->addObject(fieldGui);
+            }
+            else
+            {
+               SAFE_DELETE(fieldGui);
             }
          }
       }
    }
+   */
 }
-
+#endif
 DefineEngineMethod(TSStatic, getTargetName, const char*, (S32 index), (0),
    "Get the name of the indexed shape material.\n"
    "@param index index of the material to get (valid range is 0 - getTargetCount()-1).\n"
@@ -1874,7 +1782,7 @@ DefineEngineMethod(TSStatic, changeMaterial, void, (const char* mapTo, Material*
       return;
    }
 
-   TSMaterialList* shapeMaterialList = object->getShape()->materialList;
+   TSMaterialList* shapeMaterialList = object->getShapeResource()->materialList;
 
    // Check the mapTo name exists for this shape
    S32 matIndex = shapeMaterialList->getMaterialNameList().find_next(String(mapTo));
@@ -1914,7 +1822,7 @@ DefineEngineMethod(TSStatic, getModelFile, const char*, (), ,
    "@endtsexample\n"
 )
 {
-   return object->getShapeFileName();
+   return object->getShape();
 }
 
 void TSStatic::set_special_typing()
@@ -1956,3 +1864,48 @@ void TSStatic::setSelectionFlags(U8 flags)
    }
 }
 
+bool TSStatic::hasNode(const char* nodeName)
+{
+
+   S32 nodeIDx = getShapeResource()->findNode(nodeName);
+   return nodeIDx >= 0;
+}
+
+void TSStatic::getNodeTransform(const char *nodeName, const MatrixF &xfm, MatrixF *outMat)
+{
+
+    S32 nodeIDx = getShapeResource()->findNode(nodeName);
+
+    MatrixF nodeTransform(xfm);
+    const Point3F& scale = getScale();
+    if (nodeIDx != -1)
+    {
+       nodeTransform = mShapeInstance->mNodeTransforms[nodeIDx];
+       nodeTransform.mul(xfm);
+    }
+    // The position of the mount point needs to be scaled.
+    Point3F position = nodeTransform.getPosition();
+    position.convolve(scale);
+    nodeTransform.setPosition(position);
+    // Also we would like the object to be scaled to the model.
+    outMat->mul(mObjToWorld, nodeTransform);
+    return;
+}
+
+
+DefineEngineMethod(TSStatic, hasNode, bool, (const char* nodeName), ,
+   "@brief Get if this model has this node name.\n\n")
+{
+   return object->hasNode(nodeName);
+}
+
+DefineEngineMethod(TSStatic, getNodeTransform, TransformF, (const char *nodeName), ,
+   "@brief Get the world transform of the specified node name.\n\n"
+
+   "@param node name query\n"
+   "@return the mount transform\n\n")
+{
+   MatrixF xf(true);
+   object->getNodeTransform(nodeName, MatrixF::Identity, &xf);
+   return xf;
+}

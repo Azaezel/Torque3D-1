@@ -82,7 +82,7 @@ bool GuiCheckBoxCtrl::onWake()
 
    // make sure there is a bitmap array for this control type
    // if it is declared as such in the control
-   if( !mProfile->mBitmapArrayRects.size() && !mProfile->constructBitmapArray() )
+   if(mProfile->mBitmapArrayRects.empty() && !mProfile->constructBitmapArray() )
    {
       Con::errorf( "GuiCheckBoxCtrl::onWake - failed to create bitmap array from profile '%s'", mProfile->getName() );
       return false;
@@ -106,7 +106,7 @@ void GuiCheckBoxCtrl::onRender(Point2I offset, const RectI &updateRect)
    }
 
    ColorI backColor = mActive ? mProfile->mFillColor : mProfile->mFillColorNA;
-   ColorI fontColor = mActive ? (mMouseOver ? mProfile->mFontColorHL : mProfile->mFontColor) : mProfile->mFontColorNA;
+   ColorI fontColor = mActive ? (mHighlighted ? mProfile->mFontColorHL : mProfile->mFontColor) : mProfile->mFontColorNA;
    ColorI insideBorderColor = isFirstResponder() ? mProfile->mBorderColorHL : mProfile->mBorderColor;
 
    // just draw the check box and the text:
@@ -134,7 +134,7 @@ void GuiCheckBoxCtrl::onRender(Point2I offset, const RectI &updateRect)
       }
       xOffset = mProfile->mBitmapArrayRects[0].extent.x + 2 + mIndent;
       S32 y = (getHeight() - mProfile->mBitmapArrayRects[0].extent.y) / 2;
-      GFX->getDrawUtil()->drawBitmapSR(mProfile->mTextureObject, offset + Point2I(mIndent, y), mProfile->mBitmapArrayRects[index]);
+      GFX->getDrawUtil()->drawBitmapSR(mProfile->getBitmapResource(), offset + Point2I(mIndent, y), mProfile->mBitmapArrayRects[index]);
    }
    
    if(mButtonText[0] != '\0')
@@ -159,9 +159,9 @@ void GuiCheckBoxCtrl::autoSize()
    {
       mProfile->incLoadCount();
             
-      if( !mProfile->mBitmapArrayRects.size() )
+      if(mProfile->mBitmapArrayRects.empty())
          mProfile->constructBitmapArray();
-      if( mProfile->mBitmapArrayRects.size() )
+      if(!mProfile->mBitmapArrayRects.empty())
          bmpArrayRect0Width = mProfile->mBitmapArrayRects[ 0 ].extent.x;
    }
 

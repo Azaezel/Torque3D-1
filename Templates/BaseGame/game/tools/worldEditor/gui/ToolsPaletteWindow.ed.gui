@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl() {
+$guiContent = new GuiControl() {
    canSaveDynamicFields = "0";
    Enabled = "1";
    isContainer = "1";
@@ -23,7 +23,7 @@
       VertSizing = "windowRelative";
       Extent = "36 24";
       MinExtent = "36 24";
-      Position = "-1 63";
+      Position = "-1 73";
       canSave = "1";
       Visible = "1";
       hovertime = "1000";

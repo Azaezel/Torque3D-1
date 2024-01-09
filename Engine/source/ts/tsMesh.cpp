@@ -86,7 +86,7 @@ bool TSMesh::smUseEncodedNormals = false;
 
 const F32 TSMesh::VISIBILITY_EPSILON = 0.0001f;
 
-S32 TSMesh::smMaxInstancingVerts = 2000;
+S32 TSMesh::smMaxInstancingVerts = 200;
 MatrixF TSMesh::smDummyNodeTransform(1);
 
 // quick function to force object to face camera -- currently throws out roll :(
@@ -264,7 +264,7 @@ void TSMesh::innerRender( TSMaterialList *materials, const TSRenderState &rdata,
       // If we don't have a material instance after the overload then
       // there is nothing to render... skip this primitive.
       matInst = state->getOverrideMaterial( matInst );
-      if ( !matInst || !matInst->isValid())
+      if ( !matInst || !matInst->isValid() || !matInst->getMaterial())
          continue;
 
       // If the material needs lights then gather them

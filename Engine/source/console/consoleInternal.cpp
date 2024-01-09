@@ -25,13 +25,11 @@
 #include "platform/platform.h"
 #include "console/console.h"
 
-#include "console/ast.h"
 #include "core/tAlgorithm.h"
 
 #include "core/strings/findMatch.h"
 #include "console/consoleInternal.h"
 #include "core/stream/fileStream.h"
-#include "console/compiler.h"
 #include "console/engineAPI.h"
 
 //#define DEBUG_SPEW
@@ -183,13 +181,13 @@ void Dictionary::exportVariables(const char *varString, const char *fileName, bo
 
    for (s = sortList.begin(); s != sortList.end(); s++)
    {
-      switch ((*s)->value.type)
+      switch ((*s)->value.getType())
       {
-         case ConsoleValue::TypeInternalInt:
-            dSprintf(buffer, sizeof(buffer), "%s = %d;%s", (*s)->name, (*s)->value.ival, cat);
+         case ConsoleValueType::cvInteger:
+            dSprintf(buffer, sizeof(buffer), "%s = %d;%s", (*s)->name, (*s)->getIntValue(), cat);
             break;
-         case ConsoleValue::TypeInternalFloat:
-            dSprintf(buffer, sizeof(buffer), "%s = %g;%s", (*s)->name, (*s)->value.fval, cat);
+         case ConsoleValueType::cvFloat:
+            dSprintf(buffer, sizeof(buffer), "%s = %g;%s", (*s)->name, (*s)->getFloatValue(), cat);
             break;
          default:
             expandEscape(expandBuffer, (*s)->getStringValue());
@@ -243,13 +241,11 @@ void Dictionary::exportVariables(const char *varString, Vector<String> *names, V
 
       if (values)
       {
-         switch ((*s)->value.type)
+         switch ((*s)->value.getType())
          {
-            case ConsoleValue::TypeInternalInt:
-               values->push_back(String::ToString((*s)->value.ival));
-               break;
-            case ConsoleValue::TypeInternalFloat:
-               values->push_back(String::ToString((*s)->value.fval));
+            case ConsoleValueType::cvInteger:
+            case ConsoleValueType::cvFloat:
+               values->push_back(String((*s)->getStringValue()));
                break;
             default:
                expandEscape(expandBuffer, (*s)->getStringValue());
@@ -377,18 +373,16 @@ Dictionary::Dictionary()
 #pragma warning( disable : 4355 )
    ownHashTable(this), // Warning with VC++ but this is safe.
 #pragma warning( default : 4355 )
-   exprState(NULL),
    scopeName(NULL),
    scopeNamespace(NULL),
-   code(NULL),
+   module(NULL),
    ip(0)
 {
+   setState(NULL);
 }
 
-void Dictionary::setState(ExprEvalState *state, Dictionary* ref)
+void Dictionary::setState(Dictionary* ref)
 {
-   exprState = state;
-
    if (ref)
    {
       hashTable = ref->hashTable;
@@ -441,7 +435,7 @@ void Dictionary::reset()
 
    scopeName = NULL;
    scopeNamespace = NULL;
-   code = NULL;
+   module = NULL;
    ip = 0;
 }
 
@@ -464,27 +458,25 @@ const char *Dictionary::tabComplete(const char *prevText, S32 baseLen, bool fFor
    return bestMatch;
 }
 
-
-char *typeValueEmpty = "";
-
 Dictionary::Entry::Entry(StringTableEntry in_name)
 {
    name = in_name;
-   value.type = ConsoleValue::TypeInternalString;
    notify = NULL;
    nextEntry = NULL;
    mUsage = NULL;
    mIsConstant = false;
    mNext = NULL;
-   // NOTE: This is data inside a nameless
-   // union, so we don't need to init the rest.
-   value.init();
 }
 
 Dictionary::Entry::~Entry()
 {
-   value.cleanup();
+   reset();
+}
 
+void Dictionary::Entry::reset()
+{
+   name = NULL;
+   value.reset();
    if (notify)
       delete notify;
 }
@@ -506,150 +498,6 @@ const char *Dictionary::getVariable(StringTableEntry name, bool *entValid)
       Con::warnf(" *** Accessed undefined variable '%s'", name);
 
    return "";
-}
-
-void ConsoleValue::setStringValue(const char * value)
-{
-   if (value == NULL) value = typeValueEmpty;
-
-   if (type <= ConsoleValue::TypeInternalString)
-   {
-      // Let's not remove empty-string-valued global vars from the dict.
-      // If we remove them, then they won't be exported, and sometimes
-      // it could be necessary to export such a global.  There are very
-      // few empty-string global vars so there's no performance-related
-      // need to remove them from the dict.
-      /*
-      if(!value[0] && name[0] == '$')
-      {
-      gEvalState.globalVars.remove(this);
-      return;
-      }
-      */
-      if (value == typeValueEmpty)
-      {
-         if (bufferLen > 0)
-         {
-            dFree(sval);
-            bufferLen = 0;
-         }
-
-         sval = typeValueEmpty;
-         fval = 0.f;
-         ival = 0;
-         type = TypeInternalString;
-         return;
-      }
-
-      U32 stringLen = dStrlen(value);
-
-      // If it's longer than 256 bytes, it's certainly not a number.
-      //
-      // (This decision may come back to haunt you. Shame on you if it
-      // does.)
-      if (stringLen < 256)
-      {
-         fval = dAtof(value);
-         ival = dAtoi(value);
-      }
-      else
-      {
-         fval = 0.f;
-         ival = 0;
-      }
-
-      // may as well pad to the next cache line
-      U32 newLen = ((stringLen + 1) + 15) & ~15;
-
-      if (bufferLen == 0)
-         sval = (char *)dMalloc(newLen);
-      else if (newLen > bufferLen)
-         sval = (char *)dRealloc(sval, newLen);
-
-      type = TypeInternalString;
-
-      bufferLen = newLen;
-      dStrcpy(sval, value, newLen);
-   }
-   else
-      Con::setData(type, dataPtr, 0, 1, &value, enumTable);
-}
-
-
-void ConsoleValue::setStackStringValue(const char *value)
-{
-   if (value == NULL) value = typeValueEmpty;
-
-   if (type <= ConsoleValue::TypeInternalString)
-   {
-      // sval might still be temporarily present so we need to check and free it
-      if (bufferLen > 0)
-      {
-         dFree(sval);
-         bufferLen = 0;
-      }
-
-      if (value == typeValueEmpty)
-      {
-         sval = typeValueEmpty;
-         fval = 0.f;
-         ival = 0;
-         type = TypeInternalString;
-         return;
-      }
-
-      U32 stringLen = dStrlen(value);
-      if (stringLen < 256)
-      {
-         fval = dAtof(value);
-         ival = dAtoi(value);
-      }
-      else
-      {
-         fval = 0.f;
-         ival = 0;
-      }
-
-      type = TypeInternalStackString;
-      sval = (char*)value;
-      bufferLen = 0;
-   }
-   else
-      Con::setData(type, dataPtr, 0, 1, &value, enumTable);
-}
-
-void ConsoleValue::setStringStackPtrValue(StringStackPtr ptrValue)
-{
-   if (type <= ConsoleValue::TypeInternalString)
-   {
-      const char *value = StringStackPtrRef(ptrValue).getPtr(&STR);
-      if (bufferLen > 0)
-      {
-         dFree(sval);
-         bufferLen = 0;
-      }
-
-      U32 stringLen = dStrlen(value);
-      if (stringLen < 256)
-      {
-         fval = dAtof(value);
-         ival = dAtoi(value);
-      }
-      else
-      {
-         fval = 0.f;
-         ival = 0;
-      }
-
-      type = TypeInternalStringStackPtr;
-      sval = (char*)(value - STR.mBuffer);
-      bufferLen = 0;
-   }
-   else
-   {
-      const char *value = StringStackPtrRef(ptrValue).getPtr(&STR);
-      Con::setData(type, dataPtr, 0, 1, &value, enumTable);
-   }
 }
 
 S32 Dictionary::getIntVariable(StringTableEntry name, bool *entValid)
@@ -708,19 +556,12 @@ Dictionary::Entry* Dictionary::addVariable(const char *name,
 
    Entry *ent = add(StringTable->insert(name));
 
-   if (ent->value.type <= ConsoleValue::TypeInternalString &&
-      ent->value.bufferLen > 0)
-      dFree(ent->value.sval);
-
-   ent->value.type = type;
-   ent->value.dataPtr = dataPtr;
    ent->mUsage = usage;
 
    // Fetch enum table, if any.
-
    ConsoleBaseType* conType = ConsoleBaseType::getType(type);
    AssertFatal(conType, "Dictionary::addVariable - invalid console type");
-   ent->value.enumTable = conType->getEnumTable();
+   ent->value.setConsoleData(type, dataPtr, conType->getEnumTable());
 
    return ent;
 }
@@ -760,123 +601,15 @@ void Dictionary::validate()
       "Dictionary::validate() - Dictionary not owner of own hashtable!");
 }
 
-void ExprEvalState::pushFrame(StringTableEntry frameName, Namespace *ns)
+Con::Module* Con::findScriptModuleForFile(const char* fileName)
 {
-#ifdef DEBUG_SPEW
-   validate();
-
-   Platform::outputDebugString("[ConsoleInternal] Pushing new frame for '%s' at %i",
-      frameName, mStackDepth);
-#endif
-
-   if (mStackDepth + 1 > stack.size())
+   for (Con::Module* module : gScriptModules)
    {
-#ifdef DEBUG_SPEW
-      Platform::outputDebugString("[ConsoleInternal] Growing stack by one frame");
-#endif
-
-      stack.push_back(new Dictionary);
+      if (module->getName() == fileName) {
+         return module;
+      }
    }
-
-   Dictionary& newFrame = *(stack[mStackDepth]);
-   newFrame.setState(this);
-
-   newFrame.scopeName = frameName;
-   newFrame.scopeNamespace = ns;
-
-   mStackDepth++;
-   currentVariable = NULL;
-
-   AssertFatal(!newFrame.getCount(), "ExprEvalState::pushFrame - Dictionary not empty!");
-
-#ifdef DEBUG_SPEW
-   validate();
-#endif
-}
-
-void ExprEvalState::popFrame()
-{
-   AssertFatal(mStackDepth > 0, "ExprEvalState::popFrame - Stack Underflow!");
-
-#ifdef DEBUG_SPEW
-   validate();
-
-   Platform::outputDebugString("[ConsoleInternal] Popping %sframe at %i",
-      getCurrentFrame().isOwner() ? "" : "shared ", mStackDepth - 1);
-#endif
-
-   mStackDepth--;
-   stack[mStackDepth]->reset();
-   currentVariable = NULL;
-
-#ifdef DEBUG_SPEW
-   validate();
-#endif
-}
-
-void ExprEvalState::pushFrameRef(S32 stackIndex)
-{
-   AssertFatal(stackIndex >= 0 && stackIndex < stack.size(), "You must be asking for a valid frame!");
-
-#ifdef DEBUG_SPEW
-   validate();
-
-   Platform::outputDebugString("[ConsoleInternal] Cloning frame from %i to %i",
-      stackIndex, mStackDepth);
-#endif
-
-   if (mStackDepth + 1 > stack.size())
-   {
-#ifdef DEBUG_SPEW
-      Platform::outputDebugString("[ConsoleInternal] Growing stack by one frame");
-#endif
-
-      stack.push_back(new Dictionary);
-   }
-
-   Dictionary& newFrame = *(stack[mStackDepth]);
-   newFrame.setState(this, stack[stackIndex]);
-
-   mStackDepth++;
-   currentVariable = NULL;
-
-#ifdef DEBUG_SPEW
-   validate();
-#endif
-}
-
-ExprEvalState::ExprEvalState()
-{
-   VECTOR_SET_ASSOCIATION(stack);
-   globalVars.setState(this);
-   thisObject = NULL;
-   traceOn = false;
-   currentVariable = NULL;
-   mStackDepth = 0;
-   stack.reserve(64);
-   mShouldReset = false;
-   mResetLocked = false;
-   copyVariable = NULL;
-}
-
-ExprEvalState::~ExprEvalState()
-{
-   // Delete callframes.
-
-   while (!stack.empty())
-   {
-      delete stack.last();
-      stack.decrement();
-   }
-}
-
-void ExprEvalState::validate()
-{
-   AssertFatal(mStackDepth <= stack.size(),
-      "ExprEvalState::validate() - Stack depth pointing beyond last stack frame!");
-
-   for (U32 i = 0; i < stack.size(); ++i)
-      stack[i]->validate();
+   return NULL;
 }
 
 DefineEngineFunction(backtrace, void, (), ,
@@ -887,35 +620,37 @@ DefineEngineFunction(backtrace, void, (), ,
 {
    U32 totalSize = 1;
 
-   for (U32 i = 0; i < gEvalState.getStackDepth(); i++)
+   for (U32 i = 0; i < Con::getFrameStack().size(); i++)
    {
-      if (gEvalState.stack[i]->scopeNamespace && gEvalState.stack[i]->scopeNamespace->mEntryList->mPackage)
-         totalSize += dStrlen(gEvalState.stack[i]->scopeNamespace->mEntryList->mPackage) + 2;
-      if (gEvalState.stack[i]->scopeName)
-         totalSize += dStrlen(gEvalState.stack[i]->scopeName) + 3;
-      if (gEvalState.stack[i]->scopeNamespace && gEvalState.stack[i]->scopeNamespace->mName)
-         totalSize += dStrlen(gEvalState.stack[i]->scopeNamespace->mName) + 2;
+      const Con::ConsoleFrame* frame = Con::getStackFrame(i);
+      if (frame->scopeNamespace && frame->scopeNamespace->mEntryList->mPackage)
+         totalSize += dStrlen(frame->scopeNamespace->mEntryList->mPackage) + 2;
+      if (frame->scopeName)
+         totalSize += dStrlen(frame->scopeName) + 3;
+      if (frame->scopeNamespace && frame->scopeNamespace->mName)
+         totalSize += dStrlen(frame->scopeNamespace->mName) + 2;
    }
 
    char *buf = Con::getReturnBuffer(totalSize);
    buf[0] = 0;
-   for (U32 i = 0; i < gEvalState.getStackDepth(); i++)
+   for (U32 i = 0; i < Con::getFrameStack().size(); i++)
    {
+      const Con::ConsoleFrame* frame = Con::getStackFrame(i);
       dStrcat(buf, "->", totalSize);
 
-      if (gEvalState.stack[i]->scopeNamespace && gEvalState.stack[i]->scopeNamespace->mEntryList->mPackage)
+      if (frame->scopeNamespace && frame->scopeNamespace->mEntryList->mPackage)
       {
          dStrcat(buf, "[", totalSize);
-         dStrcat(buf, gEvalState.stack[i]->scopeNamespace->mEntryList->mPackage, totalSize);
+         dStrcat(buf, frame->scopeNamespace->mEntryList->mPackage, totalSize);
          dStrcat(buf, "]", totalSize);
       }
-      if (gEvalState.stack[i]->scopeNamespace && gEvalState.stack[i]->scopeNamespace->mName)
+      if (frame->scopeNamespace && frame->scopeNamespace->mName)
       {
-         dStrcat(buf, gEvalState.stack[i]->scopeNamespace->mName, totalSize);
+         dStrcat(buf, frame->scopeNamespace->mName, totalSize);
          dStrcat(buf, "::", totalSize);
       }
-      if (gEvalState.stack[i]->scopeName)
-         dStrcat(buf, gEvalState.stack[i]->scopeName, totalSize);
+      if (frame->scopeName)
+         dStrcat(buf, frame->scopeName, totalSize);
    }
 
    Con::printf("BackTrace: %s", buf);
@@ -923,7 +658,7 @@ DefineEngineFunction(backtrace, void, (), ,
 
 Namespace::Entry::Entry()
 {
-   mCode = NULL;
+   mModule = NULL;
    mType = InvalidFunctionType;
    mUsage = NULL;
    mHeader = NULL;
@@ -941,10 +676,10 @@ Namespace::Entry::Entry()
 
 void Namespace::Entry::clear()
 {
-   if (mCode)
+   if (mModule)
    {
-      mCode->decRefCount();
-      mCode = NULL;
+      mModule->decRefCount();
+      mModule = NULL;
    }
 
    // Clean up usage strings generated for script functions.
@@ -1278,15 +1013,15 @@ Namespace::Entry *Namespace::createLocalEntry(StringTableEntry name)
    return ent;
 }
 
-void Namespace::addFunction(StringTableEntry name, CodeBlock *cb, U32 functionOffset, const char* usage, U32 lineNumber)
+void Namespace::addFunction(StringTableEntry name, Con::Module *cb, U32 functionOffset, const char* usage, U32 lineNumber)
 {
    Entry *ent = createLocalEntry(name);
    trashCache();
 
    ent->mUsage = usage;
-   ent->mCode = cb;
+   ent->mModule = cb;
    ent->mFunctionOffset = functionOffset;
-   ent->mCode->incRefCount();
+   ent->mModule->incRefCount();
    ent->mType = Entry::ConsoleFunctionType;
    ent->mFunctionLineNumber = lineNumber;
 }
@@ -1411,9 +1146,7 @@ void Namespace::markGroup(const char* name, const char* usage)
    ent->cb.mGroupName = name;
 }
 
-extern S32 executeBlock(StmtNode *block, ExprEvalState *state);
-
-ConsoleValueRef Namespace::Entry::execute(S32 argc, ConsoleValueRef *argv, ExprEvalState *state)
+ConsoleValue Namespace::Entry::execute(S32 argc, ConsoleValue *argv, SimObject *thisObj)
 {
    STR.clearFunctionOffset();
 
@@ -1421,11 +1154,11 @@ ConsoleValueRef Namespace::Entry::execute(S32 argc, ConsoleValueRef *argv, ExprE
    {
       if (mFunctionOffset)
       {
-         return mCode->exec(mFunctionOffset, argv[0], mNamespace, argc, argv, false, mPackage);
+         return std::move(mModule->exec(mFunctionOffset, argv[0].getString(), mNamespace, argc, argv, false, mPackage).value);
       }
       else
       {
-         return ConsoleValueRef();
+         return std::move(ConsoleValue());
       }
    }
 
@@ -1435,7 +1168,7 @@ ConsoleValueRef Namespace::Entry::execute(S32 argc, ConsoleValueRef *argv, ExprE
    if (mToolOnly && !Con::isCurrentScriptToolScript())
    {
       Con::errorf(ConsoleLogEntry::Script, "%s::%s - attempting to call tools only function from outside of tools", mNamespace->mName, mFunctionName);
-      return ConsoleValueRef();
+      return std::move(ConsoleValue());
    }
 #endif
 
@@ -1443,25 +1176,33 @@ ConsoleValueRef Namespace::Entry::execute(S32 argc, ConsoleValueRef *argv, ExprE
    {
       Con::warnf(ConsoleLogEntry::Script, "%s::%s - wrong number of arguments.", mNamespace->mName, mFunctionName);
       Con::warnf(ConsoleLogEntry::Script, "usage: %s", mUsage);
-      return ConsoleValueRef();
+      return std::move(ConsoleValue());
    }
 
+   ConsoleValue result;
    switch (mType)
    {
       case StringCallbackType:
-         return ConsoleValueRef::fromValue(CSTK.pushStackString(cb.mStringCallbackFunc(state->thisObject, argc, argv)));
+      {
+         const char* str = cb.mStringCallbackFunc(thisObj, argc, argv);
+         result.setString(str);
+         break;
+      }
       case IntCallbackType:
-         return ConsoleValueRef::fromValue(CSTK.pushUINT((U32)cb.mBoolCallbackFunc(state->thisObject, argc, argv)));
+         result.setInt(cb.mIntCallbackFunc(thisObj, argc, argv));
+         break;
       case FloatCallbackType:
-         return ConsoleValueRef::fromValue(CSTK.pushFLT((U32)cb.mBoolCallbackFunc(state->thisObject, argc, argv)));
+         result.setFloat(cb.mFloatCallbackFunc(thisObj, argc, argv));
+         break;
       case VoidCallbackType:
-         cb.mVoidCallbackFunc(state->thisObject, argc, argv);
-         return ConsoleValueRef();
+         cb.mVoidCallbackFunc(thisObj, argc, argv);
+         break;
       case BoolCallbackType:
-         return ConsoleValueRef::fromValue(CSTK.pushUINT((U32)cb.mBoolCallbackFunc(state->thisObject, argc, argv)));
+         result.setBool(cb.mBoolCallbackFunc(thisObj, argc, argv));
+         break;
    }
 
-   return ConsoleValueRef();
+   return result;
 }
 
 //-----------------------------------------------------------------------------
@@ -1616,13 +1357,13 @@ namespace {
       if (dStrncmp(nativeType, "const ", 6) == 0)
          nativeType += 6;
 
-      if (dStrcmp(nativeType, "char*") == 0 || dStrcmp(nativeType, "char *") == 0)
+      if (String::compare(nativeType, "char*") == 0 || String::compare(nativeType, "char *") == 0)
          return "string";
-      else if (dStrcmp(nativeType, "S32") == 0)
+      else if (String::compare(nativeType, "S32") == 0)
          return "int";
-      else if (dStrcmp(nativeType, "U32") == 0)
+      else if (String::compare(nativeType, "U32") == 0)
          return "uint";
-      else if (dStrcmp(nativeType, "F32") == 0)
+      else if (String::compare(nativeType, "F32") == 0)
          return "float";
 
       const U32 length = dStrlen(nativeType);
@@ -1741,7 +1482,7 @@ String Namespace::Entry::getArgumentsString() const
 
       if (sFindArgumentListSubstring(mUsage, argListStart, argListEnd))
          str.append(argListStart, argListEnd - argListStart);
-      else if (mType == ConsoleFunctionType && mCode)
+      else if (mType == ConsoleFunctionType && mModule)
       {
          // This isn't correct but the nonsense console stuff is set up such that all
          // functions that have no function bodies are keyed to offset 0 to indicate "no code."
@@ -1753,7 +1494,7 @@ String Namespace::Entry::getArgumentsString() const
          if (!mFunctionOffset)
             return "()";
 
-         String args = mCode->getFunctionArgs(mFunctionOffset);
+         String args = mModule->getFunctionArgs(mFunctionName, mFunctionOffset);
          if (args.isEmpty())
             return "()";
 
@@ -1816,6 +1557,45 @@ String Namespace::Entry::getPrototypeString() const
    return str.end();
 }
 
+String Namespace::Entry::getPrototypeSig() const
+{
+   StringBuilder str;
+
+   // Add function name and arguments.
+
+   if (mType == ScriptCallbackType)
+      str.append(cb.mCallbackName);
+   else
+      str.append(mFunctionName);
+   if (mHeader)
+   {
+      Vector< String > argList;
+      sParseList(mHeader->mArgString, argList);
+
+      const U32 numArgs = argList.size();
+
+      str.append("(%this");
+
+      if (numArgs > 0)
+         str.append(',');
+      for (U32 i = 0; i < numArgs; ++i)
+      {
+         // Add separator if not first arg.
+
+         String name;
+         String type;
+
+         if (i > 0)
+            str.append(',');
+         str.append('%');
+         sGetArgNameAndType(argList[i], type, name);
+         str.append(name);
+      }
+      str.append(')');
+   }
+
+   return str.end();
+}
 //-----------------------------------------------------------------------------
 
 StringTableEntry Namespace::mActivePackages[Namespace::MaxActivePackages];

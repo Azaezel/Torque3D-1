@@ -76,6 +76,7 @@ bool GuiDecalEditorCtrl::onAdd()
 
 void GuiDecalEditorCtrl::initPersistFields()
 {
+   docsURL;
    addField( "currentDecalData", TYPEID< DecalData >(), Offset( mCurrentDecalData, GuiDecalEditorCtrl ) );
 
    Parent::initPersistFields();
@@ -881,7 +882,7 @@ DefineEngineMethod( GuiDecalEditorCtrl, getSelectionCount, S32, (), , "" )
 
 DefineEngineMethod( GuiDecalEditorCtrl, retargetDecalDatablock, void, ( const char * dbFrom, const char * dbTo ), , "" )
 {
-   if( dStrcmp( dbFrom, "" ) != 0 && dStrcmp( dbTo, "" ) != 0 )
+   if( String::compare( dbFrom, "" ) != 0 && String::compare( dbTo, "" ) != 0 )
 		object->retargetDecalDatablock( dbFrom, dbTo );
 }
 
@@ -913,6 +914,7 @@ DICreateUndoAction::~DICreateUndoAction()
 
 void DICreateUndoAction::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 
@@ -1001,6 +1003,7 @@ DIDeleteUndoAction::~DIDeleteUndoAction()
 
 void DIDeleteUndoAction::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 
@@ -1089,6 +1092,7 @@ DBDeleteUndoAction::~DBDeleteUndoAction()
 
 void DBDeleteUndoAction::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 
@@ -1198,6 +1202,7 @@ DBRetargetUndoAction::~DBRetargetUndoAction()
 
 void DBRetargetUndoAction::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 

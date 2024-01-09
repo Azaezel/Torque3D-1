@@ -60,7 +60,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
   
   DECLARE_CONOBJECT(afxXM_VelocityOffsetData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
@@ -166,6 +165,7 @@ afxXM_VelocityOffsetData::afxXM_VelocityOffsetData(const afxXM_VelocityOffsetDat
 
 void afxXM_VelocityOffsetData::initPersistFields()
 {
+   docsURL;
   addField("offsetFactor",    TypeF32,      Offset(offset_factor, afxXM_VelocityOffsetData),
     "...");
   addField("offsetPos2",      TypeBool,     Offset(offset_pos2, afxXM_VelocityOffsetData),

@@ -1,4 +1,4 @@
-%guiContent = new GuiControl(RiverEditorToolbar, EditorGuiGroup) {
+$guiContent = new GuiControl(RiverEditorToolbar, EditorGuiGroup) {
    canSaveDynamicFields = "0";
    internalName = "MeshRoadEditorToolbar";
    Enabled = "1";
@@ -10,7 +10,7 @@
    Extent = "800 32";
    MinExtent = "8 2";
    canSave = "1";
-   Visible = "0";
+   Visible = "1";
    hovertime = "1000";
    
    new GuiTextCtrl() {
@@ -52,7 +52,7 @@
          tooltipprofile = "ToolsGuiToolTipProfile";
          hovertime = "1000";
          toolTip = "Show Spline";
-         bitmap = "tools/worldEditor/images/road-river/menubar/show-spline";
+         bitmapAsset = "ToolsModule:show_spline_n_image";
          groupNum = "7";
          buttonType = "ToggleButton";
          useMouseEvents = "0";
@@ -76,7 +76,7 @@
          tooltipprofile = "ToolsGuiToolTipProfile";
          hovertime = "1000";
          toolTip = "Show Wireframe";
-         bitmap = "tools/worldEditor/images/road-river/menubar/show-wireframe";
+         bitmapAsset = "ToolsModule:menubar_show_wireframe_n_image";
          groupNum = "-1";
          buttonType = "ToggleButton";
          useMouseEvents = "0";
@@ -99,7 +99,7 @@
          tooltipprofile = "ToolsGuiToolTipProfile";
          hovertime = "1000";
          toolTip = "Show River Texture";
-         bitmap = "tools/worldEditor/images/road-river/menubar/show-texture";
+         bitmapAsset = "ToolsModule:show_texture_n_image";
          groupNum = "-1";
          buttonType = "ToggleButton";
          useMouseEvents = "0";
@@ -181,7 +181,7 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };
       new GuiControl(RiverDefaultDepthTextEditContainer) {
@@ -259,7 +259,7 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };
 };
@@ -280,8 +280,8 @@ new GuiMouseEventCtrl(RiverDefaultWidthSliderCtrlContainer, EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(RiverDefaultWidthTextEditContainer.position) + firstWord(RiverEditorToolbar.position) + 10 SPC 
-         (getWord(RiverDefaultWidthTextEditContainer, 1)) + 25;
+      position = RiverDefaultWidthTextEditContainer.position.x + RiverEditorToolbar.position.x + 50 SPC 
+         RiverDefaultWidthTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";
@@ -309,8 +309,8 @@ new GuiMouseEventCtrl(RiverDefaultDepthSliderCtrlContainer, EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(RiverDefaultDepthTextEditContainer.position) + firstWord(RiverEditorToolbar.position) + 10 SPC 
-         (getWord(RiverDefaultDepthTextEditContainer, 1)) + 25;
+      position = RiverDefaultDepthTextEditContainer.position.x + RiverEditorToolbar.position.x + 50 SPC 
+         RiverDefaultDepthTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";

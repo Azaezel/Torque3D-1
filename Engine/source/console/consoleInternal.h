@@ -38,12 +38,12 @@
 #ifndef _DATACHUNKER_H_
 #include "core/dataChunker.h"
 #endif
+#include "module.h"
 
 /// @ingroup console_system Console System
 /// @{
 
 
-class ExprEvalState;
 struct FunctionDecl;
 class CodeBlock;
 class AbstractClassRep;
@@ -125,7 +125,7 @@ public:
       ConsoleFunctionHeader* mHeader;
 
       /// The compiled script code if this is a script function.
-      CodeBlock* mCode;
+      Con::Module* mModule;
 
       /// The offset in the compiled script code at which this function begins.
       U32 mFunctionOffset;
@@ -150,7 +150,7 @@ public:
       void clear();
 
       ///
-      ConsoleValueRef execute(S32 argc, ConsoleValueRef* argv, ExprEvalState* state);
+      ConsoleValue execute(S32 argc, ConsoleValue* argv, SimObject* thisObj);
 
       /// Return a one-line documentation text string for the function.
       String getBriefDescription(String* outRemainingDocText = NULL) const;
@@ -164,6 +164,10 @@ public:
       /// Return a full prototype string for the function including return type, function name,
       /// and arguments.
       String getPrototypeString() const;
+
+      /// Return a minimalized prototype string for the function including return type, function name,
+      /// and arguments.
+      String getPrototypeSig() const;
    };
 
    Entry* mEntryList;
@@ -177,7 +181,7 @@ public:
    Namespace();
    ~Namespace();
 
-   void addFunction(StringTableEntry name, CodeBlock* cb, U32 functionOffset, const char* usage = NULL, U32 lineNumber = 0);
+   void addFunction(StringTableEntry name, Con::Module* cb, U32 functionOffset, const char* usage = NULL, U32 lineNumber = 0);
    void addCommand(StringTableEntry name, StringCallback, const char *usage, S32 minArgs, S32 maxArgs, bool toolOnly = false, ConsoleFunctionHeader* header = NULL);
    void addCommand(StringTableEntry name, IntCallback, const char *usage, S32 minArgs, S32 maxArgs, bool toolOnly = false, ConsoleFunctionHeader* header = NULL);
    void addCommand(StringTableEntry name, FloatCallback, const char *usage, S32 minArgs, S32 maxArgs, bool toolOnly = false, ConsoleFunctionHeader* header = NULL);
@@ -274,16 +278,15 @@ public:
 
 typedef VectorPtr<Namespace::Entry *>::iterator NamespaceEntryListIterator;
 
-
-
 class Dictionary
 {
 public:
 
    struct Entry
    {
+      friend class Dictionary;
+
       StringTableEntry name;
-      ConsoleValue value;
       Entry *nextEntry;
 
       typedef Signal<void()> NotifySignal;
@@ -298,6 +301,8 @@ public:
       /// Whether this is a constant that cannot be assigned to.
       bool mIsConstant;
 
+      ConsoleValue value;
+
    public:
 
       Entry() {
@@ -307,7 +312,6 @@ public:
          mUsage = NULL;
          mIsConstant = false;
          mNext = NULL;
-         value.init();
       }
 
       Entry(StringTableEntry name);
@@ -315,26 +319,23 @@ public:
 
       Entry *mNext;
 
-      void reset() {
-         name = NULL;
-         value.cleanup();
-         if (notify)
-            delete notify;
-      }
+      void reset();
+
+      inline ConsoleValue getValue() { return std::move(value); }
 
       inline U32 getIntValue()
       {
-         return value.getIntValue();
+         return value.getInt();
       }
 
       inline F32 getFloatValue()
       {
-         return value.getFloatValue();
+         return value.getFloat();
       }
 
       inline const char *getStringValue()
       {
-         return value.getStringValue();
+         return value.getString();
       }
 
       void setIntValue(U32 val)
@@ -345,7 +346,16 @@ public:
             return;
          }
 
-         value.setIntValue(val);
+         if (value.isConsoleType())
+         {
+            const char* dptr = Con::getData(TypeS32, &val, 0);
+            ConsoleValueConsoleType* cvt = value.getConsoleType();
+            Con::setData(cvt->consoleType, cvt->dataPtr, 0, 1, &dptr, cvt->enumTable);
+         }
+         else
+         {
+            value.setInt(val);
+         }
 
          // Fire off the notification if we have one.
          if (notify)
@@ -360,14 +370,24 @@ public:
             return;
          }
 
-         value.setFloatValue(val);
+         if (value.isConsoleType())
+         {
+            const char* dptr = Con::getData(TypeF32, &val, 0);
+            ConsoleValueConsoleType* cvt = value.getConsoleType();
+            Con::setData(cvt->consoleType, cvt->dataPtr, 0, 1, &dptr, cvt->enumTable);
+         }
+         else
+         {
+            value.setFloat(val);
+         }
 
          // Fire off the notification if we have one.
          if (notify)
             notify->trigger();
       }
 
-      void setStringStackPtrValue(StringStackPtr newValue)
+
+      void setStringValue(const char* val)
       {
          if (mIsConstant)
          {
@@ -375,24 +395,15 @@ public:
             return;
          }
 
-         value.setStringStackPtrValue(newValue);
-
-
-         // Fire off the notification if we have one.
-         if (notify)
-            notify->trigger();
-      }
-
-      void setStringValue(const char *newValue)
-      {
-         if (mIsConstant)
+         if (value.isConsoleType())
          {
-            Con::errorf("Cannot assign value to constant '%s'.", name);
-            return;
+            ConsoleValueConsoleType* cvt = value.getConsoleType();
+            Con::setData(cvt->consoleType, cvt->dataPtr, 0, 1, &val, cvt->enumTable);
          }
-
-         value.setStringValue(newValue);
-
+         else
+         {
+            value.setString(val);
+         }
 
          // Fire off the notification if we have one.
          if (notify)
@@ -414,11 +425,10 @@ public:
 
    HashTableData* hashTable;
    HashTableData ownHashTable;
-   ExprEvalState *exprState;
 
    StringTableEntry scopeName;
    Namespace *scopeNamespace;
-   CodeBlock *code;
+   Con::Module *module;
    U32 ip;
 
    Dictionary();
@@ -426,7 +436,7 @@ public:
 
    Entry *lookup(StringTableEntry name);
    Entry *add(StringTableEntry name);
-   void setState(ExprEvalState *state, Dictionary* ref = NULL);
+   void setState(Dictionary* ref = NULL);
    void remove(Entry *);
    void reset();
 
@@ -471,76 +481,50 @@ public:
    void validate();
 };
 
-class ExprEvalState
+struct ConsoleValueFrame
 {
-public:
-   /// @name Expression Evaluation
-   /// @{
+   ConsoleValue* values;
+   bool isReference;
 
-   ///
-   SimObject *thisObject;
-   Dictionary::Entry *currentVariable;
-   Dictionary::Entry *copyVariable;
-   bool traceOn;
+   ConsoleValueFrame() : values(NULL), isReference(false)
+   {}
 
-   U32 mStackDepth;
-   bool mShouldReset; ///< Designates if the value stack should be reset
-   bool mResetLocked; ///< mShouldReset will be set at the end
-
-   ExprEvalState();
-   ~ExprEvalState();
-
-   /// @}
-
-   /// @name Stack Management
-   /// @{
-
-   /// The stack of callframes.  The extra redirection is necessary since Dictionary holds
-   /// an interior pointer that will become invalid when the object changes address.
-   Vector< Dictionary* > stack;
-
-   ///
-   Dictionary globalVars;
-
-   void setCurVarName(StringTableEntry name);
-   void setCurVarNameCreate(StringTableEntry name);
-
-   S32 getIntVariable();
-   F64 getFloatVariable();
-   const char *getStringVariable();
-   void setIntVariable(S32 val);
-   void setFloatVariable(F64 val);
-   void setStringVariable(const char *str);
-   void setStringStackPtrVariable(StringStackPtr str);
-   void setCopyVariable();
-
-   void pushFrame(StringTableEntry frameName, Namespace *ns);
-   void popFrame();
-
-   /// Puts a reference to an existing stack frame
-   /// on the top of the stack.
-   void pushFrameRef(S32 stackIndex);
-
-   U32 getStackDepth() const
+   ConsoleValueFrame(ConsoleValue* vals, bool isRef)
    {
-      return mStackDepth;
+      values = vals;
+      isReference = isRef;
    }
-
-   Dictionary& getCurrentFrame()
-   {
-      return *(stack[mStackDepth - 1]);
-   }
-
-   /// @}
-
-   /// Run integrity checks for debugging.
-   void validate();
 };
 
 namespace Con
 {
    /// The current $instantGroup setting.
    extern String gInstantGroup;
+
+   /// Global variable storage
+   inline Dictionary gGlobalVars;
+
+   typedef Dictionary ConsoleFrame;
+   typedef Vector<ConsoleFrame*> ConsoleStack;
+
+   inline ConsoleStack gFrameStack;
+
+   inline ConsoleStack getFrameStack() { return gFrameStack; }
+   inline void pushStackFrame(ConsoleFrame* frame) { gFrameStack.push_back(frame); }
+   inline ConsoleFrame* popStackFrame() { ConsoleFrame* last = gFrameStack.last(); gFrameStack.pop_back(); return last; }
+   inline ConsoleFrame* getCurrentStackFrame() { return getFrameStack().empty() ? NULL : gFrameStack.last(); }
+   inline ConsoleFrame* getStackFrame(S32 idx) { return gFrameStack[idx]; }
+
+   inline Vector<Con::Module*> gScriptModules;
+
+   inline Vector<Con::Module*> getAllScriptModules() { return gScriptModules; }
+   Con::Module* findScriptModuleForFile(const char* fileName);
+   // Convenience functions for getting the execution context
+   inline const char* getCurrentScriptModulePath() { return getCurrentStackFrame() && getCurrentStackFrame()->module ? getCurrentStackFrame()->module->getPath() : NULL; }
+   inline const char* getCurrentScriptModuleName() { return getCurrentStackFrame() && getCurrentStackFrame()->module ? getCurrentStackFrame()->module->getName() : NULL; }
+   inline Con::Module* getCurrentScriptModule() { return getCurrentStackFrame() ? getCurrentStackFrame()->module : NULL; }
+
+   inline bool gTraceOn;
 }
 
 /// @}

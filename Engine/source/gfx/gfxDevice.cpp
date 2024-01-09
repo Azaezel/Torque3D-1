@@ -47,7 +47,7 @@
 
 GFXDevice * GFXDevice::smGFXDevice = NULL;
 bool GFXDevice::smWireframe = false;
-bool GFXDevice::smDisableVSync = true;
+bool GFXDevice::smEnableVSync = false;
 F32 GFXDevice::smForcedPixVersion = -1.0f;
 bool GFXDevice::smDisableOcclusionQuery = false;
 bool gDisassembleAllShaders = false;
@@ -71,8 +71,8 @@ void GFXDevice::initConsole()
       "them to return only the visibile state.\n"
       "@ingroup GFX\n" );
 
-   Con::addVariable( "$pref::Video::disableVerticalSync", TypeBool, &smDisableVSync,
-      "Disables vertical sync on the active device.\n"
+   Con::addVariable( "$pref::Video::enableVerticalSync", TypeBool, &smEnableVSync,
+      "Enables vertical sync on the active device.\n"
       "@note The video mode must be reset for the change to take affect.\n"
       "@ingroup GFX\n" );
 
@@ -94,16 +94,12 @@ GFXDevice::GFXDevice()
    VECTOR_SET_ASSOCIATION( mVideoModes );
    VECTOR_SET_ASSOCIATION( mRTStack );
 
-   mWorldMatrixDirty = false;
    mWorldStackSize = 0;
-   mProjectionMatrixDirty = false;
-   mViewMatrixDirty = false;
-   mTextureMatrixCheckDirty = false;
 
    mViewMatrix.identity();
    mProjectionMatrix.identity();
    
-   for( S32 i = 0; i < WORLD_STACK_MAX; i++ )
+   for( S32 i = 0; i < GFX_WORLD_STACK_MAX; i++ )
       mWorldMatrix[i].identity();
    
    AssertFatal(smGFXDevice == NULL, "Already a GFXDevice created! Bad!");
@@ -123,8 +119,8 @@ GFXDevice::GFXDevice()
    mPrimitiveBufferDirty = false;
    mTexturesDirty = false;
    
-   // Use of TEXTURE_STAGE_COUNT in initialization is okay [7/2/2007 Pat]
-   for(U32 i = 0; i < TEXTURE_STAGE_COUNT; i++)
+   // Use of GFX_TEXTURE_STAGE_COUNT in initialization is okay [7/2/2007 Pat]
+   for(U32 i = 0; i < GFX_TEXTURE_STAGE_COUNT; i++)
    {
       mTextureDirty[i] = false;
       mCurrentTexture[i] = NULL;
@@ -132,25 +128,11 @@ GFXDevice::GFXDevice()
       mCurrentCubemap[i] = NULL;
       mNewCubemap[i] = NULL;
       mCurrentCubemapArray[i] = NULL;
+      mNewTextureArray[i] = NULL;
+      mCurrentTextureArray[i] = NULL;
       mNewCubemapArray[i] = NULL;
       mTexType[i] = GFXTDT_Normal;
-
-      mTextureMatrix[i].identity();
-      mTextureMatrixDirty[i] = false;
    }
-
-   mLightsDirty = false;
-   for(U32 i = 0; i < LIGHT_STAGE_COUNT; i++)
-   {
-      mLightDirty[i] = false;
-      mCurrentLightEnable[i] = false;
-   }
-
-   mGlobalAmbientColorDirty = false;
-   mGlobalAmbientColor = LinearColorF(0.0f, 0.0f, 0.0f, 1.0f);
-
-   mLightMaterialDirty = false;
-   dMemset(&mCurrentLightMaterial, 0, sizeof(GFXLightMaterial));
 
    // State block 
    mStateBlockDirty = false;
@@ -170,8 +152,6 @@ GFXDevice::GFXDevice()
    mRTDirty = false;
    mViewport = RectI::Zero;
    mViewportDirty = false;
-
-   mCurrentFrontBufferIdx = 0;
 
    mDeviceSwizzle32 = NULL;
    mDeviceSwizzle24 = NULL;
@@ -258,7 +238,7 @@ GFXDevice::~GFXDevice()
       mCurrentVertexBuffer[i] = NULL;
 
    // Clear out our current texture references
-   for (U32 i = 0; i < TEXTURE_STAGE_COUNT; i++)
+   for (U32 i = 0; i < GFX_TEXTURE_STAGE_COUNT; i++)
    {
       mCurrentTexture[i] = NULL;
       mNewTexture[i] = NULL;
@@ -266,6 +246,8 @@ GFXDevice::~GFXDevice()
       mNewCubemap[i] = NULL;
       mCurrentCubemapArray[i] = NULL;
       mNewCubemapArray[i] = NULL;
+      mCurrentTextureArray[i] = NULL;
+      mNewTextureArray[i] = NULL;
    }
 
    mCurrentRT = NULL;
@@ -363,10 +345,6 @@ void GFXDevice::updateStates(bool forceSetAll /*=false*/)
          rememberToEndScene = true;
       }
 
-      setMatrix( GFXMatrixProjection, mProjectionMatrix );
-      setMatrix( GFXMatrixWorld, mWorldMatrix[mWorldStackSize] );
-      setMatrix( GFXMatrixView, mViewMatrix );
-
       setVertexDecl( mCurrVertexDecl );
 
       for ( U32 i=0; i < VERTEX_STREAM_COUNT; i++ )
@@ -403,27 +381,27 @@ void GFXDevice::updateStates(bool forceSetAll /*=false*/)
                }
                break;
             case GFXTDT_CubeArray:
-            {
-               mCurrentCubemapArray[i] = mNewCubemapArray[i];
-               if (mCurrentCubemapArray[i])
-                  mCurrentCubemapArray[i]->setToTexUnit(i);
-               else
-                  setTextureInternal(i, NULL);
-            }
-            break;
+               {
+                  mCurrentCubemapArray[i] = mNewCubemapArray[i];
+                  if (mCurrentCubemapArray[i])
+                     mCurrentCubemapArray[i]->setToTexUnit(i);
+                  else
+                     setTextureInternal(i, NULL);
+               }
+               break;
+            case GFXTDT_TextureArray:
+               {
+                  mCurrentTextureArray[i] = mNewTextureArray[i];
+                  if (mCurrentTextureArray[i])
+                     mCurrentTextureArray[i]->setToTexUnit(i);
+                  else
+                     setTextureInternal(i, NULL);
+               }
+               break;
             default:
                AssertFatal(false, "Unknown texture type!");
                break;
          }
-      }
-
-      // Set our material
-      setLightMaterialInternal(mCurrentLightMaterial);
-
-      // Set our lights
-      for(U32 i = 0; i < LIGHT_STAGE_COUNT; i++)
-      {
-         setLightInternal(i, mCurrentLight[i], mCurrentLightEnable[i]);
       }
 
        _updateRenderTargets();
@@ -439,42 +417,6 @@ void GFXDevice::updateStates(bool forceSetAll /*=false*/)
 
    // Normal update logic begins here.
    mStateDirty = false;
-
-   // Update Projection Matrix
-   if( mProjectionMatrixDirty )
-   {
-      setMatrix( GFXMatrixProjection, mProjectionMatrix );
-      mProjectionMatrixDirty = false;
-   }
-   
-   // Update World Matrix
-   if( mWorldMatrixDirty )
-   {
-      setMatrix( GFXMatrixWorld, mWorldMatrix[mWorldStackSize] );
-      mWorldMatrixDirty = false;
-   }
-   
-   // Update View Matrix
-   if( mViewMatrixDirty )
-   {
-      setMatrix( GFXMatrixView, mViewMatrix );
-      mViewMatrixDirty = false;
-   }
-
-
-   if( mTextureMatrixCheckDirty )
-   {
-      for( S32 i = 0; i < getNumSamplers(); i++ )
-      {
-         if( mTextureMatrixDirty[i] )
-         {
-            mTextureMatrixDirty[i] = false;
-            setMatrix( (GFXMatrixType)(GFXMatrixTexture + i), mTextureMatrix[i] );
-         }
-      }
-
-      mTextureMatrixCheckDirty = false;
-   }
 
    // Update the vertex declaration.
    if ( mVertexDeclDirty )
@@ -558,32 +500,20 @@ void GFXDevice::updateStates(bool forceSetAll /*=false*/)
             else
                setTextureInternal(i, NULL);
          }
+            break;
+         case GFXTDT_TextureArray:
+         {
+            mCurrentTextureArray[i] = mNewTextureArray[i];
+            if (mCurrentTextureArray[i])
+               mCurrentTextureArray[i]->setToTexUnit(i);
+            else
+               setTextureInternal(i, NULL);
+         }
          break;
          default:
             AssertFatal(false, "Unknown texture type!");
             break;
          }
-      }
-   }
-   
-   // Set light material
-   if(mLightMaterialDirty)
-   {
-      setLightMaterialInternal(mCurrentLightMaterial);
-      mLightMaterialDirty = false;
-   }
-
-   // Set our lights
-   if(mLightsDirty)
-   {
-      mLightsDirty = false;
-      for(U32 i = 0; i < LIGHT_STAGE_COUNT; i++)
-      {
-         if(!mLightDirty[i])
-            continue;
-
-         mLightDirty[i] = false;
-         setLightInternal(i, mCurrentLight[i], mCurrentLightEnable[i]);
       }
    }
 
@@ -741,43 +671,6 @@ Point2F GFXDevice::getWorldToScreenScale() const
 }
 
 //-----------------------------------------------------------------------------
-// Set Light
-//-----------------------------------------------------------------------------
-void GFXDevice::setLight(U32 stage, GFXLightInfo* light)
-{
-   AssertFatal(stage < LIGHT_STAGE_COUNT, "GFXDevice::setLight - out of range stage!");
-
-   if(!mLightDirty[stage])
-   {
-      mStateDirty = true;
-      mLightsDirty = true;
-      mLightDirty[stage] = true;
-   }
-   mCurrentLightEnable[stage] = (light != NULL);
-   if(mCurrentLightEnable[stage])
-      mCurrentLight[stage] = *light;
-}
-
-//-----------------------------------------------------------------------------
-// Set Light Material
-//-----------------------------------------------------------------------------
-void GFXDevice::setLightMaterial(const GFXLightMaterial& mat)
-{
-   mCurrentLightMaterial = mat;
-   mLightMaterialDirty = true;
-   mStateDirty = true;
-}
-
-void GFXDevice::setGlobalAmbientColor(const LinearColorF& color)
-{
-   if(mGlobalAmbientColor != color)
-   {
-      mGlobalAmbientColor = color;
-      mGlobalAmbientColorDirty = true;
-   }
-}
-
-//-----------------------------------------------------------------------------
 // Set texture
 //-----------------------------------------------------------------------------
 void GFXDevice::setTexture( U32 stage, GFXTextureObject *texture )
@@ -801,6 +694,8 @@ void GFXDevice::setTexture( U32 stage, GFXTextureObject *texture )
    mCurrentCubemap[stage] = NULL;
    mNewCubemapArray[stage] = NULL;
    mCurrentCubemapArray[stage] = NULL;
+   mNewTextureArray[stage] = NULL;
+   mCurrentTextureArray[stage] = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -827,6 +722,8 @@ void GFXDevice::setCubeTexture( U32 stage, GFXCubemap *cubemap )
    mCurrentTexture[stage] = NULL;
    mNewCubemapArray[stage] = NULL;
    mCurrentCubemapArray[stage] = NULL;
+   mNewTextureArray[stage] = NULL;
+   mCurrentTextureArray[stage] = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -853,6 +750,36 @@ void GFXDevice::setCubeArrayTexture(U32 stage, GFXCubemapArray *cubemapArray)
    mCurrentTexture[stage] = NULL;
    mNewCubemap[stage] = NULL;
    mCurrentCubemap[stage] = NULL;
+   mNewTextureArray[stage] = NULL;
+   mCurrentTextureArray[stage] = NULL;
+}
+
+//-----------------------------------------------------------------------------
+// Set texture array
+//-----------------------------------------------------------------------------
+void GFXDevice::setTextureArray(U32 stage, GFXTextureArray *textureArray)
+{
+   AssertFatal(stage < getNumSamplers(), avar("GFXDevice::setTextureArray - out of range stage! %i>%i", stage, getNumSamplers()));
+
+   if (mTexType[stage] == GFXTDT_TextureArray &&
+      ((mTextureDirty[stage] && mNewTextureArray[stage].getPointer() == textureArray) ||
+      (!mTextureDirty[stage] && mCurrentTextureArray[stage].getPointer() == textureArray)))
+      return;
+
+   mStateDirty = true;
+   mTexturesDirty = true;
+   mTextureDirty[stage] = true;
+
+   mNewTextureArray[stage] = textureArray;
+   mTexType[stage] = GFXTDT_TextureArray;
+
+   // Clear out textures
+   mNewTexture[stage] = NULL;
+   mCurrentTexture[stage] = NULL;
+   mNewCubemap[stage] = NULL;
+   mCurrentCubemap[stage] = NULL;
+   mNewCubemapArray[stage] = NULL;
+   mCurrentCubemapArray[stage] = NULL;
 }
 
 //------------------------------------------------------------------------------
@@ -1362,6 +1289,17 @@ DefineEngineFunction( getDisplayDeviceInformation, const char*, (),,
 
    const GFXAdapter& adapter = GFX->getAdapter();
    return adapter.getName();
+}
+
+DefineEngineFunction(getDisplayDeviceType, GFXAdapterType, (), ,
+   "Get the string describing the active GFX device type.\n"
+   "@ingroup GFX\n")
+{
+   if (!GFXDevice::devicePresent())
+      return NullDevice;
+
+   const GFXAdapter& adapter = GFX->getAdapter();
+   return adapter.mType;
 }
 
 DefineEngineFunction( getBestHDRFormat, GFXFormat, (),,

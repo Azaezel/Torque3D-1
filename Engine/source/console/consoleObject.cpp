@@ -140,7 +140,7 @@ void AbstractClassRep::registerClassRep(AbstractClassRep* in_pRep)
 #ifdef TORQUE_DEBUG  // assert if this class is already registered.
    for(AbstractClassRep *walk = classLinkList; walk; walk = walk->nextClass)
    {
-      AssertFatal(dStrcmp(in_pRep->mClassName, walk->mClassName),
+      AssertFatal(String::compare(in_pRep->mClassName, walk->mClassName),
          "Duplicate class name registered in AbstractClassRep::registerClassRep()");
    }
 #endif
@@ -681,6 +681,7 @@ bool ConsoleObject::removeField(const char* in_pFieldname)
 //--------------------------------------
 void ConsoleObject::initPersistFields()
 {
+   docsURL;
 }
 
 //--------------------------------------
@@ -830,11 +831,19 @@ DefineEngineFunction( getCategoryOfClass, const char*,  ( const char* className 
             "@ingroup Console")
 {
    AbstractClassRep* rep = AbstractClassRep::findClassRep( className );
-   if( rep )
-      return rep->getCategory();
 
-   Con::errorf( "getCategoryOfClass - no class called '%s'", className );
-   return "";
+   if (rep == NULL)
+   {
+      Con::errorf("getCategoryOfClass - no class called '%s'", className);
+      return "";
+   }
+   while (rep && rep->getParentClass())
+   {
+      if (dStrcmp(rep->getCategory(), "") != 0)
+         break;
+      rep = rep->getParentClass();
+   }
+   return rep ? rep->getCategory() : "";
 }
 
 DefineEngineFunction( enumerateConsoleClasses, const char*, ( const char* className ), ( "" ),

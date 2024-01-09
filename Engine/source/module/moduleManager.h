@@ -61,7 +61,8 @@ public:
     /// Module definitions.
     typedef Vector<ModuleDefinition*> typeModuleDefinitionVector;
     typedef Vector<const ModuleDefinition*> typeConstModuleDefinitionVector;
-
+protected:
+    static S32 moduleDependencySort(ModuleDefinition* const* a, ModuleDefinition* const* b);
 private:
     /// Database locking.
     struct LockDatabase
@@ -116,6 +117,7 @@ private:
     /// Miscellaneous.
     bool                        mEnforceDependencies;
     bool                        mEchoInfo;
+    bool                        mFailGroupIfModuleFail;
     S32                         mDatabaseLocks;
     char                        mModuleExtension[256];
     Taml                        mTaml;
@@ -173,8 +175,9 @@ public:
 
     /// Module type enumeration.
     ModuleDefinition* findModule( const char* pModuleId, const U32 versionId );
+    ModuleDefinition* findModuleByFilePath(StringTableEntry filePath);
     ModuleDefinition* findLoadedModule( const char* pModuleId );
-    void findModules( const bool loadedOnly, typeConstModuleDefinitionVector& moduleDefinitions );
+    void findModules( const bool loadedOnly, typeModuleDefinitionVector& moduleDefinitions );
     void findModuleTypes( const char* pModuleType, const bool loadedOnly, typeConstModuleDefinitionVector& moduleDefinitions );
 
     /// Module synchronization.

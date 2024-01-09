@@ -1,14 +1,14 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiWindowCollapseCtrl(ShapeEdPropWindow) {
+$guiContent = new GuiWindowCollapseCtrl(ShapeEdPropWindow) {
    canSaveDynamicFields = "0";
    isContainer = "1";
    Profile = "ToolsGuiWindowProfile";
    HorizSizing = "windowRelative";
    VertSizing = "windowRelative";
-   Position = getWord($pref::Video::mode, 0) - 209
+   Position = getWord($pref::Video::mode, 0) - 360
       SPC getWord(EditorGuiToolbar.extent, 1) + getWord(ShapeEdSelectWindow.extent, 1) - 2;
-   Extent = "210 484";
-   MinExtent = "210 352";
+   Extent = "360 350";
+   MinExtent = "300 350";
    canSave = "1";
    Visible = "0";
    tooltipprofile = "ToolsGuiToolTipProfile";
@@ -27,7 +27,7 @@
    canMaximize = "0";
    minSize = "50 50";
    EdgeSnap = "1";
-   text = "Properties";
+   text = "::  Shape Editor - Properties";
 
    //---------------------------------------------------------------------
    // Sequence and Node editors
@@ -201,7 +201,7 @@
                   HorizSizing = "right";
                   VertSizing = "bottom";
                   position = "5 1";
-                  Extent = "104 16";
+                  Extent = "120 16";
                   text = "Sequence Properties";
                };
                new GuiTextCtrl() { // Name
@@ -209,7 +209,7 @@
                   HorizSizing = "right";
                   VertSizing = "bottom";
                   position = "16 22";
-                  Extent = "27 16";
+                  Extent = "30 16";
                   text = "Name";
                };
                new GuiTextEditCtrl() {
@@ -219,7 +219,7 @@
                   Profile = "ToolsGuiTextEditProfile";
                   HorizSizing = "width";
                   VertSizing = "bottom";
-                  Position = "46 21";
+                  Position = "55 21";
                   Extent = "152 18";
                   MinExtent = "8 2";
                   canSave = "1";
@@ -255,7 +255,7 @@
                   Profile = "ToolsGuiPopUpMenuProfile";
                   HorizSizing = "width";
                   VertSizing = "bottom";
-                  Position = "46 41";
+                  Position = "55 41";
                   Extent = "91 18";
                };
                // Start Frame
@@ -303,7 +303,7 @@
                   HorizSizing = "left";
                   VertSizing = "bottom";
                   Position = "143 43";
-                  Extent = "39 13";
+                  Extent = "45 13";
                   Command = "ShapeEdSequences.onToggleCyclic();";
                   tooltipprofile = "ToolsGuiToolTipProfile";
                   ToolTip = "Loop Animation. Toggles the cyclic flag.";
@@ -355,7 +355,7 @@
                   HorizSizing = "right";
                   VertSizing = "bottom";
                   Position = "2 82";
-                  Extent = "45 16";
+                  Extent = "55 16";
                   Command = "ShapeEdSequences.onEditBlend();";
                   tooltipprofile = "ToolsGuiToolTipProfile";
                   ToolTip = "Toggle the blend flag for the selected sequence";
@@ -367,8 +367,8 @@
                   Profile = "ToolsGuiPopUpMenuProfile";
                   HorizSizing = "width";
                   VertSizing = "bottom";
-                  Position = "46 81";
-                  Extent = "91 18";
+                  Position = "60 81";
+                  Extent = "75 18";
                   tooltip = "Blend reference sequence";
                   Command = "ShapeEdSequences.onEditBlend();";
                };
@@ -378,8 +378,8 @@
                   Profile = "ToolsGuiTextRightProfile";
                   HorizSizing = "left";
                   VertSizing = "bottom";
-                  Position = "142 81";
-                  Extent = "29 18";
+                  Position = "135 81";
+                  Extent = "30 18";
                   text = "Frame";
                };
                new GuiTextEditCtrl() {
@@ -387,7 +387,7 @@
                   Profile = "ToolsGuiTextEditProfile";
                   HorizSizing = "left";
                   VertSizing = "bottom";
-                  Position = "173 81";
+                  Position = "175 81";
                   Extent = "25 18";
                   text = "";
                   tooltip = "Blend reference frame";
@@ -430,7 +430,7 @@
                   groupNum = "0";
                   buttonType = "PushButton";
                   useMouseEvents = "0";
-                  bitmap = "tools/gui/images/new";
+                  bitmapAsset = "ToolsModule:new_n_image";
                };
                new GuiBitmapButtonCtrl() {
                   internalName = "deleteTriggerBtn";
@@ -451,7 +451,7 @@
                   groupNum = "0";
                   buttonType = "PushButton";
                   useMouseEvents = "0";
-                  bitmap = "tools/gui/images/delete";
+                  bitmapAsset = "ToolsModule:delete_n_image";
                };
                // Trigger list
                new GuiControl() {
@@ -525,6 +525,7 @@
                   };
                };
                new GuiTextCtrl() {
+                  Profile = "ToolsGuiTextProfile";
                   HorizSizing = "right";
                   VertSizing = "bottom";
                   Position = "5 85";
@@ -542,6 +543,7 @@
                   AltCommand = "ShapeEdTriggerList.onEditSelection();";
                };
                new GuiTextCtrl() {
+                  Profile = "ToolsGuiTextProfile";
                   HorizSizing = "right";
                   VertSizing = "bottom";
                   Position = "75 85";
@@ -563,7 +565,7 @@
                   Profile = "ToolsGuiCheckBoxProfile";
                   HorizSizing = "left";
                   VertSizing = "bottom";
-                  Position = "152 87";
+                  Position = "150 87";
                   Extent = "47 13";
                   text = "On/off";
                   Command = "ShapeEdTriggerList.onEditSelection();";
@@ -617,7 +619,7 @@
             treeView = ShapeEdNodeTreeView;  
         };  
         new GuiBitmapButtonCtrl() {  
-            bitmap = "tools/gui/images/clear-icon";  
+            bitmapAsset = "ToolsModule:clear_icon_n_image";  
             groupNum = "-1";  
             buttonType = "PushButton";  
             useMouseEvents = "0";  
@@ -838,7 +840,7 @@
                   buttonType = "RadioButton";
                   useMouseEvents = "0";
                   buttonMargin = "0 4";
-                  iconBitmap = "tools/gui/images/menubar/world-transform_n";
+                  bitmapAsset = "ToolsModule:world_transform_n_image";
                   textMargin = "25";
                };
                new GuiIconButtonCtrl() {
@@ -862,7 +864,7 @@
                   buttonType = "RadioButton";
                   useMouseEvents = "0";
                   buttonMargin = "0 4";
-                  iconBitmap = "tools/gui/images/menubar/object-transform_n";
+                  bitmapAsset = "ToolsModule:object_transform_n_image";
                   textMargin = "26";
                };
                new GuiTextEditCtrl() {
@@ -1137,7 +1139,7 @@
                   internalName = "objectNode";
                };
                new GuiBitmapCtrl(){
-                  bitmap = "tools/gui/images/inactive-overlay";
+                  bitmapAsset = "ToolsModule:inactive_overlay_image";
                   position = "4 45";
                   extent = "193 42";
                   tooltip = "A mesh must be selected to edit these properties";
@@ -1353,7 +1355,7 @@
                buttonType = "PushButton";
                useMouseEvents = "0";
                buttonMargin = "0 4";
-               iconBitmap = "tools/worldEditor/images/toolbar/matterial-editor_n";
+               bitmapAsset = "ToolsModule:material_editor_n_image";
                textMargin = "25";
             };
             new GuiCheckBoxCtrl() {
@@ -1381,7 +1383,7 @@
       Profile = "ToolsGuiButtonProfile";
       HorizSizing = "left";
       VertSizing = "bottom";
-      Position = "154 25";
+      Position = "300 25";
       Extent = "17 17";
       MinExtent = "8 2";
       canSave = "1";
@@ -1393,7 +1395,7 @@
       groupNum = "0";
       buttonType = "PushButton";
       useMouseEvents = "0";
-      bitmap = "tools/gui/images/save-icon";
+      bitmapAsset = "ToolsModule:save_icon_n_image";
    };
    new GuiBitmapButtonCtrl() {
       internalName = "newBtn";
@@ -1402,7 +1404,7 @@
       Profile = "ToolsGuiButtonProfile";
       HorizSizing = "left";
       VertSizing = "bottom";
-      Position = "176 25";
+      Position = "320 25";
       Extent = "17 17";
       MinExtent = "8 2";
       canSave = "1";
@@ -1414,7 +1416,7 @@
       groupNum = "0";
       buttonType = "PushButton";
       useMouseEvents = "0";
-      bitmap = "tools/gui/images/new";
+      bitmapAsset = "ToolsModule:new_n_image";
    };
    new GuiBitmapButtonCtrl() {
       internalName = "deleteBtn";
@@ -1423,7 +1425,7 @@
       Profile = "ToolsGuiButtonProfile";
       HorizSizing = "left";
       VertSizing = "bottom";
-      Position = "190 25";
+      Position = "340 25";
       Extent = "17 17";
       MinExtent = "8 2";
       canSave = "1";
@@ -1435,7 +1437,7 @@
       groupNum = "0";
       buttonType = "PushButton";
       useMouseEvents = "0";
-      bitmap = "tools/gui/images/delete";
+      bitmapAsset = "ToolsModule:delete_n_image";
    };
 };
 //--- OBJECT WRITE END ---

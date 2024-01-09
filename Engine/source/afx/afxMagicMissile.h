@@ -65,11 +65,15 @@ protected:
 
 public:
   enum { MaxLifetimeTicks = 4095 };
+
+  void onShapeChanged() {}
   
 public:
    // variables set in datablock definition:
    // Shape related
-  StringTableEntry      projectileShapeName;
+   DECLARE_SHAPEASSET(afxMagicMissileData, ProjectileShape, onShapeChanged);
+   DECLARE_ASSET_SETGET(afxMagicMissileData, ProjectileShape);
+  //StringTableEntry      projectileShapeName;
 
   //bool                  hasLight;
   //F32                   lightRadius;
@@ -122,7 +126,8 @@ public:
   SplashData* splash;                 // Water Splash Datablock
   S32 splashId;                       // Water splash ID
 
-  SFXTrack* sound;                    // Projectile Sound
+  DECLARE_SOUNDASSET(afxMagicMissileData, ProjectileSound);
+  DECLARE_ASSET_SETGET(afxMagicMissileData, ProjectileSound);
 
   LightDescription *lightDesc;
   S32 lightDescId;   
@@ -213,7 +218,6 @@ public:
   static void           initPersistFields();
   
   DECLARE_CONOBJECT(afxMagicMissileData);
-  DECLARE_CATEGORY("AFX");
 
 public:
   /*C*/                 afxMagicMissileData(const afxMagicMissileData&, bool = false);
@@ -395,7 +399,7 @@ public:
   virtual void      onDeleteNotify(SimObject*);
 
   DECLARE_CONOBJECT(afxMagicMissile);
-  DECLARE_CATEGORY("AFX");
+  DECLARE_CATEGORY("UNLISTED");
 
   static void       initPersistFields();  
 

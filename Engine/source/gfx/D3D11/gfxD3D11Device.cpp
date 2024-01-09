@@ -40,6 +40,8 @@
 #include "shaderGen/shaderGen.h"
 #include <d3d9.h> //d3dperf
 
+#include "gfxD3D11TextureArray.h"
+
 #ifdef TORQUE_DEBUG
 #include "d3d11sdklayers.h"
 #endif
@@ -47,6 +49,8 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d9.lib") //d3dperf
 #pragma comment(lib, "d3d11.lib")
+
+class GFXD3D11TextureArray;
 
 class GFXPCD3D11RegisterDevice
 {
@@ -224,7 +228,7 @@ DXGI_SWAP_CHAIN_DESC GFXD3D11Device::setupPresentParams(const GFXVideoMode &mode
 
    mMultisampleDesc = sampleDesc;
 
-   d3dpp.BufferCount = !smDisableVSync ? 2 : 1; // triple buffering when vsync is on.
+   d3dpp.BufferCount = smEnableVSync ? 2 : 1; // triple buffering when vsync is on.
    d3dpp.BufferDesc.Width = mode.resolution.x;
    d3dpp.BufferDesc.Height = mode.resolution.y;
    d3dpp.BufferDesc.Format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8_SRGB];
@@ -248,6 +252,10 @@ DXGI_SWAP_CHAIN_DESC GFXD3D11Device::setupPresentParams(const GFXVideoMode &mode
 
 void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
 {
+#ifdef TORQUE_TESTS_ENABLED
+      return;
+#endif
+
    IDXGIAdapter1* EnumAdapter;
    IDXGIFactory1* DXGIFactory;
 
@@ -276,7 +284,7 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
       SAFE_DELETE_ARRAY(str);
 
       dStrncpy(toAdd->mName, Description.c_str(), GFXAdapter::MaxAdapterNameLen);
-      dStrncat(toAdd->mName, " (D3D11)", GFXAdapter::MaxAdapterNameLen);
+      dStrncat(toAdd->mName, " (D3D11)", sizeof(toAdd->mName) - strlen(toAdd->mName) - 1);
 
       IDXGIOutput* pOutput = NULL; 
       HRESULT hr;
@@ -957,7 +965,7 @@ void GFXD3D11Device::reacquireDefaultPoolResources()
       mDynamicPB = new GFXD3D11PrimitiveBuffer(this, 0, 0, GFXBufferTypeDynamic);
 
    D3D11_BUFFER_DESC desc;
-   desc.ByteWidth = sizeof(U16) * MAX_DYNAMIC_INDICES;
+   desc.ByteWidth = sizeof(U16) * GFX_MAX_DYNAMIC_INDICES;
    desc.Usage = D3D11_USAGE_DYNAMIC;
    desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -1015,7 +1023,7 @@ GFXD3D11VertexBuffer * GFXD3D11Device::createVBPool( const GFXVertexFormat *vert
    vertexFormat->getDecl(); 
 
    D3D11_BUFFER_DESC desc;
-   desc.ByteWidth = vertSize * MAX_DYNAMIC_VERTS;
+   desc.ByteWidth = vertSize * GFX_MAX_DYNAMIC_VERTS;
    desc.Usage = D3D11_USAGE_DYNAMIC;
    desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -1279,7 +1287,7 @@ GFXPrimitiveBuffer * GFXD3D11Device::allocPrimitiveBuffer(U32 numIndices, U32 nu
    if(bufferType == GFXBufferTypeVolatile)
    {
         // Get it from the pool if it's a volatile...
-        AssertFatal(numIndices < MAX_DYNAMIC_INDICES, "Cannot allocate that many indices in a volatile buffer, increase MAX_DYNAMIC_INDICES.");
+        AssertFatal(numIndices < GFX_MAX_DYNAMIC_INDICES, "Cannot allocate that many indices in a volatile buffer, increase GFX_MAX_DYNAMIC_INDICES.");
 
         res->ib = mDynamicPB->ib;
         res->mVolatileBuffer = mDynamicPB;
@@ -1358,7 +1366,7 @@ GFXVertexBuffer * GFXD3D11Device::allocVertexBuffer(U32 numVerts, const GFXVerte
    if(bufferType == GFXBufferTypeVolatile)
    {
         // NOTE: Volatile VBs are pooled and will be allocated at lock time.
-        AssertFatal(numVerts <= MAX_DYNAMIC_VERTS, "GFXD3D11Device::allocVertexBuffer - Volatile vertex buffer is too big... see MAX_DYNAMIC_VERTS!");
+        AssertFatal(numVerts <= GFX_MAX_DYNAMIC_VERTS, "GFXD3D11Device::allocVertexBuffer - Volatile vertex buffer is too big... see GFX_MAX_DYNAMIC_VERTS!");
    }
    else
    {
@@ -1734,6 +1742,13 @@ GFXCubemapArray * GFXD3D11Device::createCubemapArray()
    GFXD3D11CubemapArray* cubeArray = new GFXD3D11CubemapArray();
    cubeArray->registerResourceWithDevice(this);
    return cubeArray;
+}
+
+GFXTextureArray * GFXD3D11Device::createTextureArray()
+{
+   GFXD3D11TextureArray* textureArray = new GFXD3D11TextureArray();
+   textureArray->registerResourceWithDevice(this);
+   return textureArray;
 }
 
 // Debug events

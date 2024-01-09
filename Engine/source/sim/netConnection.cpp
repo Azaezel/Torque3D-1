@@ -980,7 +980,7 @@ bool NetConnection::readDemoStartBlock(BitStream* stream)
 
 bool NetConnection::startDemoRecord(const char *fileName)
 {
-   FileStream *fs = new FileStream;
+   FileStream *fs = NULL;
 
    if((fs = FileStream::createAndOpen( fileName, Torque::FS::File::Write )) == NULL)
       return false;
@@ -1141,7 +1141,7 @@ void NetConnection::packString(BitStream *stream, const char *str)
       char buf[16];
       S32 num = dAtoi(str);
       dSprintf(buf, sizeof(buf), "%d", num);
-      if(!dStrcmp(buf, str))
+      if(!String::compare(buf, str))
       {
          stream->writeInt(Integer, 2);
          if(stream->writeFlag(num < 0))

@@ -23,6 +23,7 @@
 #include "c_controlInterface.h"
 
 #include "console/consoleInternal.h"
+#include "console/engineAPI.h"
 #include "console/simSet.h"
 #include "app/mainLoop.h"
 #include "windowManager/platformWindow.h"
@@ -35,6 +36,9 @@ extern void createFontInit(void);
 extern void createFontShutdown(void);
 #endif
 
+#if defined(TORQUE_SDL)
+#include "SDL.h"
+#endif
 
 #if defined( TORQUE_MINIDUMP ) && defined( TORQUE_RELEASE )
 extern S32 CreateMiniDump(LPEXCEPTION_POINTERS ExceptionInfo);
@@ -47,7 +51,7 @@ extern "C" {
    // reset the engine, unloading any current level and returning to the main menu
    void torque_reset()
    {
-      Con::evaluate("disconnect();");
+      Con::executef("disconnect");
    }
 
    // initialize Torque 3D including argument handling
@@ -116,7 +120,7 @@ extern "C" {
    // signal an engine shutdown (as with the quit(); console command)
    void torque_enginesignalshutdown()
    {
-      Con::evaluate("quit();");
+      Con::executef("quit");
    }
 
    // shutdown the engine
@@ -227,7 +231,11 @@ extern "C" {
 
    const char* torque_getexecutablepath()
    {
+#if defined(TORQUE_SDL)
+      return gExecutablePath ? gExecutablePath : SDL_GetBasePath();
+#elif
       return gExecutablePath;
+#endif
    }
 
    void torque_setexecutablepath(const char* directory)

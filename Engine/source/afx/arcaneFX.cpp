@@ -31,8 +31,9 @@
 #include "T3D/gameBase/gameProcess.h"
 #include "T3D/player.h"
 #include "math/mathUtils.h"
-#include "console/compiler.h"
+
 #include "console/engineAPI.h"
+#include "console/script.h"
 
 #include "afx/afxChoreographer.h"
 #include "afx/afxSelectron.h"
@@ -82,7 +83,6 @@ public:
   }
 
   DECLARE_CONOBJECT(ClientZoneInEvent);
-  DECLARE_CATEGORY("AFX");
 };
 IMPLEMENT_CO_SERVEREVENT_V1(ClientZoneInEvent);
 
@@ -672,7 +672,7 @@ DefineEngineFunction(wasSyntaxError, bool, (),,
                      "for detecting syntax errors after reloading a script.\n\n"
                      "@ingroup AFX")
 {
-  return Compiler::gSyntaxError;
+   return Con::getLastEvalResult().valid == false;
 }
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
@@ -874,7 +874,7 @@ DefineEngineStringlyVariadicFunction(echoThru, const char*, 2, 0, "(string passt
    for (i = 2; i < argc; i++)
       dStrcat(ret, argv[i], len + 1);
 
-   Con::printf("%s -- [%s]", ret, argv[1].getStringValue());
+   Con::printf("%s -- [%s]", ret, argv[1].getString());
    ret[0] = 0;
 
    return argv[1];
@@ -894,7 +894,7 @@ DefineEngineStringlyVariadicFunction(warnThru, const char*, 2, 0, "(string passt
    for(i = 2; i < argc; i++)
       dStrcat(ret, argv[i], len + 1);
 
-   Con::warnf("%s -- [%s]", ret, argv[1].getStringValue());
+   Con::warnf("%s -- [%s]", ret, argv[1].getString());
    ret[0] = 0;
 
    return argv[1];
@@ -914,7 +914,7 @@ DefineEngineStringlyVariadicFunction(errorThru, const char*, 2, 0, "(string pass
    for(i = 2; i < argc; i++)
       dStrcat(ret, argv[i], len + 1);
 
-   Con::errorf("%s -- [%s]", ret, argv[1].getStringValue());
+   Con::errorf("%s -- [%s]", ret, argv[1].getString());
    ret[0] = 0;
 
    return argv[1];

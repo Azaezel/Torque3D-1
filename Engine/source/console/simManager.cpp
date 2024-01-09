@@ -20,6 +20,7 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "script.h"
 #include "platform/platform.h"
 #include "platform/threads/mutex.h"
 #include "console/simBase.h"
@@ -35,8 +36,6 @@
 #include "platform/platformIntrinsics.h"
 #include "platform/profiler.h"
 #include "math/mMathFn.h"
-
-extern ExprEvalState gEvalState;
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -328,11 +327,6 @@ SimObject* findObject(const char* fileName, S32 declarationLine)
    return gRootGroup->findObjectByLineNumber(fileName, declarationLine, true);
 }
 
-SimObject* findObject(ConsoleValueRef &ref)
-{
-   return findObject((const char*)ref);
-}
-
 SimObject* findObject(const char* name)
 {
    PROFILE_SCOPE(SimFindObject);
@@ -346,9 +340,9 @@ SimObject* findObject(const char* name)
 
    if (c == '%')
    {
-      if (gEvalState.getStackDepth())
+      if (!Con::getFrameStack().empty())
       {
-         Dictionary::Entry* ent = gEvalState.getCurrentFrame().lookup(StringTable->insert(name));
+         Dictionary::Entry* ent = Con::getCurrentStackFrame()->lookup(StringTable->insert(name));
 
          if (ent)
             return Sim::findObject(ent->getIntValue());
@@ -391,6 +385,20 @@ SimObject* findObject(const char* name)
    return obj->findObject(name + len + 1);
 }
 
+SimObject* findObject(const ConsoleValue &val)
+{
+   if (val.getType() == ConsoleValueType::cvInteger)
+      return findObject((SimObjectId)val.getFastInt());
+   return findObject(val.getString());
+}
+
+SimObject* findObject(ConsoleValue* val)
+{
+   if (val->getType() == ConsoleValueType::cvInteger)
+      return findObject((SimObjectId)val->getFastInt());
+   return findObject(val->getString());
+}
+
 SimObject* findObject(SimObjectId id)
 {
    return gIdDictionary->find(id);
@@ -428,7 +436,7 @@ SimObject *spawnObject(String spawnClass, String spawnDataBlock, String spawnNam
 
    // If we have a spawn script go ahead and execute it last
    if (spawnScript.isNotEmpty())
-      Con::evaluate(spawnScript.c_str(), true);
+      Con::evaluate(spawnScript.c_str());
 
    return spawnObject;
 }
@@ -556,6 +564,8 @@ void init()
    InstantiateNamedSet(SFXAmbienceSet);
    InstantiateNamedSet(TerrainMaterialSet);
    InstantiateNamedSet(DataBlockSet);
+   InstantiateNamedSet(ForestBrushSet); 
+   InstantiateNamedSet(ForestItemDataSet);
    InstantiateNamedGroup(ActionMapGroup);
    InstantiateNamedGroup(ClientGroup);
    InstantiateNamedGroup(GuiGroup);

@@ -95,6 +95,7 @@ ReflectorDesc::~ReflectorDesc()
 
 void ReflectorDesc::initPersistFields()
 {
+   docsURL;
    addGroup( "ReflectorDesc" );
 
       addField( "texSize", TypeS32, Offset( texSize, ReflectorDesc ), 
@@ -295,7 +296,7 @@ void CubeReflector::unregisterReflector()
    mEnabled = false;
 }
 
-void CubeReflector::updateReflection( const ReflectParams &params )
+void CubeReflector::updateReflection( const ReflectParams &params, Point3F explicitPostion)
 {
    GFXDEBUGEVENT_SCOPE( CubeReflector_UpdateReflection, ColorI::WHITE );
 
@@ -336,7 +337,7 @@ void CubeReflector::updateReflection( const ReflectParams &params )
 
 
    for ( U32 i = 0; i < 6; i++ )
-      updateFace( params, i );
+      updateFace( params, i, explicitPostion);
    
 
    GFX->popActiveRenderTarget();
@@ -347,12 +348,15 @@ void CubeReflector::updateReflection( const ReflectParams &params )
    mLastTexSize = texDim;
 }
 
-void CubeReflector::updateFace( const ReflectParams &params, U32 faceidx )
+void CubeReflector::updateFace( const ReflectParams &params, U32 faceidx, Point3F explicitPostion)
 {
    GFXDEBUGEVENT_SCOPE( CubeReflector_UpdateFace, ColorI::WHITE );
 
    // store current matrices
    GFXTransformSaver saver;   
+
+   F32 detailAdjustBackup = TSShapeInstance::smDetailAdjust;
+   TSShapeInstance::smDetailAdjust *= mDesc->detailAdjust;
 
    // set projection to 90 degrees vertical and horizontal
    F32 left, right, top, bottom;
@@ -402,14 +406,22 @@ void CubeReflector::updateFace( const ReflectParams &params, U32 faceidx )
    matView.setColumn( 0, cross );
    matView.setColumn( 1, vLookatPt );
    matView.setColumn( 2, vUpVec );
-   matView.setPosition( mObject->getPosition() );
+
+   if (explicitPostion == Point3F::Max)
+   {
+      matView.setPosition(mObject->getPosition());
+   }
+   else
+   {
+      matView.setPosition(explicitPostion);
+   }
    matView.inverse();
 
    GFX->setWorldMatrix(matView);
    GFX->clearTextureStateImmediate(0);
    mRenderTarget->attachTexture( GFXTextureTarget::Color0, mCubemap, faceidx );
    GFX->setActiveRenderTarget(mRenderTarget);
-   GFX->clear( GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 1.0f, 0 );
+   GFX->clear( GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 0.0f, 0 );
 
    SceneRenderState reflectRenderState
    (
@@ -428,6 +440,7 @@ void CubeReflector::updateFace( const ReflectParams &params, U32 faceidx )
 
    // Clean up.
    mRenderTarget->resolve();
+   TSShapeInstance::smDetailAdjust = detailAdjustBackup;
 }
 
 F32 CubeReflector::calcFaceScore( const ReflectParams &params, U32 faceidx )
@@ -615,7 +628,7 @@ void PlaneReflector::updateReflection( const ReflectParams &params )
    // render a skirt or something in its lower half.
    //
    LinearColorF clearColor = gClientSceneGraph->getAmbientLightColor();
-   GFX->clear( GFXClearZBuffer | GFXClearStencil | GFXClearTarget, clearColor, 1.0f, 0 );
+   GFX->clear( GFXClearZBuffer | GFXClearStencil | GFXClearTarget, clearColor, 0.0f, 0 );
 
    if(GFX->getCurrentRenderStyle() == GFXDevice::RS_StereoSideBySide)
    {
@@ -836,6 +849,7 @@ MatrixF PlaneReflector::getFrustumClipProj( MatrixF &modelview )
    // Manipulate projection matrix
    //------------------------------------------------------------------------
    MatrixF proj = GFX->getProjectionMatrix();
+   proj.reverseProjection(); // convert back into normal depth space from reversed, otherwise we have to figure out how to convert this modification into inverted depth space
    proj.mul( invRotMat );  // reverse rotation imposed by Torque
    proj.transpose();       // switch to row-major order
 
@@ -853,14 +867,16 @@ MatrixF PlaneReflector::getFrustumClipProj( MatrixF &modelview )
 
    Vector4F c = clipPlane * a;
 
+   // [ZREV] This was a hack to handle OGL using -1 to 1 as its Z range
    // CodeReview [ags 1/23/08] Come up with a better way to deal with this.
-   if(GFX->getAdapterType() == OpenGL)
-      c.z += 1.0f;
+   //if(GFX->getAdapterType() == OpenGL)
+   //   c.z += 1.0f;
 
    // Replace the third column of the projection matrix
    proj.setColumn( 2, c );
    proj.transpose(); // convert back to column major order
    proj.mul( rotMat );  // restore Torque rotation
 
+   proj.reverseProjection(); // convert back to reversed depth space
    return proj;
 }

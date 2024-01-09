@@ -32,7 +32,7 @@
 #include "console/console.h"
 #include "console/consoleInternal.h"
 #include "console/engineAPI.h"
-#include "console/codeBlock.h"
+#include "console/script.h"
 #include "gfx/bitmap/gBitmap.h"
 #include "sim/actionMap.h"
 #include "gui/core/guiCanvas.h"
@@ -44,7 +44,7 @@
 //#define DEBUG_SPEW
 
 
-IMPLEMENT_CONOBJECT( GuiControl );
+IMPLEMENT_CONOBJECT_CHILDREN( GuiControl );
 
 ConsoleDocClass( GuiControl,
    "@brief Base class for all Gui control objects.\n\n"
@@ -218,7 +218,8 @@ GuiControl::GuiControl() : mAddGroup( NULL ),
                            mLangTable(NULL),
                            mFirstResponder(NULL),
                            mHorizSizing(horizResizeRight),
-                           mVertSizing(vertResizeBottom)
+                           mVertSizing(vertResizeBottom),
+                           mCategory(StringTable->EmptyString())
 {
    mConsoleVariable     = StringTable->EmptyString();
    mAcceleratorKey      = StringTable->EmptyString();
@@ -252,6 +253,7 @@ void GuiControl::consoleInit()
 
 void GuiControl::initPersistFields()
 {
+   docsURL;
    addGroup( "Layout" );
    
       addField("position",          TypePoint2I,      Offset(mBounds.point, GuiControl),
@@ -293,6 +295,10 @@ void GuiControl::initPersistFields()
       addField("accelerator",       TypeString,       Offset(mAcceleratorKey, GuiControl),
          "Key combination that triggers the control's primary action when the control is on the canvas." );
 
+      addField("category", TypeString, Offset(mCategory, GuiControl),
+         "Name of the category this gui control should be grouped into for organizational purposes. Primarily for tooling.");
+      
+
    endGroup( "Control" );	
    
    addGroup( "ToolTip" );
@@ -319,7 +325,7 @@ void GuiControl::initPersistFields()
 
 //-----------------------------------------------------------------------------
 
-bool GuiControl::processArguments(S32 argc, ConsoleValueRef *argv)
+bool GuiControl::processArguments(S32 argc, ConsoleValue *argv)
 {
    // argv[0] - The GuiGroup to add this control to when it's created.  
    //           this is an optional parameter that may be specified at
@@ -692,7 +698,7 @@ bool GuiControl::onAdd()
    const char *cName = getClassName();
 
    // if we're a pure GuiControl, then we're a container by default.
-   if ( dStrcmp( "GuiControl", cName ) == 0 )
+   if ( String::compare( "GuiControl", cName ) == 0 )
       mIsContainer = true;
 
    // Add to root group.
@@ -843,7 +849,11 @@ bool GuiControl::onWake()
 
    //increment the profile
    mProfile->incLoadCount();
-   mTooltipProfile->incLoadCount();
+
+   if (mTooltipProfile)
+   {
+       mTooltipProfile->incLoadCount();
+   }
 
    // Only invoke script callbacks if we have a namespace in which to do so
    // This will suppress warnings
@@ -869,7 +879,11 @@ void GuiControl::onSleep()
 
    //decrement the profile reference
    mProfile->decLoadCount();
-   mTooltipProfile->decLoadCount();
+
+   if (mTooltipProfile)
+   {
+       mTooltipProfile->decLoadCount();
+   }
 
    // Set Flag
    mAwake = false;
@@ -2480,7 +2494,7 @@ void GuiControl::getCursor(GuiCursor *&cursor, bool &showCursor, const GuiEvent 
 const char* GuiControl::evaluate( const char* str )
 {
    smThisControl = this;
-   const char* result = Con::evaluate(str, false);
+   const char* result = Con::evaluate(str, false).value;
    smThisControl = NULL;
 
    return result;
@@ -2898,7 +2912,7 @@ static ConsoleDocFragment _sGuiControlSetExtent2(
    "GuiControl", // The class to place the method in; use NULL for functions.
    "void setExtent( Point2I p );" ); // The definition string.
 
-DefineEngineMethod( GuiControl, setExtent, void, ( const char* extOrX, const char* y ), (""),
+DefineEngineMethod( GuiControl, setExtent, void, ( const char* extOrX, const char* y ), ("", nullAsType<const char*>()),
    "( Point2I p | int x, int y ) Set the width and height of the control.\n\n"
    "@hide" )
 {
@@ -2932,4 +2946,20 @@ DefineEngineMethod( GuiControl, getAspect, F32, (),,
 {
    const Point2I &ext = object->getExtent();
    return (F32)ext.x / (F32)ext.y;
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineMethod(GuiControl, execCommand, const char*, (), ,
+   "Forcefully executes the command field value(if any) on this guiControl.\n"
+   "@return The results of the evaluation of the command.")
+{
+   return object->execConsoleCallback();
+}
+
+DefineEngineMethod(GuiControl, execAltCommand, const char*, (), ,
+   "Forcefully executes the altCommand field value(if any) on this guiControl.\n"
+   "@return The results of the evaluation of the altCommand.")
+{
+   return object->execAltConsoleCallback();
 }

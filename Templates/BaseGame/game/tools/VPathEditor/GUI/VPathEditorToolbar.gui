@@ -3,7 +3,7 @@
 // Copyright (C) - Violent Tulip
 //-----------------------------------------------------------------------------
 
-%guiContent = new GuiControl(VPathEditorToolbar)
+$guiContent = new GuiControl(VPathEditorToolbar)
 {
     canSaveDynamicFields = "0";
     internalName = "VPathEditorToolbar";
@@ -30,7 +30,7 @@
     new GuiTextCtrl()
     {
         internalName = "ToolbarLabel";
-        profile = "GuiTextProfile";
+        profile = "ToolsGuiTextProfile";
         horizSizing = "right";
         vertSizing = "bottom";
         position = "2 7";
@@ -48,7 +48,7 @@
         internalName = "PathTypeMenu";
         Enabled = "1";
         isContainer = "0";
-        Profile = "GuiPopUpMenuProfile";
+        Profile = "ToolsGuiPopUpMenuProfile";
         HorizSizing = "right";
         VertSizing = "bottom";
         Position = "85 7";

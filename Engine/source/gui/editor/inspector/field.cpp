@@ -23,6 +23,8 @@
 #include "console/engineAPI.h"
 #include "platform/platform.h"
 #include "gui/editor/inspector/field.h"
+
+#include "console/script.h"
 #include "gui/buttons/guiIconButtonCtrl.h"
 #include "gui/editor/guiInspector.h"
 #include "core/util/safeDelete.h"
@@ -56,7 +58,8 @@ GuiInspectorField::GuiInspectorField( GuiInspector* inspector,
    mHeightOverride(18),
    mSpecialEditField(false),
    mVariableName(StringTable->EmptyString()),
-   mCallbackName(StringTable->EmptyString())
+   mCallbackName(StringTable->EmptyString()),
+   mVariableType(StringTable->EmptyString())
 {
    if( field != NULL )
       mCaption    = field->pFieldname;
@@ -82,6 +85,7 @@ GuiInspectorField::GuiInspectorField()
    mHighlighted( false ),
    mTargetObject(NULL),
    mVariableName(StringTable->EmptyString()),
+   mVariableType(StringTable->EmptyString()),
    mCallbackName(StringTable->EmptyString()),
    mSpecialEditField(false),
    mUseHeightOverride(false),
@@ -314,11 +318,14 @@ void GuiInspectorField::setData( const char* data, bool callbacks )
          
          String newValue = strData;
          S32 type= mField->type;
+         ConsoleValue evaluationResult;
          if( type == TypeS8 || type == TypeS32 || type == TypeF32 )
          {
             char buffer[ 2048 ];
             expandEscape( buffer, newValue );
-            newValue = (const char*)Con::evaluatef( "%%f = \"%s\"; return ( %s );", oldValue.c_str(), buffer );
+            evaluationResult = Con::evaluatef("$f = \"%s\"; return ( %s );", oldValue.c_str(), buffer).value;
+            newValue = evaluationResult.getString();
+            Con::evaluatef("$f=0;");
          }
          else if(    type == TypeS32Vector
                   || type == TypeF32Vector
@@ -353,12 +360,13 @@ void GuiInspectorField::setData( const char* data, bool callbacks )
                char buffer[ 2048 ];
                expandEscape( buffer, newComponentExpr );
 
-               const char* newComponentVal = Con::evaluatef( "%%f = \"%s\"; %%v = \"%s\"; return ( %s );",
-                  oldComponentVal, oldValue.c_str(), buffer );
-               
+               evaluationResult = Con::evaluatef("$f = \"%s\"; $v = \"%s\"; return ( %s );",
+                  oldComponentVal, oldValue.c_str(), buffer).value;
+               Con::evaluatef("$f=0;$v=0;");
+
                if( !isFirst )
                   strNew.append( ' ' );
-               strNew.append( newComponentVal );
+               strNew.append( evaluationResult.getString() );
                
                isFirst = false;
             }
@@ -370,7 +378,7 @@ void GuiInspectorField::setData( const char* data, bool callbacks )
          
          // Fire callback single-object undo.
          
-         if( callbacks )
+         if( callbacks && !mField->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors) )
             Con::executef( mInspector, "onInspectorFieldModified", 
                                           target->getIdString(), 
                                           mField->pFieldname, 
@@ -648,7 +656,7 @@ bool GuiInspectorField::hasSameValueInAllObjects()
       if( !value2 )
          value2 = "";
 
-      if( dStrcmp( value1, value2 ) != 0 )
+      if( String::compare( value1, value2 ) != 0 )
          return false;
    }
          
@@ -661,17 +669,22 @@ void GuiInspectorField::_executeSelectedCallback()
 {
    if( mField )
       Con::executef( mInspector, "onFieldSelected", mField->pFieldname, ConsoleBaseType::getType(mField->type)->getTypeName(), mFieldDocs.c_str() );
+   else if(mSpecialEditField)
+      Con::executef(mInspector, "onFieldSelected", mVariableName, mVariableType, mFieldDocs.c_str());
 }
 
 //-----------------------------------------------------------------------------
 
-void GuiInspectorField::_registerEditControl( GuiControl *ctrl )
+void GuiInspectorField::_registerEditControl(GuiControl* ctrl, StringTableEntry suffix)
 {
+   if (ctrl->isProperlyAdded()) return;
+   ctrl->setInternalName(suffix);
+
    char szName[512];
-   if(mInspector->getInspectObject() != nullptr)
-      dSprintf( szName, 512, "IE_%s_%d_%s_Field", ctrl->getClassName(), mInspector->getInspectObject()->getId(), mCaption);
+   if (mInspector->getInspectObject() != nullptr)
+      dSprintf(szName, 512, "IE_%s_%d_%s_%s_Field", ctrl->getClassName(), mInspector->getInspectObject()->getId(), suffix, mCaption);
    else
-      dSprintf(szName, 512, "IE_%s_%s_Field", ctrl->getClassName(), mCaption);
+      dSprintf(szName, 512, "IE_%s_%s_%s_Field", ctrl->getClassName(), suffix, mCaption);
 
    // Register the object
    ctrl->registerObject( szName );
@@ -770,9 +783,29 @@ DefineEngineMethod( GuiInspectorField, reset, void, (), , "() - Reset to default
    object->resetData();
 }
 
-DefineEngineMethod(GuiInspectorField, setCaption, void, (String newCaption),, "() - Reset to default value.")
+DefineEngineMethod(GuiInspectorField, setCaption, void, (String newCaption),, "() - Sets the caption of the field.")
 {
    object->setCaption(StringTable->insert(newCaption.c_str()));
+}
+
+DefineEngineMethod(GuiInspectorField, setSpecialEditVariableName, void, (String newCaption), , "() - Sets the variable name for special edit fields.")
+{
+   object->setSpecialEditVariableName(StringTable->insert(newCaption.c_str()));
+}
+
+DefineEngineMethod(GuiInspectorField, setSpecialEditVariableType, void, (String newVariableType), , "() - Sets the variable type for special edit fields.")
+{
+   object->setSpecialEditVariableType(StringTable->insert(newVariableType.c_str()));
+}
+
+DefineEngineMethod(GuiInspectorField, setSpecialEditCallbackName, void, (String callbackName), , "() - Sets the callback name for special edit fields.")
+{
+   object->setSpecialEditCallbackName(StringTable->insert(callbackName.c_str()));
+}
+
+DefineEngineMethod(GuiInspectorField, setFieldDocs, void, (String documentation), , "() - Sets the field's documentation string.")
+{
+   object->setDocs(documentation);
 }
 
 DefineEngineMethod(GuiInspectorField, setHeightOverride, void, (bool useOverride, U32 heightOverride), , "")

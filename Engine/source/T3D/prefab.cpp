@@ -31,6 +31,7 @@
 #include "console/consoleTypes.h"
 #include "core/volume.h"
 #include "console/engineAPI.h"
+#include "console/script.h"
 #include "T3D/physics/physicsShape.h"
 #include "core/util/path.h"
 
@@ -71,6 +72,8 @@ Prefab::Prefab()
    mNetFlags.clear(Ghostable);
 
    mTypeMask |= StaticObjectType;
+
+   mFilename = StringTable->EmptyString();
 }
 
 Prefab::~Prefab()
@@ -79,6 +82,7 @@ Prefab::~Prefab()
 
 void Prefab::initPersistFields()
 {
+   docsURL;
    addGroup( "Prefab" );
 
       addProtectedField( "filename", TypePrefabFilename, Offset( mFilename, Prefab ),         
@@ -90,6 +94,10 @@ void Prefab::initPersistFields()
    Parent::initPersistFields();
 }
 
+StringTableEntry Prefab::getTypeHint() const
+{
+   return (mFilename != StringTable->EmptyString()) ? StringTable->insert(Torque::Path(mFilename).getFileName().c_str()) : StringTable->EmptyString();
+}
 extern bool gEditingMission;
 
 bool Prefab::onAdd()
@@ -196,7 +204,7 @@ U32 Prefab::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 
    if ( stream->writeFlag( mask & FileMask ) )
    {
-      stream->write( mFilename );
+      stream->writeString( mFilename );
    }
 
    if ( stream->writeFlag( mask & TransformMask ) )
@@ -218,7 +226,7 @@ void Prefab::unpackUpdate(NetConnection *conn, BitStream *stream)
    // FileMask
    if ( stream->readFlag() ) 
    {
-      stream->read( &mFilename );
+      mFilename = stream->readSTString();
    }
 
    // TransformMask
@@ -235,14 +243,12 @@ bool Prefab::protectedSetFile( void *object, const char *index, const char *data
 {
    Prefab *prefab = static_cast<Prefab*>(object);
    
-   String file = String( Platform::makeRelativePathName(data, Platform::getMainDotCsDir()) );
-
-   prefab->setFile( file );
+   prefab->setFile( StringTable->insert(Platform::makeRelativePathName(data, Platform::getMainDotCsDir())));
 
    return false;
 }
 
-void Prefab::setFile( String file )
+void Prefab::setFile( StringTableEntry file )
 {  
    AssertFatal( isServerObject(), "Prefab-bad" );
 
@@ -257,7 +263,7 @@ void Prefab::setFile( String file )
    // be called for the client-side prefab but maybe the user did so accidentally.
    if ( isClientObject() )
    {
-      Con::errorf( "Prefab::setFile( %s ) - Should not be called on a client-side Prefab.", file.c_str() );
+      Con::errorf( "Prefab::setFile( %s ) - Should not be called on a client-side Prefab.", file );
       return;
    }
 
@@ -336,12 +342,12 @@ void Prefab::_loadFile( bool addFileNotify )
 {
    AssertFatal( isServerObject(), "Prefab-bad" );
 
-   if ( mFilename.isEmpty() )
+   if ( mFilename == StringTable->EmptyString())
       return;
 
-   if ( !Platform::isFile( mFilename ) )
+   if ( !Con::isScriptFile( mFilename ) )
    {
-      Con::errorf( "Prefab::_loadFile() - file %s was not found.", mFilename.c_str() );
+      Con::errorf( "Prefab::_loadFile() - file %s was not found.", mFilename );
       return;
    }
 
@@ -349,19 +355,19 @@ void Prefab::_loadFile( bool addFileNotify )
    {
       Con::errorf( 
          "Prefab::_loadFile - failed loading prefab file (%s). \n"
-         "File was referenced recursively by both a Parent and Child prefab.", mFilename.c_str() );
+         "File was referenced recursively by both a Parent and Child prefab.", mFilename );
       return;
    }
 
    sPrefabFileStack.push_back(mFilename);
 
-   String command = String::ToString( "exec( \"%s\" );", mFilename.c_str() );
+   String command = String::ToString( "exec( \"%s\" );", mFilename );
    Con::evaluate( command );
 
    SimGroup *group;
    if ( !Sim::findObject( Con::getVariable( "$ThisPrefab" ), group ) )
    {
-      Con::errorf( "Prefab::_loadFile() - file %s did not create $ThisPrefab.", mFilename.c_str() );
+      Con::errorf( "Prefab::_loadFile() - file %s did not create $ThisPrefab.", mFilename );
       return;
    }
 
@@ -560,6 +566,7 @@ bool Prefab::buildExportPolyList(ColladaUtils::ExportData* exportData, const Box
 
 void Prefab::getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList)
 {
+   if (!mChildGroup) return;
    Vector<SceneObject*> foundObjects;
    mChildGroup->findObjectByType(foundObjects);
 
@@ -614,4 +621,10 @@ void ExplodePrefabUndoAction::redo()
    name += "_exploded";
    name = Sim::getUniqueName( name );
    mGroup->assignName( name );   
+}
+
+DefineEngineMethod(Prefab, getChildGroup, S32, (),,
+   "")
+{
+   return object->getChildGroup();
 }

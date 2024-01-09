@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(ColladaImportDlg,EditorGuiGroup) {
+$guiContent = new GuiControl(ColladaImportDlg,EditorGuiGroup) {
    isContainer = "1";
    Profile = "ToolsGuiDefaultProfile";
    HorizSizing = "width";
@@ -991,7 +991,7 @@
             };
             new GuiCheckBoxCtrl() {
                useInactiveState = "0";
-               text = " Force update materials.cs";
+               text = " Force update materials." @ $TorqueScriptFileExtension;
                groupNum = "-1";
                buttonType = "ToggleButton";
                useMouseEvents = "0";
@@ -1005,7 +1005,7 @@
                canSave = "1";
                Visible = "1";
                tooltipprofile = "ToolsGuiToolTipProfile";
-               ToolTip = "Forces update of materials.cs (even if Materials already exist)";
+               ToolTip = "Forces update of materials." @ $TorqueScriptFileExtension @ " (even if Materials already exist)";
                hovertime = "1000";
                internalName = "forceUpdateMaterials";
                canSaveDynamicFields = "0";
@@ -1251,15 +1251,15 @@ function ColladaImportDlg::showDialog(%this, %shapePath, %cmd)
    %this.cmd = %cmd;
 
    // Only allow loading lights if creating a new scene object
-   %canLoadLights = (strstr(%this.cmd, "EWCreatorWindow.create") != -1);
+   %canLoadLights = (strstr(%this.cmd, "ObjectCreator.create") != -1);
 
    // Check for an existing TSShapeConstructor object. Need to exec the script
    // manually as the DAE resource may not have been loaded yet
-   %csPath = filePath(%this.path) @ "/" @ fileBase(%this.path) @ ".cs";
+   %csPath = filePath(%this.path) @ "/" @ fileBase(%this.path) @ "." @ $TorqueScriptFileExtension;
    if (isFile(%csPath))
       exec(%csPath);
 
-   %this.constructor = ShapeEditor.findConstructor(%this.path);
+   %this.constructor = findShapeConstructorByFilename(%this.path);
 
    // Only show the import dialog if required. Note that 'enumColladaScene' will
    // fail if the COLLADA file is missing, or a cached.dts is available.
@@ -1754,8 +1754,8 @@ function convertColladaModels(%pattern)
 
 function showImportDialog(%shapePath, %cmd)
 {
-   %this.path = %shapePath;
-   %this.cmd = %cmd;
+   ColladaImportDlg.path = %shapePath;
+   ColladaImportDlg.cmd = %cmd;
 
    if ( fileExt(%shapePath) $= ".dts" || fileExt(%shapePath) $= ".dsq" 
       || fileExt(%shapePath) $= ".dae" || fileExt(%shapePath) $= ".kmz" )

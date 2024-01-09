@@ -41,6 +41,7 @@
 #include "materials/baseMatInstance.h"
 #include "materials/sceneData.h"
 #include "math/util/matrixSet.h"
+#include "materials/materialFeatureTypes.h"
 
 
 IMPLEMENT_CO_NETOBJECT_V1(Sun);
@@ -61,7 +62,7 @@ Sun::Sun()
    mTypeMask = EnvironmentObjectType | LightObjectType | StaticObjectType;
 
    mLightColor.set(0.7f, 0.7f, 0.7f);
-   mLightAmbient.set(0.3f, 0.3f, 0.3f);
+   mLightAmbient.set(1.0f, 1.0f, 1.0f);
    mBrightness = 1.0f;
    mSunAzimuth = 0.0f;
    mSunElevation = 35.0f;
@@ -89,6 +90,8 @@ Sun::Sun()
    mCoronaTint.set( 1.0f, 1.0f, 1.0f, 1.0f );
    mCoronaUseLightColor = true;
    mCoronaMatInst = NULL;
+
+   INIT_ASSET(CoronaMaterial);
 
    mMatrixSet = reinterpret_cast<MatrixSet *>(dMalloc_aligned(sizeof(MatrixSet), 16));
    constructInPlace(mMatrixSet);
@@ -139,6 +142,7 @@ void Sun::onRemove()
 
 void Sun::initPersistFields()
 {
+   docsURL;
    addGroup( "Orbit" );
 
       addField( "azimuth", TypeF32, Offset( mSunAzimuth, Sun ), 
@@ -177,8 +181,7 @@ void Sun::initPersistFields()
       addField( "coronaEnabled", TypeBool, Offset( mCoronaEnabled, Sun ), 
          "Enable or disable rendering of the corona sprite." );
 
-      addField( "coronaMaterial", TypeMaterialName, Offset( mCoronaMatName, Sun ),
-         "Texture for the corona sprite." );
+      INITPERSISTFIELD_MATERIALASSET(CoronaMaterial, Sun, "Material for the corona sprite.");
 
       addField( "coronaScale", TypeF32, Offset( mCoronaScale, Sun ),
          "Controls size the corona sprite renders, specified as a fractional amount of the screen height." );
@@ -238,7 +241,9 @@ U32 Sun::packUpdate(NetConnection *conn, U32 mask, BitStream *stream )
       }
 
       stream->writeFlag( mCoronaEnabled );
-      stream->write( mCoronaMatName );
+
+      PACK_ASSET(conn, CoronaMaterial);
+
       stream->write( mCoronaScale );
       stream->write( mCoronaTint );
       stream->writeFlag( mCoronaUseLightColor );
@@ -282,7 +287,9 @@ void Sun::unpackUpdate( NetConnection *conn, BitStream *stream )
          mFlareData = NULL;
 
       mCoronaEnabled = stream->readFlag();
-      stream->read( &mCoronaMatName );
+
+      UNPACK_ASSET(conn, CoronaMaterial);
+
       stream->read( &mCoronaScale );
       stream->read( &mCoronaTint );
       mCoronaUseLightColor = stream->readFlag();
@@ -446,8 +453,24 @@ void Sun::_initCorona()
       
    SAFE_DELETE( mCoronaMatInst );
 
-   if ( mCoronaMatName.isNotEmpty() )      
-      mCoronaMatInst = MATMGR->createMatInstance( mCoronaMatName, MATMGR->getDefaultFeatures(), getGFXVertexFormat<GFXVertexPCT>() );         
+   if (mCoronaMaterialAsset.notNull())
+   {
+      FeatureSet features = MATMGR->getDefaultFeatures();
+      features.removeFeature(MFT_RTLighting);
+      features.removeFeature(MFT_Visibility);
+      features.removeFeature(MFT_ReflectionProbes);
+      features.addFeature(MFT_isBackground);
+      features.addFeature(MFT_VertLit);
+
+      mCoronaMatInst = MATMGR->createMatInstance(mCoronaMaterialAsset->getMaterialDefinitionName(), features, getGFXVertexFormat<GFXVertexPCT>());
+
+      GFXStateBlockDesc desc;
+      desc.setBlend(true);
+      desc.setAlphaTest(true);
+      desc.setZReadWrite(true, false);
+      mCoronaMatInst->addStateBlockDesc(desc);
+      mCoronaMatInst->init(features, getGFXVertexFormat<GFXVertexPCT>());
+   }
 }
 
 void Sun::_renderCorona( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat )

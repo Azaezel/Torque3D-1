@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(ObjectBuilderGui, EditorGuiGroup) {
+$guiContent = new GuiControl(ObjectBuilderGui, EditorGuiGroup) {
 	profile = "ToolsGuiDefaultProfile";
 	horizSizing = "right";
 	vertSizing = "bottom";
@@ -32,7 +32,7 @@
 		text = "Create Object";
 
 		new GuiTextCtrl() {
-			profile = "GuiCenterTextProfile";
+			profile = "ToolsGuiTextProfile";
 			horizSizing = "right";
 			vertSizing = "bottom";
 			position = "9 26";
@@ -299,7 +299,369 @@ function ObjectBuilderGui::gotTerrainAsset(%this, %name)
    //%this.controls[%this.currentControl].setValue(%name);
 }
 //------------------------------------------------------------------------------
+function ObjectBuilderGui::createImageAssetType(%this, %index)
+{
+   if(%index >= %this.numFields || %this.field[%index, name] $= "")
+   {
+      error("ObjectBuilderGui::createImageAssetType: invalid field");
+      return;
+   }
 
+   //
+   if(%this.field[%index, text] $= "")
+      %name = %this.field[%index, name];
+   else
+      %name = %this.field[%index, text];
+
+   %this.textControls[%this.numControls] = new GuiTextCtrl() {
+      profile = "ToolsGuiTextRightProfile";
+      text = %name;
+      extent = %this.fieldNameExtent;
+      position = %this.curXPos @ " " @ %this.curYPos;
+      modal = "1";
+   };
+
+   // 
+   %this.controls[%this.numControls] = new GuiControl() {
+      HorizSizing = "width";
+      profile = "ToolsGuiDefaultProfile";
+      extent = %this.textEditExtent;
+      position = %this.curXPos + %this.columnOffset @ " " @ %this.curYPos;
+      modal = "1";
+   };
+   
+   %text = new GuiTextEditCtrl() {
+      class = ObjectBuilderGuiTextEditCtrl;
+      internalName = "assetText";
+      HorizSizing = "width";
+      profile = "ToolsGuiTextEditProfile";
+      extent = getWord(%this.textEditExtent,0) - getWord(%this.matButtonExtent,0) - 2 @ " " @ getWord(%this.textEditExtent,1);
+      text = %this.field[%index, value];
+      position = "0 0";
+      modal = "1";
+   };
+   %this.controls[%this.numControls].addGuiControl(%text);
+   
+   %button = new GuiBitmapButtonCtrl() {
+      internalName = "assetButton";
+      HorizSizing = "left";
+      profile = "ToolsGuiButtonProfile";
+      extent = %this.matButtonExtent;
+      position = getWord(%this.textEditExtent,0) - getWord(%this.matButtonExtent,0) @ " 0";
+      modal = "1";
+      command = %this @ ".getImageAsset(" @ %index @ ");";
+   };
+   %button.setBitmap("ToolsModule:GameTSCtrl_image");
+   %this.controls[%this.numControls].addGuiControl(%button);
+
+   %this.numControls++;
+   %this.curYPos += %this.defaultFieldStep;
+}
+
+function ObjectBuilderGui::getImageAsset(%this, %index)
+{
+   if(%index >= %this.numFields || %this.field[%index, name] $= "")
+   {
+      error("ObjectBuilderGui::getImageAsset: invalid field");
+      return;
+   }
+   
+   %val = %this.field[%index, ext];
+
+   //%path = filePath(%val);
+   //%ext = fileExt(%val);
+
+   %this.currentControl = %index;
+   AssetBrowser.showDialog("ImageAsset", %this @ ".gotImageAsset", "", "", "");
+   //getLoadFilename( %val @ "|" @ %val, %this @ ".gotFileName", %this.lastPath );
+}
+
+function ObjectBuilderGui::gotImageAsset(%this, %name)
+{
+   %index = %this.currentControl;
+   
+   %this.field[%index, value] = %name;
+   %this.controls[%this.currentControl]-->assetText.setText(%name);
+   
+   %this.lastPath = %name;
+   
+   // This doesn't work for button controls as getValue returns their state!
+   //%this.controls[%this.currentControl].setValue(%name);
+}
+
+//------------------------------------------------------------------------------
+function ObjectBuilderGui::createMaterialAssetType(%this, %index)
+{
+   if(%index >= %this.numFields || %this.field[%index, name] $= "")
+   {
+      error("ObjectBuilderGui::createMaterialAssetType: invalid field");
+      return;
+   }
+
+   //
+   if(%this.field[%index, text] $= "")
+      %name = %this.field[%index, name];
+   else
+      %name = %this.field[%index, text];
+   
+   %this.textControls[%this.numControls] = new GuiTextCtrl() {
+      profile = "ToolsGuiTextRightProfile";
+      text = %name;
+      extent = %this.fieldNameExtent;
+      position = %this.curXPos @ " " @ %this.curYPos;
+      modal = "1";
+   };
+
+   // 
+   %this.controls[%this.numControls] = new GuiControl() {
+      HorizSizing = "width";
+      profile = "ToolsGuiDefaultProfile";
+      extent = %this.textEditExtent;
+      position = %this.curXPos + %this.columnOffset @ " " @ %this.curYPos;
+      modal = "1";
+   };
+   
+   %text = new GuiTextEditCtrl() {
+      class = ObjectBuilderGuiTextEditCtrl;
+      internalName = "assetText";
+      HorizSizing = "width";
+      profile = "ToolsGuiTextEditProfile";
+      extent = getWord(%this.textEditExtent,0) - getWord(%this.matButtonExtent,0) - 2 @ " " @ getWord(%this.textEditExtent,1);
+      text = %this.field[%index, value];
+      position = "0 0";
+      modal = "1";
+   };
+   %this.controls[%this.numControls].addGuiControl(%text);
+   
+   %button = new GuiBitmapButtonCtrl() {
+      internalName = "assetButton";
+      HorizSizing = "left";
+      profile = "ToolsGuiButtonProfile";
+      extent = %this.matButtonExtent;
+      position = getWord(%this.textEditExtent,0) - getWord(%this.matButtonExtent,0) @ " 0";
+      modal = "1";
+      command = %this @ ".getMaterialAsset(" @ %index @ ");";
+   };
+   %button.setBitmap("ToolsModule:change_material_btn_n_image");
+   %this.controls[%this.numControls].addGuiControl(%button);
+
+   %this.numControls++;
+   %this.curYPos += %this.defaultFieldStep;
+}
+
+function ObjectBuilderGui::getMaterialAsset(%this, %index)
+{
+   if(%index >= %this.numFields || %this.field[%index, name] $= "")
+   {
+      error("ObjectBuilderGui::getMaterialAsset: invalid field");
+      return;
+   }
+   
+   %val = %this.field[%index, ext];
+
+   //%path = filePath(%val);
+   //%ext = fileExt(%val);
+
+   %this.currentControl = %index;
+   AssetBrowser.showDialog("MaterialAsset", %this @ ".gotMaterialAsset", "", "", "");
+   //getLoadFilename( %val @ "|" @ %val, %this @ ".gotFileName", %this.lastPath );
+}
+
+function ObjectBuilderGui::gotMaterialAsset(%this, %name)
+{
+   %index = %this.currentControl;
+   
+   %this.field[%index, value] = %name;
+   %this.controls[%this.currentControl]-->assetText.setText(%name);
+   
+   %this.lastPath = %name;
+   
+   // This doesn't work for button controls as getValue returns their state!
+   //%this.controls[%this.currentControl].setValue(%name);
+}
+
+//------------------------------------------------------------------------------
+function ObjectBuilderGui::createShapeAssetType(%this, %index)
+{
+   if(%index >= %this.numFields || %this.field[%index, name] $= "")
+   {
+      error("ObjectBuilderGui::createShapeAssetType: invalid field");
+      return;
+   }
+
+   //
+   if(%this.field[%index, text] $= "")
+      %name = %this.field[%index, name];
+   else
+      %name = %this.field[%index, text];
+   
+   %this.textControls[%this.numControls] = new GuiTextCtrl() {
+      profile = "ToolsGuiTextRightProfile";
+      text = %name;
+      extent = %this.fieldNameExtent;
+      position = %this.curXPos @ " " @ %this.curYPos;
+      modal = "1";
+   };
+
+   // 
+   %this.controls[%this.numControls] = new GuiControl() {
+      HorizSizing = "width";
+      profile = "ToolsGuiDefaultProfile";
+      extent = %this.textEditExtent;
+      position = %this.curXPos + %this.columnOffset @ " " @ %this.curYPos;
+      modal = "1";
+   };
+   
+   %text = new GuiTextEditCtrl() {
+      class = ObjectBuilderGuiTextEditCtrl;
+      internalName = "assetText";
+      HorizSizing = "width";
+      profile = "ToolsGuiTextEditProfile";
+      extent = getWord(%this.textEditExtent,0) - getWord(%this.matButtonExtent,0) - 2 @ " " @ getWord(%this.textEditExtent,1);
+      text = %this.field[%index, value];
+      position = "0 0";
+      modal = "1";
+   };
+   %this.controls[%this.numControls].addGuiControl(%text);
+   
+   %button = new GuiBitmapButtonCtrl() {
+      internalName = "assetButton";
+      HorizSizing = "left";
+      profile = "ToolsGuiButtonProfile";
+      extent = %this.matButtonExtent;
+      position = getWord(%this.textEditExtent,0) - getWord(%this.matButtonExtent,0) @ " 0";
+      modal = "1";
+      command = %this @ ".getShapeAsset(" @ %index @ ");";
+   };
+   %button.setBitmap("ToolsModule:shape_editor_n_image");
+   %this.controls[%this.numControls].addGuiControl(%button);
+
+   %this.numControls++;
+   %this.curYPos += %this.defaultFieldStep;
+}
+
+function ObjectBuilderGui::getShapeAsset(%this, %index)
+{
+   if(%index >= %this.numFields || %this.field[%index, name] $= "")
+   {
+      error("ObjectBuilderGui::getShapeAsset: invalid field");
+      return;
+   }
+   
+   %val = %this.field[%index, ext];
+
+   //%path = filePath(%val);
+   //%ext = fileExt(%val);
+
+   %this.currentControl = %index;
+   AssetBrowser.showDialog("ShapeAsset", %this @ ".gotShapeAsset", "", "", "");
+   //getLoadFilename( %val @ "|" @ %val, %this @ ".gotFileName", %this.lastPath );
+}
+
+function ObjectBuilderGui::gotShapeAsset(%this, %name)
+{
+   %index = %this.currentControl;
+   
+   %this.field[%index, value] = %name;
+   %this.controls[%this.currentControl]-->assetText.setText(%name);
+   
+   %this.lastPath = %name;
+   
+   // This doesn't work for button controls as getValue returns their state!
+   //%this.controls[%this.currentControl].setValue(%name);
+}
+
+//------------------------------------------------------------------------------
+function ObjectBuilderGui::createSoundAssetType(%this, %index)
+{
+   if(%index >= %this.numFields || %this.field[%index, name] $= "")
+   {
+      error("ObjectBuilderGui::createSoundAssetType: invalid field");
+      return;
+   }
+
+   //
+   if(%this.field[%index, text] $= "")
+      %name = %this.field[%index, name];
+   else
+      %name = %this.field[%index, text];
+   
+   %this.textControls[%this.numControls] = new GuiTextCtrl() {
+      profile = "ToolsGuiTextRightProfile";
+      text = %name;
+      extent = %this.fieldNameExtent;
+      position = %this.curXPos @ " " @ %this.curYPos;
+      modal = "1";
+   };
+
+   // 
+   %this.controls[%this.numControls] = new GuiControl() {
+      HorizSizing = "width";
+      profile = "ToolsGuiDefaultProfile";
+      extent = %this.textEditExtent;
+      position = %this.curXPos + %this.columnOffset @ " " @ %this.curYPos;
+      modal = "1";
+   };
+   
+   %text = new GuiTextEditCtrl() {
+      class = ObjectBuilderGuiTextEditCtrl;
+      internalName = "assetText";
+      HorizSizing = "width";
+      profile = "ToolsGuiTextEditProfile";
+      extent = getWord(%this.textEditExtent,0) - getWord(%this.matButtonExtent,0) - 2 @ " " @ getWord(%this.textEditExtent,1);
+      text = %this.field[%index, value];
+      position = "0 0";
+      modal = "1";
+   };
+   %this.controls[%this.numControls].addGuiControl(%text);
+   
+   %button = new GuiBitmapButtonCtrl() {
+      internalName = "assetButton";
+      HorizSizing = "left";
+      profile = "ToolsGuiButtonProfile";
+      extent = %this.matButtonExtent;
+      position = getWord(%this.textEditExtent,0) - getWord(%this.matButtonExtent,0) @ " 0";
+      modal = "1";
+      command = %this @ ".getSoundAsset(" @ %index @ ");";
+   };
+   %button.setBitmap("ToolsModule:SFXEmitter_image");
+   %this.controls[%this.numControls].addGuiControl(%button);
+
+   %this.numControls++;
+   %this.curYPos += %this.defaultFieldStep;
+}
+
+function ObjectBuilderGui::getSoundAsset(%this, %index)
+{
+   if(%index >= %this.numFields || %this.field[%index, name] $= "")
+   {
+      error("ObjectBuilderGui::getSoundAsset: invalid field");
+      return;
+   }
+   
+   %val = %this.field[%index, ext];
+
+   //%path = filePath(%val);
+   //%ext = fileExt(%val);
+
+   %this.currentControl = %index;
+   AssetBrowser.showDialog("SoundAsset", %this @ ".gotSoundAsset", "", "", "");
+   //getLoadFilename( %val @ "|" @ %val, %this @ ".gotFileName", %this.lastPath );
+}
+
+function ObjectBuilderGui::gotSoundAsset(%this, %name)
+{
+   %index = %this.currentControl;
+   
+   %this.field[%index, value] = %name;
+   %this.controls[%this.currentControl]-->assetText.setText(%name);
+   
+   %this.lastPath = %name;
+   
+   // This doesn't work for button controls as getValue returns their state!
+   //%this.controls[%this.currentControl].setValue(%name);
+}
+//------------------------------------------------------------------------------
 function ObjectBuilderGui::createMaterialNameType(%this, %index)
 {
    if(%index >= %this.numFields || %this.field[%index, name] $= "")
@@ -353,7 +715,7 @@ function ObjectBuilderGui::createMaterialNameType(%this, %index)
       modal = "1";
       command = %this @ ".getMaterialName(" @ %index @ ");";
    };
-   %button.setBitmap("tools/materialEditor/gui/change-material-btn");
+   %button.setBitmap("ToolsModule:change_material_btn_n_image");
    %this.controls[%this.numControls].addGuiControl(%button);
 
    //%val = %this.field[%index, value];
@@ -564,6 +926,18 @@ function ObjectBuilderGui::process(%this)
          case "TypeTerrainAsset":
             %this.createTerrainAssetType(%i);
 
+         case "TypeImageAsset":
+            %this.createImageAssetType(%i);
+
+         case "TypeMaterialAsset":
+            %this.createMaterialAssetType(%i);
+            
+         case "TypeShapeAsset":
+            %this.createShapeAssetType(%i);
+            
+         case "TypeSoundAsset":
+            %this.createSoundAssetType(%i);
+
          case "TypeMaterialName":
             %this.createMaterialNameType(%i);
 
@@ -599,7 +973,7 @@ function ObjectBuilderGui::processNewObject(%this, %obj)
    if( %this.objectGroup !$= "" )
       %this.objectGroup.add( %obj );
    else
-      EWCreatorWindow.objectGroup.add( %obj );
+      ObjectCreator.objectGroup.add( %obj );
       
    // If we were given a callback to call after the
    // object has been created, do so now.  Also clear
@@ -634,6 +1008,15 @@ function ObjectBuilderGui::onOK(%this)
       if (%this.field[%i, type] $= "TypeMaterialName")
       {
          %this.field[%i, value] = %this.controls[%i]-->MatText.getValue();
+         continue;
+      }
+      if (%this.field[%i, type] $= "TypeImageAsset" || 
+      %this.field[%i, type] $= "TypeTerrainAsset" || 
+      %this.field[%i, type] $= "TypeMaterialAsset" ||
+      %this.field[%i, type] $= "TypeShapeAsset"
+      )
+      {
+         %this.field[%i, value] = %this.controls[%i]-->assetText.getText();
          continue;
       }
       %this.field[%i, value] = %this.controls[%i].getValue();
@@ -696,9 +1079,33 @@ function ObjectBuilderGui::buildObject(%this, %className)
    %this.process();
 }
 
+function ObjectBuilderGui::buildGameBaseObject(%this, %className)
+{
+   %this.objectClassName = %className;
+   //assumes we fgollow the pattern of class is instance, classData is datablock
+   %this.addField("dataBlock", "TypeDataBlock", "Data block", %className @"Data");
+
+   %this.process();
+}
 //------------------------------------------------------------------------------
 // Environment
 //------------------------------------------------------------------------------
+function ObjectBuilderGui::buildSkyBox( %this)
+{
+   OBObjectName.setValue( "sky" );
+   %this.objectClassName = "skybox";     
+   %this.addField("MaterialAsset", "TypeImageAssetId", "MaterialAsset",  "Core_Rendering:BlankSkyMat"); 
+   %this.process();
+}
+function ObjectBuilderGui::buildGroundPlane( %this )
+{
+   OBObjectName.setValue( "Ground" );
+   %this.objectClassName = "GroundPlane";     
+   %this.addField("MaterialAsset", "TypeImageAssetId", "MaterialAsset",  "Prototyping:FloorGray"); 
+   %this.addField("scaleU", "TypeF32", "scaleU",  "25");
+   %this.addField("scaleV", "TypeF32", "scaleV",  "25");
+   %this.process();
+}
 
 function ObjectBuilderGui::buildScatterSky( %this, %dontWarnAboutSun )
 {   
@@ -736,17 +1143,16 @@ function ObjectBuilderGui::buildScatterSky( %this, %dontWarnAboutSun )
    // This is a trick... any fields added after process won't show
    // up as controls, but will be applied to the created object.
    %this.addField( "flareType", "TypeLightFlareDataPtr", "Flare", "ScatterSkyFlareExample" );
-   %this.addField( "moonMat", "TypeMaterialName", "Moon Material", "Moon_Glow_Mat" );
+   %this.addField( "moonMatAsset", "TypeMaterialAsset", "Moon Material", "Core_Rendering:moon_wglow" );
    %this.addField( "nightCubemap", "TypeCubemapName", "Night Cubemap", "NightCubemap" );
    %this.addField( "useNightCubemap", "TypeBool", "Use Night Cubemap", "true" );
-   
 }
 
 function ObjectBuilderGui::buildCloudLayer(%this)
 {
    OBObjectName.setValue( "" );      
    %this.objectClassName = "CloudLayer";
-   %this.addField( "texture", "TypeImageFilename", "Texture", "core/rendering/images/clouds_normal_displacement" );   
+   %this.addField( "textureAsset", "TypeImageAsset", "Image", "Core_Rendering:clouds_normal_displacement_image" ); 
 	%this.process();
 }
 
@@ -758,16 +1164,17 @@ function ObjectBuilderGui::buildBasicClouds(%this)
 	
    // This is a trick... any fields added after process won't show
    // up as controls, but will be applied to the created object.
-   %this.addField( "texture[0]", "TypeImageFilename", "Texture", "core/rendering/images/cloud1" );   
-   %this.addField( "texture[1]", "TypeImageFilename", "Texture", "core/rendering/images/cloud2" );   
-   %this.addField( "texture[2]", "TypeImageFilename", "Texture", "core/rendering/images/cloud3" );   	   
+   %this.addField( "textureAsset[0]", "TypeImageAssetId", "TextureAsset", "Core_Rendering:cloud1_image" );   
+   %this.addField( "textureAsset[1]", "TypeImageAssetId", "TextureAsset", "Core_Rendering:cloud2_image" ); 
+   %this.addField( "textureAsset[2]", "TypeImageAssetId", "TextureAsset", "Core_Rendering:cloud3_image" ); 
+
 }
 
 function ObjectBuilderGui::checkExists( %this, %classname )
 {
-   for ( %i = 0; %i < EWCreatorWindow.objectGroup.getCount(); %i++ )
+   for ( %i = 0; %i < ObjectCreator.objectGroup.getCount(); %i++ )
    {                                                   
-      %obj = EWCreatorWindow.objectGroup.getObject( %i );
+      %obj = ObjectCreator.objectGroup.getObject( %i );
       if ( %obj.getClassName() $= %classname ) 
          return true;
    } 
@@ -831,7 +1238,7 @@ function ObjectBuilderGui::buildSun( %this, %dontWarnAboutScatterSky )
    
    // This is a trick... any fields added after process won't show
    // up as controls, but will be applied to the created object.
-   %this.addField( "coronaMaterial", "TypeMaterialName", "Corona Material", "Corona_Mat" );
+   %this.addField( "coronaMaterial", "TypeMaterialAsset", "Corona Material", "Core_Rendering:Corona_Mat" );
    %this.addField( "flareType", "TypeLightFlareDataPtr", "Flare", "SunFlareExample" );
 }
 
@@ -871,9 +1278,9 @@ function ObjectBuilderGui::addWaterObjectFields(%this)
    %this.addField("waveSpeed[2]", "TypeFloat", "Wave Speed", "1");
    %this.addField("overallWaveMagnitude", "TypeFloat", "Overall Wave Magnitude", "1.0");
    
-   %this.addField("rippleTex", "TypeImageFilename", "Ripple Texture", "core/rendering/images/ripple" );
-   %this.addField("depthGradientTex", "TypeImageFilename", "Depth Gradient Texture", "core/rendering/images/depthcolor_ramp" );
-   %this.addField("foamTex", "TypeImageFilename", "Foam Texture", "core/rendering/images/foam" );
+   %this.addField("rippleTex", "TypeImageAsset", "Ripple Texture", "Core_Rendering:ripple_image" );
+   %this.addField("depthGradientTex", "TypeImageAsset", "Depth Gradient Texture", "Core_Rendering:depthcolor_ramp_image" );
+   %this.addField("foamTex", "TypeImageAsset", "Foam Texture", "Core_Rendering:foam_image" );
 }
 
 function ObjectBuilderGui::buildWaterBlock(%this)
@@ -900,21 +1307,23 @@ function ObjectBuilderGui::buildWaterPlane(%this)
 
 function ObjectBuilderGui::buildTerrainBlock(%this)
 {
-   %this.objectClassName = "TerrainBlock";
+   /*%this.objectClassName = "TerrainBlock";
    %this.createCallback = "ETerrainEditor.attachTerrain();";
 
    %this.addField("terrainFile", "TypeFile", "Terrain file", "", "*.ter");
    %this.addField("terrainAsset", "TypeTerrainAsset", "Terrain Asset", "", "");
    %this.addField("squareSize", "TypeInt", "Square size", "8");
 
-   %this.process();
+   %this.process();*/
+   
+   AssetBrowser.setupCreateNewAsset("TerrainAsset", AssetBrowser.selectedModule);
 }
 
 function ObjectBuilderGui::buildGroundCover( %this )
 {
    %this.objectClassName = "GroundCover";
-   %this.addField( "material", "TypeMaterialName", "Material Name", "" );
-   %this.addField( "shapeFilename[0]", "TypeFile", "Shape File [Optional]", "", "*.*");
+   %this.addField( "materialAsset", "TypeMaterialAsset", "Material Asset", "" );
+   %this.addField( "shapeAsset[0]", "TypeShapeAsset", "Shape Asset [Optional]", "", "");
    %this.process();
    
    // This is a trick... any fields added after process won't show
@@ -1040,7 +1449,7 @@ function ObjectBuilderGui::buildPlayerDropPoint(%this)
    %this.addField("spawnClass",     "TypeString",    "Spawn Class", "Player");
    %this.addField("spawnDatablock", "TypeDataBlock", "Spawn Data", "PlayerData DefaultPlayerData");
 
-   if( EWCreatorWindow.objectGroup.getID() == getScene(0).getID() )
+   if( ObjectCreator.objectGroup.getID() == getScene(0).getID() )
    {
       if( !isObject("PlayerDropPoints") )
          getScene(0).add( new SimGroup("PlayerDropPoints") );
@@ -1060,7 +1469,7 @@ function ObjectBuilderGui::buildObserverDropPoint(%this)
    %this.addField("spawnClass",     "TypeString",    "Spawn Class", "Camera");
    %this.addField("spawnDatablock", "TypeDataBlock", "Spawn Data", "CameraData Observer");
 
-   if( EWCreatorWindow.objectGroup.getID() == getScene(0).getID() )
+   if( ObjectCreator.objectGroup.getID() == getScene(0).getID() )
    {
       if( !isObject("ObserverDropPoints") )
          getScene(0).add( new SimGroup("ObserverDropPoints") );
@@ -1070,9 +1479,26 @@ function ObjectBuilderGui::buildObserverDropPoint(%this)
    %this.process();
 }
 
+function ObjectBuilderGui::buildGeneralDropPoint(%this)
+{
+   %this.objectClassName = "SpawnSphere";
+   %this.addField("dataBlock",    "TypeDataBlock", "dataBlock",   "MissionMarkerData SpawnSphereMarker");
+   %this.addField("radius",       "TypeFloat",     "Radius",        1);
+   %this.addField("sphereWeight", "TypeFloat",     "Sphere Weight", 1);
+
+   %this.addField("spawnClass",     "TypeString",    "Spawn Class", "");
+   %this.addField("spawnDatablock", "TypeString", "Spawn Data", "");
+   %this.addField("spawnTransform", "TypeBool", "Spawn Here", "true");
+   %this.addField("canSaveDynamicFields", "TypeBool", "Save metadata", "false");
+   %this.process();
+}
+
 function ObjectBuilderGui::buildNotesObject(%this)
 {
    %this.objectClassName = "NotesObject";
+   %this.addField("note",           "TypeString",     "Note Text", "");
+   %this.addField("showArrow",      "TypeBool",       "Show Arrow", "");
+   %this.addField("arrowColor",     "TypeColorI",     "Arrow Color", "255 0 0 255");
    %this.process();
 }
 //------------------------------------------------------------------------------
@@ -1082,11 +1508,11 @@ function ObjectBuilderGui::buildVolumetricFog(%this)
 {
 	// Change this if you want to default to another Folder
 	// Otherwise every time you want to add a Fog you will go this.
-	%defShape = "core/rendering/shapes/Fog_Cube.DAE";
+	%defShape = "Core_Rendering:Fog_Cube";
 	%this.lastPath=getMainDotCsDir() @ %defShape;
 	OBObjectName.setValue( "" );
 	%this.objectClassName = "VolumetricFog";
-	%this.addField( "shapeName", "TypeFile", "Shape (Fog volume)", "", "*.dts;*.dae");
+	%this.addField( "shapeAsset", "TypeShapeAsset", "Shape (Fog volume)", "", "");
 	%this.addField("Scale", "TypePoint3", "Scale", "1 1 1");
 	%this.addField("FogColor", "TypeColorI", "FogColor", "200 200 200 255");
 	%this.process();
@@ -1106,7 +1532,7 @@ function PhysicsEntityData::create(%data)
 {
    %obj = new PhysicsEntity() {
       dataBlock = %data;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
    };
    return %obj;
 }
@@ -1115,7 +1541,7 @@ function StaticShapeData::create(%data)
 {
    %obj = new StaticShape() {
       dataBlock = %data;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
    };
    return %obj;
 }
@@ -1127,13 +1553,13 @@ function MissionMarkerData::create(%block)
       case "WayPointMarker":
          %obj = new WayPoint() {
             dataBlock = %block;
-            parentGroup = EWCreatorWindow.objectGroup;
+            parentGroup = ObjectCreator.objectGroup;
          };
          return(%obj);
       case "SpawnSphereMarker":
          %obj = new SpawnSphere() {
             datablock = %block;
-            parentGroup = EWCreatorWindow.objectGroup;
+            parentGroup = ObjectCreator.objectGroup;
          };
          return(%obj);
    }
@@ -1146,7 +1572,7 @@ function ItemData::create(%data)
    %obj = new Item()
    {
       dataBlock = %data;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
       static = true;
       rotate = true;
    };
@@ -1159,7 +1585,7 @@ function TurretShapeData::create(%block)
       dataBlock = %block;
       static = true;
       respawn = true;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
    };
    return %obj;
 }
@@ -1170,7 +1596,7 @@ function AITurretShapeData::create(%block)
       dataBlock = %block;
       static = true;
       respawn = true;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
    };
    return %obj;
 }
@@ -1179,7 +1605,7 @@ function WheeledVehicleData::create(%block)
 {
    %obj = new WheeledVehicle() {
       dataBlock = %block;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
    };
    return %obj;
 }
@@ -1189,7 +1615,7 @@ function FlyingVehicleData::create(%block)
    %obj = new FlyingVehicle()
    {
       dataBlock = %block;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
    };
    return(%obj);
 }
@@ -1199,7 +1625,7 @@ function HoverVehicleData::create(%block)
    %obj = new HoverVehicle()
    {
       dataBlock = %block;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
    };
    return(%obj);
 }
@@ -1208,7 +1634,7 @@ function RigidShapeData::create(%data)
 {
    %obj = new RigidShape() {
       dataBlock = %data;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
    };
    return %obj;
 }
@@ -1218,7 +1644,7 @@ function PhysicsShapeData::create( %datablock )
    %obj = new PhysicsShape()
    {
 		dataBlock = %datablock;
-		parentGroup = EWCreatorWindow.objectGroup;
+		parentGroup = ObjectCreator.objectGroup;
 		
       invulnerable = false;
       damageRadius = 0;
@@ -1235,7 +1661,7 @@ function ProximityMineData::create( %datablock )
    %obj = new ProximityMine()
    {
       dataBlock = %dataBlock;
-      parentGroup = EWCreatorWindow.objectGroup;
+      parentGroup = ObjectCreator.objectGroup;
       static = true;    // mines created by the editor are static, and armed immediately
    };
 
@@ -1250,5 +1676,37 @@ function RibbonData::create( %datablock )
       ribbon = %datablock;
    };
 
+   return %obj;
+}
+
+function ParticleEmitterData::create( %datablock ) 
+{
+   %obj = new ParticleEmitterNode()
+   {
+      emitter = %datablock;
+      dataBlock = "DefaultEmitterNodeData";
+      parentGroup = ObjectCreator.objectGroup;
+   };
+   return %obj;
+}
+
+function PrecipitationData::create(%datablock)
+{
+   %obj = new Precipitation()
+   {
+      dataBlock = %datablock;
+      parentGroup = ObjectCreator.objectGroup;
+   };
+   return %obj;
+}
+
+function TriggerData::create(%datablock)
+{
+   %obj = new Trigger()
+   {
+      dataBlock = %datablock;
+      parentGroup = ObjectCreator.objectGroup;
+      polyhedron = "-0.5 0.5 0.0 1.0 0.0 0.0 0.0 -1.0 0.0 0.0 0.0 1.0";
+   };
    return %obj;
 }

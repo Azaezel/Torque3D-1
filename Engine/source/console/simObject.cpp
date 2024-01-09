@@ -35,11 +35,12 @@
 #include "console/simPersistID.h"
 #include "console/typeValidators.h"
 #include "console/arrayObject.h"
-#include "console/codeBlock.h"
 #include "core/frameAllocator.h"
 #include "core/stream/fileStream.h"
 #include "core/fileObject.h"
 #include "persistence/taml/tamlCustom.h"
+#include "gui/editor/guiInspector.h"
+#include "console/script.h"
 
 #include "sim/netObject.h"
 
@@ -76,6 +77,7 @@ SimObject::SimObject()
    mObjectName = NULL;
    mOriginalName         = NULL;
    mInternalName         = NULL;
+   mInheritFrom          = NULL;
    nextNameObject        = nullptr;
    nextManagerNameObject = nullptr;
    nextIdObject          = NULL;
@@ -89,7 +91,7 @@ SimObject::SimObject()
    mNameSpace    = NULL;
    mNotifyList   = NULL;
    mFlags.set( ModStaticFields | ModDynamicFields );
-
+   mPrototype = true;
    mProgenitorFile = StringTable->EmptyString();
 
    mFieldDictionary = NULL;
@@ -140,20 +142,26 @@ SimObject::~SimObject()
 
 //-----------------------------------------------------------------------------
 
-bool SimObject::processArguments(S32 argc, ConsoleValueRef *argv)
+bool SimObject::processArguments(S32 argc, ConsoleValue *argv)
 {
    return argc == 0;
 }
 
 //-----------------------------------------------------------------------------
 
+
 void SimObject::initPersistFields()
 {
+   docsURL;
    addGroup( "Ungrouped" );
 
       addProtectedField( "name", TypeName, Offset(mObjectName, SimObject), &setProtectedName, &defaultProtectedGetFn,
          "Optional global name of this object." );
-                  
+
+      addProtectedField("inheritFrom", TypeString, Offset(mInheritFrom, SimObject), &setInheritFrom, &defaultProtectedGetFn,
+         "Optional Name of object to inherit from as a parent.");
+
+      addProtectedField("Prototype", TypeBool, Offset(mPrototype, SimObject), &_doPrototype, &defaultProtectedGetFn, "Prototype Methods", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
    endGroup( "Ungrouped" );
 
    addGroup( "Object" );
@@ -178,10 +186,10 @@ void SimObject::initPersistFields()
    
    addGroup( "Editing" );
    
-      addProtectedField( "hidden", TypeBool, NULL,
+      addProtectedField( "hidden", TypeBool, 0,
          &_setHidden, &_getHidden,
          "Whether the object is visible." );
-      addProtectedField( "locked", TypeBool, NULL,
+      addProtectedField( "locked", TypeBool, 0,
          &_setLocked, &_getLocked,
          "Whether the object can be edited." );
    
@@ -206,6 +214,15 @@ void SimObject::initPersistFields()
 }
 
 //-----------------------------------------------------------------------------
+bool SimObject::_doPrototype(void* object, const char* index, const char* data)
+{
+   if (!Con::isFunction("PrototypeClass")) return false;
+   if (dAtoi(data) != 1) return false;
+   SimObject* obj = reinterpret_cast<SimObject*>(object);
+   String command = String("PrototypeClass(") + (obj->getName()? String(obj->getName()) : String::ToString(obj->getId())) + ");";
+   Con::evaluate(command.c_str());
+   return false;
+}
 
 String SimObject::describeSelf() const
 {
@@ -299,6 +316,10 @@ bool SimObject::writeField(StringTableEntry fieldname, const char* value)
 void SimObject::writeFields(Stream &stream, U32 tabStop)
 {
    // Write static fields.
+
+   // Create a default object of the same type
+   ConsoleObject* defaultConObject = ConsoleObject::create(getClassName());
+   SimObject* defaultObject = dynamic_cast<SimObject*>(defaultConObject);
    
    const AbstractClassRep::FieldList &list = getFieldList();
 
@@ -307,7 +328,7 @@ void SimObject::writeFields(Stream &stream, U32 tabStop)
       const AbstractClassRep::Field* f = &list[i];
 
       // Skip the special field types.
-      if ( f->type >= AbstractClassRep::ARCFirstCustomField )
+      if ( f->type >= AbstractClassRep::ARCFirstCustomField || f->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors))
          continue;
 
       for(U32 j = 0; S32(j) < f->elementCount; j++)
@@ -327,6 +348,11 @@ void SimObject::writeFields(Stream &stream, U32 tabStop)
          if (!writeField(f->pFieldname, valCopy))
             continue;
 
+         //If the field hasn't been changed from the default value, then don't bother writing it out
+         const char* defaultValueCheck = defaultObject->getDataField(f->pFieldname, array);
+         if (defaultValueCheck && defaultValueCheck[0] != '\0' && dStricmp(defaultValueCheck, valCopy) == 0)
+            continue;
+
          val = valCopy;
 
          U32 expandedBufferSize = ( nBufferSize  * 2 ) + dStrlen(f->pFieldname) + 32;
@@ -338,11 +364,12 @@ void SimObject::writeFields(Stream &stream, U32 tabStop)
 
          // detect and collapse relative path information
          char fnBuf[1024];
-         if (f->type == TypeFilename ||
+         if (f->type == TypeFilename       ||
              f->type == TypeStringFilename ||
-             f->type == TypeImageFilename ||
+             f->type == TypeImageFilename  ||
              f->type == TypePrefabFilename ||
-             f->type == TypeShapeFilename)
+             f->type == TypeShapeFilename  ||
+             f->type == TypeSoundFilename )
          {
             Con::collapseScriptFilename(fnBuf, 1024, val);
             val = fnBuf;
@@ -360,6 +387,9 @@ void SimObject::writeFields(Stream &stream, U32 tabStop)
    
    if(mFieldDictionary && mCanSaveFieldDictionary)
       mFieldDictionary->writeFields(this, stream, tabStop);
+
+   // Cleanup our created default object
+   delete defaultConObject;
 }
 
 //-----------------------------------------------------------------------------
@@ -421,7 +451,7 @@ bool SimObject::save(const char *pcFileName, bool bOnlySelected, const char *pre
    while(!f.isEOF())
    {
       buffer = (const char *) f.readLine();
-      if(!dStrcmp(buffer, beginMessage))
+      if(!String::compare(buffer, beginMessage))
          break;
       stream->write(dStrlen(buffer), buffer);
       stream->write(2, "\r\n");
@@ -436,7 +466,7 @@ bool SimObject::save(const char *pcFileName, bool bOnlySelected, const char *pre
    while(!f.isEOF())
    {
       buffer = (const char *) f.readLine();
-      if(!dStrcmp(buffer, endMessage))
+      if(!String::compare(buffer, endMessage))
          break;
    }
    while(!f.isEOF())
@@ -541,12 +571,12 @@ void SimObject::onTamlCustomRead(TamlCustomNodes const& customNodes)
                   // Check common fields.
                   if (field)
                   {
-                     setDataField(fieldName, buf, cField->getFieldValue());
+                     setPrefixedDataField(fieldName, buf, cField->getFieldValue());
                   }
                   else
                   {
                      // Unknown name so warn.
-                     Con::warnf("SimObject::onTamlCustomRead() - Encountered an unknown custom field name of '%s'.", fieldName);
+                     //Con::warnf("SimObject::onTamlCustomRead() - Encountered an unknown custom field name of '%s'.", fieldName);
                      continue;
                   }
                }
@@ -812,6 +842,14 @@ bool SimObject::registerObject(const char *name)
 
 //-----------------------------------------------------------------------------
 
+bool SimObject::registerObject(const String& name)
+{
+   assignName(name.c_str());
+   return registerObject();
+}
+
+//-----------------------------------------------------------------------------
+
 bool SimObject::registerObject(const char *name, U32 id)
 {
    setId(id);
@@ -882,8 +920,11 @@ void SimObject::assignFieldsFrom(SimObject *parent)
       {
          const AbstractClassRep::Field* f = &list[i];
 
+         if (f->pFieldname == StringTable->insert("docsURL"))
+            continue;
+
          // Skip the special field types.
-         if ( f->type >= AbstractClassRep::ARCFirstCustomField )
+         if ( f->type >= AbstractClassRep::ARCFirstCustomField || f->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors))
             continue;
             
          // Skip certain fields that we don't want to see copied so we don't
@@ -914,7 +955,15 @@ void SimObject::assignFieldsFrom(SimObject *parent)
             dMemset( bufferSecure, 0, 2048 );
             dMemcpy( bufferSecure, szBuffer, dStrlen( szBuffer ) );
 
-            if((*f->setDataFn)( this, NULL, bufferSecure ) )
+            //If we have an index worth mentioning, process it for pass-along as well to ensure we set stuff correctly
+            char* elementIdxBuffer = nullptr;
+            if (f->elementCount > 1)
+            {
+               elementIdxBuffer = Con::getArgBuffer(256);
+               dSprintf(elementIdxBuffer, 256, "%i", j);
+            }
+
+            if((*f->setDataFn)( this, elementIdxBuffer, bufferSecure ) )
                Con::setData(f->type, (void *) (((const char *)this) + f->offset), j, 1, &fieldVal, f->table);
 
             if (f->networkMask != 0)
@@ -1119,7 +1168,7 @@ const char *SimObject::getPrefixedDataField(StringTableEntry fieldName, const ch
 
 //-----------------------------------------------------------------------------
 
-void SimObject::setPrefixedDataField(StringTableEntry fieldName, const char *array, const char *value)
+void SimObject::setPrefixedDataField(StringTableEntry fieldName, const char *_array, const char *value)
 {
    // Sanity!
    AssertFatal(fieldName != NULL, "Cannot set object field value with NULL field name.");
@@ -1128,7 +1177,7 @@ void SimObject::setPrefixedDataField(StringTableEntry fieldName, const char *arr
    // Set value without prefix if there's no value.
    if (*value == 0)
    {
-      setDataField(fieldName, NULL, value);
+      setDataField(fieldName, _array, value);
       return;
    }
 
@@ -1142,7 +1191,7 @@ void SimObject::setPrefixedDataField(StringTableEntry fieldName, const char *arr
    if (fieldPrefix == StringTable->EmptyString())
    {
       // No, so set the data field in the usual way.
-      setDataField(fieldName, NULL, value);
+      setDataField(fieldName, _array, value);
       return;
    }
 
@@ -1153,23 +1202,23 @@ void SimObject::setPrefixedDataField(StringTableEntry fieldName, const char *arr
    if (dStrnicmp(value, fieldPrefix, fieldPrefixLength) != 0)
    {
       // No, so set the data field in the usual way.
-      setDataField(fieldName, NULL, value);
+      setDataField(fieldName, _array, value);
       return;
    }
 
    // Yes, so set the data excluding the prefix.
-   setDataField(fieldName, NULL, value + fieldPrefixLength);
+   setDataField(fieldName, _array, value + fieldPrefixLength);
 }
 
 //-----------------------------------------------------------------------------
 
-const char *SimObject::getPrefixedDynamicDataField(StringTableEntry fieldName, const char *array, const S32 fieldType)
+const char *SimObject::getPrefixedDynamicDataField(StringTableEntry fieldName, const char *_array, const S32 fieldType)
 {
    // Sanity!
    AssertFatal(fieldName != NULL, "Cannot get field value with NULL field name.");
 
    // Fetch field value.
-   const char* pFieldValue = getDataField(fieldName, array);
+   const char* pFieldValue = getDataField(fieldName, _array);
 
    // Sanity.
    AssertFatal(pFieldValue != NULL, "Field value cannot be NULL.");
@@ -1436,7 +1485,7 @@ SimObject* SimObject::clone()
    simObject->assignFieldsFrom( this );
 
    String name = Sim::getUniqueName( getName() );
-   if( !simObject->registerObject( name ) )
+   if( !simObject->registerObject( name.c_str() ) )
    {
       delete simObject;
       return NULL;
@@ -2221,13 +2270,38 @@ bool SimObject::setProtectedName(void *obj, const char *index, const char *data)
 {   
    if (preventNameChanging)
       return false;
-   SimObject *object = static_cast<SimObject*>(obj);
-   
-   if ( object->isProperlyAdded() )
-      object->assignName( data );   
+   SimObject* object = static_cast<SimObject*>(obj);
+
+   if (object->isProperlyAdded())
+      object->assignName(data);
 
    // always return false because we assign the name here
    return false;
+}
+
+//-----------------------------------------------------------------------------
+
+bool SimObject::setInheritFrom(void* obj, const char* index, const char* data)
+{
+   SimObject* object = static_cast<SimObject*>(obj);
+
+   SimObject* parent;
+   if (Sim::findObject(data, parent))
+   {
+      object->setCopySource(parent);
+      object->assignFieldsFrom(parent);
+
+      // copy any substitution statements
+      SimDataBlock* parent_db = dynamic_cast<SimDataBlock*>(parent);
+      if (parent_db)
+      {
+         SimDataBlock* currentNewObject_db = dynamic_cast<SimDataBlock*>(object);
+         if (currentNewObject_db)
+            currentNewObject_db->copySubstitutionsFrom(parent_db);
+      }
+   }
+
+   return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -2266,7 +2340,13 @@ String SimObject::_getLogMessage(const char* fmt, va_list args) const
 // MARK: ---- API ----
 
 //-----------------------------------------------------------------------------
+void SimObject::onInspect(GuiInspector* inspector)
+{
+   if (isMethod("onInspect"))
+      Con::executef(this, "onInspect", inspector);
+}
 
+//-----------------------------------------------------------------------------
 DefineEngineMethod( SimObject, dumpGroupHierarchy, void, (),,
    "Dump the hierarchy of this object up to RootGroup to the console." )
 {
@@ -2404,7 +2484,7 @@ static void sEnumCallback( EngineObject* object )
    if( !simObject )
       return;
       
-   Con::evaluatef( "%s( %i );", sEnumCallbackFunction, simObject->getId() );
+   Con::executef(sEnumCallbackFunction, simObject->getId());
 }
 
 DefineEngineFunction( debugEnumInstances, void, ( const char* className, const char* functionName ),,
@@ -2570,10 +2650,10 @@ DefineEngineMethod( SimObject, dumpMethods, ArrayObject*, (),,
       str.append( e->getPrototypeString() );
 
       str.append( '\n' );
-      if( e->mCode && e->mCode->fullPath )
-         str.append( e->mCode->fullPath );
+      if( e->mModule && e->mModule->getPath() )
+         str.append( e->mModule->getPath() );
       str.append( '\n' );
-      if( e->mCode )
+      if( e->mModule )
          str.append( String::ToString( e->mFunctionLineNumber ) );
 
       str.append( '\n' );
@@ -2587,6 +2667,110 @@ DefineEngineMethod( SimObject, dumpMethods, ArrayObject*, (),,
    return dictionary;
 }
 
+DefineEngineMethod(SimObject, getMethodSigs, ArrayObject*, (bool commands), (false),
+   "List the methods defined on this object.\n\n"
+   "Each description is a newline-separated vector with the following elements:\n"
+   "- method prototype string.\n"
+   "- Documentation string (not including prototype).  This takes up the remainder of the vector.\n"
+   "@return An ArrayObject populated with (name,description) pairs of all methods defined on the object.")
+{
+   Namespace* ns = object->getNamespace();
+   if (!ns)
+      return 0;
+
+   ArrayObject* dictionary = new ArrayObject();
+   dictionary->registerObject();
+
+   VectorPtr<Namespace::Entry*> vec(__FILE__, __LINE__);
+   ns->getEntryList(&vec);
+   for (Vector< Namespace::Entry* >::iterator j = vec.begin(); j != vec.end(); j++)
+   {
+      Namespace::Entry* e = *j;
+
+      if (commands)
+      {
+         if ((e->mType < Namespace::Entry::ConsoleFunctionType))
+            continue;
+      }
+      else
+      {
+         if ((e->mType > Namespace::Entry::ScriptCallbackType))
+            continue;
+      }
+      StringBuilder str;
+      str.append("function ");
+      str.append(ns->getName());
+      str.append("::");
+      str.append(e->getPrototypeSig());
+      str.append('\n');
+      str.append("{");
+      String docs = e->getDocString();
+      if (!docs.isEmpty())
+      {
+         str.append("\n/*");
+         str.append(docs);
+         str.append("\n*/");
+      }
+      str.append('\n');
+      str.append("}");
+      dictionary->push_back(e->mFunctionName, str.end());
+   }
+
+   return dictionary;
+}
+
+DefineEngineFunction(getMethodSigsNS, ArrayObject*, (StringTableEntry className, bool commands), (false),
+   "List the methods defined on this object.\n\n"
+   "Each description is a newline-separated vector with the following elements:\n"
+   "- method prototype string.\n"
+   "- Documentation string (not including prototype).  This takes up the remainder of the vector.\n"
+   "@return An ArrayObject populated with (name,description) pairs of all methods defined on the object.")
+{
+   
+   Namespace* ns = Con::lookupNamespace(className);
+   if (!ns)
+      return 0;
+
+   ArrayObject* dictionary = new ArrayObject();
+   dictionary->registerObject();
+
+   VectorPtr<Namespace::Entry*> vec(__FILE__, __LINE__);
+   ns->getEntryList(&vec);
+   for (Vector< Namespace::Entry* >::iterator j = vec.begin(); j != vec.end(); j++)
+   {
+      Namespace::Entry* e = *j;
+
+      if (commands)
+      {
+         if ((e->mType < Namespace::Entry::ConsoleFunctionType))
+            continue;
+      }
+      else
+      {
+         if ((e->mType > Namespace::Entry::ScriptCallbackType))
+            continue;
+      }
+      StringBuilder str;
+      str.append("function ");
+      str.append(ns->getName());
+      str.append("::");
+      str.append(e->getPrototypeSig());
+      str.append('\n');
+      str.append("{");
+      String docs = e->getDocString();
+      if (!docs.isEmpty())
+      {
+         str.append("\n/*");
+         str.append(docs);
+         str.append("\n*/");
+      }
+      str.append('\n');
+      str.append("}");
+      dictionary->push_back(e->mFunctionName, str.end());
+   }
+
+   return dictionary;
+}
 //-----------------------------------------------------------------------------
 
 namespace {
@@ -2957,8 +3141,10 @@ DefineEngineStringlyVariadicMethod( SimObject, call, const char*, 3, 0, "( strin
    "@param args Zero or more arguments for the method.\n"
    "@return The result of the method call." )
 {
-   argv[1] = argv[2];
-   return Con::execute( object, argc - 1, argv + 1 );
+   argv[1].setString(argv[2].getString());
+
+   ConsoleValue returnValue = Con::execute(object, argc - 1, argv + 1);
+   return Con::getReturnBuffer(returnValue.getString());
 }
 
 //-----------------------------------------------------------------------------
@@ -3060,9 +3246,9 @@ DefineEngineStringlyVariadicMethod( SimObject,schedule, S32, 4, 0, "( float time
    "@param args The arguments with which to call the method.\n"
    "@return The numeric ID of the created schedule.  Can be used to cancel the call.\n" )
 {
-   U32 timeDelta = U32(dAtof(argv[2]));
-   argv[2] = argv[3];
-   argv[3] = argv[1];
+   U32 timeDelta = U32(argv[2].getFloat());
+   argv[2].setString(argv[3].getString());
+   argv[3].setString(argv[1].getString());
    SimConsoleEvent *evt = new SimConsoleEvent(argc - 2, argv + 2, true);
    S32 ret = Sim::postEvent(object, evt, Sim::getCurrentTime() + timeDelta);
    // #ifdef DEBUG
@@ -3133,7 +3319,34 @@ DefineEngineMethod( SimObject, getFieldCount, S32, (),,
       f = &list[i];
 
       // The special field types do not need to be counted.
-      if ( f->type >= AbstractClassRep::ARCFirstCustomField )
+      if ( f->type >= AbstractClassRep::ARCFirstCustomField || f->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors))
+         numDummyEntries++;
+   }
+
+   return list.size() - numDummyEntries;
+}
+
+DefineEngineFunction(getFieldCountNS, S32, (StringTableEntry className), ,
+   "Get the number of static fields on the name space.\n"
+   "@return The number of static fields defined on the object.")
+{
+   Namespace* ns = Con::lookupNamespace(className);
+   if (!ns)
+      return 0;
+   AbstractClassRep* rep = ns->mClassRep;
+   if (!rep)
+      return 0;
+
+   const AbstractClassRep::FieldList& list = rep->mFieldList;
+   const AbstractClassRep::Field* f;
+   U32 numDummyEntries = 0;
+
+   for (S32 i = 0; i < list.size(); i++)
+   {
+      f = &list[i];
+
+      // The special field types do not need to be counted.
+      if (f->type >= AbstractClassRep::ARCFirstCustomField || f->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors))
          numDummyEntries++;
    }
 
@@ -3158,7 +3371,7 @@ DefineEngineMethod( SimObject, getField, const char*, ( S32 index ),,
       f = &list[i];
 
       // The special field types can be skipped.
-      if ( f->type >= AbstractClassRep::ARCFirstCustomField )
+      if ( f->type >= AbstractClassRep::ARCFirstCustomField || f->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors))
          continue;
 
       if(currentField == index)
@@ -3171,6 +3384,67 @@ DefineEngineMethod( SimObject, getField, const char*, ( S32 index ),,
    return "";
 }
 
+DefineEngineFunction(getFieldNS, const char*, (StringTableEntry className,S32 index), ,
+   "Retrieve the value of a static field by index.\n"
+   "@param index The index of the static field.\n"
+   "@return The value of the static field with the given index or \"\".")
+{
+   Namespace* ns = Con::lookupNamespace(className);
+   if (!ns)
+      return 0;
+   AbstractClassRep* rep = ns->mClassRep;
+   if (!rep)
+      return 0;
+
+   const AbstractClassRep::FieldList& list = rep->mFieldList;
+   if ((index < 0) || (index >= list.size()))
+      return "";
+
+   const AbstractClassRep::Field* f;
+   S32 currentField = 0;
+   for (U32 i = 0; i < list.size() && currentField <= index; i++)
+   {
+      f = &list[i];
+
+      // The special field types can be skipped.
+      if (f->type >= AbstractClassRep::ARCFirstCustomField || f->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors))
+         continue;
+
+      if (currentField == index)
+         return f->pFieldname;
+
+      currentField++;
+   }
+
+   // if we found nada, return nada.
+   return "";
+}
+
+DefineEngineFunction(getClassHierarchy, const char*, (const char* name), ,
+   "Returns the inheritance hierarchy for a given class.")
+{
+   AbstractClassRep* pRep = AbstractClassRep::findClassRep(name);
+   if (!pRep)
+   {
+      //Con::errorf("%s does not exist", name);
+      return StringTable->EmptyString();
+   }
+
+   StringBuilder buffer;
+
+   while (pRep != NULL)
+   {
+      StringTableEntry className = pRep->getClassName();
+      buffer.append(className);
+      buffer.append(" ");
+      pRep = pRep->getParentClass();
+   }
+
+   String result = buffer.end().trim();
+   //Con::printf("getClassHierarchy for %s=%s", name, result.c_str());
+   return Con::getReturnBuffer(result.c_str());
+
+}
 //-----------------------------------------------------------------------------
 
 #ifdef TORQUE_DEBUG
@@ -3187,8 +3461,7 @@ DefineEngineMethod( SimObject, getDebugInfo, ArrayObject*, (),,
    array->push_back( "Object|Description", object->describeSelf() );
    array->push_back( "Object|FileName", object->getFilename() );
    array->push_back( "Object|DeclarationLine", String::ToString( object->getDeclarationLine() ) );
-   array->push_back( "Object|CopySource", object->getCopySource() ?
-      String::ToString( "%i:%s (%s)", object->getCopySource()->getId(), object->getCopySource()->getClassName(), object->getCopySource()->getName() ) : "" );
+   array->push_back( "Object|CopySource", object->getCopySource() ? String::ToString( "%i:%s (%s)", object->getCopySource()->getId(), object->getCopySource()->getClassName(), object->getCopySource()->getName() ) : String("") );
    array->push_back( "Flag|EditorOnly", object->isEditorOnly() ? "true" : "false" );
    array->push_back( "Flag|NameChangeAllowed", object->isNameChangeAllowed() ? "true" : "false" );
    array->push_back( "Flag|AutoDelete", object->isAutoDeleted() ? "true" : "false" );

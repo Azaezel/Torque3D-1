@@ -54,7 +54,7 @@ ConsoleDocClass( afxModelData,
 
 afxModelData::afxModelData()
 {
-  shapeName = ST_NULLSTRING;
+   INIT_ASSET(Shape);
   sequence = ST_NULLSTRING;
   seq_rate = 1.0f;
   seq_offset = 0.0f;
@@ -74,7 +74,6 @@ afxModelData::afxModelData()
   useCustomAmbientLighting = false;
   customAmbientForSelfIllumination = false;
   customAmbientLighting = LinearColorF(0.0f, 0.0f, 0.0f);
-  shadowEnable = false;
 
   shadowSize = 128;
   shadowMaxVisibleDistance = 80.0f;
@@ -84,8 +83,7 @@ afxModelData::afxModelData()
 
 afxModelData::afxModelData(const afxModelData& other, bool temp_clone) : GameBaseData(other, temp_clone)
 {
-  shapeName = other.shapeName;
-  shape = other.shape; // --
+   CLONE_ASSET(Shape);
   sequence = other.sequence;
   seq_rate = other.seq_rate;
   seq_offset = other.seq_offset;
@@ -104,7 +102,6 @@ afxModelData::afxModelData(const afxModelData& other, bool temp_clone) : GameBas
   useCustomAmbientLighting = other.useCustomAmbientLighting;
   customAmbientForSelfIllumination = other.customAmbientForSelfIllumination;
   customAmbientLighting = other.customAmbientLighting;
-  shadowEnable = other.shadowEnable;
 
   shadowSize = other.shadowSize;
   shadowMaxVisibleDistance = other.shadowMaxVisibleDistance;
@@ -127,12 +124,11 @@ bool afxModelData::preload(bool server, String &errorStr)
   if (server) 
     return true;
   
-  if (shapeName != ST_NULLSTRING && !shape)
+  if (mShapeAsset.notNull())
   {
-    shape = ResourceManager::get().load(shapeName);
-    if (!shape)
+    if (!mShape)
     {
-      errorStr = String::ToString("afxModelData::load: Failed to load shape \"%s\"", shapeName);
+      errorStr = String::ToString("afxModelData::load: Failed to load shape \"%s\"", mShapeAssetId);
       return false;
     }
 
@@ -164,7 +160,7 @@ bool afxModelData::preload(bool server, String &errorStr)
     if (txr_tag_remappings.size() == 0)
     {
       // this little hack forces the textures to preload
-      TSShapeInstance* pDummy = new TSShapeInstance(shape);
+      TSShapeInstance* pDummy = new TSShapeInstance(mShape);
       delete pDummy;
     }
   }
@@ -176,32 +172,37 @@ bool afxModelData::preload(bool server, String &errorStr)
 
 void afxModelData::initPersistFields()
 {
-  addField("shapeFile",             TypeFilename, myOffset(shapeName),
-    "The name of a .dts format file to use for the model.");
-  addField("sequence",              TypeFilename, myOffset(sequence),
-    "The name of an animation sequence to play in the model.");
-  addField("sequenceRate",          TypeF32,      myOffset(seq_rate),
-    "The rate of playback for the sequence.");
-  addField("sequenceOffset",        TypeF32,      myOffset(seq_offset),
-    "An offset in seconds indicating a starting point for the animation sequence "
-    "specified by the sequence field. A rate of 1.0 (rather than sequenceRate) is used "
-    "to convert from seconds to the thread offset.");
-  addField("alphaMult",             TypeF32,      myOffset(alpha_mult),
-    "An alpha multiplier used to set maximum opacity of the model.");
+   docsURL;
+   addGroup("Shapes");
+      INITPERSISTFIELD_SHAPEASSET(Shape, afxModelData, "The name of a .dts format file to use for the model.");
+   endGroup("Shapes");
 
-  addField("fogMult",               TypeF32,      myOffset(fog_mult),
-    "");
-  addField("remapTextureTags",      TypeString,   myOffset(remap_txr_tags),
-    "Rename one or more texture tags in the model. Texture tags are what link a "
-    "model's textures to materials.\n"
-    "Field should be a string containing space-separated remapping tokens. A remapping "
-    "token is two names separated by a colon, ':'. The first name should be a texture-tag "
-    "that exists in the model, while the second is a new name to replace it. The string "
-    "can have any number of remapping tokens as long as the total string length does not "
-    "exceed 255.");
-  addField("shadowEnable",                  TypeBool,   myOffset(shadowEnable),
-    "Sets whether the model casts a shadow.");
+   addGroup("Animation");
+      addField("sequence",              TypeString, myOffset(sequence),
+         "The name of an animation sequence to play in the model.");
+      addField("sequenceRate",          TypeF32,      myOffset(seq_rate),
+         "The rate of playback for the sequence.");
+      addField("sequenceOffset",        TypeF32,      myOffset(seq_offset),
+         "An offset in seconds indicating a starting point for the animation sequence "
+         "specified by the sequence field. A rate of 1.0 (rather than sequenceRate) is used "
+         "to convert from seconds to the thread offset.");
+   endGroup("Animation");
 
+   addGroup("Rendering");
+      addField("alphaMult",             TypeF32,      myOffset(alpha_mult),
+         "An alpha multiplier used to set maximum opacity of the model.");
+      addField("fogMult",               TypeF32,      myOffset(fog_mult), "");
+      addField("remapTextureTags",      TypeString,   myOffset(remap_txr_tags),
+         "Rename one or more texture tags in the model. Texture tags are what link a "
+         "model's textures to materials.\n"
+         "Field should be a string containing space-separated remapping tokens. A remapping "
+         "token is two names separated by a colon, ':'. The first name should be a texture-tag "
+         "that exists in the model, while the second is a new name to replace it. The string "
+         "can have any number of remapping tokens as long as the total string length does not "
+         "exceed 255.");
+  endGroup("Rendering");
+
+  addGroup("Deprecated");
   addField("useVertexAlpha",        TypeBool,     myOffset(use_vertex_alpha),
     "deprecated");
   addField("forceOnMaterialFlags",  TypeS32,      myOffset(force_on_material_flags),
@@ -232,6 +233,7 @@ void afxModelData::initPersistFields()
     "deprecated");
   addField("shadowSphereAdjust",            TypeF32,    myOffset(shadowSphereAdjust),
     "deprecated");
+  endGroup("Deprecated");
 
   Parent::initPersistFields();
 
@@ -256,7 +258,7 @@ void afxModelData::packData(BitStream* stream)
 {
   Parent::packData(stream);
 
-  stream->writeString(shapeName);
+  PACKDATA_ASSET(Shape);
   stream->writeString(sequence);
   stream->write(seq_rate);  
   stream->write(seq_offset);
@@ -276,7 +278,6 @@ void afxModelData::packData(BitStream* stream)
   stream->writeFlag(customAmbientForSelfIllumination);
   stream->write(customAmbientLighting);
   stream->writeFlag(receiveLMLighting);
-  stream->writeFlag(shadowEnable);
 
   stream->write(shadowSize);
   stream->write(shadowMaxVisibleDistance);
@@ -288,7 +289,7 @@ void afxModelData::unpackData(BitStream* stream)
 {
   Parent::unpackData(stream);
 
-  shapeName = stream->readSTString();
+  UNPACKDATA_ASSET(Shape);
   sequence = stream->readSTString();
   stream->read(&seq_rate);
   stream->read(&seq_offset);
@@ -308,7 +309,6 @@ void afxModelData::unpackData(BitStream* stream)
   customAmbientForSelfIllumination = stream->readFlag();
   stream->read(&customAmbientLighting);
   receiveLMLighting = stream->readFlag();
-  shadowEnable = stream->readFlag();
 
   stream->read(&shadowSize);
   stream->read(&shadowMaxVisibleDistance);
@@ -316,19 +316,24 @@ void afxModelData::unpackData(BitStream* stream)
   stream->read(&shadowSphereAdjust);
 }
 
-void afxModelData::onPerformSubstitutions() 
-{ 
-  if (shapeName != ST_NULLSTRING)
-  {
-    shape = ResourceManager::get().load(shapeName);
-    if (!shape)
-    {
-      Con::errorf("afxModelData::onPerformSubstitutions: Failed to load shape \"%s\"", shapeName);
-      return;
-    }
+void afxModelData::onPerformSubstitutions()
+{
+   if (mShapeAssetId != StringTable->EmptyString())
+   {
+      mShapeAsset = mShapeAssetId;
+      if (mShapeAsset.notNull())
+      {
+         mShape = mShapeAsset->getShapeResource();
+      }
 
-    // REMAP-TEXTURE-TAGS ISSUES?
-  }
+      if (!mShape)
+      {
+         Con::errorf("afxModelData::onPerformSubstitutions: Failed to load shape \"%s\"", mShapeAssetId);
+         return;
+      }
+
+      // REMAP-TEXTURE-TAGS ISSUES?
+   }
 }
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
@@ -401,18 +406,18 @@ bool afxModel::onAdd()
     return false;
 
   // setup our bounding box
-  if (mDataBlock->shape)
-    mObjBox = mDataBlock->shape->mBounds;
+  if (mDataBlock->mShape)
+    mObjBox = mDataBlock->mShape->mBounds;
   else
     mObjBox = Box3F(Point3F(-1, -1, -1), Point3F(1, 1, 1));
 
   // setup the shape instance and sequence
-  if (mDataBlock->shape)
+  if (mDataBlock->mShape)
   {
      if (/*isClientObject() && */mDataBlock->txr_tag_remappings.size() > 0)
      {
         // temporarily substitute material tags with alternates
-        TSMaterialList* mat_list = mDataBlock->shape->materialList;
+        TSMaterialList* mat_list = mDataBlock->mShape->materialList;
         if (mat_list)
         {
            for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
@@ -433,7 +438,7 @@ bool afxModel::onAdd()
         }
      }
 
-    shape_inst = new TSShapeInstance(mDataBlock->shape);
+    shape_inst = new TSShapeInstance(mDataBlock->mShape);
 
     if (true) // isClientObject())
     {
@@ -442,7 +447,7 @@ bool afxModel::onAdd()
        // restore the material tags to original form
        if (mDataBlock->txr_tag_remappings.size() > 0)
        {
-          TSMaterialList* mat_list = mDataBlock->shape->materialList;
+          TSMaterialList* mat_list = mDataBlock->mShape->materialList;
           if (mat_list)
           {
              for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
@@ -508,14 +513,14 @@ bool afxModel::onAdd()
 
   resetWorldBox();
 
-  if (mDataBlock->shape)
+  if (mDataBlock->mShape)
   {
     // Scan out the collision hulls...
     static const String sCollisionStr( "collision-" );
 
-    for (U32 i = 0; i < mDataBlock->shape->details.size(); i++)
+    for (U32 i = 0; i < mDataBlock->mShape->details.size(); i++)
     {
-      const String &name = mDataBlock->shape->names[mDataBlock->shape->details[i].nameIndex];
+      const String &name = mDataBlock->mShape->names[mDataBlock->mShape->details[i].nameIndex];
 
       if (name.compare( sCollisionStr, sCollisionStr.length(), String::NoCase ) == 0)
       {
@@ -529,7 +534,7 @@ bool afxModel::onAdd()
 
         char buff[128];
         dSprintf(buff, sizeof(buff), "LOS-%d", i + 1 + 8/*MaxCollisionShapes*/);
-        U32 los = mDataBlock->shape->findDetail(buff);
+        U32 los = mDataBlock->mShape->findDetail(buff);
         if (los == -1)
           mLOSDetails.last() = i;
         else
@@ -540,9 +545,9 @@ bool afxModel::onAdd()
     // Snag any "unmatched" LOS details
     static const String sLOSStr( "LOS-" );
 
-    for (U32 i = 0; i < mDataBlock->shape->details.size(); i++)
+    for (U32 i = 0; i < mDataBlock->mShape->details.size(); i++)
     {
-      const String &name = mDataBlock->shape->names[mDataBlock->shape->details[i].nameIndex];
+      const String &name = mDataBlock->mShape->names[mDataBlock->mShape->details[i].nameIndex];
 
       if (name.compare( sLOSStr, sLOSStr.length(), String::NoCase ) == 0)
       {

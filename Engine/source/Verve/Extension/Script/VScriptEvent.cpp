@@ -26,6 +26,7 @@
 #include "Verve/Extension/Script/VScriptEvent.h"
 
 #include "console/consoleTypes.h"
+#include "console/script.h"
 
 //-----------------------------------------------------------------------------
 IMPLEMENT_CONOBJECT( VScriptEvent );
@@ -46,8 +47,9 @@ VScriptEvent::VScriptEvent( void ) :
     setLabel( "ScriptEvent" );
 }
 
-void VScriptEvent::initPersistFields( void )
+void VScriptEvent::initPersistFields()
 {
+   docsURL;
     Parent::initPersistFields();
 
     addField( "CommandType", TYPEID<eCommandType>(), Offset( mCommandType, VScriptEvent ), "The type of command to be evaluated." );

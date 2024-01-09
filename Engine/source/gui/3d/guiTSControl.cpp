@@ -172,6 +172,7 @@ GuiTSCtrl::GuiTSCtrl()
 
 void GuiTSCtrl::initPersistFields()
 {
+   docsURL;
    addGroup( "Camera" );
    
       addField("cameraZRot", TypeF32, Offset(mCameraZRot, GuiTSCtrl),
@@ -362,9 +363,6 @@ void GuiTSCtrl::_internalRender(RectI guiViewport, RectI renderViewport, Frustum
    GFXTarget *origTarget = GFX->getActiveRenderTarget();
    S32 origStereoTarget = GFX->getCurrentStereoTarget();
 
-   if (mForceFOV != 0)
-      mLastCameraQuery.fov = mDegToRad(mForceFOV);
-
    if (mCameraZRot)
    {
       MatrixF rotMat(EulerF(0, 0, mDegToRad(mCameraZRot)));
@@ -389,7 +387,7 @@ void GuiTSCtrl::_internalRender(RectI guiViewport, RectI renderViewport, Frustum
    GFX->setViewport(renderViewport);
 
    // Clear the zBuffer so GUI doesn't hose object rendering accidentally
-   GFX->clear(GFXClearZBuffer, ColorI(20, 20, 20), 1.0f, 0);
+   GFX->clear(GFXClearZBuffer, ColorI(20, 20, 20), 0.0f, 0);
 
    GFX->setFrustum(frustum);
    mSaveProjection = GFX->getProjectionMatrix();
@@ -676,6 +674,9 @@ void GuiTSCtrl::onRender(Point2I offset, const RectI &updateRect)
       F32 renderWidth = F32(renderSize.x);
       F32 renderHeight = F32(renderSize.y);
       F32 aspectRatio = renderWidth / renderHeight;
+
+      if (mForceFOV != 0)
+         mLastCameraQuery.fov = mDegToRad(mForceFOV);
 
       // Use the FOV to calculate the viewport height scale
       // then generate the width scale from the aspect ratio.

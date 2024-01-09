@@ -87,8 +87,16 @@ GFXNullTextureObject::GFXNullTextureObject(GFXDevice * aDevice, GFXTextureProfil
 
 class GFXNullTextureManager : public GFXTextureManager
 {
+public:
+   GFXTextureObject* createTexture(GBitmap* bmp, const String& resourceName, GFXTextureProfile* profile, bool deleteBmp) { return nullptr; } // _createNullTextureObject();}
+   GFXTextureObject* createTexture(DDSFile* dds, GFXTextureProfile* profile, bool deleteDDS) { return nullptr; }
+   GFXTextureObject* createTexture(const Torque::Path& path, GFXTextureProfile* profile) { return nullptr; }
+   GFXTextureObject* createTexture(U32 width, U32 height, void* pixels, GFXFormat format, GFXTextureProfile* profile) { return nullptr; }
+   GFXTextureObject* createTexture(U32 width, U32 height, U32 depth, GFXFormat format, GFXTextureProfile* profile, U32 numMipLevels = 1) { return nullptr; }
+   GFXTextureObject* createTexture(U32 width, U32 height, GFXFormat format, GFXTextureProfile* profile, U32 numMipLevels, S32 antialiasLevel) { return nullptr; }
+   GFXTextureObject* createCompositeTexture(GBitmap* bmp[4], U32 inputKey[4], const String& resourceName, GFXTextureProfile* profile, bool deleteBmp) { return nullptr; }
 protected:
-      virtual GFXTextureObject *_createTextureObject( U32 height, 
+      GFXTextureObject *_createTextureObject( U32 height, 
                                                       U32 width, 
                                                       U32 depth, 
                                                       GFXFormat format, 
@@ -176,6 +184,19 @@ public:
    virtual ~GFXNullCubemapArray() {};
    virtual void zombify() {}
    virtual void resurrect() {}
+};
+
+class GFXNullTextureArray : public GFXTextureArray
+{
+public:
+   void zombify() override {}
+   void resurrect() override {}
+   void Release() override {}
+   void setToTexUnit(U32 tuNum) override { }
+   void init() override { }
+
+protected:
+   void _setTexture(const GFXTexHandle& texture, U32 slot) override { }
 };
 
 class GFXNullVertexBuffer : public GFXVertexBuffer 
@@ -317,6 +338,11 @@ GFXCubemapArray* GFXNullDevice::createCubemapArray()
    return new GFXNullCubemapArray();
 };
 
+GFXTextureArray* GFXNullDevice::createTextureArray()
+{
+   return new GFXNullTextureArray();
+};
+
 void GFXNullDevice::enumerateAdapters( Vector<GFXAdapter*> &adapterList )
 {
    // Add the NULL renderer
@@ -334,11 +360,6 @@ void GFXNullDevice::enumerateAdapters( Vector<GFXAdapter*> &adapterList )
    dStrcpy(toAdd->mName, "GFX Null Device", GFXAdapter::MaxAdapterNameLen);
 
    adapterList.push_back(toAdd);
-}
-
-void GFXNullDevice::setLightInternal(U32 lightStage, const GFXLightInfo light, bool lightEnable)
-{
-
 }
 
 void GFXNullDevice::init( const GFXVideoMode &mode, PlatformWindow *window )

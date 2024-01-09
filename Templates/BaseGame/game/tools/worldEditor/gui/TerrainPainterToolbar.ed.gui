@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(EWTerrainPainterToolbar,EditorGuiGroup) {
+$guiContent = new GuiControl(EWTerrainPainterToolbar,EditorGuiGroup) {
    canSaveDynamicFields = "0";
    internalName = "TerrainPainterToolbar";
    Enabled = "1";
@@ -7,7 +7,7 @@
    Profile = "ToolsGuiDefaultProfile";
    HorizSizing = "right";
    VertSizing = "bottom";
-   Position = "306 0";
+   Position = "306 -3";
    Extent = "800 40";
    MinExtent = "8 2";
    canSave = "1";
@@ -18,7 +18,7 @@
       profile = "ToolsGuiTextProfile";
       horizSizing = "right";
       vertSizing = "bottom";
-      position = "6 7";
+      position = "6 4";
       extent = "70 16";
       minExtent = "8 8";
       visible = "1";
@@ -44,7 +44,7 @@
       new GuiControl(EWTerrainPainterToolbarBrushType){
          isContainer = "1";
          profile = "ToolsGuiDefaultProfile";
-         Position = "83 2";
+         Position = "83 0";
          Extent = "94 27";
          
          new GuiBitmapButtonCtrl() {
@@ -67,7 +67,7 @@
             groupNum = "0";
             buttonType = "RadioButton";
             useMouseEvents = "0";
-            bitmap = "tools/worldEditor/images/circleBrush";
+            bitmapAsset = "ToolsModule:circleBrush_n_image";
          };
          new GuiBitmapButtonCtrl() {
             canSaveDynamicFields = "0";
@@ -89,7 +89,7 @@
             groupNum = "0";
             buttonType = "RadioButton";
             useMouseEvents = "0";
-            bitmap = "tools/worldEditor/images/boxBrush";
+            bitmapAsset = "ToolsModule:boxBrush_n_image";
          };
          
          /*
@@ -113,7 +113,7 @@
             groupNum = "0";
             buttonType = "RadioButton";
             useMouseEvents = "0";
-            bitmap = "tools/worldEditor/images/maskBrush";
+            bitmapAsset = "ToolsModule:maskBrush_n_image";
          };
          */
       };
@@ -121,10 +121,10 @@
   new GuiBitmapCtrl() {
       Enabled = "1";
       Profile = "ToolsGuiDefaultProfile";
-      position = "152 3";
+      position = "152 0";
       Extent = "2 26";
       MinExtent = "1 1";
-      bitmap = "tools/gui/images/separator-h.png";
+      bitmapAsset = "ToolsModule:separator_h_image";
    };
       
       new GuiControl(PaintBrushSizeTextEditContainer) {
@@ -133,7 +133,7 @@
          Profile = "ToolsGuiTransparentProfile";
          HorizSizing = "right";
          VertSizing = "bottom";
-         position = "145 5";
+         position = "145 2";
          Extent = "120 50";
          MinExtent = "8 2";
          canSave = "1";
@@ -203,17 +203,17 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          };
       };  
 
       new GuiBitmapCtrl() {
          Enabled = "1";
          Profile = "ToolsGuiDefaultProfile";
-         position = "270 3";
+         position = "255 0";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
                 
 	   new GuiControl(PaintBrushSlopeControl) {
@@ -222,7 +222,7 @@
          Profile = "ToolsGuiDefaultProfile";
          HorizSizing = "right";
          VertSizing = "bottom";
-         Position = "262 5";
+         Position = "245 2";
          Extent = "256 50";
          MinExtent = "8 2";
          canSave = "1";
@@ -250,7 +250,7 @@
             AnchorBottom = "0";
             AnchorLeft = "1";
             AnchorRight = "0";
-            text = "Slope Mask   Min";
+            text = "Slope Mask:  Min";
             maxLength = "1024";
          };
          new GuiTextEditCtrl() {
@@ -301,7 +301,7 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
             Command = "Canvas.pushDialog(PaintBrushSlopeMinContainer);";
          };
          new GuiTextCtrl() {
@@ -362,7 +362,7 @@
             tooltip = "Max terrain angle that will be paintable";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
             Command = "Canvas.pushDialog(PaintBrushSlopeMaxContainer);";
          };
       };
@@ -370,10 +370,10 @@
       new GuiBitmapCtrl() {
          Enabled = "1";
          Profile = "ToolsGuiDefaultProfile";
-         position = "525 3";
+         position = "498 0";
          Extent = "2 26";
          MinExtent = "1 1";
-         bitmap = "tools/gui/images/separator-h.png";
+         bitmapAsset = "ToolsModule:separator_h_image";
       };
 
       new GuiControl(PaintBrushPressureTextEditContainer,EditorGuiGroup) {
@@ -382,7 +382,7 @@
          Profile = "ToolsGuiTransparentProfile";
          HorizSizing = "right";
          VertSizing = "bottom";
-         position = "540 5";
+         position = "510 2";
          Extent = "120 50";
          MinExtent = "8 2";
          canSave = "1";
@@ -451,8 +451,45 @@
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            bitmap = "tools/gui/images/dropslider";
+            bitmapAsset = "ToolsModule:dropslider_n_image";
          }; 
+      };
+
+      new GuiBitmapCtrl() {
+         Enabled = "1";
+         Profile = "ToolsGuiDefaultProfile";
+         position = "618 0";
+         Extent = "2 26";
+         MinExtent = "1 1";
+         bitmapAsset = "ToolsModule:separator_h_image";
+      };
+
+      new GuiControl(TerrainTextureSettingsButtonContainer,EditorGuiGroup) {
+         position = "628 4";
+         extent = "90 18";
+         minExtent = "8 2";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         profile = "ToolsGuiTransparentProfile";
+         visible = "1";
+         active = "1";
+         tooltipProfile = "ToolsGuiToolTipProfile";
+         hovertime = "1000";
+         isContainer = "1";
+         canSave = "1";
+         canSaveDynamicFields = "0";
+         
+         new GuiButtonCtrl() {
+            text = "Texture Settings";
+            buttonType = "pushButton";
+            profile = "ToolsGuiButtonProfile";
+            command = "TerrainTextureSettingsDlg.show();";
+            tooltipProfile = "ToolsGuiToolTipProfile";
+            position = "0 0";
+            extent = "90 18";
+            horizSizing = "right";
+            vertSizing = "bottom";
+         };
       };
    };
 };
@@ -487,8 +524,8 @@ new GuiMouseEventCtrl(PaintBrushSizeSliderCtrlContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(PaintBrushSizeTextEditContainer.position) + firstWord(EWTerrainPainterToolbar.position)+11 SPC 
-         (getWord(PaintBrushSizeTextEditContainer, 1)) + 25;
+      position = PaintBrushSizeTextEditContainer.position.x + EWTerrainPainterToolbar.position.x + 50 SPC 
+         PaintBrushSizeTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";
@@ -517,8 +554,8 @@ new GuiMouseEventCtrl(PaintBrushSlopeMinContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(PaintBrushSlopeControl.position) + firstWord(EWTerrainPainterToolbar.position)+firstWord(PaintBrushSlopeControl->SlopeMinAngle.position) - 40 SPC
-         (getWord(PaintBrushSlopeControl, 1)) + 25;
+      position = PaintBrushSlopeControl.position.x + EWTerrainPainterToolbar.position.x + PaintBrushSlopeControl->SlopeMinAngle.position.x - 40 SPC
+         PaintBrushSlopeControl.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";
@@ -552,8 +589,8 @@ new GuiMouseEventCtrl(PaintBrushSlopeMaxContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(PaintBrushSlopeControl.position) + firstWord(EWTerrainPainterToolbar.position)+firstWord(PaintBrushSlopeControl->SlopeMaxAngle.position) - 40 SPC
-         (getWord(PaintBrushSlopeControl, 1)) + 25;
+      position = PaintBrushSlopeControl.position.x + EWTerrainPainterToolbar.position.x + PaintBrushSlopeControl->SlopeMaxAngle.position.x - 40 SPC
+         PaintBrushSlopeControl.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";
@@ -592,8 +629,8 @@ new GuiMouseEventCtrl(PaintBrushPressureSliderCtrlContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(PaintBrushPressureTextEditContainer.position) + firstWord(EWTerrainPainterToolbar.position) SPC 
-         (getWord(PaintBrushPressureTextEditContainer, 1)) + 25;
+      position = PaintBrushPressureTextEditContainer.position.x + EWTerrainPainterToolbar.position.x + 50 SPC 
+         PaintBrushPressureTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";
@@ -622,8 +659,8 @@ new GuiMouseEventCtrl(PaintBrushSoftnessSliderCtrlContainer,EditorGuiGroup) {
       Profile = "ToolsGuiSliderBoxProfile";
       HorizSizing = "right";
       VertSizing = "bottom";
-      position = firstWord(PaintBrushSoftnessTextEditContainer.position) + firstWord(EWTerrainPainterToolbar.position) SPC 
-         (getWord(PaintBrushSoftnessTextEditContainer, 1)) + 25;
+      position = PaintBrushSoftnessTextEditContainer.position.x + EWTerrainPainterToolbar.position.x + 50 SPC 
+         PaintBrushSoftnessTextEditContainer.position.y + 50;
       Extent = "112 20";
       MinExtent = "8 2";
       canSave = "1";

@@ -1,0 +1,816 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2012 GarageGames, LLC
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+//-----------------------------------------------------------------------------
+
+/// The texture filename filter used with OpenFileDialog.
+$TerrainEditor::TextureFileSpec = "Image Files (*.png, *.jpg, *.dds)|*.png;*.jpg;*.dds|All Files (*.*)|*.*|";
+
+function TerrainEditor::init( %this )
+{
+   %this.attachTerrain();
+   %this.setBrushSize( 9, 9 );
+
+   new PersistenceManager( ETerrainPersistMan );
+   
+   ESettingsWindow.addEditorSettingsPage("TerrainEditor", "Terrain Editor");
+}
+
+//-----------------------------------------------------------------------------
+
+function EPainter_TerrainMaterialUpdateCallback( %mat, %matIndex )
+{
+   // Skip over a bad selection.
+   if ( %matIndex == -1 || !isObject( %mat ) )
+      return;
+
+   // Update the material and the UI.
+   ETerrainEditor.updateMaterial( %matIndex, %mat.getInternalName() );
+   EPainter.setup( %matIndex );
+}
+
+function EPainter_TerrainMaterialAddCallback( %mat, %matIndex )
+{
+   // Ignore bad materials.
+   if ( !isObject( %mat ) )
+      return;
+
+   // Add it and update the UI.
+   ETerrainEditor.addMaterial( %mat.getInternalName() );
+   EPainter.setup( %matIndex );
+}
+
+function TerrainEditor::setPaintMaterial( %this, %matIndex, %terrainMat )
+{
+   assert( isObject( %terrainMat ), "TerrainEditor::setPaintMaterial - Got bad material!" );
+
+   ETerrainEditor.paintIndex = %matIndex;
+   ETerrainMaterialSelected.selectedMatIndex = %matIndex;
+   ETerrainMaterialSelected.selectedMat = %terrainMat;
+   
+   ETerrainMaterialSelected.setBitmap(getAssetPreviewImage(%terrainMat.getDiffuseMap()));
+
+   ETerrainMaterialSelectedEdit.Visible = isObject(%terrainMat);
+   TerrainTextureText.text = %terrainMat.getInternalName();
+   ProceduralTerrainPainterDescription.text = "Generate "@ %terrainMat.getInternalName() @" layer";
+}
+
+function TerrainEditor::setup( %this )
+{
+   %action = %this.savedAction;
+   %desc = %this.savedActionDesc;
+   if ( %this.savedAction $= "" )
+   {
+      %action = brushAdjustHeight;
+   }
+
+   %this.switchAction( %action );
+}
+
+function EPainter::updateLayers( %this, %matIndex )
+{
+   // Default to whatever was selected before.
+   if ( %matIndex $= "" )
+      %matIndex = ETerrainEditor.paintIndex;
+
+   // The material string is a newline seperated string of
+   // TerrainMaterial internal names which we can use to find
+   // the actual material data in TerrainMaterialSet.
+
+   %mats = ETerrainEditor.getMaterials();
+
+   %matList = %this-->theMaterialList;
+   %matList.deleteAllObjects();
+   %listWidth = getWord( %matList.getExtent(), 0 );
+
+   for( %i = 0; %i < getRecordCount( %mats ); %i++ )
+   {
+      %matInternalName = getRecord( %mats, %i );
+      %mat = TerrainMaterialSet.findObjectByInternalName( %matInternalName );
+
+      // Is there no material info for this slot?
+      if ( !isObject( %mat ) )
+         continue;
+
+      %index = %matList.getCount();
+      %command = "ETerrainEditor.setPaintMaterial( " @ %index @ ", " @ %mat @ " );";
+      %altCommand = "TerrainMaterialDlg.show( " @ %index @ ", " @ %mat @ ", EPainter_TerrainMaterialUpdateCallback );";
+      
+      // Material Layer button | New style
+      %ctrl = new GuiIconButtonCtrl() 
+      {
+         class = "EPainterIconBtn";
+         internalName = "EPainterMaterialButton" @ %i;
+         Profile = "ToolsGuiIconButtonLargeProfile";
+         extent = %listWidth SPC "54";
+         MinExtent = "120 54";
+         buttonMargin = "2 0";
+         textMargin = "70";
+         buttonType = "RadioButton";
+         sizeIconToButton = true;
+         bitmapMargin = "2";
+         makeIconSquare = true;
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         command = %command;
+         altCommand = %altCommand;
+         useMouseEvents = true;
+
+         new GuiBitmapButtonCtrl()
+         {
+            bitmapAsset = "ToolsModule:delete_n_image";
+            buttonType = "PushButton";
+            HorizSizing = "left";
+            VertSizing = "bottom";
+            position = ( %listwidth - 20 ) SPC "26";
+            Extent = "17 17";
+            command = "EPainter.showMaterialDeleteDlg( \"" @ %matInternalName @ "\" );";
+         };
+      };
+      // -->
+      
+      /*
+      %ctrl = new GuiIconButtonCtrl()
+      {
+         class = "EPainterIconBtn";
+         internalName = "EPainterMaterialButton" @ %i;
+         profile = "GuiCreatorIconButtonProfile";
+         iconLocation = "Left";
+         textLocation = "Right";
+         extent = %listWidth SPC "46";
+         textMargin = 5;
+         buttonMargin = "4 4";
+         buttonType = "RadioButton";
+         sizeIconToButton = true;
+         makeIconSquare = true;
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         command = %command;
+         altCommand = %altCommand;
+         useMouseEvents = true;
+
+         new GuiBitmapButtonCtrl()
+         {
+            bitmapAsset = "ToolsModule:delete_n_image";
+            buttonType = "PushButton";
+            HorizSizing = "left";
+            VertSizing = "bottom";
+            position = ( %listwidth - 20 ) SPC "26";
+            Extent = "17 17";
+            command = "EPainter.showMaterialDeleteDlg( \"" @ %matInternalName @ "\" );";
+         };
+      };
+      */
+
+      %ctrl.setText( %matInternalName );
+      %ctrl.setBitmap( getAssetPreviewImage(%mat.getDiffuseMap()) );
+
+      %tooltip = %matInternalName;
+      if(%i < 9)
+         %tooltip = %tooltip @ " (" @ (%i+1) @ ")";
+      else if(%i == 9)
+         %tooltip = %tooltip @ " (0)";
+      %ctrl.tooltip = %tooltip;
+
+      %matList.add( %ctrl );
+   }
+
+   %matCount = %matList.getCount();
+
+   // Add one more layer as the 'add new' layer.
+   /*
+   %ctrl = new GuiIconButtonCtrl()
+   {
+      profile = "GuiCreatorIconButtonProfile";
+      iconBitmapAsset = "ToolsModule:new_layer_icon_image";
+      iconLocation = "Left";
+      textLocation = "Right";
+      extent = %listWidth SPC "46";
+      textMargin = 5;
+      buttonMargin = "4 4";
+      buttonType = "PushButton";
+      sizeIconToButton = true;
+      makeIconSquare = true;
+      tooltipprofile = "ToolsGuiToolTipProfile";
+      text = "New Layer";
+      tooltip = "New Layer";
+      command = "TerrainMaterialDlg.show( " @ %matCount @ ", 0, EPainter_TerrainMaterialAddCallback );";
+   };
+   %matList.add( %ctrl );
+   */
+   
+   // Add one more layer as the 'add new' layer | New style
+   %ctrl = new GuiIconButtonCtrl(NewTerrainMatLayerBtn) 
+   {
+      Profile = "ToolsGuiIconButtonLargeProfile";
+      extent = %listWidth SPC "50";
+      MinExtent = "120 50";
+      command = "TerrainMaterialDlg.show( " @ %matCount @ ", 0, EPainter_TerrainMaterialAddCallback );";
+      tooltipprofile = "ToolsGuiToolTipProfile";
+      ToolTip = "Add a new Terrain Material Layer";
+      hovertime = "1000";
+      bitmapAsset = "ToolsModule:terrain_painter_new_n_image";
+      text = "New Layer";
+      buttonMargin = "12 0";
+      textMargin = "70";
+      groupNum = "0";
+      buttonType = "PushButton";
+      useMouseEvents = "0";
+   };   
+   %matList.add( %ctrl );
+   // -->
+   
+   // Make sure our selection is valid and that we're
+   // not selecting the 'New Layer' button.
+
+   if( %matIndex < 0 )
+      return;
+   if( %matIndex >= %matCount )
+      %matIndex = 0;
+
+   // To make things simple... click the paint material button to
+   // active it and initialize other state.
+   %ctrl = %matList.getObject( %matIndex );
+   %ctrl.performClick();
+}
+
+function EPainter::showMaterialDeleteDlg( %this, %matInternalName )
+{
+   toolsMessageBoxYesNo( "Confirmation",
+      "Really remove material '" @ %matInternalName @ "' from the terrain?",
+      %this @ ".removeMaterial( \"" @ %matInternalName @ "\" );", "" );
+}
+
+function EPainter::removeMaterial( %this, %matInternalName )
+{
+   %selIndex = ETerrainEditor.paintIndex - 1;
+
+   // Remove the material from the terrain.
+
+   %index = ETerrainEditor.getMaterialIndex( %matInternalName );
+   if( %index != -1 )
+      ETerrainEditor.removeMaterial( %index );
+
+   // Update the material list.
+
+   %this.updateLayers( %selIndex );
+}
+
+function EPainter::setup( %this, %matIndex )
+{
+   // Update the layer listing.
+   %this.updateLayers( %matIndex );
+
+   // Automagically put us into material paint mode.
+   ETerrainEditor.currentMode = "paint";
+   ETerrainEditor.selectionHidden = true;
+   ETerrainEditor.currentAction = paintMaterial;
+   ETerrainEditor.currentActionDesc = "Paint material on terrain";
+   ETerrainEditor.setAction( ETerrainEditor.currentAction );
+   EditorGuiStatusBar.setInfo(ETerrainEditor.currentActionDesc);
+   ETerrainEditor.renderVertexSelection = true;
+}
+
+function onNeedRelight()
+{
+   if( RelightMessage.visible == false )
+      RelightMessage.visible = true;
+}
+
+function TerrainEditor::onGuiUpdate(%this, %text)
+{
+   %minHeight = getWord(%text, 1);
+   %avgHeight = getWord(%text, 2);
+   %maxHeight = getWord(%text, 3);
+
+   %mouseBrushInfo = " (Mouse) #: " @ getWord(%text, 0) @ "  avg: " @ %avgHeight @ " " @ ETerrainEditor.currentAction;
+   %selectionInfo = "     (Selected) #: " @ getWord(%text, 4) @ "  avg: " @ getWord(%text, 5);
+
+   TEMouseBrushInfo.setValue(%mouseBrushInfo);
+   TEMouseBrushInfo1.setValue(%mouseBrushInfo);
+   TESelectionInfo.setValue(%selectionInfo);
+   TESelectionInfo1.setValue(%selectionInfo);
+
+   EditorGuiStatusBar.setSelection("min: " @ %minHeight @ "  avg: " @ %avgHeight @ "  max: " @ %maxHeight);
+}
+
+function TerrainEditor::onBrushChanged( %this )
+{
+   EditorGui.currentEditor.syncBrushInfo();
+}
+
+function TerrainEditor::toggleBrushType( %this, %brush )
+{
+   %this.setBrushType( %brush.internalName );
+}
+
+function TerrainEditor::offsetBrush(%this, %x, %y)
+{
+   %curPos = %this.getBrushPos();
+   %this.setBrushPos(getWord(%curPos, 0) + %x, getWord(%curPos, 1) + %y);
+}
+
+function TerrainEditor::onActiveTerrainChange(%this, %newTerrain)
+{
+   // Need to refresh the terrain painter.
+   if ( EditorGui.currentEditor.getId() == TerrainPainterPlugin.getId() )
+      EPainter.setup(ETerrainEditor.paintIndex);
+}
+
+function TerrainEditor::getActionDescription( %this, %action )
+{
+   switch$( %action )
+   {
+      case "brushAdjustHeight":
+         return "Adjust terrain height up or down.";
+
+      case "raiseHeight":
+         return "Raise terrain height.";
+
+      case "lowerHeight":
+         return "Lower terrain height.";
+
+      case "smoothHeight":
+         return "Smooth terrain.";
+
+      case "paintNoise":
+         return "Modify terrain height using noise.";
+
+      case "flattenHeight":
+         return "Flatten terrain.";
+
+      case "setHeight":
+         return "Set terrain height to defined value.";
+
+      case "setEmpty":
+         return "Remove terrain collision.";
+
+      case "clearEmpty":
+         return "Add back terrain collision.";
+
+      default:
+         return "";
+   }
+}
+
+/// This is only ment for terrain editing actions and not
+/// processed actions or the terrain material painting action.
+function TerrainEditor::switchAction( %this, %action )
+{
+   %actionDesc = %this.getActionDescription(%action);
+
+   %this.currentMode = "paint";
+   %this.selectionHidden = true;
+   %this.currentAction = %action;
+   %this.currentActionDesc = %actionDesc;
+   %this.savedAction = %action;
+   %this.savedActionDesc = %actionDesc;
+
+   if (  %action $= "setEmpty" ||
+         %action $= "clearEmpty" ||
+          %action $= "setHeight" )
+      %this.renderSolidBrush = true;
+   else
+      %this.renderSolidBrush = false;
+
+   EditorGuiStatusBar.setInfo(%actionDesc);
+
+   %this.setAction( %this.currentAction );
+}
+
+function TerrainEditor::onSmoothHeightmap( %this )
+{
+   if ( !%this.getActiveTerrain() )
+      return;
+
+   // Show the dialog first and let the user
+   // set the smoothing parameters.
+
+
+
+   // Now create the terrain smoothing action to
+   // get the work done and perform later undos.
+   %action = new TerrainSmoothAction();
+   %action.smooth( %this.getActiveTerrain(), 1.0, 1 );
+   %action.addToManager( Editor.getUndoManager() );
+}
+
+function TerrainEditor::onMaterialUndo( %this )
+{
+   // Update the gui to reflect the current materials.
+   EPainter.updateLayers();
+}
+
+function ESettingsWindow::getTerrainEditorSettings(%this)
+{
+   SettingsInspector.startGroup("Tool Values");
+   SettingsInspector.addSettingsField("TerrainEditor/ActionValues/adjustHeightVal", "Raise/Lower Height", "string", 
+                           "The amount of height adjustment for raising/lowering terrain");
+   SettingsInspector.addSettingsField("TerrainEditor/ActionValues/smoothFactor", "Smooth Factor", "string", 
+                           "The amount of smoothing when raising/lowering terrain");
+   SettingsInspector.addSettingsField("TerrainEditor/ActionValues/noiseFactor", "Noise Factor", "string", 
+                           "The amount of noise when raising/lowering terrain");
+   SettingsInspector.endGroup();
+}
+
+//------------------------------------------------------------------------------
+// Functions
+//------------------------------------------------------------------------------
+
+function TerrainEditorSettingsGui::onWake(%this)
+{
+   TESoftSelectFilter.setValue(ETerrainEditor.softSelectFilter);
+}
+
+function TerrainEditorSettingsGui::onSleep(%this)
+{
+   ETerrainEditor.softSelectFilter = TESoftSelectFilter.getValue();
+}
+
+function TESettingsApplyButton::onAction(%this)
+{
+   ETerrainEditor.softSelectFilter = TESoftSelectFilter.getValue();
+   ETerrainEditor.resetSelWeights(true);
+   ETerrainEditor.processAction("softSelect");
+}
+
+function getPrefSetting(%pref, %default)
+{
+   //
+   if(%pref $= "")
+      return(%default);
+   else
+      return(%pref);
+}
+
+function TerrainEditorPlugin::setEditorFunction(%this)
+{
+   %terrainExists = parseMissionGroup( "TerrainBlock" );
+
+   if( %terrainExists == false )
+      toolsMessageBoxYesNoCancel("No Terrain","Would you like to create a New Terrain? No to Select Existing Terrain Block Asset", 
+         "AssetBrowser.setupCreateNewAsset(\"TerrainAsset\", AssetBrowser.selectedModule, createTerrainBlock);",
+         "AssetBrowser.showDialog(\"TerrainAsset\", createTerrainBlock, \"\", \"\", \"\");");
+
+   return %terrainExists;
+}
+
+function TerrainPainterPlugin::setEditorFunction(%this, %overrideGroup)
+{
+   %terrainExists = parseMissionGroup( "TerrainBlock" );
+
+   if( %terrainExists == false )
+      toolsMessageBoxYesNoCancel("No Terrain","Would you like to create a New Terrain? No to Select Existing Terrain Block Asset", 
+         "AssetBrowser.setupCreateNewAsset(\"TerrainAsset\", AssetBrowser.selectedModule, createTerrainBlock);",
+         "AssetBrowser.showDialog(\"TerrainAsset\", createTerrainBlock, \"\", \"\", \"\");");
+
+   return %terrainExists;
+}
+
+function EPainterIconBtn::onMouseDragged( %this )
+{
+   %payload = new GuiControl()
+   {
+      profile = GuiCreatorIconButtonProfile;
+      position = "0 0";
+      extent = %this.extent.x SPC "5";
+      dragSourceControl = %this;
+   };
+
+   %xOffset = getWord( %payload.extent, 0 ) / 2;
+   %yOffset = getWord( %payload.extent, 1 ) / 2;
+   %cursorpos = Canvas.getCursorPos();
+   %xPos = getWord( %cursorpos, 0 ) - %xOffset;
+   %yPos = getWord( %cursorpos, 1 ) - %yOffset;
+
+   // Create the drag control.
+
+   %ctrl = new GuiDragAndDropControl()
+   {
+      canSaveDynamicFields    = "0";
+      Profile                 = EPainterDragDropProfile;
+      HorizSizing             = "right";
+      VertSizing              = "bottom";
+      Position                = %xPos SPC %yPos;
+      extent                  = %payload.extent;
+      MinExtent               = "4 4";
+      canSave                 = "1";
+      Visible                 = "1";
+      hovertime               = "1000";
+      deleteOnMouseUp         = true;
+   };
+
+   %ctrl.add( %payload );
+
+   Canvas.getContent().add( %ctrl );
+   %ctrl.startDragging( %xOffset, %yOffset );
+}
+
+function EPainterIconBtn::onControlDragged( %this, %payload )
+{
+   %payload.getParent().position = %this.getGlobalPosition();
+}
+
+function EPainterIconBtn::onControlDropped( %this, %payload )
+{
+   %srcBtn = %payload.dragSourceControl;
+   %dstBtn = %this;
+   %stack = %this.getParent();
+
+   // Not dropped on a valid Button.
+   // Really this shouldnt happen since we are in a callback on our specialized
+   // EPainterIconBtn namespace.
+   if ( %stack != %dstBtn.getParent() || %stack != EPainterStack.getId() )
+   {
+      echo( "Not dropped on valid control" );
+      return;
+   }
+
+   // Dropped on the original control, no order change.
+   // Simulate a click on the control, instead of a drag/drop.
+   if ( %srcBtn == %dstBtn )
+   {
+      %dstBtn.performClick();
+      return;
+   }
+
+   %dstIndex = %stack.getObjectIndex( %dstBtn );
+   ETerrainEditor.reorderMaterial( %stack.getObjectIndex( %srcBtn ), %dstIndex );
+
+   // select the button/material we just reordered.
+   %stack.getObject( %dstIndex ).performClick();
+}
+
+//-----------------------------------------------------------------------------
+
+function TerrainEditor::onWake(%this)
+{
+   // Let's wake the painter so we apply the right settings at start
+   TerrainPainterContainer.onWake();
+}
+
+function TerrainPainterContainer::onWake(%this)
+{   
+   %fixedWindow = EPainterPreview;
+   %fluidWindow = EPainter;
+   
+   if(EditorSettings.value( "WorldEditor/forceSidebarToSide" ) == 1)
+   {
+      // Let's dock the side panel to the right side
+      %this.docked = false;
+      %this.resizing = true;
+      %this.dockSidePanel();
+   }
+   else
+   {
+      // Let's release the side panel so it can be moved
+      %this.docked = true;
+      %this.resizing = false;
+      %this.releaseSidePanel();
+   }
+}
+
+function TerrainPainterContainer::maxSize(%this, %window)
+{      
+   // Resize the windows to the max height
+   // and force these to the right side if set
+   if(EditorSettings.value( "WorldEditor/forceSidebarToSide" ) == 1 && %this.resizing == true)
+   {  
+      // prevent onResize after a resize
+      %this.resizing = false;
+      
+      %fixedWindow = EPainterPreview;
+      %fluidWindow = EPainter;
+      %top = EditorGuiToolbar.extent.y + 6;
+      %bottom = %top + 65 - 6;
+      %maxHeight = Canvas.extent.y - %top - %bottom;
+      
+      // --- Fixed window (top) ------------------------------------------------
+      // put it back if it moved
+      %fixedWindow.position.x = Canvas.extent.x - %fixedWindow.extent.x;
+      %fixedWindow.position.y = %top;
+      
+      // don't go beyond the canvas
+      if(%fixedWindow.extent.y > %maxHeight)
+         %fixedWindow.extent.y = %maxHeight - %fluidWindow.extent.y;
+
+      %position = %fixedWindow.position.x SPC %fixedWindow.position.y;
+      %extent = %window.extent.x SPC %fixedWindow.extent.y;
+      %fixedWindow.resize(%position.x, %position.y, %extent.x, %extent.y);
+      
+      // --- Fluid window (bottom) ---------------------------------------------
+      // position is relative to the top window
+      %position = %fixedWindow.position.x SPC %fixedWindow.extent.y + %top;
+      %extent = %window.extent.x SPC Canvas.extent.y - %fixedWindow.extent.y - %bottom;
+      %fluidWindow.resize(%position.x, %position.y, %extent.x, %extent.y);
+      
+      // --- AssetBrowser window  ----------------------------------------------
+      if(isObject(AssetBrowserWindow))
+      {
+         // Only resize the AssetBrowser if it's docked
+         if(AssetBrowserWindow.docked == true)
+         {
+            // The width is relative to the sidepanel
+            %browserWidth = Canvas.extent.x - %extent.x;
+            %browserHeight = AssetBrowserWindow.extent.y;
+            %browserPosY = Canvas.extent.y - AssetBrowserWindow.extent.y - 33;
+            AssetBrowserWindow.resize(0, %browserPosY, %browserWidth, %browserHeight);
+         }
+      }
+      // --- Windowed Console --------------------------------------------------
+      if(isObject(windowConsoleControl))
+      {
+         // Only resize the AssetBrowser if it's docked
+         if(windowConsoleControl.docked == true)
+         {
+            // The width is relative to the sidepanel
+            %consoleWidth = Canvas.extent.x - %extent.x;
+            %consoleHeight = windowConsoleControl.extent.y;
+            %consolePosY = Canvas.extent.y - windowConsoleControl.extent.y - 33;
+            windowConsoleControl.resize(0, %consolePosY, %consoleWidth, %consoleHeight);
+         }
+      }
+   }
+}
+
+function EPainterPreview::onMouseDragged(%this)
+{
+   %parent = TerrainPainterContainer;
+   
+   if(%parent.panelHidden == true)
+   {
+      %parent.showSidePanel();
+   }
+   
+   if(%parent.resizing == false && %parent.docked == true)
+   {
+      %parent.resizing = true;
+      %parent.maxSize(%this);
+   }
+}
+
+function EPainter::onMouseDragged(%this)
+{
+   %parent = TerrainPainterContainer;
+   
+   if(%parent.panelHidden == true)
+   {
+      %parent.showSidePanel();
+   }
+   
+   if(%parent.resizing == false && %parent.docked == true)
+   {
+      %parent.resizing = true;
+      %parent.maxSize(%this);
+   }
+}
+
+function TerrainPainterContainer::onResize(%this, %newPosition, %newExtent)
+{
+   // Window to focus on (mostly the fluid window)
+   %window = EPainter;
+   
+   if(%window.panelHidden == true)
+   {
+      %window.showSidePanel();
+   }
+   
+   if(%this.resizing == false && %this.docked == true)
+   {  
+      // Only resize once
+      %this.resizing = true;
+      %this.maxSize(%window);
+   }
+}
+
+function TerrainPainterContainer::dockSidePanel()
+{
+   %parent = TerrainPainterContainer;
+   %fixedWindow = EPainterPreview;
+   %fluidWindow = EPainter;
+   
+   if(%parent.docked == true)
+      return;
+   
+   // Move and resize the window(s)
+   %parent.resizing = true;
+   %parent.maxSize(%fluidWindow);
+      
+   %parent.docked = true;
+   %fluidWindow.onMouseDragged();
+
+   // Lock the windows in place
+   %fixedWindow.canCollapse = "0";
+   %fixedWindow.canMove = "0";
+   
+   %fluidWindow.canCollapse = "0";
+   %fluidWindow.canMove = "0";
+   
+   TerrainPainterContainer_UnDockBtn.Visible = "1";
+   TerrainPainterContainer_DockBtn.Visible = "0";
+   
+   TerrainPainterContainer_showBtn.Visible = "0";
+   TerrainPainterContainer_hideBtn.Visible = "1";
+}
+
+function TerrainPainterContainer::releaseSidePanel()
+{      
+   %parent = TerrainPainterContainer;
+   %fixedWindow = EPainterPreview;
+   %fluidWindow = EPainter;
+   
+   if(%parent.docked == false)
+      return;
+   
+   // Unlock the windows so that be moved
+   %fixedWindow.canCollapse = "1";
+   %fixedWindow.canMove = "1";
+   
+   %fluidWindow.canCollapse = "1";
+   %fluidWindow.canMove = "1";
+   
+   TerrainPainterContainer_UnDockBtn.Visible = "0";
+   TerrainPainterContainer_DockBtn.Visible = "1";
+   
+   TerrainPainterContainer_showBtn.Visible = "0";
+   TerrainPainterContainer_hideBtn.Visible = "0";
+   
+   // Let's do a small resize so it's visually clear we're undocking
+   %position = %fixedWindow.position.x - 6 SPC %fixedWindow.position.y + 6;
+   %extent = %fixedWindow.extent.x SPC %fixedWindow.extent.y;
+   %fixedWindow.resize(%position.x, %position.y, %extent.x, %extent.y);
+
+   %position =  %fluidWindow.position.x - 6 SPC  %fluidWindow.position.y + 6;
+   %extent = %fluidWindow.extent.x SPC %fluidWindow.extent.y - 12;
+   %fluidWindow.resize(%position.x, %position.y, %extent.x, %extent.y);
+   
+   %parent.docked = false;
+   %parent.resizing = false;
+}
+
+function TerrainPainterContainer::hideSidePanel()
+{
+   %parent = TerrainPainterContainer;
+   %fixedWindow = EPainterPreview;
+   %fluidWindow = EPainter;
+   
+   TerrainPainterContainer_showBtn.Visible = "1";
+   TerrainPainterContainer_hideBtn.Visible = "0";
+   
+   // hide the content of the panels
+   EPainterPreview.text = "";
+   EPainterPreviewCont.Visible = "0";
+   TerrainTextureText.Visible = "0";
+   EPainter.text = "";
+   EPainterScroll.Visible = "0";
+   
+   // Let's do a resize so that the panel is collapsed to the side
+   %position = Canvas.extent.x - 24 SPC %fixedWindow.position.y;
+   %extent = %fixedWindow.extent.x SPC %fixedWindow.extent.y;
+   %fixedWindow.resize(%position.x, %position.y, %extent.x, %extent.y);
+
+   %position =  Canvas.extent.x - 24 SPC  %fluidWindow.position.y;
+   %extent = %fluidWindow.extent.x SPC %fluidWindow.extent.y;
+   %fluidWindow.resize(%position.x, %position.y, %extent.x, %extent.y);
+   
+   %parent.panelHidden = true;
+}
+
+function TerrainPainterContainer::showSidePanel()
+{
+   %parent = TerrainPainterContainer;
+   %fixedWindow = EPainterPreview;
+   %fluidWindow = EPainter;
+   
+   TerrainPainterContainer_showBtn.Visible = "0";
+   TerrainPainterContainer_hideBtn.Visible = "1";
+   
+   // show the content of the panels
+   EPainterPreview.text = "Terrain Painter - Material Preview";
+   EPainterPreviewCont.Visible = "1";
+   TerrainTextureText.Visible = "1";
+   EPainter.text = "Terrain Painter - Material Selector";
+   EPainterScroll.Visible = "1";
+   
+   %parent.resizing = true;
+   %parent.maxSize(%fluidWindow);
+   
+   %parent.panelHidden = false;
+}
+
+//-----------------------------------------------------------------------------

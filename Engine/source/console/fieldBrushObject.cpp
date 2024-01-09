@@ -51,6 +51,7 @@ FieldBrushObject::FieldBrushObject()
 //-----------------------------------------------------------------------------
 void FieldBrushObject::initPersistFields()
 {
+   docsURL;
     // Add Fields.
     addProtectedField("description", TypeCaseString, Offset(mDescription, FieldBrushObject), setDescription, defaultProtectedGetFn, "");
     addProtectedField("sortName", TypeString, Offset(mSortName, FieldBrushObject), setSortName, defaultProtectedGetFn, "");
@@ -391,7 +392,7 @@ DefineEngineMethod(FieldBrushObject, copyFields, void, (const char* simObjName, 
 void FieldBrushObject::copyFields( SimObject* pSimObject, const char* fieldList )
 {
     // FieldBrushObject class?   
-    if ( dStrcmp(pSimObject->getClassName(), getClassName()) == 0 )
+    if ( String::compare(pSimObject->getClassName(), getClassName()) == 0 )
     {
         // Yes, so warn.
         Con::warnf("FieldBrushObject::copyFields() - Cannot copy FieldBrushObject objects!");
@@ -522,7 +523,7 @@ DefineEngineMethod(FieldBrushObject, pasteFields, void, (const char* simObjName)
 void FieldBrushObject::pasteFields( SimObject* pSimObject )
 {
     // FieldBrushObject class?   
-    if ( dStrcmp(pSimObject->getClassName(), getClassName()) == 0 )
+    if ( String::compare(pSimObject->getClassName(), getClassName()) == 0 )
     {
         // Yes, so warn.
         Con::warnf("FieldBrushObject::pasteFields() - Cannot paste FieldBrushObject objects!");
@@ -575,7 +576,7 @@ void FieldBrushObject::pasteFields( SimObject* pSimObject )
                         staticField.type != AbstractClassRep::DeprecatedFieldType )
                 {
                     // Target field?
-                    if ( dStrcmp(staticField.pFieldname, pInternalField) == 0 )
+                    if ( String::compare(staticField.pFieldname, pInternalField) == 0 )
                     {
                         // Yes, so set data.
                         pSimObject->setDataField( staticField.pFieldname, NULL, fieldEntry->value );

@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiContainer(EditorChooseLevelGui, EditorGuiGroup) {
+$guiContent = new GuiContainer(EditorChooseLevelGui, EditorGuiGroup) {
    canSaveDynamicFields = "0";
    Enabled = "1";
    isContainer = "1";
@@ -28,13 +28,13 @@
       Visible = "1";
       tooltipprofile = "ToolsGuiToolTipProfile";
       hovertime = "1000";
-      bitmap = "art/gui/background";
+      bitmap = "data/ui/images/background.png";
       useVariable = "0";
       tile = "0";
    };
 };
 
-%guiContent = new GuiContainer(EditorChooseLevelContainer, EditorGuiGroup) {
+$guiContent = new GuiContainer(EditorChooseLevelContainer, EditorGuiGroup) {
    canSaveDynamicFields = "0";
    Enabled = "1";
    isContainer = "1";

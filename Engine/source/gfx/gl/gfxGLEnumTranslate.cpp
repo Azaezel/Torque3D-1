@@ -26,7 +26,6 @@
 GLenum GFXGLPrimType[GFXPT_COUNT];
 GLenum GFXGLBlend[GFXBlend_COUNT];
 GLenum GFXGLBlendOp[GFXBlendOp_COUNT];
-GLenum GFXGLSamplerState[GFXSAMP_COUNT];
 GLenum GFXGLTextureFilter[GFXTextureFilter_COUNT];
 GLenum GFXGLTextureAddress[GFXAddress_COUNT];
 GLenum GFXGLCmpFunc[GFXCmp_COUNT];
@@ -75,14 +74,7 @@ void GFXGLEnumTranslate::init()
    GFXGLBlendOp[GFXBlendOpMin] = GL_MIN;
    GFXGLBlendOp[GFXBlendOpMax] = GL_MAX;
 
-   // Sampler
-   GFXGLSamplerState[GFXSAMPMagFilter] = GL_TEXTURE_MAG_FILTER;
-   GFXGLSamplerState[GFXSAMPMinFilter] = GL_TEXTURE_MIN_FILTER;
-   GFXGLSamplerState[GFXSAMPAddressU] = GL_TEXTURE_WRAP_S;
-   GFXGLSamplerState[GFXSAMPAddressV] = GL_TEXTURE_WRAP_T;
-   GFXGLSamplerState[GFXSAMPAddressW] = GL_TEXTURE_WRAP_R;
-   GFXGLSamplerState[GFXSAMPMipMapLODBias] = GL_TEXTURE_LOD_BIAS;
-   
+  
    // Comparison
    GFXGLCmpFunc[GFXCmpNever] = GL_NEVER;
    GFXGLCmpFunc[GFXCmpLess] = GL_LESS;
@@ -96,15 +88,12 @@ void GFXGLEnumTranslate::init()
    GFXGLTextureFilter[GFXTextureFilterNone] = GL_NEAREST;
    GFXGLTextureFilter[GFXTextureFilterPoint] = GL_NEAREST;
    GFXGLTextureFilter[GFXTextureFilterLinear] = GL_LINEAR;
-
    GFXGLTextureFilter[GFXTextureFilterAnisotropic] = GL_LINEAR;
-   GFXGLTextureFilter[GFXTextureFilterPyramidalQuad] = GL_LINEAR; 
-   GFXGLTextureFilter[GFXTextureFilterGaussianQuad] = GL_LINEAR;
 
    GFXGLTextureAddress[GFXAddressWrap] = GL_REPEAT;
    GFXGLTextureAddress[GFXAddressMirror] = GL_REPEAT;
    GFXGLTextureAddress[GFXAddressClamp] = GL_CLAMP_TO_EDGE;
-   GFXGLTextureAddress[GFXAddressBorder] = GL_REPEAT;
+   GFXGLTextureAddress[GFXAddressBorder] = GL_CLAMP_TO_BORDER;
    GFXGLTextureAddress[GFXAddressMirrorOnce] = GL_REPEAT;
    
    // Stencil ops
@@ -116,8 +105,7 @@ void GFXGLEnumTranslate::init()
    GFXGLStencilOp[GFXStencilOpInvert] = GL_INVERT;
    
    GFXGLStencilOp[GFXStencilOpIncr] = GL_INCR_WRAP;
-   GFXGLStencilOp[GFXStencilOpDecr] = GL_DECR_WRAP;
-   
+   GFXGLStencilOp[GFXStencilOpDecr] = GL_DECR_WRAP;   
    
    // Texture formats
    for(int i = 0; i < GFXFormat_COUNT; ++i)
@@ -130,6 +118,7 @@ void GFXGLEnumTranslate::init()
 
    GFXGLTextureInternalFormat[GFXFormatA8] = GL_R8;
    GFXGLTextureInternalFormat[GFXFormatL8] = GL_R8;
+   GFXGLTextureInternalFormat[GFXFormatA8L8] = GL_RG8;
    GFXGLTextureInternalFormat[GFXFormatR5G5B5A1] = GL_RGB5_A1;
    GFXGLTextureInternalFormat[GFXFormatR5G5B5X1] = GL_RGB5_A1;
    GFXGLTextureInternalFormat[GFXFormatL16] = GL_R16;
@@ -143,6 +132,7 @@ void GFXGLEnumTranslate::init()
    GFXGLTextureInternalFormat[GFXFormatD32] = GL_DEPTH_COMPONENT32;
    GFXGLTextureInternalFormat[GFXFormatD24X8] = GL_DEPTH24_STENCIL8;
    GFXGLTextureInternalFormat[GFXFormatD24S8] = GL_DEPTH24_STENCIL8;
+   GFXGLTextureInternalFormat[GFXFormatD32FS8X24] = GL_DEPTH32F_STENCIL8;
    GFXGLTextureInternalFormat[GFXFormatR16G16B16A16] = GL_RGBA16;
    GFXGLTextureInternalFormat[GFXFormatBC1] = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
    GFXGLTextureInternalFormat[GFXFormatBC2] = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
@@ -158,6 +148,7 @@ void GFXGLEnumTranslate::init()
    
    GFXGLTextureFormat[GFXFormatA8] = GL_RED;
    GFXGLTextureFormat[GFXFormatL8] = GL_RED;
+   GFXGLTextureFormat[GFXFormatA8L8] = GL_RG;
    GFXGLTextureFormat[GFXFormatR5G5B5A1] = GL_RGBA;
    GFXGLTextureFormat[GFXFormatR5G5B5X1] = GL_RGBA;
    GFXGLTextureFormat[GFXFormatL16] = GL_RED;
@@ -171,6 +162,7 @@ void GFXGLEnumTranslate::init()
    GFXGLTextureFormat[GFXFormatD32] = GL_DEPTH_COMPONENT;
    GFXGLTextureFormat[GFXFormatD24X8] = GL_DEPTH_STENCIL;
    GFXGLTextureFormat[GFXFormatD24S8] = GL_DEPTH_STENCIL;
+   GFXGLTextureFormat[GFXFormatD32FS8X24] = GL_DEPTH_STENCIL;
    GFXGLTextureFormat[GFXFormatR16G16B16A16] = GL_RGBA;
    GFXGLTextureFormat[GFXFormatBC1] = GL_RGBA;
    GFXGLTextureFormat[GFXFormatBC2] = GL_RGBA;
@@ -186,6 +178,7 @@ void GFXGLEnumTranslate::init()
    
    GFXGLTextureType[GFXFormatA8] = GL_UNSIGNED_BYTE;
    GFXGLTextureType[GFXFormatL8] = GL_UNSIGNED_BYTE;
+   GFXGLTextureType[GFXFormatA8L8] = GL_UNSIGNED_BYTE;
    GFXGLTextureType[GFXFormatR5G5B5A1] = GL_UNSIGNED_SHORT_5_5_5_1;
    GFXGLTextureType[GFXFormatR5G5B5X1] = GL_UNSIGNED_SHORT_5_5_5_1;
    GFXGLTextureType[GFXFormatL16] = GL_UNSIGNED_SHORT;
@@ -199,6 +192,7 @@ void GFXGLEnumTranslate::init()
    GFXGLTextureType[GFXFormatD32] = GL_UNSIGNED_INT;
    GFXGLTextureType[GFXFormatD24X8] = GL_UNSIGNED_INT_24_8;
    GFXGLTextureType[GFXFormatD24S8] = GL_UNSIGNED_INT_24_8;
+   GFXGLTextureType[GFXFormatD32FS8X24] = GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
    GFXGLTextureType[GFXFormatR16G16B16A16] = GL_UNSIGNED_SHORT;
    GFXGLTextureType[GFXFormatBC1] = GL_UNSIGNED_BYTE;
    GFXGLTextureType[GFXFormatBC2] = GL_UNSIGNED_BYTE;

@@ -97,7 +97,7 @@ const char* Platform::getUserDataDirectory()
 //-----------------------------------------------------------------------------
 const char* Platform::getUserHomeDirectory() 
 {
-   return StringTable->insert([[@"~/" stringByStandardizingPath] UTF8String]);
+   return StringTable->insert([[@"~/Documents" stringByStandardizingPath] UTF8String]);
 }
 
 //-----------------------------------------------------------------------------
@@ -132,6 +132,7 @@ void Platform::outputDebugString( const char *string, ... )
    fflush(stderr);
 #endif
 }
+#ifndef TORQUE_SDL
 //-----------------------------------------------------------------------------
 bool Platform::openWebBrowser( const char* webAddress )
 {
@@ -142,7 +143,7 @@ bool Platform::openWebBrowser( const char* webAddress )
    
    return(err==noErr);
 }
-
+#endif
 #pragma mark ---- Administrator ----
 //-----------------------------------------------------------------------------
 bool Platform::getUserIsAdministrator()

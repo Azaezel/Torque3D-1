@@ -70,11 +70,11 @@ void GuiInspectorDynamicField::setData( const char* data, bool callbacks )
       const char *oldData = target->getDataField( mDynField->slotName, NULL );
       if ( !oldData )
          oldData = "";
-      if ( dStrcmp( oldData, data ) != 0 )
+      if ( String::compare( oldData, data ) != 0 )
       {
          target->inspectPreApply();
          
-         if( callbacks )
+         if( callbacks && !mField->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors))
          {
             if( isRemoval )
                Con::executef( mInspector, "onFieldRemoved", target->getIdString(), mDynField->slotName );
@@ -257,7 +257,7 @@ bool GuiInspectorDynamicField::onAdd()
       mParent->getId() );
 
    // FIXME Hardcoded image
-   mDeleteButton->setField( "Bitmap", "tools/gui/images/iconDelete" );
+   mDeleteButton->setField( "Bitmap", "ToolsModule:iconDelete_image" );
    mDeleteButton->setField( "Text", "X" );
    mDeleteButton->setField( "Command", szBuffer );
    mDeleteButton->setSizing( horizResizeLeft, vertResizeCenter );

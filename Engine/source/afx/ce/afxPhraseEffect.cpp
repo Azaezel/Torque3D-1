@@ -139,6 +139,7 @@ EndImplementEnumType;
 
 void afxPhraseEffectData::initPersistFields()
 {
+   docsURL;
   addField("duration",    TypeF32,      myOffset(duration),
     "Specifies a duration for the phrase-effect. If set to infinity, the phrase-effect "
     "needs to have a phraseType of continuous. Set infinite duration using "
@@ -297,12 +298,12 @@ void afxPhraseEffectData::gather_cons_defs(Vector<afxConstraintDef>& defs)
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
 
-DefineEngineMethod( afxPhraseEffectData, addEffect, void, ( afxEffectBaseData* effectData ),,
+DefineEngineMethod( afxPhraseEffectData, pushEffect, void, ( afxEffectBaseData* effectData ),,
    "Add a child effect to a phrase effect datablock. Argument can be an afxEffectWrappperData or an afxEffectGroupData.\n" )
 {
   if (!effectData) 
   {
-    Con::errorf("afxPhraseEffectData::addEffect() -- failed to resolve effect datablock.");
+    Con::errorf("afxPhraseEffectData::pushEffect() -- failed to resolve effect datablock.");
     return;
   }
 

@@ -41,6 +41,7 @@
 #endif
 
 // Debug Profiling.
+#include "console/script.h"
 #include "platform/profiler.h"
 
 //-----------------------------------------------------------------------------
@@ -111,6 +112,7 @@ PostEffectAsset::~PostEffectAsset()
 
 void PostEffectAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -132,21 +134,21 @@ void PostEffectAsset::copyTo(SimObject* object)
 
 void PostEffectAsset::initializeAsset()
 {
-   mScriptPath = expandAssetFilePath(mScriptFile);
-   mHLSLShaderPath = expandAssetFilePath(mHLSLShaderFile);
-   mGLSLShaderPath = expandAssetFilePath(mGLSLShaderFile);
+   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
+   mHLSLShaderPath = getOwned() ? expandAssetFilePath(mHLSLShaderFile) : mHLSLShaderPath;
+   mGLSLShaderPath = getOwned() ? expandAssetFilePath(mGLSLShaderFile) : mGLSLShaderPath;
 
-   if (Platform::isFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
       Con::executeFile(mScriptPath, false, false);
 }
 
 void PostEffectAsset::onAssetRefresh()
 {
-   mScriptPath = expandAssetFilePath(mScriptFile);
-   mHLSLShaderPath = expandAssetFilePath(mHLSLShaderFile);
-   mGLSLShaderPath = expandAssetFilePath(mGLSLShaderFile);
+   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
+   mHLSLShaderPath = getOwned() ? expandAssetFilePath(mHLSLShaderFile) : mHLSLShaderPath;
+   mGLSLShaderPath = getOwned() ? expandAssetFilePath(mGLSLShaderFile) : mGLSLShaderPath;
 
-   if (Platform::isFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
       Con::executeFile(mScriptPath, false, false);
 }
 
@@ -156,14 +158,14 @@ void PostEffectAsset::setScriptFile(const char* pScriptFile)
    AssertFatal(pScriptFile != NULL, "Cannot use a NULL script file.");
 
    // Fetch image file.
-   pScriptFile = StringTable->insert(pScriptFile);
+   pScriptFile = StringTable->insert(pScriptFile, true);
 
    // Ignore no change,
    if (pScriptFile == mScriptFile)
       return;
 
    // Update.
-   mScriptFile = pScriptFile;
+   mScriptFile = getOwned() ? expandAssetFilePath(pScriptFile) : pScriptFile;
 
    // Refresh the asset.
    refreshAsset();
@@ -175,14 +177,14 @@ void PostEffectAsset::setHLSLShaderFile(const char* pShaderFile)
    AssertFatal(pShaderFile != NULL, "Cannot use a NULL shader file.");
 
    // Fetch image file.
-   pShaderFile = StringTable->insert(pShaderFile);
+   pShaderFile = StringTable->insert(pShaderFile, true);
 
    // Ignore no change,
    if (pShaderFile == mHLSLShaderFile)
       return;
 
    // Update.
-   mHLSLShaderFile = pShaderFile;
+   mHLSLShaderFile = getOwned() ? expandAssetFilePath(pShaderFile) : pShaderFile;
 
    // Refresh the asset.
    refreshAsset();
@@ -194,15 +196,33 @@ void PostEffectAsset::setGLSLShaderFile(const char* pShaderFile)
    AssertFatal(pShaderFile != NULL, "Cannot use a NULL shader file.");
 
    // Fetch image file.
-   pShaderFile = StringTable->insert(pShaderFile);
+   pShaderFile = StringTable->insert(pShaderFile, true);
 
    // Ignore no change,
    if (pShaderFile == mGLSLShaderFile)
       return;
 
    // Update.
-   mGLSLShaderFile = pShaderFile;
+   mGLSLShaderFile = getOwned() ? expandAssetFilePath(pShaderFile) : pShaderFile;
 
    // Refresh the asset.
    refreshAsset();
+}
+
+DefineEngineMethod(PostEffectAsset, getScriptPath, const char*, (), ,
+   "Gets the script file path for the asset.")
+{
+   return object->getScriptPath();
+}
+
+DefineEngineMethod(PostEffectAsset, getHLSLShaderPath, const char*, (), ,
+   "Gets the HLSL Shader file path for the asset.")
+{
+   return object->getHLSLShaderPath();
+}
+
+DefineEngineMethod(PostEffectAsset, getGLSLShaderPath, const char*, (), ,
+   "Gets the GLSL Shader file path for the asset.")
+{
+   return object->getGLSLShaderPath();
 }

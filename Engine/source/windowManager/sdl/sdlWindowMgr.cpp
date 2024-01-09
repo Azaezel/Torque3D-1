@@ -22,6 +22,8 @@
 
 #include "windowManager/sdl/sdlWindowMgr.h"
 #include "platformSDL/sdlInputManager.h"
+#include "platform/platformVolume.h"
+#include "core/util/path.h"
 #include "gfx/gfxDevice.h"
 #include "core/util/journal/process.h"
 #include "core/strings/unicode.h"
@@ -66,6 +68,8 @@ PlatformWindowManagerSDL::PlatformWindowManagerSDL()
 
 PlatformWindowManagerSDL::~PlatformWindowManagerSDL()
 {
+   if (mWindowListHead == NULL)
+      return;
    // Kill all our windows first.
    while(mWindowListHead)
       // The destructors update the list, so this works just fine.

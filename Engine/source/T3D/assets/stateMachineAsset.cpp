@@ -106,6 +106,7 @@ StateMachineAsset::~StateMachineAsset()
 
 void StateMachineAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -126,15 +127,14 @@ void StateMachineAsset::setStateMachineFile(const char* pStateMachineFile)
    // Sanity!
    AssertFatal(pStateMachineFile != NULL, "Cannot use a NULL state machine file.");
 
-   // Fetch image file.
-   pStateMachineFile = StringTable->insert(pStateMachineFile);
+   pStateMachineFile = StringTable->insert(pStateMachineFile, true);
 
    // Ignore no change,
    if (pStateMachineFile == mStateMachineFile)
       return;
 
    // Update.
-   mStateMachineFile = StringTable->insert(pStateMachineFile);
+   mStateMachineFile = getOwned() ? expandAssetFilePath(pStateMachineFile) : pStateMachineFile;
 
    // Refresh the asset.
    refreshAsset();
@@ -142,12 +142,12 @@ void StateMachineAsset::setStateMachineFile(const char* pStateMachineFile)
 
 void StateMachineAsset::initializeAsset()
 {
-   mStateMachinePath = expandAssetFilePath(mStateMachineFile);
+   mStateMachinePath = getOwned() ? expandAssetFilePath(mStateMachineFile) : mStateMachinePath;
 }
 
 void StateMachineAsset::onAssetRefresh()
 {
-   mStateMachinePath = expandAssetFilePath(mStateMachineFile);
+   mStateMachinePath = getOwned() ? expandAssetFilePath(mStateMachineFile) : mStateMachinePath;
 }
 
 
@@ -157,6 +157,7 @@ DefineEngineMethod(StateMachineAsset, notifyAssetChanged, void, (),,"")
    ResourceManager::get().getChangedSignal().trigger(object->getStateMachineFile());
 }
 
+#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // GuiInspectorTypeAssetId
 //-----------------------------------------------------------------------------
@@ -186,7 +187,7 @@ GuiControl* GuiInspectorTypeStateMachineAssetPtr::constructEditControl()
    // Change filespec
    char szBuffer[512];
    dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"StateMachineAsset\", \"AssetBrowser.changeAsset\", %d, %s);",
-      mInspector->getComponentGroupTargetId(), mCaption);
+      mInspector->getIdString(), mCaption);
    mBrowseButton->setField("Command", szBuffer);
 
    // Create "Open in ShapeEditor" button
@@ -195,8 +196,8 @@ GuiControl* GuiInspectorTypeStateMachineAssetPtr::constructEditControl()
    dSprintf(szBuffer, sizeof(szBuffer), "StateMachineEditor.loadStateMachineAsset(%d.getText()); Canvas.pushDialog(StateMachineEditor);", retCtrl->getId());
    mSMEdButton->setField("Command", szBuffer);
 
-   char bitmapName[512] = "tools/worldEditor/images/toolbar/shape-editor";
-   mSMEdButton->setBitmap(bitmapName);
+   char bitmapName[512] = "ToolsModule:shape_editor_n_image";
+   mSMEdButton->setBitmap(StringTable->insert(bitmapName));
 
    mSMEdButton->setDataField(StringTable->insert("Profile"), NULL, "GuiButtonProfile");
    mSMEdButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
@@ -234,3 +235,4 @@ bool GuiInspectorTypeStateMachineAssetPtr::updateRects()
 
    return resized;
 }
+#endif

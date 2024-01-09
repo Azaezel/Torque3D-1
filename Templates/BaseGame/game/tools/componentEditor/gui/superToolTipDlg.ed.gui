@@ -1,4 +1,4 @@
-%guiContent = new GuiControl(SuperTooltipDlg) {
+$guiContent = new GuiControl(SuperTooltipDlg) {
    canSaveDynamicFields = "0";
    Profile = "GuiTransparentProfileModeless";
    class = "SuperTooltip";
@@ -17,7 +17,7 @@
       HorizSizing = "right";
       VertSizing = "bottom";
       position = "216 160";
-      Extent = "221 134";
+      Extent = "300 134";
       MinExtent = "8 2";
       canSave = "1";
       Visible = "1";
@@ -30,7 +30,7 @@
          HorizSizing = "right";
          VertSizing = "bottom";
          position = "5 5";
-         Extent = "210 14";
+         Extent = "290 14";
          MinExtent = "8 2";
          canSave = "1";
          Visible = "1";

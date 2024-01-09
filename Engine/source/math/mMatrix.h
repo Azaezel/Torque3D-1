@@ -35,12 +35,18 @@
 #include "math/mPoint4.h"
 #endif
 
+#ifndef _ENGINETYPEINFO_H_
+#include "console/engineTypeInfo.h"
+#endif
+
+
 /// 4x4 Matrix Class
 ///
 /// This runs at F32 precision.
 
 class MatrixF
 {
+   friend class MatrixFEngineExport;
 private:
    F32 m[16];     ///< Note: Torque uses row-major matrices
 
@@ -117,6 +123,9 @@ public:
    ///       be used if the matrix has something other than (0,0,0,1) in the bottom row.
    bool fullInverse();
 
+   /// Reverse depth for projection matrix
+   /// Simplifies reversal matrix mult to 4 subtractions
+   void reverseProjection();
    /// Swaps rows and columns into matrix.
    void transposeTo(F32 *matrix) const;
 
@@ -222,6 +231,12 @@ public:
 
    // Static identity matrix
    const static MatrixF Identity;
+};
+
+class MatrixFEngineExport
+{
+public:
+   static EngineFieldTable::Field getMatrixField();
 };
 
 

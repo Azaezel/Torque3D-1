@@ -86,6 +86,21 @@ namespace
          ret |= SI_ALT;
       }
 
+      // NOTE: For MacOS, this will treat command as Left or Right CTRL
+#ifdef TORQUE_OS_MAC
+      if (mod & KMOD_LGUI)
+      {
+         ret |= SI_LCTRL;
+         ret |= SI_CTRL;
+      }
+
+      if (mod & KMOD_RGUI)
+      {
+         ret |= SI_RCTRL;
+         ret |= SI_CTRL;
+      }
+#endif
+
       return ret;
    }
 }
@@ -207,7 +222,6 @@ void PlatformWindowSDL::_setVideoMode( const GFXVideoMode &mode )
          SDL_MaximizeWindow(mWindowHandle);
    }
 
-   getScreenResChangeSignal().trigger(this, true);
    mSuppressReset = false;
 }
 
@@ -551,7 +565,7 @@ void PlatformWindowSDL::_triggerTextNotify(const SDL_Event& evt)
    }
    else // get a wchar string
    {
-      const U32 len = strlen(evt.text.text);
+      const dsize_t len = strlen(evt.text.text);
       U16 wchar[16] = {};
       dMemcpy(wchar, evt.text.text, sizeof(char)*len);
 
@@ -632,7 +646,11 @@ void PlatformWindowSDL::_processSDLEvent(SDL_Event &evt)
                break;
             case SDL_WINDOWEVENT_MOVED:
             {
+               S32 oldDisplay = Con::getIntVariable("pref::Video::deviceId", 0);
                _updateMonitorFromMove(evt);
+               // If display device has changed, make sure window params are compatible with the new device.
+               if (oldDisplay != Con::getIntVariable("pref::Video::deviceId", 0))
+                  Con::executef("configureCanvas");
                break;
             }
             case SDL_WINDOWEVENT_RESIZED:

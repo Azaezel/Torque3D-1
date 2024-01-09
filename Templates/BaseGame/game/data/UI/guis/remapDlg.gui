@@ -1,0 +1,81 @@
+//--- OBJECT WRITE BEGIN ---
+$guiContent = new GuiControl(RemapDlg) {
+   extent = "1280 720";
+   minExtent = "8 8";
+   profile = "GuiDefaultProfile";
+   tooltipProfile = "GuiToolTipProfile";
+   isContainer = "1";
+   canSaveDynamicFields = "1";
+      helpTag = "0";
+
+   new GuiContainer(RemapPanel) {
+      position = "290 308";
+      extent = "700 104";
+      horizSizing = "center";
+      vertSizing = "center";
+      profile = "GuiDefaultProfile";
+      tooltipProfile = "GuiToolTipProfile";
+
+      new GuiInputCtrl(OptRemapInputCtrl) {
+         position = "480 0";
+         extent = "64 104";
+         minExtent = "8 8";
+         horizSizing = "width";
+         vertSizing = "height";
+         profile = "GuiInputCtrlProfile";
+         tooltipProfile = "GuiToolTipProfile";
+         sendAxisEvents = "0";
+      };
+      new GuiControl(RemapBoxCtrl) {
+         position = "-1 1";
+         extent = "701 102";
+         horizSizing = "center";
+         vertSizing = "center";
+         profile = "GuiDefaultProfile";
+         tooltipProfile = "GuiToolTipProfile";
+         isContainer = "1";
+
+         new GuiBitmapCtrl() {
+            BitmapAsset = "UI:backdrop_image";
+            position = "1 1";
+            extent = "701 100";
+            horizSizing = "width";
+            vertSizing = "height";
+            profile = "GuiDefaultProfile";
+            tooltipProfile = "GuiToolTipProfile";
+         };
+         new GuiPanel() {
+            position = "38 12";
+            extent = "625 80";
+            horizSizing = "width";
+            vertSizing = "height";
+            profile = "GuiMenuBasePanelProfile";
+            tooltipProfile = "GuiToolTipProfile";
+         };
+         new GuiTextCtrl() {
+            text = "Press escape or start to cancel";
+            maxLength = "255";
+            position = "252 51";
+            extent = "245 23";
+            minExtent = "8 8";
+            horizSizing = "width";
+            vertSizing = "height";
+            profile = "MenuMLSubHeaderTextCenter";
+            tooltipProfile = "GuiToolTipProfile";
+         };
+         new GuiTextCtrl() {
+            text = "Re-bind \"\" to...";
+            maxLength = "255";
+            position = "251 24";
+            extent = "184 23";
+            minExtent = "8 8";
+            horizSizing = "center";
+            vertSizing = "height";
+            profile = "MenuMLSubHeaderTextCenter";
+            tooltipProfile = "GuiToolTipProfile";
+            internalName = "OptRemapText";
+         };
+      };
+   };
+};
+//--- OBJECT WRITE END ---

@@ -24,17 +24,16 @@
 #include "console/console.h"
 #include "console/consoleInternal.h"
 #include "console/engineAPI.h"
-#include "console/ast.h"
 
 #ifndef _CONSOLFUNCTIONS_H_
 #include "console/consoleFunctions.h"
 #endif
 
+#include "script.h"
 #include "core/strings/findMatch.h"
 #include "core/strings/stringUnit.h"
 #include "core/strings/unicode.h"
 #include "core/stream/fileStream.h"
-#include "console/compiler.h"
 #include "platform/platformInput.h"
 #include "core/util/journal/journal.h"
 #include "gfx/gfxEnums.h"
@@ -42,6 +41,7 @@
 #include "core/color.h"
 #include "math/mPoint3.h"
 #include "math/mathTypes.h"
+#include "torquescript/runtime.h"
 
 // This is a temporary hack to get tools using the library to
 // link in this module which contains no other references.
@@ -145,7 +145,7 @@ bool isFloat(const char* str, bool sciOk = false)
             }
             break;
          case '.':
-            if(seenDot | (sciOk && eLoc != -1))
+            if(seenDot || (sciOk && eLoc != -1))
                return false;
             seenDot = true;
             break;
@@ -266,7 +266,7 @@ DefineEngineFunction( strcmp, S32, ( const char* str1, const char* str2 ),,
    "@see strnatcmp\n"
    "@ingroup Strings" )
 {
-   return dStrcmp( str1, str2 );
+   return String::compare( str1, str2 );
 }
 
 //-----------------------------------------------------------------------------
@@ -561,7 +561,7 @@ DefineEngineFunction( stripChars, const char*, ( const char* str, const char* ch
    "@endtsexample\n"
    "@ingroup Strings" )
 {
-   S32 len = dStrlen(str) + 1;
+   U64 len = dStrlen(str) + 1;
    char* ret = Con::getReturnBuffer( len );
    dStrcpy( ret, str, len );
    U32 pos = dStrcspn( ret, chars );
@@ -571,6 +571,40 @@ DefineEngineFunction( stripChars, const char*, ( const char* str, const char* ch
       pos = dStrcspn( ret, chars );
    }
    return( ret );
+}
+
+//-----------------------------------------------------------------------------
+DefineEngineFunction(sanitizeString, const char*, (const char* str), ,
+   "Sanitizes a string of common name issues, such as:\n"
+   "Starting with numbers, replacing spaces with _, and removing any name un-compliant characters such as .,- etc\n"
+   "@param str The string to sanitize.\n"
+   "@return A version of @a str with all occurrences of invalid characters removed.\n\n"
+   "@tsexample\n"
+   "cleanString( \"123 .-_abc\"); // Returns \"__abc\"."
+   "@endtsexample\n"
+   "@ingroup Strings")
+{
+   String processedString = str;
+
+   U32 start;
+   U32 end;
+   String firstNumber = String::GetFirstNumber(processedString, start, end);
+   if (!firstNumber.isEmpty() && processedString.startsWith(firstNumber.c_str()))
+      processedString = processedString.replace(firstNumber, "");
+
+   processedString = processedString.replace(" ", "_");
+
+   U32 len = processedString.length() + 1;
+   char* ret = Con::getReturnBuffer(len);
+   dStrcpy(ret, processedString.c_str(), len);
+
+   U64 pos = dStrcspn(ret, "-+*/%$&=:()[].?\\\"#,;!~<>|^{}");
+   while (pos < dStrlen(ret))
+   {
+      dStrcpy(ret + pos, ret + pos + 1, len - pos);
+      pos = dStrcspn(ret, "-+*/%$&=:()[].?\\\"#,;!~<>|^{}");
+   }
+   return(ret);
 }
 
 //-----------------------------------------------------------------------------
@@ -585,7 +619,7 @@ DefineEngineFunction( strlwr, const char*, ( const char* str ),,
    "@see strupr\n"
    "@ingroup Strings" )
 {
-   dsize_t retLen = dStrlen(str) + 1;
+   U64 retLen = dStrlen(str) + 1;
    char *ret = Con::getReturnBuffer(retLen);
    dStrcpy(ret, str, retLen);
    return dStrlwr(ret);
@@ -603,7 +637,7 @@ DefineEngineFunction( strupr, const char*, ( const char* str ),,
    "@see strlwr\n"
    "@ingroup Strings" )
 {
-   dsize_t retLen = dStrlen(str) + 1;
+   U64 retLen = dStrlen(str) + 1;
    char *ret = Con::getReturnBuffer(retLen);
    dStrcpy(ret, str, retLen);
    return dStrupr(ret);
@@ -666,7 +700,7 @@ DefineEngineFunction( strreplace, const char*, ( const char* source, const char*
          count++;
       }
    }
-   S32 retLen = dStrlen(source) + 1 + (toLen - fromLen) * count;
+   U64 retLen = dStrlen(source) + 1 + U64(toLen - fromLen) * count;
    char *ret = Con::getReturnBuffer(retLen);
    U32 scanp = 0;
    U32 dstp = 0;
@@ -679,7 +713,7 @@ DefineEngineFunction( strreplace, const char*, ( const char* source, const char*
          return ret;
       }
       U32 len = subScan - (source + scanp);
-      dStrncpy(ret + dstp, source + scanp, getMin(len, retLen - dstp));
+      dStrncpy(ret + dstp, source + scanp, (U64)getMin(len, retLen - dstp));
       dstp += len;
       dStrcpy(ret + dstp, to, retLen - dstp);
       dstp += toLen;
@@ -703,7 +737,7 @@ DefineEngineFunction( strrepeat, const char*, ( const char* str, S32 numTimes, c
 {
    StringBuilder result;
    bool isFirst = false;
-   for( U32 i = 0; i < numTimes; ++ i )
+   for( S32 i = 0; i < numTimes; ++ i )
    {
       if( !isFirst )
          result.append( delimiter );
@@ -786,7 +820,7 @@ DefineEngineFunction( strIsMatchMultipleExpr, bool, ( const char* patterns, cons
       "this string.  If false, differences in casing are ignored.\n"
    "@return True if @a str matches any of the given @a patterns.\n\n"
    "@tsexample\n"
-   "strIsMatchMultipleExpr( \"*.cs *.gui *.mis\", \"mymission.mis\" ) // Returns true.\n"
+   "strIsMatchMultipleExpr( \"*." TORQUE_SCRIPT_EXTENSION " *.gui *.mis\", \"mymission.mis\" ) // Returns true.\n"
    "@endtsexample\n"
    "@see strIsMatchExpr\n"
    "@ingroup Strings" )
@@ -905,8 +939,8 @@ DefineEngineFunction( startsWith, bool, ( const char* str, const char* prefix, b
    char* targetBuf = new char[ targetLen + 1 ];
 
    // copy src and target into buffers
-   dStrcpy( srcBuf, str, srcLen + 1 );
-   dStrcpy( targetBuf, prefix, targetLen + 1 );
+   dStrcpy( srcBuf, str, (U64)(srcLen + 1) );
+   dStrcpy( targetBuf, prefix, (U64)(targetLen + 1) );
 
    // reassign src/target pointers to lowercase versions
    str = dStrlwr( srcBuf );
@@ -949,15 +983,15 @@ DefineEngineFunction( endsWith, bool, ( const char* str, const char* suffix, boo
       return false;
       
    if( caseSensitive )
-      return ( dStrcmp( &str[ srcLen - targetLen ], suffix ) == 0 );
+      return ( String::compare( &str[ srcLen - targetLen ], suffix ) == 0 );
 
    // both src and target are non empty, create temp buffers for lowercase operation
    char* srcBuf = new char[ srcLen + 1 ];
    char* targetBuf = new char[ targetLen + 1 ];
 
    // copy src and target into buffers
-   dStrcpy( srcBuf, str, srcLen + 1 );
-   dStrcpy( targetBuf, suffix, targetLen + 1 );
+   dStrcpy( srcBuf, str, (U64)(srcLen + 1) );
+   dStrcpy( targetBuf, suffix, (U64)(targetLen + 1 ));
 
    // reassign src/target pointers to lowercase versions
    str = dStrlwr( srcBuf );
@@ -967,7 +1001,7 @@ DefineEngineFunction( endsWith, bool, ( const char* str, const char* suffix, boo
    str += srcLen - targetLen;
 
    // do the comparison
-   bool endsWith = dStrcmp( str, suffix ) == 0;
+   bool endsWith = String::compare( str, suffix ) == 0;
 
    // delete temp buffers
    delete [] srcBuf;
@@ -1188,7 +1222,7 @@ DefineEngineFunction( isValidIP, bool, ( const char* str),,
    "@endtsexample\n"
    "@ingroup Strings" )
 {
-   if(dStrcmp(str, "localhost") == 0)
+   if(String::compare(str, "localhost") == 0)
    {
       return true;
    }
@@ -1199,7 +1233,7 @@ DefineEngineFunction( isValidIP, bool, ( const char* str),,
 //----------------------------------------------------------------
 
 // Torque won't normally add another string if it already exists with another casing,
-// so this forces the addition. It should be called once near the start, such as in main.cs.
+// so this forces the addition. It should be called once near the start, such as in main.tscript.
 DefineEngineStringlyVariadicFunction(addCaseSensitiveStrings,void,2,0,"[string1, string2, ...]"
                 "Adds case sensitive strings to the StringTable.")
 {
@@ -1668,12 +1702,7 @@ DefineEngineFunction( nextToken, const char*, ( const char* str1, const char* to
       if (*str)
          *str++ = 0;
 
-      // set local variable if inside a function
-      if (gEvalState.getStackDepth() > 0 && 
-         gEvalState.getCurrentFrame().scopeName)
-         Con::setLocalVariable(token,tmp);
-      else
-         Con::setVariable(token,tmp);
+      Con::setVariable(token,tmp);
 
       // advance str past the 'delim space'
       while (isInSet(*str, delim))
@@ -1809,7 +1838,7 @@ DefineEngineFunction( detag, const char*, ( const char* str ),,
    "to convert a tagged string ID back into a regular string at any time.\n\n"
 
    "@tsexample\n"
-      "// From scripts/client/message.cs\n"
+      "// From scripts/client/message. " TORQUE_SCRIPT_EXTENSION "\n"
       "function clientCmdChatMessage(%sender, %voice, %pitch, %msgString, %a1, %a2, %a3, %a4, %a5, %a6, %a7, %a8, %a9, %a10)\n"
       "{\n"
       "   onChatMessage(detag(%msgString), %voice, %pitch);\n"
@@ -1828,7 +1857,7 @@ DefineEngineFunction( detag, const char*, ( const char* str ),,
       if( word == NULL )
          return "";
          
-      dsize_t retLen = dStrlen(word + 1) + 1;
+      U64 retLen = dStrlen(word + 1) + 1;
       char* ret = Con::getReturnBuffer(retLen);
       dStrcpy( ret, word + 1, retLen );
       return ret;
@@ -1894,7 +1923,7 @@ DefineEngineStringlyVariadicFunction( echo, void, 2, 0, "( string message... ) "
    char *ret = Con::getReturnBuffer(len + 1);
    ret[0] = 0;
    for(i = 1; i < argc; i++)
-      dStrcat(ret, argv[i], len + 1);
+      dStrcat(ret, argv[i], (U64)(len + 1));
 
    Con::printf("%s", ret);
    ret[0] = 0;
@@ -1918,7 +1947,7 @@ DefineEngineStringlyVariadicFunction( warn, void, 2, 0, "( string message... ) "
    char *ret = Con::getReturnBuffer(len + 1);
    ret[0] = 0;
    for(i = 1; i < argc; i++)
-      dStrcat(ret, argv[i], len + 1);
+      dStrcat(ret, argv[i], (U64)(len + 1));
 
    Con::warnf(ConsoleLogEntry::General, "%s", ret);
    ret[0] = 0;
@@ -1942,7 +1971,7 @@ DefineEngineStringlyVariadicFunction( error, void, 2, 0, "( string message... ) 
    char *ret = Con::getReturnBuffer(len + 1);
    ret[0] = 0;
    for(i = 1; i < argc; i++)
-      dStrcat(ret, argv[i], len + 1);
+      dStrcat(ret, argv[i], (U64)(len + 1));
 
    Con::errorf(ConsoleLogEntry::General, "%s", ret);
    ret[0] = 0;
@@ -2100,24 +2129,15 @@ DefineEngineFunction( quitWithStatus, void, ( S32 status ), (0),
 }
 
 //-----------------------------------------------------------------------------
-
-DefineEngineFunction( gotoWebPage, void, ( const char* address ),,
-   "Open the given URL or file in the user's web browser.\n\n"
-   "@param address The address to open.  If this is not prefixed by a protocol specifier (\"...://\"), then "
-      "the function checks whether the address refers to a file or directory and if so, prepends \"file://\" "
-      "to @a adress; if the file check fails, \"http://\" is prepended to @a address.\n\n"
-   "@tsexample\n"
-      "gotoWebPage( \"http://www.garagegames.com\" );\n"
-   "@endtsexample\n\n"
-   "@ingroup Platform" )
+void gotoWebPage(const char* address)
 {
    // If there's a protocol prefix in the address, just invoke
    // the browser on the given address.
-   
-   char* protocolSep = dStrstr( address,"://");
-   if( protocolSep != NULL )
+
+   char* protocolSep = dStrstr(address, "://");
+   if (protocolSep != NULL)
    {
-      Platform::openWebBrowser( address );
+      Platform::openWebBrowser(address);
       return;
    }
 
@@ -2125,21 +2145,34 @@ DefineEngineFunction( gotoWebPage, void, ( const char* address ),,
    // sent us a bad url. We'll first check to see if a file inside the sandbox
    // with that name exists, then we'll just glom "http://" onto the front of 
    // the bogus url, and hope for the best.
-   
+
    String addr;
-   if( Platform::isFile( address ) || Platform::isDirectory( address ) )
+   if (Torque::FS::IsFile(address) || Torque::FS::IsDirectory(address))
    {
 #ifdef TORQUE2D_TOOLS_FIXME
-      addr = String::ToString( "file://%s", address );
+      addr = String::ToString("file://%s", address);
 #else
-      addr = String::ToString( "file://%s/%s", Platform::getCurrentDirectory(), address );
+      addr = String::ToString("file://%s/%s", Platform::getCurrentDirectory(), address);
 #endif
    }
    else
-      addr = String::ToString( "http://%s", address );
-   
-   Platform::openWebBrowser( addr );
+      addr = String::ToString("http://%s", address);
+
+   Platform::openWebBrowser(addr);
    return;
+}
+
+DefineEngineFunction( gotoWebPage, void, ( const char* address ),,
+   "Open the given URL or file in the user's web browser.\n\n"
+   "@param address The address to open.  If this is not prefixed by a protocol specifier (\"...://\"), then "
+      "the function checks whether the address refers to a file or directory and if so, prepends \"file://\" "
+      "to @a adress; if the file check fails, \"http://\" is prepended to @a address.\n\n"
+   "@tsexample\n"
+      "gotoWebPage( \"https://torque3d.org/\" );\n"
+   "@endtsexample\n\n"
+   "@ingroup Platform" )
+{
+   gotoWebPage(address);
 }
 
 //-----------------------------------------------------------------------------
@@ -2251,7 +2284,8 @@ DefineEngineStringlyVariadicFunction( call, const char *, 2, 0, "( string functi
    "@endtsexample\n\n"
    "@ingroup Scripting" )
 {
-   return Con::execute( argc - 1, argv + 1 );
+   ConsoleValue returnValue = Con::execute(argc - 1, argv + 1);
+   return Con::getReturnBuffer(returnValue.getString());
 }
 
 //-----------------------------------------------------------------------------
@@ -2261,7 +2295,7 @@ static U32 journalDepth = 1;
 
 DefineEngineFunction( getDSOPath, const char*, ( const char* scriptFileName ),,
    "Get the absolute path to the file in which the compiled code for the given script file will be stored.\n"
-   "@param scriptFileName %Path to the .cs script file.\n"
+   "@param scriptFileName %Path to the ." TORQUE_SCRIPT_EXTENSION " script file.\n"
    "@return The absolute path to the .dso file for the given script file.\n\n"
    "@note The compiler will store newly compiled DSOs in the prefs path but pre-existing DSOs will be loaded "
       "from the current paths.\n\n"
@@ -2295,63 +2329,7 @@ DefineEngineFunction( compile, bool, ( const char* fileName, bool overrideNoDSO 
    "@see exec\n"
    "@ingroup Scripting" )
 {
-   Con::expandScriptFilename( scriptFilenameBuffer, sizeof( scriptFilenameBuffer ), fileName );
-
-   // Figure out where to put DSOs
-   StringTableEntry dsoPath = Con::getDSOPath(scriptFilenameBuffer);
-   if(dsoPath && *dsoPath == 0)
-      return false;
-
-   // If the script file extention is '.ed.cs' then compile it to a different compiled extention
-   bool isEditorScript = false;
-   const char *ext = dStrrchr( scriptFilenameBuffer, '.' );
-   if( ext && ( dStricmp( ext, ".cs" ) == 0 ) )
-   {
-      const char* ext2 = ext - 3;
-      if( dStricmp( ext2, ".ed.cs" ) == 0 )
-         isEditorScript = true;
-   }
-   else if( ext && ( dStricmp( ext, ".gui" ) == 0 ) )
-   {
-      const char* ext2 = ext - 3;
-      if( dStricmp( ext2, ".ed.gui" ) == 0 )
-         isEditorScript = true;
-   }
-
-   const char *filenameOnly = dStrrchr(scriptFilenameBuffer, '/');
-   if(filenameOnly)
-      ++filenameOnly;
-   else
-      filenameOnly = scriptFilenameBuffer;
- 
-   char nameBuffer[512];
-
-   if( isEditorScript )
-      dStrcpyl(nameBuffer, sizeof(nameBuffer), dsoPath, "/", filenameOnly, ".edso", NULL);
-   else
-      dStrcpyl(nameBuffer, sizeof(nameBuffer), dsoPath, "/", filenameOnly, ".dso", NULL);
-   
-   void *data = NULL;
-   U32 dataSize = 0;
-   Torque::FS::ReadFile(scriptFilenameBuffer, data, dataSize, true);
-   if(data == NULL)
-   {
-      Con::errorf(ConsoleLogEntry::Script, "compile: invalid script file %s.", scriptFilenameBuffer);
-      return false;
-   }
-
-   const char *script = static_cast<const char *>(data);
-
-#ifdef TORQUE_DEBUG
-   Con::printf("Compiling %s...", scriptFilenameBuffer);
-#endif 
-
-   CodeBlock *code = new CodeBlock();
-   code->compile(nameBuffer, scriptFilenameBuffer, script, overrideNoDSO);
-   delete code;
-   delete[] script;
-
-   return true;
+   return TorqueScript::getRuntime()->compile(fileName, overrideNoDSO);
 }
 
 //-----------------------------------------------------------------------------
@@ -2363,8 +2341,8 @@ DefineEngineFunction( exec, bool, ( const char* fileName, bool noCalls, bool jou
    "@param journalScript Deprecated\n"
    "@return True if the script was successfully executed, false if not.\n\n"
    "@tsexample\n"
-      "// Execute the init.cs script file found in the same directory as the current script file.\n"
-      "exec( \"./init.cs\" );\n"
+      "// Execute the init." TORQUE_SCRIPT_EXTENSION " script file found in the same directory as the current script file.\n"
+      "exec( \"./init." TORQUE_SCRIPT_EXTENSION "\" );\n"
    "@endtsexample\n\n"
    "@see compile\n"
    "@see eval\n"
@@ -2375,10 +2353,12 @@ DefineEngineFunction( exec, bool, ( const char* fileName, bool noCalls, bool jou
 
 DefineEngineFunction( eval, const char*, ( const char* consoleString ), , "eval(consoleString)" )
 {
-   return Con::evaluate(consoleString, false, NULL);
+   Con::EvalResult returnValue = Con::evaluate(consoleString, false, NULL);
+
+   return Con::getReturnBuffer(returnValue.value.getString());
 }
 
-DefineEngineFunction( getVariable, const char*, ( const char* varName ), , "(string varName)\n" 
+DefineEngineFunction( getVariable, const char*, ( const char* varName ), , "(string varName)\n"
    "@brief Returns the value of the named variable or an empty string if not found.\n\n"
    "@varName Name of the variable to search for\n"
    "@return Value contained by varName, \"\" if the variable does not exist\n"
@@ -2476,7 +2456,7 @@ DefineEngineFunction( isDefined, bool, ( const char* varName, const char* varVal
 
       S32 len = dStrlen(name);
       AssertFatal(len < sizeof(scratchBuffer)-1, "isDefined() - name too long");
-      dMemcpy(scratchBuffer, name, len+1);
+      dMemcpy(scratchBuffer, name, (U64)(len+1));
 
       char * token = dStrtok(scratchBuffer, ".");
 
@@ -2548,15 +2528,15 @@ DefineEngineFunction( isDefined, bool, ( const char* varName, const char* varVal
    else if (name[0] == '%')
    {
       // Look up a local variable
-      if( gEvalState.getStackDepth() > 0 )
+      if( Con::getFrameStack().size() > 0 )
       {
-         Dictionary::Entry* ent = gEvalState.getCurrentFrame().lookup(name);
+         Dictionary::Entry* ent = Con::getCurrentStackFrame()->lookup(name);
 
          if (ent)
             return true;
          else if (!String::isEmpty(varValue))
          {
-            gEvalState.getCurrentFrame().setVariable(name, varValue);
+            Con::getCurrentStackFrame()->setVariable(name, varValue);
          }
       }
       else
@@ -2565,19 +2545,19 @@ DefineEngineFunction( isDefined, bool, ( const char* varName, const char* varVal
    else if (name[0] == '$')
    {
       // Look up a global value
-      Dictionary::Entry* ent = gEvalState.globalVars.lookup(name);
+      Dictionary::Entry* ent = Con::gGlobalVars.lookup(name);
 
       if (ent)
          return true;
       else if (!String::isEmpty(varValue))
       {
-         gEvalState.globalVars.setVariable(name, varValue);
+         Con::gGlobalVars.setVariable(name, varValue);
       }
    }
    else
    {
       // Is it an object?
-      if (dStrcmp(varName, "0") && dStrcmp(varName, "") && (Sim::findObject(varName) != NULL))
+      if (String::compare(varName, "0") && String::compare(varName, "") && (Sim::findObject(varName) != NULL))
          return true;
       else if (!String::isEmpty(varValue))
       {
@@ -2679,8 +2659,8 @@ DefineEngineFunction( export, void, ( const char* pattern, const char* filename,
    "@param append If true and @a fileName is not \"\", then the definitions are appended to the specified file. "
       "Otherwise existing contents of the file (if any) will be overwritten.\n\n"
    "@tsexample\n"
-      "// Write out all preference variables to a prefs.cs file.\n"
-      "export( \"$prefs::*\", \"prefs.cs\" );\n"
+      "// Write out all preference variables to a prefs." TORQUE_SCRIPT_EXTENSION " file.\n"
+      "export( \"$prefs::*\", \"prefs." TORQUE_SCRIPT_EXTENSION "\" );\n"
    "@endtsexample\n\n"
    "@ingroup Scripting" )
 {
@@ -2698,7 +2678,7 @@ DefineEngineFunction( export, void, ( const char* pattern, const char* filename,
    else
       filename = NULL;
 
-   gEvalState.globalVars.exportVariables( pattern, filename, append );
+   Con::gGlobalVars.exportVariables( pattern, filename, append );
 }
 
 //-----------------------------------------------------------------------------
@@ -2715,7 +2695,7 @@ DefineEngineFunction( deleteVariables, void, ( const char* pattern ),,
    "@see strIsMatchExpr\n"
    "@ingroup Scripting" )
 {
-   gEvalState.globalVars.deleteVariables( pattern );
+   Con::gGlobalVars.deleteVariables( pattern );
 }
 
 //-----------------------------------------------------------------------------
@@ -2728,8 +2708,8 @@ DefineEngineFunction( trace, void, ( bool enable ), ( true ),
    "@param enable New setting for script trace execution, on by default.\n"
    "@ingroup Debugging" )
 {
-   gEvalState.traceOn = enable;
-   Con::printf( "Console trace %s", gEvalState.traceOn ? "enabled." : "disabled." );
+   Con::gTraceOn = enable;
+   Con::printf( "Console trace %s", Con::gTraceOn ? "enabled." : "disabled." );
 }
 
 //-----------------------------------------------------------------------------
@@ -2794,5 +2774,79 @@ DefineEngineFunction( getMaxDynamicVerts, S32, (),,
    "Get max number of allowable dynamic vertices in a single vertex buffer.\n\n"
    "@return the max number of allowable dynamic vertices in a single vertex buffer" )
 {
-   return MAX_DYNAMIC_VERTS / 2;
+   return GFX_MAX_DYNAMIC_VERTS / 2;
 }
+
+DefineEngineFunction( getStringHash, S32, (const char* _inString, bool _sensitive), ("", true), "generate a hash from a string. foramt is (string, casesensitive). defaults to true")
+{
+   if (_sensitive)
+      return S32(String(_inString).getHashCaseSensitive());
+   else
+      return S32(String(_inString).getHashCaseInsensitive());
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineFunction(getTimestamp, const char*, (), ,
+   "Gets datetime string.\n\n"
+   "@return YYYY-mm-DD_hh-MM-ss formatted date time string.")
+{
+   Torque::Time::DateTime curTime;
+   Torque::Time::getCurrentDateTime(curTime);
+
+   String timestampStr = String::ToString(curTime.year + 1900) + "-" +
+      String::ToString(curTime.month + 1) + "-" + String::ToString(curTime.day) + "_" +
+      String::ToString(curTime.hour) + "-" + String::ToString(curTime.minute) + "-" + String::ToString(curTime.second);
+
+   const char* returnBuffer = Con::getReturnBuffer(timestampStr);
+
+   return returnBuffer;
+}
+
+#ifdef TORQUE_TOOLS
+DefineEngineFunction(systemCommand, S32, (const char* commandLineAction, const char* callBackFunction), (""), "")
+{
+   if (commandLineAction != "")
+   {
+      S32 result = system(commandLineAction);
+
+      if (callBackFunction != "" && callBackFunction[0])
+      {
+         if (Con::isFunction(callBackFunction))
+            Con::executef(callBackFunction, result);
+      }
+   }
+
+   return -1;
+}
+
+const char* getDocsLink(const char* filename, U32 lineNumber)
+{
+   Vector<String> fileStringSplit;
+   String(filename).split("source", fileStringSplit);
+   String fileString = fileStringSplit.last();
+   String fileLineString = fileString + String("#L") + String::ToString(lineNumber-2);
+   String baseUrL = String(Con::getVariable("Pref::DocURL","https://github.com/TorqueGameEngines/Torque3D/blob/development/Engine/source"));
+   String URL = String("<a:") + baseUrL + fileLineString + String(">docs</a>");
+
+   return (new String(URL))->c_str();
+}
+
+bool getDocsURL(void* obj, const char* array, const char* data)
+{
+   ConsoleObject* cObj = static_cast<ConsoleObject*>(obj);
+   //if (cObj->mDocsClick)
+   {
+
+      String docpage = String(cObj->findField(StringTable->insert("docsURL"))->pFieldDocs);
+      //strip wrapper
+      docpage.replace("<a:", "");
+      docpage.replace(">docs</a>", "");
+      Con::errorf("%s", docpage.c_str());
+      gotoWebPage(docpage.c_str());
+   }
+   //cObj->mDocsClick = !cObj->mDocsClick;
+   return false;
+}
+
+#endif

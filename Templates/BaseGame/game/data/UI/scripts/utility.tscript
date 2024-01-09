@@ -1,0 +1,195 @@
+function ActionMap::getCommandButtonBitmap(%this, %device, %command)
+{
+   %binding = %this.getBinding(%command);
+   
+   if(%device $= "mouse" || %device $= "")
+      %device = "keyboard";
+   
+   %bindingCount = getFieldCount(%binding);
+   for(%i=0; %i < %bindingCount; %i+=2)
+   {
+      %mapDevice = stripTrailingNumber(getField(%binding, %i)); 
+      if(%mapDevice $= %device)
+      {
+         %button = getField(%binding, %i+1);
+         break;
+      }
+   }
+
+   %assetId = getButtonBitmap(%device, %button);
+   return %assetId;
+}
+
+function getButtonBitmap(%device, %button)
+{
+   if(%device $= "gamepad")
+   {
+      //In the event we passed in a generic gamepad device name, we'll try fetching the actual device here
+      %device = SDLInputManager::JoystickNameForIndex(0);
+      
+      //If we couldn't figure out what it was, just use the generic Xbox images
+      if(%device $= "")
+         %device = "Xbox";
+   }
+   
+   %assetId = "";
+   if(%device $= "PS4")
+   { 
+      %assetId = "UI:PS4_";
+      
+      if(%button $= "A" || %button $= "btn_a")
+         %assetId = %assetId @ "Cross";
+      else if(%button $= "B" || %button $= "btn_b")
+         %assetId = %assetId @ "Circle";
+      else if(%button $= "X" || %button $= "btn_x")
+         %assetId = %assetId @ "Square";
+      else if(%button $= "Y" || %button $= "btn_y")
+         %assetId = %assetId @ "Triangle";
+      else if(%button $= "LB" || %button $= "btn_l")
+         %assetId = %assetId @ "L1";
+      else if(%button $= "LT" || %button $= "btn_lt")
+         %assetId = %assetId @ "L2";
+      else if(%button $= "RB" || %button $= "btn_r")
+         %assetId = %assetId @ "R1";
+      else if(%button $= "RT" || %button $= "btn_rt")
+         %assetId = %assetId @ "R2";
+      else if(%button $= "thumbrx" || %button $= "thumbry")
+         %assetId = %assetId @ "Right_Stick";
+      else if(%button $= "thumblx" || %button $= "thumbly")
+         %assetId = %assetId @ "Left_Stick";
+      else if(%button $= "start")
+         %assetId = %assetId @ "Options";
+      else if(%button $= "back")
+         %assetId = %assetId @ "Share";   
+      else if(%button $= "dpadu")
+         %assetId = %assetId @ "Dpad_Up";  
+      else if(%button $= "dpadd")
+         %assetId = %assetId @ "Dpad_Down";  
+      else if(%button $= "dpadl")
+         %assetId = %assetId @ "Dpad_Left";  
+      else if(%button $= "dpadr")
+         %assetId = %assetId @ "Dpad_Right";  
+      
+      %assetId = %assetId @ "_image";
+   }
+   else if(%device $= "Switch")
+   {
+      %assetId = "UI:Switch_";
+      
+      if(%button $= "A" || %button $= "btn_a")
+         %assetId = %assetId @ "B";
+      else if(%button $= "B" || %button $= "btn_b")
+         %assetId = %assetId @ "A";
+      else if(%button $= "X" || %button $= "btn_x")
+         %assetId = %assetId @ "Y";
+      else if(%button $= "Y" || %button $= "btn_y")
+         %assetId = %assetId @ "X";
+      else if(%button $= "LB" || %button $= "btn_l")
+         %assetId = %assetId @ "LB";
+      else if(%button $= "LT" || %button $= "btn_lt")
+         %assetId = %assetId @ "LT";
+      else if(%button $= "RB" || %button $= "btn_r")
+         %assetId = %assetId @ "RB";
+      else if(%button $= "RT" || %button $= "btn_rt")
+         %assetId = %assetId @ "RT";
+      else if(%button $= "thumbrx" || %button $= "thumbry")
+         %assetId = %assetId @ "Right_Stick";
+      else if(%button $= "thumblx" || %button $= "thumbly")
+         %assetId = %assetId @ "Left_Stick";
+      else if(%button $= "start")
+         %assetId = %assetId @ "Plus";
+      else if(%button $= "back")
+         %assetId = %assetId @ "Minus";   
+      else if(%button $= "dpadu")
+         %assetId = %assetId @ "Dpad_Up";  
+      else if(%button $= "dpadd")
+         %assetId = %assetId @ "Dpad_Down";  
+      else if(%button $= "dpadl")
+         %assetId = %assetId @ "Dpad_Left";  
+      else if(%button $= "dpadr")
+         %assetId = %assetId @ "Dpad_Right"; 
+         
+      %assetId = %assetId @ "_image";
+   }
+   else if(%device $= "Keyboard" || %device $= "Mouse")
+   {
+      if(%button $= "lshift" || %button $= "rshift")
+         %button = "shift";
+         
+      %assetId = "UI:Keyboard_Black_" @ %button @ "_image";
+   }
+   else if(%device !$= "")
+   {
+      %assetId = "UI:Xbox_";
+      
+      if(%button $= "btn_a")
+         %assetId = %assetId @ "A";
+      else if(%button $= "btn_b")
+         %assetId = %assetId @ "B";
+      else if(%button $= "btn_x")
+         %assetId = %assetId @ "X";
+      else if(%button $= "btn_y")
+         %assetId = %assetId @ "Y";
+      else if(%button $= "LB" || %button $= "btn_l")
+         %assetId = %assetId @ "LB";
+      else if(%button $= "LT" || %button $= "btn_lt")
+         %assetId = %assetId @ "LT";
+      else if(%button $= "RB" || %button $= "btn_r")
+         %assetId = %assetId @ "RB";
+      else if(%button $= "RT" || %button $= "btn_rt")
+         %assetId = %assetId @ "RT";
+      else if(%button $= "thumbrx" || %button $= "thumbry")
+         %assetId = %assetId @ "Right_Stick";
+      else if(%button $= "thumblx" || %button $= "thumbly")
+         %assetId = %assetId @ "Left_Stick";
+      else if(%button $= "start")
+         %assetId = %assetId @ "Menu";
+      else if(%button $= "back")
+         %assetId = %assetId @ "Windows";   
+      else if(%button $= "dpadu")
+         %assetId = %assetId @ "Dpad_Up";  
+      else if(%button $= "dpadd")
+         %assetId = %assetId @ "Dpad_Down";  
+      else if(%button $= "dpadl")
+         %assetId = %assetId @ "Dpad_Left";  
+      else if(%button $= "dpadr")
+         %assetId = %assetId @ "Dpad_Right"; 
+         
+      %assetId = %assetId @ "_image";
+   }
+   
+   if(!AssetDatabase.isDeclaredAsset(%assetId))
+      %assetId = "UI:Keyboard_Black_Blank_image";
+   
+   return %assetId;
+}
+
+function createLangTable(%name)
+{
+    // create a langtable, and global variable to be referenced by GUI elements 
+    // opeates as follows:
+    // root gui element contains langTableMod = mylang;
+    // subelements inherit or override
+    // langTableMod then informs the underlying system to look for a $I18N::mylang
+    // this holds a reference to a table defined in .lso files, using data/UI/langs/languageMap global defines as a key
+    new LangTable(%name){};
+    eval("$I18N::"@ %name @"="@ %name @".getId();");
+}
+
+function addLanguage(%langTable, %filename, %alias)
+{
+    // generate an .lso file and if a languageMap file does not exist, it as well
+    %needLangMap = true;
+    if(isFile("data/UI/langs/languageMap"))
+        %needLangMap = false;        
+        
+    CompileLanguage("data/UI/langs/"@ %filename @".txt", %needLangMap);    
+    %langTable.addLanguage("data/UI/langs/"@ %filename @".lso", %alias);
+}
+
+function switchLanguage(%language) //use here the #n as it's the order of inclusion
+{
+    // swap existing language from the current core langtable and refresh the gui contents
+	getCoreLangTable().setCurrentLanguage(%language);
+	Canvas.setContent(Canvas.getContent());
+}

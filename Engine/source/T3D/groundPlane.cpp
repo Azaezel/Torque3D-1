@@ -76,6 +76,7 @@ GroundPlane::GroundPlane()
      mScaleU( 1.0f ),
      mScaleV( 1.0f ),
      mMaterial( NULL ),
+     mMaterialInst(NULL),
      mPhysicsRep( NULL ),
      mMin( 0.0f, 0.0f ),
      mMax( 0.0f, 0.0f )
@@ -85,12 +86,16 @@ GroundPlane::GroundPlane()
 
    mConvexList = new Convex;
    mTypeMask |= TerrainLikeObjectType;
+
+   INIT_ASSET(Material);
 }
 
 GroundPlane::~GroundPlane()
 {
-   if( mMaterial )
-      SAFE_DELETE( mMaterial );
+   mMaterial = nullptr;
+
+   if(mMaterialInst)
+      SAFE_DELETE(mMaterialInst);
 
    mConvexList->nukeList();
    SAFE_DELETE( mConvexList );
@@ -98,12 +103,14 @@ GroundPlane::~GroundPlane()
 
 void GroundPlane::initPersistFields()
 {
+   docsURL;
    addGroup( "Plane" );
 
       addField( "squareSize",    TypeF32,          Offset( mSquareSize, GroundPlane ), "Square size in meters to which %GroundPlane subdivides its geometry." );
       addField( "scaleU",        TypeF32,          Offset( mScaleU, GroundPlane ), "Scale of texture repeat in the U direction." );
       addField( "scaleV",        TypeF32,          Offset( mScaleV, GroundPlane ), "Scale of texture repeat in the V direction." );
-      addField( "material",      TypeMaterialName, Offset( mMaterialName, GroundPlane ), "Name of Material used to render %GroundPlane's surface." );
+
+      INITPERSISTFIELD_MATERIALASSET(Material, GroundPlane, "The material used to render the ground plane.");
 
    endGroup( "Plane" );
    
@@ -150,6 +157,12 @@ bool GroundPlane::onAdd()
 
 void GroundPlane::onRemove()
 {
+   U32 assetStatus = MaterialAsset::getAssetErrCode(mMaterialAsset);
+   if (assetStatus == AssetBase::Ok)
+      AssetDatabase.releaseAsset(mMaterialAsset.getAssetId());
+
+   //SAFE_DELETE(mMaterialInst);
+
    SAFE_DELETE( mPhysicsRep );
 
    removeFromScene();
@@ -187,7 +200,8 @@ U32 GroundPlane::packUpdate( NetConnection* connection, U32 mask, BitStream* str
    stream->write( mSquareSize );
    stream->write( mScaleU );
    stream->write( mScaleV );
-   stream->write( mMaterialName );
+
+   PACK_ASSET(connection, Material);
 
    return retMask;
 }
@@ -199,7 +213,8 @@ void GroundPlane::unpackUpdate( NetConnection* connection, BitStream* stream )
    stream->read( &mSquareSize );
    stream->read( &mScaleU );
    stream->read( &mScaleV );
-   stream->read( &mMaterialName );
+
+   UNPACK_ASSET(connection, Material);
 
    // If we're added then something possibly changed in 
    // the editor... do an update of the material and the
@@ -213,23 +228,18 @@ void GroundPlane::unpackUpdate( NetConnection* connection, BitStream* stream )
 
 void GroundPlane::_updateMaterial()
 {
-   if( mMaterialName.isEmpty() )
+   if (mMaterialAsset.notNull())
    {
-      Con::warnf( "GroundPlane::_updateMaterial - no material set; defaulting to 'WarningMaterial'" );
-      mMaterialName = "WarningMaterial";
+      if (mMaterialInst && String(mMaterialAsset->getMaterialDefinitionName()).equal(mMaterialInst->getMaterial()->getName(), String::NoCase))
+         return;
+
+      SAFE_DELETE(mMaterialInst);
+
+      mMaterialInst = MATMGR->createMatInstance(mMaterialAsset->getMaterialDefinitionName(), getGFXVertexFormat< VertexType >());
+
+      if (!mMaterialInst)
+         Con::errorf("GroundPlane::_updateMaterial - no Material called '%s'", mMaterialAsset->getMaterialDefinitionName());
    }
-
-   // If the material name matches then don't 
-   // bother updating it.
-   if (  mMaterial && 
-         mMaterialName.compare( mMaterial->getMaterial()->getName() ) == 0 )
-      return;
-
-   SAFE_DELETE( mMaterial );
-
-   mMaterial = MATMGR->createMatInstance( mMaterialName, getGFXVertexFormat< VertexType >() );
-   if ( !mMaterial )
-      Con::errorf( "GroundPlane::_updateMaterial - no material called '%s'", mMaterialName.c_str() );
 }
 
 bool GroundPlane::castRay( const Point3F& start, const Point3F& end, RayInfo* info )
@@ -242,7 +252,7 @@ bool GroundPlane::castRay( const Point3F& start, const Point3F& end, RayInfo* in
       info->t = t;
       info->setContactPoint( start, end );
       info->normal.set( 0, 0, 1 );
-      info->material = mMaterial;
+      info->material = mMaterialInst;
       info->object = this;
       info->distance = 0;
       info->faceDot = 0;
@@ -336,7 +346,7 @@ bool GroundPlane::buildPolyList( PolyListContext context, AbstractPolyList* poly
    }
 
    Box3F planeBox = getPlaneBox();
-   polyList->addBox( planeBox, mMaterial );
+   polyList->addBox( planeBox, mMaterialInst );
 
    return true;
 }
@@ -353,7 +363,7 @@ void GroundPlane::prepRenderImage( SceneRenderState* state )
 
    // If we don't have a material instance after the override then 
    // we can skip rendering all together.
-   BaseMatInstance *matInst = state->getOverrideMaterial( mMaterial );
+   BaseMatInstance *matInst = state->getOverrideMaterial(mMaterialInst);
    if ( !matInst )
       return;
 
@@ -433,7 +443,7 @@ void GroundPlane::createGeometry( const Frustum& frustum )
    U32 width = mCeil( ( max.x - min.x ) / mSquareSize );
    if( width > MAX_WIDTH )
    {
-      mSquareSize = mCeil( ( max.x - min.x ) / MAX_WIDTH );
+      mSquareSize = mCeil( ( max.x - min.x ) / (F32)MAX_WIDTH );
       width = MAX_WIDTH;
    }
    else if( !width )
@@ -442,7 +452,7 @@ void GroundPlane::createGeometry( const Frustum& frustum )
    U32 height = mCeil( ( max.y - min.y ) / mSquareSize );
    if( height > MAX_HEIGHT )
    {
-      mSquareSize = mCeil( ( max.y - min.y ) / MAX_HEIGHT );
+      mSquareSize = mCeil( ( max.y - min.y ) / (F32)MAX_HEIGHT );
       height = MAX_HEIGHT;
    }
    else if( !height )
@@ -580,6 +590,16 @@ void GroundPlane::generateGrid( U32 width, U32 height, F32 squareSize,
    }
 
    outPrimitives.unlock();
+}
+
+void GroundPlane::getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList)
+{
+   U32 assetStatus = MaterialAsset::getAssetErrCode(mMaterialAsset);
+   if (assetStatus == AssetBase::Ok)
+   {
+      usedAssetsList->push_back_unique(mMaterialAsset->getAssetId());
+   }
+
 }
 
 DefineEngineMethod( GroundPlane, postApply, void, (),,

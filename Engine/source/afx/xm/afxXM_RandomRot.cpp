@@ -60,7 +60,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_RandomRotData);
-  DECLARE_CATEGORY("AFX");
 };
 
 class afxXM_RandomRot : public afxXM_Base
@@ -107,6 +106,7 @@ afxXM_RandomRotData::afxXM_RandomRotData(const afxXM_RandomRotData& other, bool 
 
 void afxXM_RandomRotData::initPersistFields()
 {
+   docsURL;
   addField("axis",      TypePoint3F,  Offset(axis, afxXM_RandomRotData),
     "...");
   addField("thetaMin",  TypeF32,      Offset(theta_min, afxXM_RandomRotData),

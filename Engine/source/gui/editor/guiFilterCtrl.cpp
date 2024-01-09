@@ -50,6 +50,7 @@ GuiFilterCtrl::GuiFilterCtrl()
 
 void GuiFilterCtrl::initPersistFields()
 {
+   docsURL;
    addField("controlPoints", TypeS32, Offset(mControlPointRequest, GuiFilterCtrl),
       "Total number of control points in the spline curve." );
    addField("filter", TypeF32Vector, Offset(mFilter, GuiFilterCtrl),
@@ -83,13 +84,13 @@ DefineEngineStringlyVariadicMethod( GuiFilterCtrl, setValue, void, 3, 20, "(f1, 
 {
    Filter filter;
 
-   StringStackWrapper args(argc - 2, argv + 2);
+   ConsoleValueToStringArrayWrapper args(argc - 2, argv + 2);
 
    filter.set(args.count(), args);
 	object->set(filter);
 }
 
-DefineEngineMethod( GuiFilterCtrl, identity, void, (), , "Reset the filtering."
+DefineEngineMethod( GuiFilterCtrl, resetFiltering, void, (), , "Reset the filtering."
 			  "@internal")
 {
    object->identity();

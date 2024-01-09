@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(AssetBrowser) {
+$guiContent = new GuiControl(AssetBrowser) {
    position = "0 0";
    extent = "1024 768";
    minExtent = "8 2";
@@ -30,7 +30,7 @@
       anchorBottom = "0";
       anchorLeft = "1";
       anchorRight = "0";
-      position = "321 334";
+      position = "120 334";
       extent = "381 99";
       minExtent = "48 92";
       horizSizing = "center";
@@ -138,8 +138,8 @@
       };
    };
    new GuiWindowCtrl(AssetBrowserWindow) {
-      text = "Asset Browser";
-      resizeWidth = "1";
+      text = "::  Asset Browser";
+      resizeWidth = "0";
       resizeHeight = "1";
       canMove = "1";
       canClose = "1";
@@ -154,11 +154,12 @@
       anchorBottom = "0";
       anchorLeft = "1";
       anchorRight = "0";
-      position = "204 80";
-      extent = "615 608";
-      minExtent = "383 274";
-      horizSizing = "center";
-      vertSizing = "center";
+      //position = "204 80";
+      Position = "0" SPC getWord($pref::Video::mode, 1) - 360 - 60;
+      extent = getWord($pref::Video::mode, 0) - 360 SPC "360";
+      minExtent = "360 120";
+      horizSizing = "windowRelative";
+      vertSizing = "windowRelative";
       profile = "ToolsGuiWindowProfile";
       visible = "1";
       active = "1";
@@ -181,7 +182,7 @@
          dynamicSize = "0";
          padding = "0 0 0 0";
          position = "0 24";
-         extent = "615 30";
+         extent = "615 32";
          minExtent = "8 2";
          horizSizing = "right";
          vertSizing = "bottom";
@@ -196,19 +197,19 @@
          canSaveDynamicFields = "0";
 
          new GuiIconButtonCtrl() {
-            buttonMargin = "4 4";
-            iconBitmap = "tools/gui/images/stencilIcons/phone.png";
+            buttonMargin = "0 0";
+            bitmapAsset = "ToolsModule:phone_image";
             iconLocation = "Left";
-            sizeIconToButton = "1";
-            makeIconSquare = "1";
+            sizeIconToButton = "0";
+            makeIconSquare = "0";
             textLocation = "Left";
-            textMargin = "4";
+            textMargin = "0";
             autoSize = "0";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
             position = "0 0";
-            extent = "30 30";
+            extent = "32 32";
             minExtent = "8 2";
             horizSizing = "right";
             vertSizing = "bottom";
@@ -222,21 +223,22 @@
             internalName = "windowOptionsButton";
             canSave = "1";
             canSaveDynamicFields = "0";
+            buttonMargin = "-2 0";
          };
          new GuiIconButtonCtrl() {
-            buttonMargin = "4 4";
-            iconBitmap = "tools/gui/images/stencilIcons/plus.png";
+            buttonMargin = "0 0";
+            bitmapAsset = "ToolsModule:plus_image";
             iconLocation = "Left";
-            sizeIconToButton = "1";
-            makeIconSquare = "1";
+            sizeIconToButton = "0";
+            makeIconSquare = "0";
             textLocation = "Center";
-            textMargin = "4";
+            textMargin = "0";
             autoSize = "0";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            position = "30 0";
-            extent = "30 30";
+            position = "32 0";
+            extent = "32 32";
             minExtent = "8 2";
             horizSizing = "right";
             vertSizing = "bottom";
@@ -247,24 +249,25 @@
             tooltip = "Create a new asset in the current directory";
             hovertime = "1000";
             isContainer = "0";
-            internalName = "CreateAssetButton";
+            class="CreateAssetButton";
             canSave = "1";
             canSaveDynamicFields = "0";
+            buttonMargin = "-2 0";
          };
          new GuiIconButtonCtrl() {
-            buttonMargin = "4 4";
-            iconBitmap = "tools/gui/images/stencilIcons/import.png";
+            buttonMargin = "0 0";
+            bitmapAsset = "ToolsModule:import_image";
             iconLocation = "Left";
-            sizeIconToButton = "1";
-            makeIconSquare = "1";
+            sizeIconToButton = "0";
+            makeIconSquare = "0";
             textLocation = "Center";
-            textMargin = "4";
+            textMargin = "0";
             autoSize = "0";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            position = "60 0";
-            extent = "30 30";
+            position = "64 0";
+            extent = "32 32";
             minExtent = "8 2";
             horizSizing = "right";
             vertSizing = "bottom";
@@ -276,23 +279,25 @@
             hovertime = "1000";
             isContainer = "0";
             internalName = "ImportAssetButton";
+            command="AssetBrowser.importNewFile();";
             canSave = "1";
             canSaveDynamicFields = "0";
+            buttonMargin = "-2 0";
          };
          new GuiIconButtonCtrl() {
-            buttonMargin = "4 4";
-            iconBitmap = "tools/gui/images/stencilIcons/filter.png";
+            buttonMargin = "0 0";
+            bitmapAsset = "ToolsModule:filter_image";
             iconLocation = "Left";
-            sizeIconToButton = "1";
-            makeIconSquare = "1";
+            sizeIconToButton = "0";
+            makeIconSquare = "0";
             textLocation = "Center";
-            textMargin = "4";
+            textMargin = "0";
             autoSize = "0";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            position = "90 0";
-            extent = "30 30";
+            position = "96 0";
+            extent = "32 32";
             minExtent = "8 2";
             horizSizing = "right";
             vertSizing = "bottom";
@@ -307,21 +312,22 @@
             internalName = "filterAssetsButton";
             canSave = "1";
             canSaveDynamicFields = "0";
+            buttonMargin = "-2 0";
          };
          new GuiIconButtonCtrl() {
-            buttonMargin = "4 4";
-            iconBitmap = "tools/gui/images/stencilIcons/gear.png";
+            buttonMargin = "0 0";
+            bitmapAsset = "ToolsModule:gear_image";
             iconLocation = "Left";
-            sizeIconToButton = "1";
-            makeIconSquare = "1";
+            sizeIconToButton = "0";
+            makeIconSquare = "0";
             textLocation = "Center";
-            textMargin = "4";
+            textMargin = "0";
             autoSize = "0";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            position = "120 0";
-            extent = "30 30";
+            position = "128 0";
+            extent = "32 32";
             minExtent = "8 2";
             horizSizing = "right";
             vertSizing = "bottom";
@@ -336,21 +342,22 @@
             internalName = "editAssetSettingsButton";
             canSave = "1";
             canSaveDynamicFields = "0";
+            buttonMargin = "-2 0";
          };
          new GuiIconButtonCtrl() {
-            buttonMargin = "4 4";
-            iconBitmap = "tools/gui/images/stencilIcons/warning.png";
+            buttonMargin = "0 0";
+            bitmapAsset = "ToolsModule:warning_image";
             iconLocation = "Left";
-            sizeIconToButton = "1";
-            makeIconSquare = "1";
+            sizeIconToButton = "0";
+            makeIconSquare = "0";
             textLocation = "Center";
-            textMargin = "4";
+            textMargin = "0";
             autoSize = "0";
             groupNum = "-1";
             buttonType = "PushButton";
             useMouseEvents = "0";
-            position = "150 0";
-            extent = "30 30";
+            position = "160 0";
+            extent = "32 32";
             minExtent = "8 2";
             horizSizing = "right";
             vertSizing = "bottom";
@@ -365,6 +372,37 @@
             internalName = "AutoImportAssetButton";
             canSave = "1";
             canSaveDynamicFields = "0";
+            buttonMargin = "-2 0";
+         };
+         new GuiIconButtonCtrl() {
+            buttonMargin = "0 0";
+            bitmapAsset = "ToolsModule:console_image";
+            iconLocation = "Left";
+            sizeIconToButton = "0";
+            makeIconSquare = "0";
+            textLocation = "Center";
+            textMargin = "0";
+            autoSize = "0";
+            groupNum = "-1";
+            buttonType = "PushButton";
+            useMouseEvents = "0";
+            position = "192 0";
+            extent = "32 32";
+            minExtent = "8 2";
+            horizSizing = "right";
+            vertSizing = "bottom";
+            profile = "ToolsGuiDefaultProfile";
+            visible = "1";
+            active = "1";
+            command = "windowConsoleDlg.showWindow();";
+            tooltipProfile = "GuiToolTipProfile";
+            tooltip = "Open the console log in a window.";
+            hovertime = "1000";
+            isContainer = "0";
+            internalName = "ABwindowConsoleButton";
+            canSave = "1";
+            canSaveDynamicFields = "0";
+            buttonMargin = "-2 0";
          };
       };
       new GuiSplitContainer(AssetBrowser_MainSplit) {
@@ -372,7 +410,7 @@
          splitterSize = "2";
          splitPoint = "190 100";
          fixedPanel = "None";
-         fixedSize = "468";
+         fixedSize = "280";
          docking = "None";
          margin = "0 0 0 0";
          padding = "0 0 0 0";
@@ -381,7 +419,7 @@
          anchorLeft = "1";
          anchorRight = "0";
          position = "3 56";
-         extent = "608 532";
+         extent = getWord($pref::Video::mode, 0) - 360 - 2 SPC "280";
          minExtent = "64 64";
          horizSizing = "relative";
          vertSizing = "height";
@@ -403,7 +441,7 @@
             anchorLeft = "1";
             anchorRight = "0";
             position = "0 0";
-            extent = "188 532";
+            extent = "188 280";
             minExtent = "0 0";
             horizSizing = "right";
             vertSizing = "bottom";
@@ -469,7 +507,7 @@
                   command="AssetBrowserFolderSearchFilter.onEdited();";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/stencilIcons/zoom.png";
+                  bitmapAsset = "ToolsModule:zoom_image";
                   bitmapMode = "Stretched";
                   autoFitExtents = "0";
                   useModifiers = "0";
@@ -479,7 +517,7 @@
                   buttonType = "PushButton";
                   useMouseEvents = "0";
                   position = "173 4";
-                  extent = "15 15";
+                  extent = "16 16";
                   minExtent = "8 2";
                   horizSizing = "left";
                   vertSizing = "bottom";
@@ -495,7 +533,7 @@
                   canSaveDynamicFields = "0";
                };
             };
-            new GuiContainer() {
+            new GuiContainer(AssetBrowserTreePanel) {
                margin = "0 0 0 0";
                padding = "0 0 0 0";
                anchorTop = "1";
@@ -503,7 +541,7 @@
                anchorLeft = "1";
                anchorRight = "0";
                position = "0 17";
-               extent = "188 516";
+               extent = "188 260";
                minExtent = "8 2";
                horizSizing = "width";
                vertSizing = "height";
@@ -516,11 +554,11 @@
                canSave = "1";
                canSaveDynamicFields = "0";
 
-               new GuiScrollCtrl() {
+               new GuiScrollCtrl(AssetBrowserTreeScroll) {
                   willFirstRespond = "1";
-                  hScrollBar = "alwaysOff";
+                  hScrollBar = "dynamic";
                   vScrollBar = "dynamic";
-                  lockHorizScroll = "1";
+                  lockHorizScroll = "0";
                   lockVertScroll = "0";
                   constantThumbHeight = "0";
                   childMargin = "0 0";
@@ -533,7 +571,7 @@
                   anchorLeft = "1";
                   anchorRight = "0";
                   position = "0 0";
-                  extent = "188 516";
+                  extent = "188 260";
                   minExtent = "8 8";
                   horizSizing = "width";
                   vertSizing = "height";
@@ -595,7 +633,7 @@
             anchorLeft = "1";
             anchorRight = "0";
             position = "192 0";
-            extent = "416 532";
+            extent = "416 260";
             minExtent = "16 16";
             horizSizing = "right";
             vertSizing = "bottom";
@@ -631,7 +669,7 @@
                canSaveDynamicFields = "0";
 
                new GuiBitmapButtonCtrl(AssetBrowser_NavigateBackBtn) {
-                  bitmap = "tools/gui/images/folderUp.png";
+                  bitmapAsset = "ToolsModule:folderUp_image";
                   bitmapMode = "Centered";
                   autoFitExtents = "0";
                   useModifiers = "0";
@@ -657,7 +695,7 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl(AssetBrowser_NavigateForwardBtn) {
-                  bitmap = "tools/gui/images/folderDown.png";
+                  bitmapAsset = "ToolsModule:folderDown_image";
                   bitmapMode = "Centered";
                   autoFitExtents = "0";
                   useModifiers = "0";
@@ -758,7 +796,7 @@
                canSaveDynamicFields = "0";
 
                new GuiBitmapButtonCtrl(AssetBrowser_VisibilityOptions) {
-                  bitmap = "tools/gui/images/visible";
+                  bitmapAsset = "ToolsModule:visible_n_image";
                   bitmapMode = "Centered";
                   autoFitExtents = "0";
                   useModifiers = "0";
@@ -770,7 +808,7 @@
                   position = "0 0";
                   extent = "23 23";
                   minExtent = "8 2";
-                  horizSizing = "left";
+                  horizSizing = "right";
                   vertSizing = "bottom";
                   profile = "ToolsGuiSolidDefaultProfile";
                   visible = "1";
@@ -814,7 +852,7 @@
                   command="AssetBrowserSearchFilter.onEdited();";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/stencilIcons/zoom.png";
+                  bitmapAsset = "ToolsModule:zoom_image";
                   bitmapMode = "Stretched";
                   autoFitExtents = "0";
                   useModifiers = "0";
@@ -840,7 +878,7 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl() {
-                  bitmap = "tools/gui/images/save-icon";
+                  bitmapAsset = "ToolsModule:save_icon_n_image";
                   bitmapMode = "Stretched";
                   autoFitExtents = "0";
                   useModifiers = "0";
@@ -867,7 +905,7 @@
                   canSaveDynamicFields = "0";
                };
             };
-            new GuiContainer() {
+            new GuiContainer(AssetListContainer) {
                margin = "0 0 0 0";
                padding = "0 0 0 0";
                anchorTop = "1";
@@ -875,7 +913,7 @@
                anchorLeft = "1";
                anchorRight = "1";
                position = "1 37";
-               extent = "416 495";
+               extent = "416 240";
                minExtent = "8 2";
                horizSizing = "width";
                vertSizing = "height";
@@ -905,7 +943,7 @@
                   anchorLeft = "1";
                   anchorRight = "0";
                   position = "0 0";
-                  extent = "416 479";
+                  extent = "416 220";
                   minExtent = "8 8";
                   horizSizing = "width";
                   vertSizing = "height";
@@ -921,7 +959,7 @@
                   new GuiMouseEventCtrl(AssetListPanelInputs) {
                      lockMouse = "0";
                      position = "1 1";
-                     extent = "414 472";
+                     extent = "414 220";
                      minExtent = "8 2";
                      horizSizing = "width";
                      vertSizing = "height";
@@ -995,11 +1033,11 @@
                   anchorBottom = "0";
                   anchorLeft = "1";
                   anchorRight = "0";
-                  position = "0 479";
-                  extent = "416 16";
+                  position = "0 220";
+                  extent = "300 16";
                   minExtent = "8 2";
                   horizSizing = "width";
-                  vertSizing = "height";
+                  vertSizing = "top";
                   profile = "ToolsGuiSolidDefaultProfile";
                   visible = "1";
                   active = "1";
@@ -1019,7 +1057,7 @@
                   anchorBottom = "0";
                   anchorLeft = "1";
                   anchorRight = "0";
-                  position = "0 475";
+                  position = "0 220";
                   extent = "269 23";
                   minExtent = "8 2";
                   horizSizing = "right";
@@ -1034,7 +1072,7 @@
                   canSaveDynamicFields = "0";
                };
                new GuiBitmapButtonCtrl(AssetBrowser_ToggleFolderPanel) {
-                  bitmap = "tools/gui/images/stencilIcons/previous.png";
+                  bitmapAsset = "ToolsModule:previous_image";
                   bitmapMode = "Stretched";
                   autoFitExtents = "0";
                   useModifiers = "0";
@@ -1043,8 +1081,8 @@
                   groupNum = "-1";
                   buttonType = "PushButton";
                   useMouseEvents = "0";
-                  position = "-2 200";
-                  extent = "18 18";
+                  position = "-2 120";
+                  extent = "16 16";
                   minExtent = "8 2";
                   horizSizing = "right";
                   vertSizing = "center";
@@ -1067,7 +1105,7 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         position = "559 588";
+         position = getWord($pref::Video::mode, 0) - 420 SPC 340;
          extent = "53 19";
          minExtent = "8 2";
          horizSizing = "left";
@@ -1084,6 +1122,22 @@
          canSave = "1";
          canSaveDynamicFields = "0";
       };
+      new GuiBitmapCtrl() {
+         bitmapAsset = "ToolsModule:smaller_image";
+         position = "5 338";
+         extent = "16 16";
+         minExtent = "8 2";
+         horizSizing = "right";
+         vertSizing = "top";
+         profile = "ToolsGuiDefaultProfile";
+         visible = "1";
+         active = "1";
+         tooltipProfile = "GuiToolTipProfile";
+         hovertime = "1000";
+         isContainer = "0";
+         canSave = "1";
+         canSaveDynamicFields = "0";
+      };
       new GuiSliderCtrl() {
          range = "0 2";
          ticks = "5";
@@ -1092,7 +1146,7 @@
          useFillBar = "0";
          fillBarColor = "255 255 255 255";
          renderTicks = "0";
-         position = "8 588";
+         position = "24 340";
          extent = "75 20";
          minExtent = "8 2";
          horizSizing = "right";
@@ -1108,7 +1162,154 @@
          class = "assetBrowserPreviewSlider";
          canSave = "1";
          canSaveDynamicFields = "0";
+         command = "AssetBrowser-->previewSlider.onMouseDragged();";
       };
+      new GuiBitmapCtrl() {
+         bitmapAsset = "ToolsModule:larger_image";
+         position = "103 338";
+         extent = "16 16";
+         minExtent = "8 2";
+         horizSizing = "right";
+         vertSizing = "top";
+         profile = "ToolsGuiDefaultProfile";
+         visible = "1";
+         active = "1";
+         tooltipProfile = "GuiToolTipProfile";
+         hovertime = "1000";
+         isContainer = "0";
+         canSave = "1";
+         canSaveDynamicFields = "0";
+      };
+      new GuiButtonCtrl(assetBrowser_Tab1) {
+         text = "Tab1 Text 1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+         position = "5 1";
+         extent = "95 20";
+         minExtent = "8 2";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         profile = "ToolsGuiEditorTabButton";
+         visible = "1";
+         hidden = "1";
+         active = "1";
+         command = "";
+         tooltipProfile = "ToolsGuiToolTipProfile";
+         ToolTip = "Bring this window to the front";
+         hovertime = "1000";
+         isContainer = "0";
+         canSave = "0";
+         canSaveDynamicFields = "0";
+      };
+      new GuiButtonCtrl(assetBrowser_Tab2) {
+         text = "Tab1 Text 2";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+         position = "105 1";
+         extent = "95 20";
+         minExtent = "8 2";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         profile = "ToolsGuiEditorTabButton";
+         visible = "1";
+         hidden = "1";
+         active = "1";
+         command = "";
+         tooltipProfile = "ToolsGuiToolTipProfile";
+         ToolTip = "Bring this window to the front";
+         hovertime = "1000";
+         isContainer = "0";
+         canSave = "0";
+         canSaveDynamicFields = "0";
+      };
+      new GuiButtonCtrl(assetBrowser_Tab3) {
+         text = "Tab1 Text 3";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+         position = "205 1";
+         extent = "95 20";
+         minExtent = "8 2";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         profile = "ToolsGuiEditorTabButton";
+         visible = "1";
+         hidden = "1";
+         active = "1";
+         command = "";
+         tooltipProfile = "ToolsGuiToolTipProfile";
+         ToolTip = "Bring this window to the front";
+         hovertime = "1000";
+         isContainer = "0";
+         canSave = "0";
+         canSaveDynamicFields = "0";
+      };
+      new GuiButtonCtrl(assetBrowser_Tab4) {
+         text = "Tab1 Text 4";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+         position = "305 1";
+         extent = "95 20";
+         minExtent = "8 2";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         profile = "ToolsGuiEditorTabButton";
+         visible = "1";
+         hidden = "1";
+         active = "1";
+         command = "";
+         tooltipProfile = "ToolsGuiToolTipProfile";
+         ToolTip = "Bring this window to the front";
+         hovertime = "1000";
+         isContainer = "0";
+         canSave = "0";
+         canSaveDynamicFields = "0";
+      };
+      new GuiBitmapButtonCtrl(AssetBrowserWindow_UnDockBtn) {
+         canSaveDynamicFields = "0";
+         internalName = "";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "left";
+         VertSizing = "bottom";
+         Position = getWord($pref::Video::mode, 0) - 407 SPC "1";
+         Extent = "18 18";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "1";
+         Command = "AssetBrowserWindow.releasePanel();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Detach Panel";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:panel_undock_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+      };
+      new GuiBitmapButtonCtrl(AssetBrowserWindow_DockBtn) {
+         canSaveDynamicFields = "0";
+         internalName = "";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "left";
+         VertSizing = "bottom";
+         Position = getWord($pref::Video::mode, 0) - 407 SPC "1";
+         Extent = "18 18";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "0";
+         Command = "AssetBrowserWindow.dockPanel();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Dock Panel";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:panel_dock_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+      };    
    };
 };
 //--- OBJECT WRITE END ---

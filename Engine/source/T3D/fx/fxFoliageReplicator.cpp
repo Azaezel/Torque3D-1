@@ -87,13 +87,13 @@ GFXImplementVertexFormat( GFXVertexFoliage )
 //
 //------------------------------------------------------------------------------
 //
-//	Put this in /example/common/editor/EditorGui.cs in [function Creator::init( %this )]
+//	Put this in /example/common/editor/EditorGui.tscript in [function Creator::init( %this )]
 //	
 //   %Environment_Item[8] = "fxFoliageReplicator";  <-- ADD THIS.
 //
 //------------------------------------------------------------------------------
 //
-//	Put this in /example/common/client/missionDownload.cs in [function clientCmdMissionStartPhase3(%seq,%missionName)] (line 65)
+//	Put this in /example/common/client/missionDownload.tscript in [function clientCmdMissionStartPhase3(%seq,%missionName)] (line 65)
 //	after codeline 'onPhase2Complete();'.
 //
 //	StartFoliageReplication();
@@ -345,6 +345,7 @@ fxFoliageReplicator::~fxFoliageReplicator()
 
 void fxFoliageReplicator::initPersistFields()
 {
+   docsURL;
    // Add out own persistent fields.
    addGroup( "Debugging" );	// MM: Added Group Header.
       addField( "UseDebugInfo",        TypeBool,      Offset( mFieldData.mUseDebugInfo,         fxFoliageReplicator ), "Culling bins are drawn when set to true." );
@@ -1520,14 +1521,10 @@ void fxFoliageReplicator::renderObject(ObjectRenderInst *ri, SceneRenderState *s
 
          // Debug SB
          desc.samplersDefined = true;
-         desc.samplers[0].textureColorOp = GFXTOPDisable;
-         desc.samplers[1].textureColorOp = GFXTOPDisable;
 
          mDebugSB = GFX->createStateBlock(desc);
 
          // Render SB
-         desc.samplers[0].textureColorOp = GFXTOPModulate;
-         desc.samplers[1].textureColorOp = GFXTOPModulate;
          desc.samplers[1].addressModeU = GFXAddressClamp;
          desc.samplers[1].addressModeV = GFXAddressClamp;
 

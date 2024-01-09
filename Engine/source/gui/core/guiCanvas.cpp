@@ -94,6 +94,33 @@ ConsoleDocClass( GuiCanvas,
 
    "@ingroup GuiCore\n");
 
+   ImplementEnumType(KeyboardTranslationMode,
+      "Modes for handling keyboard translation or native accelerator requests.\n\n")
+      { GuiCanvas::TranslationMode_Platform, "Platform",
+         "Requests will be passed to the platform window for handling." },
+      { GuiCanvas::TranslationMode_Callback, "Callback",
+         "Script callbacks will be issued to notify and allow override of these events." },
+      { GuiCanvas::TranslationMode_Ignore, "Ignore",
+         "Requsts to enable/disable keyboard translations or native accelerators will be ignored "
+         "with no callback triggered." },
+   EndImplementEnumType;
+
+   IMPLEMENT_CALLBACK(GuiCanvas, onSetKeyboardTranslationEnabled, bool, (bool enable), (enable),
+      "Called when the canvas receives an enableKeyboardTranslation request. This is usually the "
+      "result of a GuitTextInputCtrl gaining or losing focus. Return true to allow the request "
+      "to be passed to the platform window. Return false to override the request and handle it in script.\n\n"
+      "@note This callback is only issued if keyTranslationMode is set to \"Callback\" for this canvas.\n"
+      "@param enable Requested keyboard translation state.\n"
+      "@see KeyboardTranslationMode\n");
+
+   IMPLEMENT_CALLBACK(GuiCanvas, onSetNativeAcceleratorsEnabled, bool, (bool enable), (enable),
+      "Called when the canvas receives a setNativeAcceleratorsEnabled request. This is usually the "
+      "result of a GuitTextInputCtrl gaining or losing focus. Return true to allow the request to "
+      "be passed to the platform window. Return false to override the request and handle it in script.\n\n"
+      "@note This callback is only issued if nativeAcceleratorMode is set to \"Callback\" for this canvas.\n"
+      "@param enable Requested accelerator state.\n"
+      "@see KeyboardTranslationMode\n");
+
 ColorI gCanvasClearColor( 255, 0, 255 ); ///< For GFX->clear
 
 extern InputModifiers convertModifierBits(const U32 in);
@@ -127,6 +154,8 @@ GuiCanvas::GuiCanvas(): GuiControl(),
                         mHoverPositionSet(false),
                         mLeftMouseLast(false),
                         mHoverLeftControlTime(0),
+                        mKeyTranslationMode(TranslationMode_Platform),
+                        mNativeAcceleratorMode(TranslationMode_Platform),
                         mMiddleMouseLast(false),
                         mRightMouseLast(false),
                         mMouseDownPoint(0.0f,0.0f),
@@ -151,6 +180,7 @@ GuiCanvas::GuiCanvas(): GuiControl(),
    mNumFences = 0;
 #endif
    mConsumeLastInputEvent = false;
+   mLastInputDeviceType = -1;
 }
 
 GuiCanvas::~GuiCanvas()
@@ -172,6 +202,7 @@ bool GuiCanvas::setProtectedNumFences( void *object, const char *index, const ch
 
 void GuiCanvas::initPersistFields()
 {
+   docsURL;
    addGroup("Mouse Handling");
       addField("alwaysHandleMouseButtons", TypeBool, Offset(mAlwaysHandleMouseButtons, GuiCanvas),
          "Deal with mouse buttons, even if the cursor is hidden." );
@@ -182,6 +213,13 @@ void GuiCanvas::initPersistFields()
 
    addField("displayWindow", TypeBool, Offset(mDisplayWindow, GuiCanvas), "Controls if the canvas window is rendered or not." );
    endGroup("Canvas Rendering");
+
+   addGroup("KeyboardMode Callbacks");
+   addField("keyTranslationMode", TYPEID< KeyTranslationMode >(), Offset(mKeyTranslationMode, GuiCanvas),
+      "How to handle enable/disable keyboard translation requests. \"Platform\", \"Callback\" or \"Ignore\".\n");
+   addField("nativeAcceleratorMode", TYPEID< KeyTranslationMode >(), Offset(mNativeAcceleratorMode, GuiCanvas),
+      "How to handle enable/disable native accelerator requests. \"Platform\", \"Callback\" or \"Ignore\".\n");
+   endGroup("KeyboardMode Callbacks");
 
    Parent::initPersistFields();
 }
@@ -258,17 +296,19 @@ bool GuiCanvas::onAdd()
    // Make sure we're able to render.
    newDevice->setAllowRender( true );
 
-   if(mDisplayWindow)
+   // NULL device returns a nullptr for getPlatformWindow
+   PlatformWindow* window = getPlatformWindow();
+   if (mDisplayWindow && window)
    {
-      getPlatformWindow()->show();
+      window->show();
       WindowManager->setDisplayWindow(true);
-      getPlatformWindow()->setDisplayWindow(true);
+      window->setDisplayWindow(true);
    }
-   else
+   else if (window)
    {
-      getPlatformWindow()->hide();
+      window->hide();
       WindowManager->setDisplayWindow(false);
-      getPlatformWindow()->setDisplayWindow(false);
+      window->setDisplayWindow(false);
    }
 
    // Propagate add to parents.
@@ -292,7 +332,7 @@ void GuiCanvas::onRemove()
 
    Parent::onRemove();
 }
-
+#ifdef TORQUE_TOOLS
 void GuiCanvas::setMenuBar(SimObject *obj)
 {
     GuiControl *oldMenuBar = mMenuBarCtrl;
@@ -344,7 +384,7 @@ void GuiCanvas::setMenuBar(SimObject *obj)
            newMenu->buildWindowAcceleratorMap(*getPlatformWindow()->getInputGenerator());
     }
 }
-
+#endif
 void GuiCanvas::setWindowTitle(const char *newTitle)
 {
    if (mPlatformWindow)
@@ -440,20 +480,32 @@ Point2I GuiCanvas::getWindowSize()
 
 void GuiCanvas::enableKeyboardTranslation()
 {
-   AssertISV(mPlatformWindow, "GuiCanvas::enableKeyboardTranslation - no window present!");
-   mPlatformWindow->setKeyboardTranslation(true);
+   if ((mKeyTranslationMode == TranslationMode_Platform) ||
+      ((mKeyTranslationMode == TranslationMode_Callback) && onSetKeyboardTranslationEnabled_callback(true)))
+   {
+      AssertISV(mPlatformWindow, "GuiCanvas::enableKeyboardTranslation - no window present!");
+      mPlatformWindow->setKeyboardTranslation(true);
+   }
 }
 
 void GuiCanvas::disableKeyboardTranslation()
 {
-   AssertISV(mPlatformWindow, "GuiCanvas::disableKeyboardTranslation - no window present!");
-   mPlatformWindow->setKeyboardTranslation(false);
+   if ((mKeyTranslationMode == TranslationMode_Platform) ||
+      ((mKeyTranslationMode == TranslationMode_Callback) && onSetKeyboardTranslationEnabled_callback(false)))
+   {
+      AssertISV(mPlatformWindow, "GuiCanvas::disableKeyboardTranslation - no window present!");
+      mPlatformWindow->setKeyboardTranslation(false);
+   }
 }
 
 void GuiCanvas::setNativeAcceleratorsEnabled( bool enabled )
 {
-   AssertISV(mPlatformWindow, "GuiCanvas::setNativeAcceleratorsEnabled - no window present!");
-   mPlatformWindow->setAcceleratorsEnabled( enabled );
+   if ((mNativeAcceleratorMode == TranslationMode_Platform) ||
+      ((mNativeAcceleratorMode == TranslationMode_Callback) && onSetNativeAcceleratorsEnabled_callback(enabled)))
+   {
+      AssertISV(mPlatformWindow, "GuiCanvas::setNativeAcceleratorsEnabled - no window present!");
+      mPlatformWindow->setAcceleratorsEnabled(enabled);
+   }
 }
 
 void GuiCanvas::setForceMouseToGUI(bool onOff)
@@ -499,8 +551,7 @@ void GuiCanvas::setCursorPos(const Point2I &pt)
    }
    else
    {
-      Point2I screenPt( mPlatformWindow->clientToScreen( pt ) );
-      mPlatformWindow->setCursorPosition( screenPt.x, screenPt.y ); 
+      mPlatformWindow->setCursorPosition(pt.x, pt.y);
    }
 }
 
@@ -636,6 +687,8 @@ bool GuiCanvas::tabPrev(void)
 bool GuiCanvas::processInputEvent(InputEventInfo &inputEvent)
 {
    mConsumeLastInputEvent = true;
+   mLastInputDeviceType = inputEvent.deviceType;
+
    // First call the general input handler (on the extremely off-chance that it will be handled):
    if (mFirstResponder &&  mFirstResponder->onInputEvent(inputEvent))
    {
@@ -1389,10 +1442,10 @@ void GuiCanvas::setContentControl(GuiControl *gui)
 
       Sim::getGuiGroup()->addObject( ctrl );
    }
-
+#ifdef TORQUE_TOOLS
    // set current menu bar
    setMenuBar( mMenuBarCtrl );
-
+#endif
    // lose the first responder from the old GUI
    GuiControl* responder = gui->findFirstTabable();
    if(responder)
@@ -1760,7 +1813,11 @@ void GuiCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = true */)
       const char *pref = Con::getVariable( "$pref::Video::mode" );
       mode.parseFromString( pref );
       mode.antialiasLevel = 0;
+      Point2I winPos = mPlatformWindow->getPosition(); // Save position so we can put window back.
       mPlatformWindow->setVideoMode(mode);
+      // setVideoMode (above) will center the window on the display device. If the window had been positioned
+      // by the user or from script, put it back where it was before the light manager change.
+      mPlatformWindow->setPosition(winPos);
 
       Con::printf( "AntiAliasing has been disabled; it is not compatible with AdvancedLighting." );
    }
@@ -1772,7 +1829,11 @@ void GuiCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = true */)
       if ( prefAA != mode.antialiasLevel )
       {
          mode.parseFromString( pref );
+         Point2I winPos = mPlatformWindow->getPosition(); // Save position so we can put window back.
          mPlatformWindow->setVideoMode(mode);
+         // setVideoMode (above) will center the window on the display device. If the window had been positioned
+         // by the user or from script, put it back where it was before the light manager change.
+         mPlatformWindow->setPosition(winPos);
 
          Con::printf( "AntiAliasing has been enabled while running BasicLighting." );
       }
@@ -1854,7 +1915,7 @@ void GuiCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = true */)
 
    // Clear the current viewport area
    GFX->setViewport( screenRect );
-   GFX->clear( GFXClearZBuffer | GFXClearStencil | GFXClearTarget, gCanvasClearColor, 1.0f, 0 );
+   GFX->clear( GFXClearZBuffer | GFXClearStencil | GFXClearTarget, gCanvasClearColor, 0.0f, 0 );
 
    resetUpdateRegions();
 
@@ -2078,6 +2139,26 @@ void GuiCanvas::setFirstResponder( GuiControl* newResponder )
       
    if( newResponder && ( newResponder != oldResponder ) )
       newResponder->onGainFirstResponder();
+}
+
+StringTableEntry GuiCanvas::getLastInputDeviceType()
+{
+   switch (mLastInputDeviceType)
+   {
+      case KeyboardDeviceType:
+         return StringTable->insert("Keyboard");
+         break;
+
+      case GamepadDeviceType:
+         return StringTable->insert("Gamepad");
+         break;
+
+      case MouseDeviceType:
+         return StringTable->insert("Mouse");
+         break;
+   }
+
+   return StringTable->EmptyString();
 }
 
 DefineEngineMethod( GuiCanvas, getContent, S32, (),,
@@ -2380,7 +2461,7 @@ DefineEngineMethod( GuiCanvas, getMouseControl, S32, (),,
    if (control)
       return control->getId();
    
-   return NULL;
+   return 0;
 }
 
 DefineEngineFunction(excludeOtherInstance, bool, (const char* appIdentifer),,
@@ -2735,6 +2816,7 @@ DefineEngineMethod( GuiCanvas, setFocus, void, (), , "() - Claim OS input focus 
    }
 }
 
+#ifdef TORQUE_TOOLS
 DefineEngineMethod( GuiCanvas, setMenuBar, void, ( GuiControl* menu ),,
    "Translate a coordinate from canvas window-space to screen-space.\n"
    "@param coordinate The coordinate in window-space.\n"
@@ -2742,6 +2824,7 @@ DefineEngineMethod( GuiCanvas, setMenuBar, void, ( GuiControl* menu ),,
 {
    return object->setMenuBar( menu );
 }
+#endif
 
 DefineEngineMethod( GuiCanvas, setVideoMode, void, 
                (U32 width, U32 height, bool fullscreen, U32 bitDepth, U32 refreshRate, U32 antialiasLevel), 
@@ -2894,3 +2977,7 @@ DefineEngineMethod(GuiCanvas, resetVideoMode, void, (), , "")
    }
 }
 
+DefineEngineMethod(GuiCanvas, getLastInputDevice, const char*, (), , "Returns the name of the last input device that the GuiCanvas consumed.")
+{
+   return object->getLastInputDeviceType();
+}

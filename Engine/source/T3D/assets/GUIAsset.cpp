@@ -41,20 +41,21 @@
 #endif
 
 // Debug Profiling.
+#include "console/script.h"
 #include "platform/profiler.h"
 
 //-----------------------------------------------------------------------------
 
 IMPLEMENT_CONOBJECT(GUIAsset);
 
-ConsoleType(GUIAssetPtr, TypeGUIAssetPtr, String, ASSET_ID_FIELD_PREFIX)
+ConsoleType(GUIAssetPtr, TypeGUIAssetPtr, const char*, ASSET_ID_FIELD_PREFIX)
 
 //-----------------------------------------------------------------------------
 
 ConsoleGetType(TypeGUIAssetPtr)
 {
    // Fetch asset Id.
-   return *((StringTableEntry*)dptr);
+   return *((const char**)(dptr));
 }
 
 //-----------------------------------------------------------------------------
@@ -65,13 +66,7 @@ ConsoleSetType(TypeGUIAssetPtr)
    if (argc == 1)
    {
       // Yes, so fetch field value.
-      const char* pFieldValue = argv[0];
-
-      // Fetch asset Id.
-      StringTableEntry* assetId = (StringTableEntry*)(dptr);
-
-      // Update asset value.
-      *assetId = StringTable->insert(pFieldValue);
+      *((const char**)dptr) = StringTable->insert(argv[0]);
 
       return;
    }
@@ -101,6 +96,7 @@ GUIAsset::~GUIAsset()
 
 void GUIAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -108,7 +104,7 @@ void GUIAsset::initPersistFields()
       &setScriptFile, &getScriptFile, "Path to the script file for the gui");
 
    addProtectedField("GUIFile", TypeAssetLooseFilePath, Offset(mGUIFile, GUIAsset),
-      &setScriptFile, &getScriptFile, "Path to the gui file");
+      &setGUIFile, &getGUIFile, "Path to the gui file");
 }
 
 //------------------------------------------------------------------------------
@@ -121,28 +117,28 @@ void GUIAsset::copyTo(SimObject* object)
 
 void GUIAsset::initializeAsset()
 {
-   mGUIPath = expandAssetFilePath(mGUIFile);
+   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
 
-   if (Platform::isFile(mGUIPath))
-      Con::executeFile(mGUIPath, false, false);
-
-   mScriptPath = expandAssetFilePath(mScriptFile);
-
-   if (Platform::isFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
       Con::executeFile(mScriptPath, false, false);
+
+   mGUIPath = getOwned() ? expandAssetFilePath(mGUIFile) : mGUIPath;
+
+   if (Con::isScriptFile(mGUIPath))
+      Con::executeFile(mGUIPath, false, false);
 }
 
 void GUIAsset::onAssetRefresh()
 {
-   mGUIPath = expandAssetFilePath(mGUIFile);
+   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
 
-   if (Platform::isFile(mGUIPath))
-      Con::executeFile(mGUIPath, false, false);
-
-   mScriptPath = expandAssetFilePath(mScriptFile);
-
-   if (Platform::isFile(mScriptPath))
+   if (Con::isScriptFile(mScriptPath))
       Con::executeFile(mScriptPath, false, false);
+
+   mGUIPath = getOwned() ? expandAssetFilePath(mGUIFile) : mGUIPath;
+
+   if (Con::isScriptFile(mGUIPath))
+      Con::executeFile(mGUIPath, false, false);
 }
 
 void GUIAsset::setGUIFile(const char* pScriptFile)
@@ -151,14 +147,14 @@ void GUIAsset::setGUIFile(const char* pScriptFile)
    AssertFatal(pScriptFile != NULL, "Cannot use a NULL gui file.");
 
    // Fetch image file.
-   pScriptFile = StringTable->insert(pScriptFile);
+   pScriptFile = StringTable->insert(pScriptFile, true);
 
    // Ignore no change,
    if (pScriptFile == mGUIFile)
       return;
 
    // Update.
-   mGUIFile = StringTable->insert(pScriptFile);
+   mGUIFile = getOwned() ? expandAssetFilePath(pScriptFile) : pScriptFile;
 
    // Refresh the asset.
    refreshAsset();
@@ -170,17 +166,74 @@ void GUIAsset::setScriptFile(const char* pScriptFile)
    AssertFatal(pScriptFile != NULL, "Cannot use a NULL script file.");
 
    // Fetch image file.
-   pScriptFile = StringTable->insert(pScriptFile);
+   pScriptFile = StringTable->insert(pScriptFile, true);
 
    // Ignore no change,
    if (pScriptFile == mScriptFile)
       return;
 
    // Update.
-   mScriptFile = StringTable->insert(pScriptFile);
+   mScriptFile = getOwned() ? expandAssetFilePath(pScriptFile) : pScriptFile;
 
    // Refresh the asset.
    refreshAsset();
+}
+
+StringTableEntry GUIAsset::getAssetIdByGUIName(StringTableEntry guiName)
+{
+   StringTableEntry assetId = StringTable->EmptyString();
+
+   AssetQuery* query = new AssetQuery();
+   U32 foundCount = AssetDatabase.findAssetType(query, "GUIAsset");
+   if (foundCount == 0)
+   {
+      //Didn't work, so have us fall back to a placeholder asset
+      assetId = StringTable->insert("Core_Rendering:noMaterial");
+   }
+   else
+   {
+      GuiControl* guiObject;
+      if (!Sim::findObject(guiName, guiObject))
+         return "";
+
+      StringTableEntry guiFile = guiObject->getFilename();
+
+      for (U32 i = 0; i < foundCount; i++)
+      {
+         GUIAsset* guiAsset = AssetDatabase.acquireAsset<GUIAsset>(query->mAssetList[i]);
+         if (guiAsset && guiAsset->getGUIPath() == guiFile)
+         {
+            assetId = guiAsset->getAssetId();
+            AssetDatabase.releaseAsset(query->mAssetList[i]);
+            break;
+         }
+         AssetDatabase.releaseAsset(query->mAssetList[i]);
+      }
+   }
+
+   return assetId;
+}
+
+#ifdef TORQUE_TOOLS
+DefineEngineStaticMethod(GUIAsset, getAssetIdByGUIName, const char*, (const char* guiName), (""),
+   "Queries the Asset Database to see if any asset exists that is associated with the provided GUI Name.\n"
+   "@return The AssetId of the associated asset, if any.")
+{
+   return GUIAsset::getAssetIdByGUIName(StringTable->insert(guiName));
+}
+
+DefineEngineMethod(GUIAsset, getScriptPath, const char*, (), ,
+   "Gets the script file path associated to this asset.\n"
+   "@return The full script file path.")
+{
+   return object->getScriptPath();
+}
+
+DefineEngineMethod(GUIAsset, getGUIPath, const char*, (), ,
+   "Gets the GUI file path associated to this asset.\n"
+   "@return The full script file path.")
+{
+   return object->getGUIPath();
 }
 
 //-----------------------------------------------------------------------------
@@ -212,7 +265,7 @@ GuiControl* GuiInspectorTypeGUIAssetPtr::constructEditControl()
    // Change filespec
    char szBuffer[512];
    dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"GUIAsset\", \"AssetBrowser.changeAsset\", %d, %s);",
-      mInspector->getComponentGroupTargetId(), mCaption);
+      mInspector->getIdString(), mCaption);
    mBrowseButton->setField("Command", szBuffer);
 
    // Create "Open in ShapeEditor" button
@@ -221,13 +274,13 @@ GuiControl* GuiInspectorTypeGUIAssetPtr::constructEditControl()
    dSprintf(szBuffer, sizeof(szBuffer), "echo(\"Game Object Editor not implemented yet!\");", retCtrl->getId());
    mSMEdButton->setField("Command", szBuffer);
 
-   char bitmapName[512] = "tools/worldEditor/images/toolbar/shape-editor";
-   mSMEdButton->setBitmap(bitmapName);
+   char bitmapName[512] = "ToolsModule:GameTSCtrl_image";
+   mSMEdButton->setBitmap(StringTable->insert(bitmapName));
 
    mSMEdButton->setDataField(StringTable->insert("Profile"), NULL, "GuiButtonProfile");
    mSMEdButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
    mSMEdButton->setDataField(StringTable->insert("hovertime"), NULL, "1000");
-   mSMEdButton->setDataField(StringTable->insert("tooltip"), NULL, "Open this file in the State Machine Editor");
+   mSMEdButton->setDataField(StringTable->insert("tooltip"), NULL, "Open this file in the GUI Editor");
 
    mSMEdButton->registerObject();
    addObject(mSMEdButton);
@@ -260,3 +313,4 @@ bool GuiInspectorTypeGUIAssetPtr::updateRects()
 
    return resized;
 }
+#endif

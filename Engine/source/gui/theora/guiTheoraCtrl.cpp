@@ -82,6 +82,7 @@ GuiTheoraCtrl::GuiTheoraCtrl()
 
 void GuiTheoraCtrl::initPersistFields()
 {
+   docsURL;
    addGroup( "Playback");
 
       addField( "theoraFile",       TypeStringFilename,  Offset( mFilename,         GuiTheoraCtrl ),
@@ -129,7 +130,7 @@ void GuiTheoraCtrl::setFile( const String& filename )
 
 void GuiTheoraCtrl::play()
 {
-   if( mFilename.isEmpty() )
+   if( mFilename == StringTable->EmptyString() )
       return;
    
    if( !mTheoraTexture.isPlaying() )

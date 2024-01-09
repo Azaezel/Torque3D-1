@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(RoadEditorSettingsTab,EditorGuiGroup) {
+$guiContent = new GuiControl(RoadEditorSettingsTab,EditorGuiGroup) {
    isContainer = "1";
    Profile = "ToolsGuiDefaultProfile";
    HorizSizing = "right";
@@ -15,7 +15,7 @@
 
    new GuiTabPageCtrl(ERoadEditorSettingsPage) {
       fitBook = "1";
-      text = "Road Editor";
+      text = "Decal Road Editor";
       maxLength = "1024";
       Margin = "0 0 0 0";
       Padding = "0 0 0 0";

@@ -110,7 +110,7 @@ ConsoleDocClass( RenderPassManager,
    "The render pass is used to order a set of RenderBinManager objects which are used "
    "when rendering a scene.  This class does little work itself other than managing "
    "its list of render bins.\n\n"
-   "In 'core/scripts/client/renderManager.cs' you will find the DiffuseRenderPassManager "
+   "In 'core/scripts/client/renderManager." TORQUE_SCRIPT_EXTENSION "' you will find the DiffuseRenderPassManager "
    "which is used by the C++ engine to render the scene.\n\n"
    "@see RenderBinManager\n"
    "@ingroup RenderBin\n" );
@@ -123,6 +123,7 @@ RenderPassManager::RenderBinEventSignal& RenderPassManager::getRenderBinSignal()
 
 void RenderPassManager::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 

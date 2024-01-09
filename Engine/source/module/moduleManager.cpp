@@ -72,23 +72,29 @@ S32 QSORT_CALLBACK moduleDefinitionVersionIdSort( const void* a, const void* b )
    return versionId1 > versionId2 ? -1 : versionId1 < versionId2 ? 1 : 0;
 }
 
-S32 QSORT_CALLBACK moduleDependencySort(const void* a, const void* b)
+S32 ModuleManager::moduleDependencySort(ModuleDefinition* const* a, ModuleDefinition* const* b)
 {
-   // Fetch module definitions.
-   ModuleDefinition* pDefinition1 = *(ModuleDefinition * *)a;
-   ModuleDefinition* pDefinition2 = *(ModuleDefinition * *)b;
-
-   // Fetch version Ids.
-   ModuleDefinition::typeModuleDependencyVector moduleDependencies = pDefinition1->getDependencies();
-   bool foundDependant = false;
+   // if A depends on B move A down the list
+   ModuleDefinition::typeModuleDependencyVector moduleDependencies = (*a)->getDependencies();
    for (ModuleDefinition::typeModuleDependencyVector::const_iterator dependencyItr = moduleDependencies.begin(); dependencyItr != moduleDependencies.end(); ++dependencyItr)
    {
-      if (dStrcmp(dependencyItr->mModuleId, pDefinition2->getModuleId())
-         && (dependencyItr->mVersionId == pDefinition2->getVersionId()))
-            foundDependant = true;
+      if ((String::compare(dependencyItr->mModuleId, (*b)->getModuleId()) == 0)
+         && (dependencyItr->mVersionId == (*b)->getVersionId()))
+         return 1;
    }
 
-   return foundDependant ? 1 : -1;
+   //If B depends on A, move A up the list
+   ModuleDefinition::typeModuleDependencyVector moduleDependencies2 = (*b)->getDependencies();
+   for (ModuleDefinition::typeModuleDependencyVector::const_iterator dependencyItr2 = moduleDependencies2.begin(); dependencyItr2 != moduleDependencies2.end(); ++dependencyItr2)
+   {
+      if ((String::compare(dependencyItr2->mModuleId, (*a)->getModuleId()) == 0)
+         && (dependencyItr2->mVersionId == (*a)->getVersionId()))
+         return -1;
+   }
+   //didn't find any explicit dependencies between the two, so sort by which has more
+   if (moduleDependencies.size() > moduleDependencies2.size()) return 1;
+   if (moduleDependencies.size() < moduleDependencies2.size()) return -1;
+   return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -96,6 +102,7 @@ S32 QSORT_CALLBACK moduleDependencySort(const void* a, const void* b)
 ModuleManager::ModuleManager() :
     mEnforceDependencies(true),
     mEchoInfo(false),
+    mFailGroupIfModuleFail(false),
     mDatabaseLocks( 0 ),
     mIgnoreLoadedGroups(false)
 {
@@ -134,11 +141,13 @@ void ModuleManager::onRemove()
 
 void ModuleManager::initPersistFields()
 {
+   docsURL;
     // Call parent.
     Parent::initPersistFields();
 
     addField( "EnforceDependencies", TypeBool, Offset(mEnforceDependencies, ModuleManager), "Whether the module manager enforces any dependencies on module definitions it discovers or not." );
     addField( "EchoInfo", TypeBool, Offset(mEchoInfo, ModuleManager), "Whether the module manager echos extra information to the console or not." );
+    addField( "FailGroupIfModuleFail", TypeBool, Offset(mFailGroupIfModuleFail, ModuleManager), "Whether the module manager will fail to load an entire module group if a single module fails to load.");
 }
 
 //-----------------------------------------------------------------------------
@@ -196,84 +205,32 @@ bool ModuleManager::scanModules( const char* pPath, const bool rootOnly )
     // Sanity!
     AssertFatal( pPath != NULL, "Cannot scan module with NULL path." );
 
-    // Expand module location.
-    char pathBuffer[1024];
-    Con::expandPath( pathBuffer, sizeof(pathBuffer), pPath );
-
+    String relBasePath = Platform::makeRelativePathName(pPath, NULL);
     // Info.
     if ( mEchoInfo )
     {
         Con::printSeparator();
-        Con::printf( "Module Manager: Started scanning '%s'...", pathBuffer );
+        Con::printf("Module Manager: Started scanning '%s'...", relBasePath.c_str());
     }
 
-    Vector<StringTableEntry> directories;
+    String pattern = "*.";
+    pattern += mModuleExtension;
 
-    // Find directories.
-    if ( !Platform::dumpDirectories( pathBuffer, directories, rootOnly ? 1 : -1 ) )
-    {
-        // Failed so warn.
-        Con::warnf( "Module Manager: Failed to scan module directories in path '%s'.", pathBuffer );
-        return false;
-    }
+    Torque::Path scanPath = Torque::FS::GetCwd();
+    scanPath.setPath(relBasePath);
 
-    // Fetch extension length.
-    const U32 extensionLength = dStrlen( mModuleExtension );
-
-    Vector<Platform::FileInfo> files;
-
-    // Iterate directories.
-    for( Vector<StringTableEntry>::iterator basePathItr = directories.begin(); basePathItr != directories.end(); ++basePathItr )
-    {
-        // Fetch base path.
-        StringTableEntry basePath = *basePathItr;
-
-        // Skip if we're only processing the root and this is not the root.
-        if ( rootOnly && basePathItr != directories.begin() )
-            continue;
-
-        // Find files.
-        files.clear();
-        if ( !Platform::dumpPath( basePath, files, 0 ) )
+    Vector<String> fileList;
+    S32 numModules = Torque::FS::FindByPattern(scanPath, pattern, !rootOnly, fileList, true);
+    for (S32 i = 0; i < numModules; ++i)
         {
-            // Failed so warn.
-            Con::warnf( "Module Manager: Failed to scan modules files in directory '%s'.", basePath );
-            return false;
-        }
-
-        // Iterate files.
-        for ( Vector<Platform::FileInfo>::iterator fileItr = files.begin(); fileItr != files.end(); ++fileItr )
-        {
-            // Fetch file info.
-            Platform::FileInfo* pFileInfo = fileItr;
-
-            // Fetch filename.
-            const char* pFilename = pFileInfo->pFileName;
-
-            // Find filename length.
-            const U32 filenameLength = dStrlen( pFilename );
-
-            // Skip if extension is longer than filename.
-            if ( extensionLength > filenameLength )
-                continue;
-
-            // Skip if extension not found.
-            if ( dStricmp( pFilename + filenameLength - extensionLength, mModuleExtension ) != 0 )
-                continue;
-
-            // Register module.
-            registerModule( basePath, pFileInfo->pFileName );
-        }
-
-        // Stop processing if we're only processing the root.
-        if ( rootOnly )
-            break;
+       Torque::Path modulePath = fileList[i];
+       registerModule(modulePath.getPath(), modulePath.getFullFileName());
     }
 
     // Info.
     if ( mEchoInfo )
     {
-        Con::printf( "Module Manager: Finished scanning '%s'.", pathBuffer );
+        Con::printf("Module Manager: Finished scanning '%s'.", relBasePath.c_str());
     }
 
     return true;
@@ -335,8 +292,8 @@ bool ModuleManager::loadModuleGroup( const char* pModuleGroup )
         StringTableEntry moduleId = *moduleIdItr;
 
         // Finish if we could not resolve the dependencies for module Id (of any version Id).
-        if ( !resolveModuleDependencies( moduleId, 0, moduleGroup, false, moduleResolvingQueue, moduleReadyQueue ) )
-            return false;
+        if (!resolveModuleDependencies(moduleId, 0, moduleGroup, false, moduleResolvingQueue, moduleReadyQueue) && mFailGroupIfModuleFail)
+           return false;
     }
 
     // Check the modules we want to load to ensure that we do not have incompatible modules loaded already.
@@ -429,6 +386,8 @@ bool ModuleManager::loadModuleGroup( const char* pModuleGroup )
         // Create a scope set.
         SimSet* pScopeSet = new SimSet;
         pScopeSet->registerObject( pLoadReadyModuleDefinition->getModuleId() );
+        pScopeSet->setClassNamespace("ModuleRoot");
+
         pReadyEntry->mpModuleDefinition->mScopeSet = pScopeSet->getId();
 
         // Increase load count.
@@ -447,7 +406,8 @@ bool ModuleManager::loadModuleGroup( const char* pModuleGroup )
         if ( pLoadReadyModuleDefinition->getModuleScriptFilePath() != StringTable->EmptyString() )
         {
             // Yes, so execute the script file.
-            const bool scriptFileExecuted = dAtob( Con::executef("exec", pLoadReadyModuleDefinition->getModuleScriptFilePath() ) );
+            ConsoleValue cValue = Con::executef("exec", pLoadReadyModuleDefinition->getModuleScriptFilePath());
+            const bool scriptFileExecuted = cValue.getBool();
 
             // Did we execute the script file?
             if ( scriptFileExecuted )
@@ -564,8 +524,8 @@ bool ModuleManager::unloadModuleGroup( const char* pModuleGroup )
         StringTableEntry moduleId = *moduleIdItr;
 
         // Finish if we could not resolve the dependencies for module Id (of any version Id).
-        if ( !resolveModuleDependencies( moduleId, 0, moduleGroup, false, moduleResolvingQueue, moduleReadyQueue ) )
-            return false;
+        if (!resolveModuleDependencies(moduleId, 0, moduleGroup, false, moduleResolvingQueue, moduleReadyQueue) && mFailGroupIfModuleFail)
+           return false;
     }
 
     // Check the modules we want to load to ensure that we do not have incompatible modules loaded already.
@@ -816,6 +776,8 @@ bool ModuleManager::loadModuleExplicit( const char* pModuleId, const U32 version
         // Create a scope set.
         SimSet* pScopeSet = new SimSet;
         pScopeSet->registerObject( pLoadReadyModuleDefinition->getModuleId() );
+        pScopeSet->setClassNamespace("ModuleRoot");
+
         pReadyEntry->mpModuleDefinition->mScopeSet = pScopeSet->getId();
 
         // Increase load count.
@@ -834,24 +796,23 @@ bool ModuleManager::loadModuleExplicit( const char* pModuleId, const U32 version
         if ( pLoadReadyModuleDefinition->getModuleScriptFilePath() != StringTable->EmptyString() )
         {
             // Yes, so execute the script file.
-            const bool scriptFileExecuted = dAtob( Con::executef("exec", pLoadReadyModuleDefinition->getModuleScriptFilePath() ) );
+            ConsoleValue cValue = Con::executef("exec", pLoadReadyModuleDefinition->getModuleScriptFilePath());
+            const bool scriptFileExecuted = cValue.getBool();
 
             // Did we execute the script file?
-            if ( scriptFileExecuted )
-            {
-                // Yes, so is the create method available?
-                if ( pScopeSet->isMethod( pLoadReadyModuleDefinition->getCreateFunction() ) )
-                {
-                    // Yes, so call the create method.
-                    Con::executef( pScopeSet, pLoadReadyModuleDefinition->getCreateFunction() );
-                }
-            }
-            else
+            if ( !scriptFileExecuted )
             {
                 // No, so warn.
                 Con::errorf( "Module Manager: Cannot load explicit module Id '%s' at version Id '%d' as it failed to have the script file '%s' loaded.",
                     pLoadReadyModuleDefinition->getModuleId(), pLoadReadyModuleDefinition->getVersionId(), pLoadReadyModuleDefinition->getModuleScriptFilePath() );
             }
+        }
+
+        // Is the create method available?
+        if (pScopeSet->isMethod(pLoadReadyModuleDefinition->getCreateFunction()))
+        {
+           // Yes, so call the create method.
+           Con::executef(pScopeSet, pLoadReadyModuleDefinition->getCreateFunction());
         }
 
         // Raise notifications.
@@ -1058,6 +1019,41 @@ ModuleDefinition* ModuleManager::findModule( const char* pModuleId, const U32 ve
 
 //-----------------------------------------------------------------------------
 
+ModuleDefinition* ModuleManager::findModuleByFilePath(StringTableEntry filePath)
+{
+   // Sanity!
+   AssertFatal(filePath != StringTable->EmptyString(), "Cannot find module with an empty filePath.");
+
+   String desiredPath = filePath;
+   StringTableEntry coreModuleId = StringTable->insert("CoreModule");
+
+   for (typeModuleIdDatabaseHash::iterator moduleIdItr = mModuleIdDatabase.begin(); moduleIdItr != mModuleIdDatabase.end(); ++moduleIdItr)
+   {
+      // Fetch module definition entry.
+      ModuleDefinitionEntry* pModuleDefinitionEntry = moduleIdItr->value;
+
+      for (typeModuleDefinitionVector::iterator moduleDefinitionItr = pModuleDefinitionEntry->begin(); moduleDefinitionItr != pModuleDefinitionEntry->end(); ++moduleDefinitionItr)
+      {
+         // Fetch module definition.
+         ModuleDefinition* pModuleDefinition = *moduleDefinitionItr;
+
+         Torque::Path modulePath = pModuleDefinition->getModulePath();
+
+         StringTableEntry asdasd = StringTable->insert(modulePath.getFullPath());
+
+         //We don't deal with CoreModule or ToolsModule having assets for now
+         if (desiredPath.startsWith(asdasd) && pModuleDefinition->mModuleId != coreModuleId)
+         {
+            return pModuleDefinition;
+         }
+      }
+   }
+
+   return nullptr;
+}
+
+//-----------------------------------------------------------------------------
+
 ModuleDefinition* ModuleManager::findLoadedModule( const char* pModuleId )
 {
     // Sanity!
@@ -1081,39 +1077,49 @@ ModuleDefinition* ModuleManager::findLoadedModule( const char* pModuleId )
 
 //-----------------------------------------------------------------------------
 
-void ModuleManager::findModules( const bool loadedOnly, typeConstModuleDefinitionVector& moduleDefinitions )
+void ModuleManager::findModules(const bool loadedOnly, typeModuleDefinitionVector& moduleDefinitions)
 {
-    // Iterate module Ids.
-    for( typeModuleIdDatabaseHash::iterator moduleIdItr = mModuleIdDatabase.begin(); moduleIdItr != mModuleIdDatabase.end(); ++moduleIdItr )
-    {
-        // Fetch module definition entry.
-        ModuleDefinitionEntry* pModuleDefinitionEntry = moduleIdItr->value;
+   if (loadedOnly)
+   {
+      for (U32 i = 0; i < mModulesLoaded.size(); i++)
+      {
+         moduleDefinitions.push_back(mModulesLoaded[i].mpModuleDefinition);
+      }
+   }
+   else
+   {
+      // Iterate module Ids.
+      for (typeModuleIdDatabaseHash::iterator moduleIdItr = mModuleIdDatabase.begin(); moduleIdItr != mModuleIdDatabase.end(); ++moduleIdItr)
+      {
+         // Fetch module definition entry.
+         ModuleDefinitionEntry* pModuleDefinitionEntry = moduleIdItr->value;
 
-        // Iterate module definitions.
-        for ( typeModuleDefinitionVector::iterator moduleDefinitionItr = pModuleDefinitionEntry->begin(); moduleDefinitionItr != pModuleDefinitionEntry->end(); ++moduleDefinitionItr )
-        {
+         // Iterate module definitions.
+         for (typeModuleDefinitionVector::iterator moduleDefinitionItr = pModuleDefinitionEntry->begin(); moduleDefinitionItr != pModuleDefinitionEntry->end(); ++moduleDefinitionItr)
+         {
             // Fetch module definition.
             ModuleDefinition* pModuleDefinition = *moduleDefinitionItr;
 
             // Are we searching for loaded modules only?
-            if ( loadedOnly )
+            if (loadedOnly)
             {
-                // Yes, so skip if the module is not loaded.
-                if ( pModuleDefinition->getLoadCount() == 0 )
-                    continue;
+               // Yes, so skip if the module is not loaded.
+               if (pModuleDefinition->getLoadCount() == 0)
+                  continue;
 
-                // Use module definition.
-                moduleDefinitions.push_back( pModuleDefinition );
+               // Use module definition.
+               moduleDefinitions.push_back(pModuleDefinition);
 
-                // Finish iterating module definitions as only a single module in this entry can be loaded concurrently.
-                break;
+               // Finish iterating module definitions as only a single module in this entry can be loaded concurrently.
+               break;
             }
 
             // use module definition.
-            moduleDefinitions.push_back( pModuleDefinition );
-        }
-    }
-    dQsort(moduleDefinitions.address(), moduleDefinitions.size(), sizeof(ModuleDefinition*), moduleDependencySort);
+            moduleDefinitions.push_back(pModuleDefinition);
+         }
+      }
+      moduleDefinitions.sort(&moduleDependencySort);
+   }
 }
 
 //-----------------------------------------------------------------------------
@@ -1586,7 +1592,7 @@ bool ModuleManager::synchronizeDependencies( ModuleDefinition* pRootModuleDefini
     }
 
     // Find any target modules left, These are orphaned modules not depended upon by any other module.
-    typeConstModuleDefinitionVector orphanedTargetModules;
+    typeModuleDefinitionVector orphanedTargetModules;
     targetModuleManager.findModules( false, orphanedTargetModules );
 
     // Iterate module definitions.
@@ -1634,7 +1640,7 @@ bool ModuleManager::canMergeModules( const char* pMergeSourcePath )
     mergeModuleManager.scanModules( pMergeSourcePath );
 
     // Find all the merge modules.
-    typeConstModuleDefinitionVector mergeModules;
+    typeModuleDefinitionVector mergeModules;
     mergeModuleManager.findModules( false, mergeModules );
 
     // Iterate found merge module definitions.
@@ -1723,7 +1729,7 @@ bool ModuleManager::mergeModules( const char* pMergeTargetPath, const bool remov
     sourceModuleManager.scanModules( mergeSourcePath );
 
     // Find all the source modules.
-    typeConstModuleDefinitionVector sourceModules;
+    typeModuleDefinitionVector sourceModules;
     sourceModuleManager.findModules( false, sourceModules );
 
     // Iterate found merge module definitions.
@@ -2037,12 +2043,6 @@ bool ModuleManager::registerModule( const char* pModulePath, const char* pModule
     // Sanity!
     AssertFatal( pModulePath != NULL, "Cannot scan module with NULL module path." );
     AssertFatal( pModuleFile != NULL, "Cannot scan module with NULL module file." );
-
-    // Make the module path a full-path.
-    char fullPathBuffer[1024];
-    Platform::makeFullPathName( pModulePath, fullPathBuffer, sizeof(fullPathBuffer) );
-    pModulePath = fullPathBuffer;
-
 
     char formatBuffer[1024];
 

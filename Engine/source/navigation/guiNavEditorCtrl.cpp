@@ -19,7 +19,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
-
+#include "torqueConfig.h"
+#ifdef TORQUE_TOOLS
 #include "platform/platform.h"
 #include "guiNavEditorCtrl.h"
 #include "duDebugDrawTorque.h"
@@ -96,6 +97,7 @@ bool GuiNavEditorCtrl::onAdd()
 
 void GuiNavEditorCtrl::initPersistFields()
 {
+   docsURL;
    addField("isDirty", TypeBool, Offset(mIsDirty, GuiNavEditorCtrl));
 
    addField("spawnClass", TypeRealString, Offset(mSpawnClass, GuiNavEditorCtrl),
@@ -636,3 +638,4 @@ DefineEngineMethod(GuiNavEditorCtrl, setMode, void, (String mode),, "setMode(Str
 {
    object->setMode(mode);
 }
+#endif

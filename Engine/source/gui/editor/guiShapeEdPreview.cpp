@@ -35,6 +35,9 @@
 #include "gfx/gfxDrawUtil.h"
 #include "collision/concretePolyList.h"
 
+#include "T3D/assets/ShapeAsset.h"
+#include "T3D/assets/ShapeAnimationAsset.h"
+
 #ifdef TORQUE_COLLADA
    #include "collision/optimizedPolyList.h"
    #include "ts/collada/colladaUtils.h"
@@ -65,6 +68,7 @@ GuiShapeEdPreview::GuiShapeEdPreview()
    mZoomSpeed ( 1.0f ),
    mGridDimension( 30, 30 ),
    mModel( NULL ),
+   mModelName(StringTable->EmptyString()),
    mRenderGhost( false ),
    mRenderNodes( false ),
    mRenderBounds( false ),
@@ -115,6 +119,7 @@ GuiShapeEdPreview::~GuiShapeEdPreview()
 
 void GuiShapeEdPreview::initPersistFields()
 {
+   docsURL;
    addGroup( "Rendering" );
    addField( "editSun",        TypeBool,         Offset( mEditingSun, GuiShapeEdPreview ),
       "If true, dragging the gizmo will rotate the sun direction" );
@@ -156,11 +161,11 @@ void GuiShapeEdPreview::initPersistFields()
    addGroup( "Animation" );
    addField( "activeThread",              TypeS32,    Offset( mActiveThread, GuiShapeEdPreview ),
       "Index of the active thread, or -1 if none" );
-   addProtectedField( "threadPos",        TypeF32,    NULL, &setFieldThreadPos, &getFieldThreadPos,
+   addProtectedField( "threadPos",        TypeF32,    0, &setFieldThreadPos, &getFieldThreadPos,
       "Current position of the active thread (0-1)" );
-   addProtectedField( "threadDirection",  TypeS32,    NULL, &setFieldThreadDir, &getFieldThreadDir,
+   addProtectedField( "threadDirection",  TypeS32,    0, &setFieldThreadDir, &getFieldThreadDir,
       "Playback direction of the active thread" );
-   addProtectedField( "threadPingPong",   TypeBool,   NULL, &setFieldThreadPingPong, &getFieldThreadPingPong,
+   addProtectedField( "threadPingPong",   TypeBool,   0, &setFieldThreadPingPong, &getFieldThreadPingPong,
       "'PingPong' mode of the active thread" );
    endGroup( "Animation" );
 
@@ -349,6 +354,8 @@ bool GuiShapeEdPreview::setObjectModel(const char* modelName)
    mThreads.clear();
    mActiveThread = -1;
 
+   ResourceManager::get().getChangedSignal().remove(this, &GuiShapeEdPreview::_onResourceChanged);
+
    if (modelName && modelName[0])
    {
       Resource<TSShape> model = ResourceManager::get().load( modelName );
@@ -382,9 +389,55 @@ bool GuiShapeEdPreview::setObjectModel(const char* modelName)
 
       // the first time recording
       mLastRenderTime = Platform::getVirtualMilliseconds();
+
+      mModelName = StringTable->insert(modelName);
+
+      //Now to reflect changes when the model file is changed.
+      ResourceManager::get().getChangedSignal().notify(this, &GuiShapeEdPreview::_onResourceChanged);
+   }
+   else
+   {
+      mModelName = StringTable->EmptyString();
    }
 
    return true;
+}
+
+bool GuiShapeEdPreview::setObjectShapeAsset(const char* assetId)
+{
+   SAFE_DELETE(mModel);
+   unmountAll();
+   mThreads.clear();
+   mActiveThread = -1;
+
+   StringTableEntry modelName = StringTable->EmptyString();
+   if (AssetDatabase.isDeclaredAsset(assetId))
+   {
+      StringTableEntry id = StringTable->insert(assetId);
+      StringTableEntry assetType = AssetDatabase.getAssetType(id);
+      if (assetType == StringTable->insert("ShapeAsset"))
+      {
+         ShapeAsset* asset = AssetDatabase.acquireAsset<ShapeAsset>(id);
+         modelName = asset->getShapeFilePath();
+         AssetDatabase.releaseAsset(id);
+      }
+      else if (assetType == StringTable->insert("ShapeAnimationAsset"))
+      {
+         ShapeAnimationAsset* asset = AssetDatabase.acquireAsset<ShapeAnimationAsset>(id);
+         modelName = asset->getAnimationPath();
+         AssetDatabase.releaseAsset(id);
+      }
+   }
+
+   return setObjectModel(modelName);
+}
+
+void GuiShapeEdPreview::_onResourceChanged(const Torque::Path& path)
+{
+   if (path != Torque::Path(mModelName))
+      return;
+
+   setObjectModel(path.getFullPath());
 }
 
 void GuiShapeEdPreview::addThread()
@@ -478,7 +531,7 @@ void GuiShapeEdPreview::setThreadSequence(GuiShapeEdPreview::Thread& thread, TSS
 
 const char* GuiShapeEdPreview::getThreadSequence() const
 {
-   return ( mActiveThread >= 0 ) ? mThreads[mActiveThread].seqName : "";
+   return ( mActiveThread >= 0 ) ? mThreads[mActiveThread].seqName.c_str() : "";
 }
 
 void GuiShapeEdPreview::refreshThreadSequences()
@@ -505,16 +558,20 @@ void GuiShapeEdPreview::refreshThreadSequences()
 //-----------------------------------------------------------------------------
 // MOUNTING
 
-bool GuiShapeEdPreview::mountShape(const char* modelName, const char* nodeName, const char* mountType, S32 slot)
+bool GuiShapeEdPreview::mountShape(const char* shapeAssetId, const char* nodeName, const char* mountType, S32 slot)
 {
-   if ( !modelName || !modelName[0] )
+   if ( !shapeAssetId || !shapeAssetId[0] )
       return false;
 
-   Resource<TSShape> model = ResourceManager::get().load( modelName );
-   if ( !bool( model ) )
+   if (!AssetDatabase.isDeclaredAsset(shapeAssetId))
       return false;
 
-   TSShapeInstance* tsi = new TSShapeInstance( model, true );
+   ShapeAsset* model = AssetDatabase.acquireAsset<ShapeAsset>(shapeAssetId);
+
+   if (model == nullptr || !model->getShapeResource())
+      return false;
+
+   TSShapeInstance* tsi = new TSShapeInstance(model->getShapeResource(), true );
 
    if ( slot == -1 )
    {
@@ -1697,6 +1754,14 @@ DefineEngineMethod( GuiShapeEdPreview, setModel, bool, ( const char* shapePath )
    return object->setObjectModel( shapePath );
 }
 
+DefineEngineMethod(GuiShapeEdPreview, setShapeAsset, bool, (const char* shapeAsset), ,
+   "Sets the model to be displayed in this control\n\n"
+   "@param shapeName Name of the model to display.\n"
+   "@return True if the model was loaded successfully, false otherwise.\n")
+{
+   return object->setObjectShapeAsset(shapeAsset);
+}
+
 DefineEngineMethod( GuiShapeEdPreview, fitToShape, void, (),,
    "Adjust the camera position and zoom to fit the shape within the view.\n\n" )
 {
@@ -1804,14 +1869,14 @@ DefineEngineMethod( GuiShapeEdPreview, refreshThreadSequences, void, (),,
 
 //-----------------------------------------------------------------------------
 // Mounting
-DefineEngineMethod( GuiShapeEdPreview, mountShape, bool, ( const char* shapePath, const char* nodeName, const char* type, S32 slot ),,
+DefineEngineMethod( GuiShapeEdPreview, mountShape, bool, ( const char* shapeAssetId, const char* nodeName, const char* type, S32 slot ),,
    "Mount a shape onto the main shape at the specified node\n\n"
-   "@param shapePath path to the shape to mount\n"
+   "@param shapeAssetId AssetId of the shape to mount\n"
    "@param nodeName name of the node on the main shape to mount to\n"
    "@param type type of mounting to use (Object, Image or Wheel)\n"
    "@param slot mount slot\n" )
 {
-   return object->mountShape( shapePath, nodeName, type, slot );
+   return object->mountShape(shapeAssetId, nodeName, type, slot );
 }
 
 DefineEngineMethod( GuiShapeEdPreview, setMountNode, void, ( S32 slot, const char* nodeName ),,

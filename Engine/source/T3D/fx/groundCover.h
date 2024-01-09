@@ -45,6 +45,8 @@
 #include "shaderGen/shaderFeature.h"
 #endif
 
+#include "T3D/assets/ShapeAsset.h"
+
 class TerrainBlock;
 class GroundCoverCell;
 class TSShapeInstance;
@@ -121,6 +123,7 @@ public:
    ~GroundCover();
 
    DECLARE_CONOBJECT(GroundCover);
+   DECLARE_CATEGORY("Environment \t BackGround");
 
    static void consoleInit();
    static void initPersistFields();
@@ -264,9 +267,10 @@ protected:
    static F32 smDensityScale;   
    static F32 smFadeScale;
 
-   String mMaterialName;
-   Material *mMaterial;
-   BaseMatInstance *mMatInst;
+   BaseMatInstance* mMaterialInst;
+
+   DECLARE_MATERIALASSET(GroundCover, Material);
+   DECLARE_ASSET_NET_SETGET(GroundCover, Material, InitialUpdateMask);
 
    GroundCoverShaderConstData mShaderConstData;
 
@@ -309,7 +313,7 @@ protected:
    /// The maximum world space elevation for placement.
    F32 mMaxElevation[MAX_COVERTYPES];
 
-   /// Terrain material name to limit coverage to, or
+   /// Terrain material assetId to limit coverage to, or
    /// left empty to cover entire terrain.
    StringTableEntry mLayer[MAX_COVERTYPES];
 
@@ -337,7 +341,8 @@ protected:
    RectF mBillboardRects[MAX_COVERTYPES];
 
    /// The cover shape filenames.
-   StringTableEntry mShapeFilenames[MAX_COVERTYPES];
+   DECLARE_SHAPEASSET_ARRAY(GroundCover, Shape, MAX_COVERTYPES);
+   DECLARE_ASSET_ARRAY_NET_SETGET(GroundCover, Shape, -1);
 
    /// The cover shape instances.
    TSShapeInstance* mShapeInstances[MAX_COVERTYPES];

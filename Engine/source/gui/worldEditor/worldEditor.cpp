@@ -52,7 +52,7 @@
 #include "tools/editorTool.h"
 
 #include "T3D/Scene.h"
-#include <T3D\notesObject.h>
+#include <T3D/notesObject.h>
 
 IMPLEMENT_CONOBJECT( WorldEditor );
 
@@ -461,7 +461,9 @@ bool WorldEditor::pasteSelection( bool dropSel )
    SimGroup *targetGroup = NULL;   
    if( isMethod( "getNewObjectGroup" ) )
    {
-      const char* targetGroupName = Con::executef( this, "getNewObjectGroup" );
+      ConsoleValue cValue = Con::executef( this, "getNewObjectGroup" );
+      const char* targetGroupName = cValue.getString();
+
       if( targetGroupName && targetGroupName[ 0 ] && !Sim::findObject( targetGroupName, targetGroup) )
          Con::errorf( "WorldEditor::pasteSelection() - no SimGroup called '%s'", targetGroupName );
    }
@@ -1500,7 +1502,6 @@ void WorldEditor::renderSplinePath(SimPath::Path *path)
       desc.setCullMode( GFXCullNone );
       desc.setBlend( true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
       desc.samplersDefined = true;
-      desc.samplers[0].textureColorOp = GFXTOPDisable;
 
       mSplineSB = GFX->createStateBlock( desc );
    }
@@ -1808,9 +1809,11 @@ WorldEditor::WorldEditor()
    mRenderPopupBackground = true;
    mPopupBackgroundColor.set(100,100,100);
    mPopupTextColor.set(255,255,0);
-   mSelectHandle = StringTable->insert("tools/worldEditor/images/SelectHandle");
-   mDefaultHandle = StringTable->insert("tools/worldEditor/images/DefaultHandle");
-   mLockedHandle = StringTable->insert("tools/worldEditor/images/LockedHandle");
+
+   mSelectHandleAssetId = StringTable->insert("ToolsModule:SelectHandle");
+   mDefaultHandleAssetId = StringTable->insert("ToolsModule:DefaultHandle");
+   mLockedHandleAssetId = StringTable->insert("ToolsModule:LockedHandle");
+
    mObjectTextColor.set(255,255,255);
    mObjectsUseBoxCenter = true;
    
@@ -1895,9 +1898,9 @@ bool WorldEditor::onAdd()
    // create the default class entry
    mDefaultClassEntry.mName = 0;
    mDefaultClassEntry.mIgnoreCollision = false;
-   mDefaultClassEntry.mDefaultHandle   = GFXTexHandle(mDefaultHandle,   &GFXStaticTextureSRGBProfile, avar("%s() - mDefaultClassEntry.mDefaultHandle (line %d)", __FUNCTION__, __LINE__));
-   mDefaultClassEntry.mSelectHandle    = GFXTexHandle(mSelectHandle,    &GFXStaticTextureSRGBProfile, avar("%s() - mDefaultClassEntry.mSelectHandle (line %d)", __FUNCTION__, __LINE__));
-   mDefaultClassEntry.mLockedHandle    = GFXTexHandle(mLockedHandle,    &GFXStaticTextureSRGBProfile, avar("%s() - mDefaultClassEntry.mLockedHandle (line %d)", __FUNCTION__, __LINE__));
+   mDefaultClassEntry.mDefaultHandle = mDefaultHandle;
+   mDefaultClassEntry.mSelectHandle = mSelectHandle;
+   mDefaultClassEntry.mLockedHandle = mLockedHandle;
 
    if(!(mDefaultClassEntry.mDefaultHandle && mDefaultClassEntry.mSelectHandle && mDefaultClassEntry.mLockedHandle))
       return false;
@@ -1992,12 +1995,12 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
    if ( !mHitObject )
    {
       SceneObject *hitObj = NULL;
-      if ( collide(event, &hitObj) && hitObj->isSelectionEnabled() && !objClassIgnored(hitObj) )
+      if ( collide(event, &hitObj) && !hitObj->isDeleted() && hitObj->isSelectionEnabled() && !objClassIgnored(hitObj) )
       {
          mHitObject = hitObj;
       }
    }
-   
+
    mLastMouseEvent = event;
 }
 
@@ -2778,6 +2781,7 @@ void WorldEditor::renderScene( const RectI &updateRect )
 
 void WorldEditor::initPersistFields()
 {
+   docsURL;
    addGroup( "Grid" );
    
       addField( "gridSnap",               TypeBool,   Offset( mGridSnap, WorldEditor ),
@@ -2827,9 +2831,10 @@ void WorldEditor::initPersistFields()
       addField( "renderObjText",          TypeBool,   Offset(mRenderObjText, WorldEditor) );
       addField( "renderObjHandle",        TypeBool,   Offset(mRenderObjHandle, WorldEditor) );
       addField( "renderSelectionBox",     TypeBool,   Offset(mRenderSelectionBox, WorldEditor) );
-      addField( "selectHandle",           TypeFilename, Offset(mSelectHandle, WorldEditor) );
-      addField( "defaultHandle",          TypeFilename, Offset(mDefaultHandle, WorldEditor) );
-      addField( "lockedHandle",           TypeFilename, Offset(mLockedHandle, WorldEditor) );
+
+      INITPERSISTFIELD_IMAGEASSET(SelectHandle, WorldEditor, "");
+      INITPERSISTFIELD_IMAGEASSET(DefaultHandle, WorldEditor, "");
+      INITPERSISTFIELD_IMAGEASSET(LockedHandle, WorldEditor, "");
    
    endGroup( "Rendering" );
    
@@ -2859,17 +2864,17 @@ void WorldEditor::initPersistFields()
 //------------------------------------------------------------------------------
 // These methods are needed for the console interfaces.
 
-void WorldEditor::ignoreObjClass( U32 argc, ConsoleValueRef *argv )
+void WorldEditor::ignoreObjClass( U32 argc, ConsoleValue *argv )
 {
    for(S32 i = 2; i < argc; i++)
    {
-      ClassInfo::Entry * entry = getClassEntry(argv[i]);
+      ClassInfo::Entry * entry = getClassEntry(argv[i].getString());
       if(entry)
          entry->mIgnoreCollision = true;
       else
       {
          entry = new ClassInfo::Entry;
-         entry->mName = StringTable->insert(argv[i]);
+         entry->mName = StringTable->insert(argv[i].getString());
          entry->mIgnoreCollision = true;
          if(!addClassEntry(entry))
             delete entry;
@@ -3780,11 +3785,27 @@ void WorldEditor::makeSelectionPrefab( const char *filename, bool dontReplaceOri
    // Transform from World to Prefab space.
    MatrixF fabMat(true);
    fabMat.setPosition( mSelected->getCentroid() );
-   fabMat.inverse();
 
    MatrixF objMat;
    SimObject *obj = NULL;
    SceneObject *sObj = NULL;
+
+   F32 maxLen = 0;
+   for (S32 i = 0; i < found.size(); i++)
+   {
+      obj = found[i];
+      sObj = dynamic_cast<SceneObject*>(obj);
+      if (sObj && !(sObj->isGlobalBounds()))
+      {
+         if (maxLen < sObj->getWorldBox().len_max())
+         {
+            maxLen = sObj->getWorldBox().len_max();
+            fabMat.setPosition(sObj->getPosition());
+         }
+      }
+   }
+   fabMat.inverse();
+
 
    for ( S32 i = 0; i < found.size(); i++ )
    {      
@@ -3979,22 +4000,23 @@ bool WorldEditor::makeSelectionAMesh(const char *filename)
    }
    else
    {
-      orientation.identity();
-      centroid.zero();
-
-      S32 count = 0;
-
-      for (S32 i = 0; i < objectList.size(); i++)
+      SimObject* obj = NULL;
+      SceneObject* sObj = NULL;
+      F32 maxLen = 0;
+      for (S32 i = 0; i < found.size(); i++)
       {
-         SceneObject *pObj = objectList[i];
-         if (pObj->isGlobalBounds())
-            continue;
-
-         centroid += pObj->getPosition();
-         count++;
+         obj = found[i];
+         sObj = dynamic_cast<SceneObject*>(obj);
+         if (sObj && !(sObj->isGlobalBounds()))
+         {
+            if (maxLen < sObj->getWorldBox().len_max())
+            {
+               maxLen = sObj->getWorldBox().len_max();
+               orientation = sObj->getTransform();
+               centroid = sObj->getPosition();
+            }
+         }
       }
-
-      centroid /= count;
    }
 
    orientation.setPosition(centroid);

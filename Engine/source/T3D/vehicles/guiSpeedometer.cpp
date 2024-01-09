@@ -41,7 +41,7 @@ class GuiSpeedometerHud : public GuiBitmapCtrl
    F32   mMaxAngle;     ///< Max pos of needle
    F32   mMinAngle;     ///< Min pos of needle
    Point2F mCenter;     ///< Center of needle rotation
-   LinearColorF mColor;       ///< Needle Color
+   LinearColorF mNeedleColor;       ///< Needle Color
    F32   mNeedleLength;
    F32   mNeedleWidth;
    F32   mTailLength;
@@ -103,11 +103,12 @@ GuiSpeedometerHud::GuiSpeedometerHud()
    mNeedleWidth = 3;
    mNeedleLength = 10;
    mTailLength = 5;
-   mColor.set(1,0,0,1);
+   mNeedleColor.set(1,0,0,1);
 }
 
 void GuiSpeedometerHud::initPersistFields()
 {
+   docsURL;
    addGroup("Needle");
 
    addField("maxSpeed", TypeF32, Offset( mMaxSpeed, GuiSpeedometerHud ),
@@ -122,7 +123,7 @@ void GuiSpeedometerHud::initPersistFields()
       "Angle (in radians) of the needle when the Vehicle speed is >= maxSpeed. "
       "An angle of 0 points right, 90 points up etc)." );
 
-   addField("color", TypeColorF, Offset( mColor, GuiSpeedometerHud ),
+   addField("color", TypeColorF, Offset( mNeedleColor, GuiSpeedometerHud ),
       "Color of the needle" );
 
    addField("center", TypePoint2F, Offset( mCenter, GuiSpeedometerHud ),
@@ -203,14 +204,13 @@ void GuiSpeedometerHud::onRender(Point2I offset, const RectI &updateRect)
       GFXStateBlockDesc desc;
       desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
       desc.samplersDefined = true;
-      desc.samplers[0].textureColorOp = GFXTOPDisable;
       mBlendSB = GFX->createStateBlock(desc);
    }
    GFX->setStateBlock(mBlendSB);
    GFX->setTexture(0, NULL);
 
    // Render the needle
-   PrimBuild::color4f(mColor.red, mColor.green, mColor.blue, mColor.alpha);
+   PrimBuild::color4f(mNeedleColor.red, mNeedleColor.green, mNeedleColor.blue, mNeedleColor.alpha);
    PrimBuild::begin(GFXLineStrip, 5);
    for(int k=0; k<5; k++){
       rotMatrix.mulP(vertList[k]);

@@ -1,5 +1,5 @@
 //--- OBJECT WRITE BEGIN ---
-%guiContent = new GuiControl(DebuggerFindDlg, EditorGuiGroup) {
+$guiContent = new GuiControl(DebuggerFindDlg, EditorGuiGroup) {
    profile = "ToolsGuiDefaultProfile";
    horizSizing = "right";
    vertSizing = "bottom";
@@ -57,8 +57,8 @@
          altCommand = "DbgFileViewFind();";
          helpTag = "0";
          historySize = "0";
-            fontHL = "14 253 Arial";
-            font = "14 244 Arial";
+         fontHL = "14 253 " @ $Gui::fontTypeRegular @ "";
+         font = "14 244 " @ $Gui::fontTypeRegular @ "";
       };
       new GuiButtonCtrl() {
          profile = "ToolsGuiButtonProfile";

@@ -58,7 +58,8 @@ MaterialManager::MaterialManager()
 
    mDt = 0.0f; 
    mAccumTime = 0.0f; 
-   mLastTime = 0; 
+   mLastTime = 0;
+   mDampness = 0.0f;
    mWarningInst = NULL;
    
    GFXDevice::getDeviceEventSignal().notify( this, &MaterialManager::_handleGFXEvent );
@@ -87,8 +88,8 @@ MaterialManager::MaterialManager()
    Con::addVariableNotify( "$pref::Video::disableNormalMapping", callabck2 );
    Con::setVariable( "$pref::Video::disableCubemapping", "false" );
    Con::addVariableNotify( "$pref::Video::disableCubemapping", callabck2 );
-   Con::setVariable( "$pref::Video::disableParallaxMapping", "false" );
-   Con::addVariableNotify( "$pref::Video::disableParallaxMapping", callabck2 );
+   Con::setVariable( "$pref::Video::enableParallaxMapping", "true" );
+   Con::addVariableNotify( "$pref::Video::enableParallaxMapping", callabck2 );
 }
 
 MaterialManager::~MaterialManager()
@@ -227,6 +228,8 @@ BaseMatInstance  * MaterialManager::createWarningMatInstance()
       warnMatInstance->init(  getDefaultFeatures(), 
                               getGFXVertexFormat<GFXVertexPNTTB>() );
    }
+   else
+      Con::errorf("WarningMaterial Not Found!");
 
    return warnMatInstance;
 }
@@ -251,7 +254,7 @@ BaseMatInstance * MaterialManager::createMeshDebugMatInstance(const LinearColorF
       debugMat = allocateAndRegister( meshDebugStr );
 
       debugMat->mDiffuse[0] = meshColor;
-      debugMat->mEmissive[0] = true;
+      debugMat->mReceiveShadows[0] = false;
    }
 
    BaseMatInstance   *debugMatInstance = NULL;
@@ -294,10 +297,19 @@ BaseMatInstance *MaterialManager::getMeshDebugMatInstance(const LinearColorF &me
 
 void MaterialManager::mapMaterial(const String & textureName, const String & materialName)
 {
-   if (getMapEntry(textureName).isNotEmpty())
+   String currentMapEntry = getMapEntry(textureName);
+   if (currentMapEntry.isNotEmpty())
    {
       if (!textureName.equal("unmapped_mat", String::NoCase))
-         Con::warnf(ConsoleLogEntry::General, "Warning, overwriting material for: %s", textureName.c_str());
+      {
+         SimObject* originalMat;
+         SimObject* newMat;
+
+         if (Sim::findObject(currentMapEntry, originalMat) && Sim::findObject(materialName, newMat))
+            Con::warnf(ConsoleLogEntry::General, "Warning, overwriting material for: \"%s\" in %s by %s", textureName.c_str(), originalMat->getFilename(), newMat->getFilename());
+         else
+            Con::warnf(ConsoleLogEntry::General, "Warning, overwriting material for: %s", textureName.c_str());
+      }
    }
 
    mMaterialMap[String::ToLower(textureName)] = materialName;
@@ -470,7 +482,7 @@ void MaterialManager::recalcFeaturesFromPrefs()
                                     Con::getBoolVariable( "$pref::Video::disableCubemapping", false ) );
 
    mExclusionFeatures.setFeature(   MFT_Parallax, 
-                                    Con::getBoolVariable( "$pref::Video::disableParallaxMapping", false ) );
+                                    !Con::getBoolVariable( "$pref::Video::enableParallaxMapping", true ) );
 }
 
 bool MaterialManager::_handleGFXEvent( GFXDevice::GFXDeviceEventType event_ )

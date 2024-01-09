@@ -366,6 +366,7 @@ void NetObject::onCameraScopeQuery(NetConnection *cr, CameraScopeQuery* /*camInf
 
 void NetObject::initPersistFields()
 {
+   docsURL;
    Parent::initPersistFields();
 }
 
@@ -407,7 +408,7 @@ DefineEngineMethod( NetObject, getClientObject, S32, (),,
 	if ( obj )
 		return obj->getId();
 	
-	return NULL;
+	return 0;
 }
 
 //ConsoleMethod( NetObject, getClientObject, S32, 2, 2, "Short-Circuit-Netorking: this is only valid for a local-client / singleplayer situation." )
@@ -439,7 +440,7 @@ DefineEngineMethod( NetObject, getServerObject, S32, (),,
 	if ( obj )
 		return obj->getId();
 	
-	return NULL;
+	return 0;
 }
 
 //ConsoleMethod( NetObject, getServerObject, S32, 2, 2, "Short-Circuit-Netorking: this is only valid for a local-client / singleplayer situation." )

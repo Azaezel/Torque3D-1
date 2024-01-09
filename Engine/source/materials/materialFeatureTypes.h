@@ -115,7 +115,6 @@ DeclareFeatureType( MFT_AlphaTest );
 DeclareFeatureType( MFT_NormalMap );
 DeclareFeatureType( MFT_RTLighting );
 
-DeclareFeatureType( MFT_IsEmissive );
 DeclareFeatureType( MFT_SubSurface );
 DeclareFeatureType( MFT_LightMap );
 DeclareFeatureType( MFT_ToneMap );
@@ -124,9 +123,9 @@ DeclareFeatureType( MFT_VertLitTone );
 
 DeclareFeatureType( MFT_StaticCubemap );
 DeclareFeatureType( MFT_CubeMap );
-DeclareFeatureType( MFT_InvertSmoothness );
-DeclareFeatureType( MFT_PBRConfigMap );
-DeclareFeatureType( MFT_PBRConfigVars );
+DeclareFeatureType( MFT_InvertRoughness );
+DeclareFeatureType( MFT_OrmMap );
+DeclareFeatureType( MFT_ORMConfigVars );
 
 DeclareFeatureType( MFT_GlowMap );
 

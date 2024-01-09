@@ -42,7 +42,7 @@ ConsoleDocClass( RenderFormatToken,
    
    "The RenderPassStateBin manager changes the rendering state associated with "
    "this token. In stock Torque 3D, a single example exists in the "
-   "way of AL_FormatToken (found in renderManager.cs). In that script file, all the "
+   "way of AL_FormatToken (found in renderManager." TORQUE_SCRIPT_EXTENSION "). In that script file, all the "
    "render managers are intialized, and a single RenderFormatToken is used. This "
    "implementation basically exists to ensure Advanced Lighting works with MSAA.\n\n"
 
@@ -72,7 +72,7 @@ ConsoleDocClass( RenderFormatToken,
 
    "@see RenderPassToken\n\n"
    "@see RenderPassStateBin\n"
-   "@see game/core/scripts/client/renderManager.cs\n"
+   "@see game/core/scripts/client/renderManager." TORQUE_SCRIPT_EXTENSION "\n"
 
    "@ingroup GFX\n"
 );
@@ -129,7 +129,7 @@ void RenderFormatToken::process(SceneRenderState *state, RenderPassStateBin *cal
          GFX->setViewport( mTarget.getViewport() );
 
          // Clear
-         GFX->clear(GFXClearTarget | GFXClearZBuffer | GFXClearStencil, gCanvasClearColor, 1.0f, 0);
+         GFX->clear(GFXClearTarget | GFXClearZBuffer | GFXClearStencil, gCanvasClearColor, 0.0f, 0);
 
          // Set active z target on render pass
          if(mTargetDepthStencilTexture[mTargetChainIdx].isValid())
@@ -320,6 +320,7 @@ bool RenderFormatToken::isEnabled() const
 
 void RenderFormatToken::initPersistFields()
 {
+   docsURL;
    addProtectedField("format", TypeGFXFormat, Offset(mColorFormat, RenderFormatToken), &_setFmt, &defaultProtectedGetFn, 
       "Sets the color buffer format for this token.");
 

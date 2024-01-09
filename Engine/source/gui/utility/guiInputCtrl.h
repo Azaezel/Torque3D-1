@@ -26,6 +26,7 @@
 #ifndef _GUIMOUSEEVENTCTRL_H_
    #include "gui/utility/guiMouseEventCtrl.h"
 #endif
+#include "sim/actionMap.h"
 
 
 /// A control that locks the mouse and reports all keyboard input events
@@ -36,6 +37,9 @@ protected:
    bool mSendAxisEvents;
    bool mSendBreakEvents;
    bool mSendModifierEvents;
+   bool mIgnoreMouseEvents;
+
+   ActionMap* mActionmap;
 
 public:
 

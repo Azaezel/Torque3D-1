@@ -3,6 +3,7 @@
 #include "../../../gl/torque.glsl"
 #include "shadergen:/autogenConditioners.h"
 #include "../../../gl/lighting.glsl"
+#include "../../../gl/brdf.glsl"
 
 #line 7
 
@@ -11,6 +12,7 @@ uniform sampler2D colorBuffer;
 uniform sampler2D matInfoBuffer;
 uniform sampler2D BRDFTexture;
 
+uniform vec3 ambientColor;
 uniform vec4 rtParams0;
 uniform vec4 vsFarPlane;
 uniform mat4 cameraToWorld;
@@ -23,17 +25,18 @@ uniform int numProbes;
 
 uniform samplerCubeArray specularCubemapAR;
 uniform samplerCubeArray irradianceCubemapAR;
-
+uniform sampler2D WetnessTexture;
 #ifdef USE_SSAO_MASK
 uniform sampler2D ssaoMask;
-uniform vec4 rtParams6;
+uniform vec4 rtParams7;
 #endif
+uniform float accumTime;
+uniform float dampness;
 
-uniform vec4    inProbePosArray[MAX_PROBES];
-uniform vec4    inRefPosArray[MAX_PROBES];
+uniform vec4    probePosArray[MAX_PROBES];
+uniform vec4    refPosArray[MAX_PROBES];
 uniform mat4    worldToObjArray[MAX_PROBES];
-uniform vec4    refBoxMinArray[MAX_PROBES];
-uniform vec4    refBoxMaxArray[MAX_PROBES];
+uniform vec4    refScaleArray[MAX_PROBES];
 uniform vec4    probeConfigData[MAX_PROBES];   //r,g,b/mode,radius,atten
 
 #if DEBUGVIZ_CONTRIB
@@ -41,6 +44,7 @@ uniform vec4    probeContribColors[MAX_PROBES];
 #endif
 
 uniform int skylightCubemapIdx;
+uniform int SkylightDamp;
 
 out vec4 OUT_col;
 
@@ -51,20 +55,19 @@ void main()
 
    //create surface
    Surface surface = createSurface(normDepth, colorBuffer, matInfoBuffer, IN_uv0.xy, eyePosWorld, IN_wsEyeRay, cameraToWorld);
-
-   //early out if emissive
-   if (getFlag(surface.matFlag, 0))
-   {
-      discard;
-   }
-   
+   if (getFlag(surface.matFlag, 2))
+   { 
+      OUT_col = surface.baseColor;
+      return;
+   } 
    #ifdef USE_SSAO_MASK
-      float ssao = 1.0 - texture( ssaoMask, viewportCoordToRenderTarget( uv0.xy, rtParams6 ) ).r;
+      float ssao =  1.0 - texture( ssaoMask, viewportCoordToRenderTarget( IN_uv0.xy, rtParams7 ) ).r;
       surface.ao = min(surface.ao, ssao);  
    #endif
 
 
    float alpha = 1;
+   float wetAmmout = 0;
 
 #if SKYLIGHT_ONLY == 0
    int i = 0;
@@ -76,123 +79,123 @@ void main()
    //Set up our struct data
    float contribution[MAX_PROBES];
 
+   float blendCap = 0;
    if (alpha > 0)
    {
       //Process prooooobes
-      for (i = 0; i < numProbes; ++i)
+      for (i = 0; i < numProbes; i++)
       {
          contribution[i] = 0;
 
+         float atten =1.0-(length(eyePosWorld-probePosArray[i].xyz)/maxProbeDrawDistance);
          if (probeConfigData[i].r == 0) //box
          {
-            contribution[i] = defineBoxSpaceInfluence(surface.P, worldToObjArray[i], probeConfigData[i].b);
-            if (contribution[i]>0.0)
-               probehits++;
+            contribution[i] = defineBoxSpaceInfluence(surface.P, worldToObjArray[i], probeConfigData[i].b)*atten;
          }
          else if (probeConfigData[i].r == 1) //sphere
          {
-            contribution[i] = defineSphereSpaceInfluence(surface.P, inProbePosArray[i].xyz, probeConfigData[i].g);
-            if (contribution[i]>0.0)
-               probehits++;
+            contribution[i] = defineSphereSpaceInfluence(surface.P, probePosArray[i].xyz, probeConfigData[i].g)*atten;
          }
 
-         contribution[i] = max(contribution[i],0);
+         if (contribution[i]>0.0)
+            probehits++;
+         else
+            contribution[i] = 0;
 
+         if (refScaleArray[i].w>0)
+            wetAmmout += contribution[i];
+         else
+            wetAmmout -= contribution[i];
+         
          blendSum += contribution[i];
-         invBlendSum += (1.0f - contribution[i]);
+         blendCap = max(contribution[i],blendCap);
       }
-      // Weight0 = normalized NDF, inverted to have 1 at center, 0 at boundary.
-	   // And as we invert, we need to divide by Num-1 to stay normalized (else sum is > 1). 
-	   // respect constraint B.
-	   // Weight1 = normalized inverted NDF, so we have 1 at center, 0 at boundary
-	   // and respect constraint A.
+      if (wetAmmout<0) wetAmmout =0;
       
-      if (probehits > 1.0)
+       if (probehits > 0.0)
 	   {
+         invBlendSum = (probehits - blendSum)/probehits; //grab the remainder 
          for (i = 0; i < numProbes; i++)
          {
-               blendFactor[i] = ((contribution[i] / blendSum)) / probehits;
-               blendFactor[i] *= ((contribution[i]) / invBlendSum);
-               blendFactor[i] = saturate(blendFactor[i]);
-               blendFacSum += blendFactor[i];
+               blendFactor[i] = contribution[i]/blendSum; //what % total is this instance
+               blendFactor[i] *= blendFactor[i]/invBlendSum;  //what should we add to sum to 1
+               blendFacSum += blendFactor[i]; //running tally of results
          }
 
-         // Normalize blendVal
-         if (blendFacSum == 0.0f) // Possible with custom weight
+         for (i = 0; i < numProbes; i++)
          {
-               blendFacSum = 1.0f;
-         }
-
-         float invBlendSumWeighted = 1.0f / blendFacSum;
-         for (i = 0; i < numProbes; ++i)
-         {
-               blendFactor[i] *= invBlendSumWeighted;
-               contribution[i] *= blendFactor[i];
+            //normalize, but in the range of the highest value applied
+            //to preserve blend vs skylight
+            contribution[i] = blendFactor[i]/blendFacSum*blendCap;
          }
       }
       
 #if DEBUGVIZ_ATTENUATION == 1
-      float contribAlpha = 1;
-      for (i = 0; i < numProbes; ++i)
+      float contribAlpha = 0;
+      for (i = 0; i < numProbes; i++)
       {
-         contribAlpha -= contribution[i];
+         contribAlpha += contribution[i];
       }
 
-      OUT_col = vec4(1 - contribAlpha, 1 - contribAlpha, 1 - contribAlpha, 1);
+      OUT_col = vec4(contribAlpha,contribAlpha,contribAlpha, 1);
       return;
 #endif
 
 #if DEBUGVIZ_CONTRIB == 1
       vec3 finalContribColor = vec3(0, 0, 0);
-      float contribAlpha = 1;
-      for (i = 0; i < numProbes; ++i)
+      for (i = 0; i < numProbes; i++)
       {
-         finalContribColor += contribution[i] *probeContribColors[i].rgb;
-         contribAlpha -= contribution[i];
+         finalContribColor += contribution[i] * vec3(fmod(i+1,2),fmod(i+1,3),fmod(i+1,4));
       }
-
-      //Skylight coloration for anything not covered by probes above
-      if(skylightCubemapIdx != -1)
-      	finalContribColor += vec3(0, 1, 0) * contribAlpha;
-
       OUT_col = vec4(finalContribColor, 1);
       return;
 #endif
+   }
+   for (i = 0; i < numProbes; i++)
+   {
+      float contrib = contribution[i];
+      if (contrib > 0.0f)
+      {
+         alpha -= contrib;
+      }
    }
 #endif
 
    vec3 irradiance = vec3(0, 0, 0);
    vec3 specular = vec3(0, 0, 0);
 
+   if (SkylightDamp>0)
+      wetAmmout += alpha;
+   dampen(surface, WetnessTexture, accumTime, wetAmmout*dampness);
+   
    // Radiance (Specular)
 #if DEBUGVIZ_SPECCUBEMAP == 0
-   float lod = surface.roughness*cubeMips;
+   float lod = roughnessToMipLevel(surface.roughness, cubeMips);
 #elif DEBUGVIZ_SPECCUBEMAP == 1
    float lod = 0;
 #endif
 
 #if SKYLIGHT_ONLY == 0
-   for (i = 0; i < numProbes; ++i)
+   for (i = 0; i < numProbes; i++)
    {
       float contrib = contribution[i];
       if (contrib > 0.0f)
       {
-         float cubemapIdx = probeConfigData[i].a;
-         vec3 dir = boxProject(surface.P, surface.R, worldToObjArray[i], refBoxMinArray[i].xyz, refBoxMaxArray[i].xyz, inRefPosArray[i].xyz);
+         int cubemapIdx = int(probeConfigData[i].a);
+         vec3 dir = boxProject(surface.P, surface.R, worldToObjArray[i], refScaleArray[i].xyz, refPosArray[i].xyz);
 
          irradiance += textureLod(irradianceCubemapAR, vec4(dir, cubemapIdx), 0).xyz * contrib;
          specular += textureLod(specularCubemapAR, vec4(dir, cubemapIdx), lod).xyz * contrib;
-         alpha -= contrib;
       }
    }
 #endif
-
-   if (skylightCubemapIdx != -1 && alpha > 0.001)
+      
+   if (skylightCubemapIdx != -1 && alpha >= 0.001)
    {
-      irradiance += textureLod(irradianceCubemapAR, vec4(surface.R, skylightCubemapIdx), 0).xyz * alpha;
-      specular += textureLod(specularCubemapAR, vec4(surface.R, skylightCubemapIdx), lod).xyz * alpha;
+      irradiance = lerp(irradiance,textureLod(irradianceCubemapAR, vec4(surface.R, skylightCubemapIdx), 0).xyz,alpha);
+      specular = lerp(specular,textureLod(specularCubemapAR, vec4(surface.R, skylightCubemapIdx), lod).xyz,alpha);
    }
-
+   
 #if DEBUGVIZ_SPECCUBEMAP == 1 && DEBUGVIZ_DIFFCUBEMAP == 0
    OUT_col = vec4(specular, 1);
    return;
@@ -201,19 +204,27 @@ void main()
    return;
 #endif
 
-
+   
    //energy conservation
-   vec3 kD = 1.0f - surface.F;
+   vec3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
+   vec3 kD = 1.0f - F;
    kD *= 1.0f - surface.metalness;
 
-   float dfgNdotV = max( surface.NdotV , 0.0009765625f ); //0.5f/512.0f (512 is size of dfg/brdf lookup tex)
-   vec2 envBRDF = textureLod(BRDFTexture, vec2(dfgNdotV, surface.roughness),0).rg;
-   specular *= surface.F * envBRDF.x + surface.f90 * envBRDF.y;
+   vec2 envBRDF = textureLod(BRDFTexture, vec2(surface.NdotV, surface.roughness),0).rg;
+   specular *= F * envBRDF.x + surface.f90 * envBRDF.y;
    irradiance *= kD * surface.baseColor.rgb;
 
    //AO
    irradiance *= surface.ao;
    specular *= computeSpecOcclusion(surface.NdotV, surface.ao, surface.roughness);
 
-   OUT_col = vec4(irradiance + specular, 0);//alpha writes disabled
+   //http://marmosetco.tumblr.com/post/81245981087
+   float horizonOcclusion = 1.3;
+   float horizon = saturate( 1 + horizonOcclusion * dot(surface.R, surface.N));
+   horizon *= horizon;
+#if CAPTURING == 1
+   OUT_col = vec4(mix((irradiance + specular* horizon),surface.baseColor.rgb, surface.metalness),0);
+#else
+   OUT_col = vec4((irradiance + specular* horizon)*ambientColor, 0);//alpha writes disabled
+#endif
 }

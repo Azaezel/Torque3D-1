@@ -23,6 +23,8 @@
 #ifndef _VT_VPATHEDITOR_H_
 #define _VT_VPATHEDITOR_H_
 
+#include "torqueConfig.h"
+#ifdef TORQUE_TOOLS
 #ifndef _EDITTSCTRL_H_
 #include "gui/worldEditor/editTSCtrl.h"
 #endif
@@ -120,7 +122,7 @@ public:
     virtual bool    onAdd( void );
     virtual bool    onWake( void );
 
-    static  void    initPersistFields( void );
+    static  void    initPersistFields();
 
     // Gui Events.
 
@@ -291,5 +293,5 @@ namespace Utility
 };
 
 //-----------------------------------------------------------------------------
-
+#endif
 #endif // _VT_VPATHEDITOR_H_

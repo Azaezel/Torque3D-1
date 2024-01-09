@@ -46,6 +46,16 @@
 #include "platform/profiler.h"
 #include "T3D/assets/assetImporter.h"
 
+#ifdef TORQUE_TOOLS
+#include "ts/tsLastDetail.h"
+#endif
+#include "util/imposterCapture.h"
+
+#include "ts/tsShapeInstance.h"
+#include "gfx/bitmap/imageUtils.h"
+
+StringTableEntry ShapeAsset::smNoShapeAssetFallback = NULL;
+
 //-----------------------------------------------------------------------------
 
 IMPLEMENT_CONOBJECT(ShapeAsset);
@@ -82,7 +92,7 @@ ConsoleSetType(TypeShapeAssetPtr)
 
 //-----------------------------------------------------------------------------
 
-ConsoleType(assetIdString, TypeShapeAssetId, String, ASSET_ID_FIELD_PREFIX)
+ConsoleType(assetIdString, TypeShapeAssetId, const char*, ASSET_ID_FIELD_PREFIX)
 
 ConsoleGetType(TypeShapeAssetId)
 {
@@ -96,13 +106,7 @@ ConsoleSetType(TypeShapeAssetId)
    if (argc == 1)
    {
       // Yes, so fetch field value.
-      const char* pFieldValue = argv[0];
-
-      // Fetch asset Id.
-      StringTableEntry* assetId = (StringTableEntry*)(dptr);
-
-      // Update asset value.
-      *assetId = StringTable->insert(pFieldValue);
+      *((const char**)dptr) = StringTable->insert(argv[0]);
 
       return;
    }
@@ -113,12 +117,29 @@ ConsoleSetType(TypeShapeAssetId)
 
 //-----------------------------------------------------------------------------
 
+const String ShapeAsset::mErrCodeStrings[] =
+{
+   "TooManyVerts",
+   "TooManyBones",
+   "MissingAnimatons",
+   "UnKnown"
+};
+//-----------------------------------------------------------------------------
+
 ShapeAsset::ShapeAsset()
 {
    mFileName = StringTable->EmptyString();
    mConstructorFileName = StringTable->EmptyString();
    mFilePath = StringTable->EmptyString();
    mConstructorFilePath = StringTable->EmptyString();
+
+   mDiffuseImposterFileName = StringTable->EmptyString();
+   mDiffuseImposterPath = StringTable->EmptyString();
+   mNormalImposterFileName = StringTable->EmptyString();
+   mNormalImposterPath = StringTable->EmptyString();
+
+
+   mLoadedState = AssetErrCode::NotLoaded;
 }
 
 //-----------------------------------------------------------------------------
@@ -129,8 +150,22 @@ ShapeAsset::~ShapeAsset()
 
 //-----------------------------------------------------------------------------
 
+void ShapeAsset::consoleInit()
+{
+   Parent::consoleInit();
+
+   Con::addVariable("$Core::NoShapeAssetFallback", TypeString, &smNoShapeAssetFallback,
+      "The assetId of the shape to display when the requested shape asset is missing.\n"
+      "@ingroup GFX\n");
+   
+   smNoShapeAssetFallback = StringTable->insert(Con::getVariable("$Core::NoShapeAssetFallback"));
+}
+
+//-----------------------------------------------------------------------------
+
 void ShapeAsset::initPersistFields()
 {
+   docsURL;
    // Call parent.
    Parent::initPersistFields();
 
@@ -138,9 +173,15 @@ void ShapeAsset::initPersistFields()
       &setShapeFile, &getShapeFile, "Path to the shape file we want to render");
    addProtectedField("constuctorFileName", TypeAssetLooseFilePath, Offset(mConstructorFileName, ShapeAsset),
       &setShapeConstructorFile, &getShapeConstructorFile, "Path to the shape file we want to render");
+
+   addProtectedField("diffuseImposterFileName", TypeAssetLooseFilePath, Offset(mDiffuseImposterFileName, ShapeAsset),
+      &setDiffuseImposterFile, &getDiffuseImposterFile, "Path to the diffuse imposter file we want to render");
+   addProtectedField("normalImposterFileName", TypeAssetLooseFilePath, Offset(mNormalImposterFileName, ShapeAsset),
+      &setNormalImposterFile, &getNormalImposterFile, "Path to the normal imposter file we want to render");
+
 }
 
-void ShapeAsset::setDataField(StringTableEntry slotName, const char *array, const char *value)
+void ShapeAsset::setDataField(StringTableEntry slotName, StringTableEntry array, StringTableEntry value)
 {
    Parent::setDataField(slotName, array, value);
 
@@ -165,12 +206,24 @@ void ShapeAsset::initializeAsset()
    ResourceManager::get().getChangedSignal().notify(this, &ShapeAsset::_onResourceChanged);
 
    //Ensure our path is expando'd if it isn't already
-   if (!Platform::isFullPath(mFilePath))
-      mFilePath = getOwned() ? expandAssetFilePath(mFileName) : mFilePath;
+   mFilePath = getOwned() ? expandAssetFilePath(mFileName) : mFilePath;
 
-   mConstructorFilePath = expandAssetFilePath(mConstructorFilePath);
+   mConstructorFilePath = getOwned() ? expandAssetFilePath(mConstructorFileName) : mConstructorFilePath;
+   if (!Torque::FS::IsFile(mConstructorFilePath))
+      Con::errorf("ShapeAsset::initializeAsset (%s) could not find %s!", getAssetName(), mConstructorFilePath);
+   mDiffuseImposterPath = getOwned() ? expandAssetFilePath(mDiffuseImposterFileName) : mDiffuseImposterFileName;
+   if (mDiffuseImposterPath == StringTable->EmptyString())
+   {
+      String diffusePath = String(mFilePath) + "_imposter.dds";
+      mDiffuseImposterPath = StringTable->insert(diffusePath.c_str());
+   }
 
-   loadShape();
+   mNormalImposterPath = getOwned() ? expandAssetFilePath(mNormalImposterFileName) : mNormalImposterFileName;
+   if (mNormalImposterPath == StringTable->EmptyString())
+   {
+      String normalPath = String(mFilePath) + "_imposter_normals.dds";
+      mNormalImposterPath = StringTable->insert(normalPath.c_str());
+   }
 }
 
 void ShapeAsset::setShapeFile(const char* pShapeFile)
@@ -179,13 +232,13 @@ void ShapeAsset::setShapeFile(const char* pShapeFile)
    AssertFatal(pShapeFile != NULL, "Cannot use a NULL shape file.");
 
    // Fetch image file.
-   pShapeFile = StringTable->insert(pShapeFile);
+   pShapeFile = StringTable->insert(pShapeFile, true);
 
    // Ignore no change,
    if (pShapeFile == mFileName)
       return;
 
-   mFileName = pShapeFile;
+   mFileName = getOwned() ? expandAssetFilePath(pShapeFile) : pShapeFile;
 
    // Refresh the asset.
    refreshAsset();
@@ -197,13 +250,49 @@ void ShapeAsset::setShapeConstructorFile(const char* pShapeConstructorFile)
    AssertFatal(pShapeConstructorFile != NULL, "Cannot use a NULL shape constructor file.");
 
    // Fetch image file.
-   pShapeConstructorFile = StringTable->insert(pShapeConstructorFile);
+   pShapeConstructorFile = StringTable->insert(pShapeConstructorFile, true);
 
    // Ignore no change,
    if (pShapeConstructorFile == mConstructorFileName)
       return;
 
-   mConstructorFileName = pShapeConstructorFile;
+   mConstructorFileName = getOwned() ? expandAssetFilePath(pShapeConstructorFile) : pShapeConstructorFile;
+
+   // Refresh the asset.
+   refreshAsset();
+}
+
+void ShapeAsset::setDiffuseImposterFile(const char* pImageFile)
+{
+   // Sanity!
+   AssertFatal(pImageFile != NULL, "Cannot use a NULL image file.");
+
+   // Fetch image file.
+   pImageFile = StringTable->insert(pImageFile, true);
+
+   // Ignore no change,
+   if (pImageFile == mDiffuseImposterFileName)
+      return;
+
+   mDiffuseImposterFileName = getOwned() ? expandAssetFilePath(pImageFile) : pImageFile;
+
+   // Refresh the asset.
+   refreshAsset();
+}
+
+void ShapeAsset::setNormalImposterFile(const char* pImageFile)
+{
+   // Sanity!
+   AssertFatal(pImageFile != NULL, "Cannot use a NULL image file.");
+
+   // Fetch image file.
+   pImageFile = StringTable->insert(pImageFile, true);
+
+   // Ignore no change,
+   if (pImageFile == mNormalImposterFileName)
+      return;
+
+   mNormalImposterFileName = getOwned() ? expandAssetFilePath(pImageFile) : pImageFile;
 
    // Refresh the asset.
    refreshAsset();
@@ -216,11 +305,13 @@ void ShapeAsset::_onResourceChanged(const Torque::Path &path)
 
    refreshAsset();
 
-   loadShape();
+   onAssetRefresh();
 }
 
-bool ShapeAsset::loadShape()
+U32 ShapeAsset::load()
 {
+   if (mLoadedState == AssetErrCode::Ok) return mLoadedState;
+
    mMaterialAssets.clear();
    mMaterialAssetIds.clear();
 
@@ -264,9 +355,15 @@ bool ShapeAsset::loadShape()
 
    if (!mShape)
    {
-      Con::errorf("StaticMesh::updateShape : failed to load shape file!");
-      return false; //if it failed to load, bail out
+      Con::errorf("ShapeAsset::loadShape : failed to load shape file %s (%s)!", getAssetName(), mFilePath);
+      mLoadedState = BadFileReference;
+      return mLoadedState; //if it failed to load, bail out
    }
+   // Construct billboards if not done already
+   if (GFXDevice::devicePresent())
+      mShape->setupBillboardDetails(mFilePath, mDiffuseImposterPath, mNormalImposterPath);
+
+   //If they exist, grab our imposters here and bind them to our shapeAsset
 
    bool hasBlends = false;
 
@@ -280,8 +377,10 @@ bool ShapeAsset::loadShape()
 
       if (!mShape->addSequence(srcPath, srcName, srcName,
          mAnimationAssets[i]->getStartFrame(), mAnimationAssets[i]->getEndFrame(), mAnimationAssets[i]->getPadRotation(), mAnimationAssets[i]->getPadTransforms()))
-         return false;
-
+      {
+         mLoadedState = MissingAnimatons;
+         return mLoadedState;
+      }
       if (mAnimationAssets[i]->isBlend())
          hasBlends = true;
    }
@@ -297,17 +396,24 @@ bool ShapeAsset::loadShape()
             //First, we need to make sure the anim asset we depend on for our blend is loaded
             AssetPtr<ShapeAnimationAsset> blendAnimAsset = mAnimationAssets[i]->getBlendAnimationName();
 
-            if (blendAnimAsset.isNull())
+            U32 assetStatus = ShapeAnimationAsset::getAssetErrCode(blendAnimAsset);
+            if (assetStatus != AssetBase::Ok)
             {
                Con::errorf("ShapeAsset::initializeAsset - Unable to acquire reference animation asset %s for asset %s to blend!", mAnimationAssets[i]->getBlendAnimationName(), mAnimationAssets[i]->getAssetName());
-               return false;
+               {
+                  mLoadedState = MissingAnimatons;
+                  return mLoadedState;
+               }
             }
 
             String refAnimName = blendAnimAsset->getAnimationName();
             if (!mShape->setSequenceBlend(mAnimationAssets[i]->getAnimationName(), true, blendAnimAsset->getAnimationName(), mAnimationAssets[i]->getBlendFrame()))
             {
                Con::errorf("ShapeAnimationAsset::initializeAsset - Unable to set animation clip %s for asset %s to blend!", mAnimationAssets[i]->getAnimationName(), mAnimationAssets[i]->getAssetName());
-               return false;
+               {
+                  mLoadedState = MissingAnimatons;
+                  return mLoadedState;
+               }
             }
          }
       }
@@ -315,54 +421,45 @@ bool ShapeAsset::loadShape()
 
    mChangeSignal.trigger();
 
-   return true;
+   mLoadedState = Ok;
+   return mLoadedState;
 }
 
 //------------------------------------------------------------------------------
 //Utility function to 'fill out' bindings and resources with a matching asset if one exists
-bool ShapeAsset::getAssetByFilename(StringTableEntry fileName, AssetPtr<ShapeAsset>* shapeAsset)
+U32 ShapeAsset::getAssetByFilename(StringTableEntry fileName, AssetPtr<ShapeAsset>* shapeAsset)
 {
    AssetQuery query;
    S32 foundAssetcount = AssetDatabase.findAssetLooseFile(&query, fileName);
    if (foundAssetcount == 0)
    {
-      //Didn't find any assets
-      //If possible, see if we can run an in-place import and the get the asset from that
-#if TORQUE_DEBUG
-      Con::warnf("ShapeAsset::getAssetByFilename - Attempted to in-place import a shapefile(%s) that had no associated asset", fileName);
-#endif
-
-      AssetImporter* autoAssetImporter;
-      if (!Sim::findObject("autoAssetImporter", autoAssetImporter))
-      {
-         autoAssetImporter = new AssetImporter();
-         autoAssetImporter->registerObject("autoAssetImporter");
-      }
-
-      StringTableEntry resultingAssetId = autoAssetImporter->autoImportFile(fileName);
-
-      if (resultingAssetId != StringTable->EmptyString())
-      {
-         shapeAsset->setAssetId(resultingAssetId);
-
-         if (!shapeAsset->isNull())
-            return true;
-      }
-
       //Didn't work, so have us fall back to a placeholder asset
-      shapeAsset->setAssetId(StringTable->insert("Core_Rendering:noshape"));
+      shapeAsset->setAssetId(ShapeAsset::smNoShapeAssetFallback);
 
-      if (!shapeAsset->isNull())
-         return true;
+      if (shapeAsset->isNull())
+      {
+         //Well that's bad, loading the fallback failed.
+         Con::warnf("ShapeAsset::getAssetByFilename - Finding of asset associated with file %s failed with no fallback asset", fileName);
+         return AssetErrCode::Failed;
+      }
 
-      //That didn't work, so fail out
-      return false;
+      //handle noshape not being loaded itself
+      if ((*shapeAsset)->mLoadedState == BadFileReference)
+      {
+         Con::warnf("ShapeAsset::getAssetByFilename - Finding of associated with file %s failed, and fallback asset reported error of Bad File Reference.", fileName);
+         return AssetErrCode::BadFileReference;
+      }
+
+      Con::warnf("ShapeAsset::getAssetByFilename - Finding of associated with file %s failed, utilizing fallback asset", fileName);
+
+      (*shapeAsset)->mLoadedState = AssetErrCode::UsingFallback;
+      return AssetErrCode::UsingFallback;
    }
    else
    {
       //acquire and bind the asset, and return it out
       shapeAsset->setAssetId(query.mAssetList[0]);
-      return true;
+      return (*shapeAsset)->mLoadedState;
    }
 }
 
@@ -371,60 +468,55 @@ StringTableEntry ShapeAsset::getAssetIdByFilename(StringTableEntry fileName)
    if (fileName == StringTable->EmptyString())
       return StringTable->EmptyString();
 
-   StringTableEntry shapeAssetId = StringTable->EmptyString();
+   StringTableEntry shapeAssetId = ShapeAsset::smNoShapeAssetFallback;
 
    AssetQuery query;
    S32 foundAssetcount = AssetDatabase.findAssetLooseFile(&query, fileName);
-   if (foundAssetcount == 0)
-   {
-      //Didn't find any assets
-      //If possible, see if we can run an in-place import and the get the asset from that
-#if TORQUE_DEBUG
-      Con::warnf("ShapeAsset::getAssetByFilename - Attempted to in-place import a shapefile(%s) that had no associated asset", fileName);
-#endif
-
-      AssetImporter* autoAssetImporter;
-      if (!Sim::findObject("autoAssetImporter", autoAssetImporter))
-      {
-         autoAssetImporter = new AssetImporter();
-         autoAssetImporter->registerObject("autoAssetImporter");
-      }
-
-      StringTableEntry resultingAssetId = autoAssetImporter->autoImportFile(fileName);
-
-      if (resultingAssetId != StringTable->EmptyString())
-      {
-         shapeAssetId = resultingAssetId;
-         return shapeAssetId;
-      }
-
-      //Didn't work, so have us fall back to a placeholder asset
-      shapeAssetId = StringTable->insert("Core_Rendering:noshape");
-   }
-   else
+   if (foundAssetcount != 0)
    {
       //acquire and bind the asset, and return it out
       shapeAssetId = query.mAssetList[0];
+   }
+   else
+   {
+      AssetPtr<ShapeAsset> shapeAsset = shapeAssetId; //ensures the fallback is loaded
    }
 
    return shapeAssetId;
 }
 
-bool ShapeAsset::getAssetById(StringTableEntry assetId, AssetPtr<ShapeAsset>* shapeAsset)
+U32 ShapeAsset::getAssetById(StringTableEntry assetId, AssetPtr<ShapeAsset>* shapeAsset)
 {
    (*shapeAsset) = assetId;
 
-   if (!shapeAsset->isNull())
-      return true;
+   if (shapeAsset->notNull())
+   {
+      return (*shapeAsset)->mLoadedState;
+   }
+   else
+   {
+      //Didn't work, so have us fall back to a placeholder asset
+      shapeAsset->setAssetId(ShapeAsset::smNoShapeAssetFallback);
 
-   //Didn't work, so have us fall back to a placeholder asset
-   StringTableEntry noShapeId = StringTable->insert("Core_Rendering:noshape");
-   shapeAsset->setAssetId(noShapeId);
+      if (shapeAsset->isNull())
+      {
+         //Well that's bad, loading the fallback failed.
+         Con::warnf("ShapeAsset::getAssetById - Finding of asset with id %s failed with no fallback asset", assetId);
+         return AssetErrCode::Failed;
+      }
 
-   if (!shapeAsset->isNull())
-      return true;
+      //handle noshape not being loaded itself
+      if ((*shapeAsset)->mLoadedState == BadFileReference)
+      {
+         Con::warnf("ShapeAsset::getAssetById - Finding of asset with id %s failed, and fallback asset reported error of Bad File Reference.", assetId);
+         return AssetErrCode::BadFileReference;
+      }
 
-   return false;
+      Con::warnf("ShapeAsset::getAssetById - Finding of asset with id %s failed, utilizing fallback asset", assetId);
+
+      (*shapeAsset)->mLoadedState = AssetErrCode::UsingFallback;
+      return AssetErrCode::UsingFallback;
+   }
 }
 //------------------------------------------------------------------------------
 
@@ -442,8 +534,6 @@ void ShapeAsset::onAssetRefresh(void)
    // Update.
    if(!Platform::isFullPath(mFileName))
       mFilePath = getOwned() ? expandAssetFilePath(mFileName) : mFilePath;
-
-   loadShape();
 }
 
 void ShapeAsset::SplitSequencePathAndName(String& srcPath, String& srcName)
@@ -478,6 +568,96 @@ ShapeAnimationAsset* ShapeAsset::getAnimation(S32 index)
    return nullptr;
 }
 
+#ifdef TORQUE_TOOLS
+const char* ShapeAsset::generateCachedPreviewImage(S32 resolution, String overrideMaterial)
+{
+   if (!mShape)
+      return "";
+
+   // We're gonna render... make sure we can.
+   bool sceneBegun = GFX->canCurrentlyRender();
+   if (!sceneBegun)
+      GFX->beginScene();
+
+   // We need to create our own instance to render with.
+   TSShapeInstance* shape = new TSShapeInstance(mShape, true);
+
+   if (overrideMaterial.isNotEmpty())
+   {
+      Material *tMat = dynamic_cast<Material*>(Sim::findObject(overrideMaterial));
+      if (tMat)
+         shape->reSkin(tMat->mMapTo, mShape->materialList->getMaterialName(0));
+   }
+   // Animate the shape once.
+   shape->animate(0);
+
+   GBitmap* imposter = NULL;
+   GBitmap* imposterNrml = NULL;
+
+   ImposterCapture* imposterCap = new ImposterCapture();
+
+   static const MatrixF topXfm(EulerF(-M_PI_F / 2.0f, 0, 0));
+   static const MatrixF bottomXfm(EulerF(M_PI_F / 2.0f, 0, 0));
+
+   MatrixF angMat;
+
+   PROFILE_START(ShapeAsset_generateCachedPreviewImage);
+
+   //dMemset(destBmp.getWritableBits(mip), 0, destBmp.getWidth(mip) * destBmp.getHeight(mip) * GFXFormat_getByteSize(format));
+
+   F32 rotX = -(mDegToRad(60.0) - 0.5f * M_PI_F);
+   F32 rotZ = -(mDegToRad(45.0) - 0.5f * M_PI_F);
+
+   // We capture the images in a particular order which must
+   // match the order expected by the imposter renderer.
+
+   imposterCap->begin(shape, 0, resolution, mShape->mRadius, mShape->center);
+
+   angMat.mul(MatrixF(EulerF(rotX, 0, 0)),
+      MatrixF(EulerF(0, 0, rotZ)));
+
+   imposterCap->capture(angMat, &imposter, &imposterNrml);
+
+   imposterCap->end();
+
+   PROFILE_END(); // ShapeAsset_generateCachedPreviewImage
+
+   delete imposterCap;
+   delete shape;
+
+   String dumpPath = String(mFilePath) + "_Preview.dds";
+
+   char* returnBuffer = Con::getReturnBuffer(128);
+   dSprintf(returnBuffer, 128, "%s", dumpPath.c_str());
+
+   /*FileStream stream;
+   if (stream.open(dumpPath, Torque::FS::File::Write))
+      destBmp.writeBitmap("png", stream);
+   stream.close();*/
+   
+   DDSFile* ddsDest = DDSFile::createDDSFileFromGBitmap(imposter);
+   ImageUtil::ddsCompress(ddsDest, GFXFormatBC2);
+
+   // Finally save the imposters to disk.
+   FileStream fs;
+   if (fs.open(returnBuffer, Torque::FS::File::Write))
+   {
+      ddsDest->write(fs);
+      fs.close();
+   }
+
+   delete ddsDest;
+   delete imposter;
+   delete imposterNrml;
+
+   // If we did a begin then end it now.
+   if (!sceneBegun)
+      GFX->endScene();
+
+   return returnBuffer;
+}
+#endif
+
 DefineEngineMethod(ShapeAsset, getMaterialCount, S32, (), ,
    "Gets the number of materials for this shape asset.\n"
    "@return Material count.\n")
@@ -499,6 +679,46 @@ DefineEngineMethod(ShapeAsset, getAnimation, ShapeAnimationAsset*, (S32 index), 
 {
    return object->getAnimation(index);
 }
+
+DefineEngineMethod(ShapeAsset, getShapePath, const char*, (), ,
+   "Gets the shape's file path\n"
+   "@return The filename of the shape file")
+{
+   return object->getShapeFilePath();
+}
+
+DefineEngineMethod(ShapeAsset, getShapeConstructorFilePath, const char*, (), ,
+   "Gets the shape's constructor file.\n"
+   "@return The filename of the shape constructor file")
+{
+   return object->getShapeConstructorFilePath();
+}
+
+DefineEngineMethod(ShapeAsset, getStatusString, String, (), , "get status string")\
+{
+   return ShapeAsset::getAssetErrstrn(object->getStatus());
+}
+
+
+#ifdef TORQUE_TOOLS
+DefineEngineMethod(ShapeAsset, generateCachedPreviewImage, const char*, (S32 resolution, const char* overrideMaterialName), (256, ""),
+   "Generates a baked preview image of the given shapeAsset. Only really used for generating Asset Browser icons.\n"
+   "@param resolution Optional field for what resolution to bake the preview image at. Must be pow2\n"
+   "@param overrideMaterialName Optional field for overriding the material used when rendering the shape for the bake.")
+{
+   object->load();
+   return object->generateCachedPreviewImage(resolution, overrideMaterialName);
+}
+
+DefineEngineStaticMethod(ShapeAsset, getAssetIdByFilename, const char*, (const char* filePath), (""),
+   "Queries the Asset Database to see if any asset exists that is associated with the provided file path.\n"
+   "@return The AssetId of the associated asset, if any.")
+{
+   return ShapeAsset::getAssetIdByFilename(StringTable->insert(filePath));
+}
+#endif
+
+#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // GuiInspectorTypeAssetId
 //-----------------------------------------------------------------------------
@@ -521,64 +741,176 @@ void GuiInspectorTypeShapeAssetPtr::consoleInit()
 GuiControl* GuiInspectorTypeShapeAssetPtr::constructEditControl()
 {
    // Create base filename edit controls
-   GuiControl *retCtrl = Parent::constructEditControl();
+   GuiControl* retCtrl = Parent::constructEditControl();
    if (retCtrl == NULL)
       return retCtrl;
 
    // Change filespec
    char szBuffer[512];
-   dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"ShapeAsset\", \"AssetBrowser.changeAsset\", %s, %s);", 
-      mInspector->getInspectObject()->getIdString(), mCaption);
-   mBrowseButton->setField("Command", szBuffer);
 
-   const char* id = mInspector->getInspectObject()->getIdString();
+   const char* previewImage;
 
-   setDataField(StringTable->insert("targetObject"), NULL, mInspector->getInspectObject()->getIdString());
+   if (mInspector->getInspectObject() != nullptr)
+   {
+      dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"ShapeAsset\", \"AssetBrowser.changeAsset\", %s, %s);",
+         mInspector->getIdString(), mCaption);
+      mBrowseButton->setField("Command", szBuffer);
 
-   // Create "Open in ShapeEditor" button
-   mShapeEdButton = new GuiBitmapButtonCtrl();
+      setDataField(StringTable->insert("targetObject"), NULL, mInspector->getInspectObject()->getIdString());
+
+      previewImage = mInspector->getInspectObject()->getDataField(mCaption, NULL);
+   }
+   else
+   {
+      //if we don't have a target object, we'll be manipulating the desination value directly
+      dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"ShapeAsset\", \"AssetBrowser.changeAsset\", %s, \"%s\");",
+         mInspector->getIdString(), mVariableName);
+      mBrowseButton->setField("Command", szBuffer);
+
+      previewImage = Con::getVariable(mVariableName);
+   }
+
+   mLabel = new GuiTextCtrl();
+   mLabel->registerObject();
+   mLabel->setControlProfile(mProfile);
+   mLabel->setText(mCaption);
+   addObject(mLabel);
+
+   //
+   GuiTextEditCtrl* editTextCtrl = static_cast<GuiTextEditCtrl*>(retCtrl);
+   GuiControlProfile* toolEditProfile;
+   if (Sim::findObject("ToolsGuiTextEditProfile", toolEditProfile))
+      editTextCtrl->setControlProfile(toolEditProfile);
+
+   GuiControlProfile* toolDefaultProfile = nullptr;
+   Sim::findObject("ToolsGuiDefaultProfile", toolDefaultProfile);
+
+   //
+   mPreviewImage = new GuiBitmapCtrl();
+   mPreviewImage->registerObject();
+
+   if (toolDefaultProfile)
+      mPreviewImage->setControlProfile(toolDefaultProfile);
+
+   updatePreviewImage();
+
+   addObject(mPreviewImage);
+
+   //
+   mPreviewBorderButton = new GuiBitmapButtonCtrl();
+   mPreviewBorderButton->registerObject();
+
+   if (toolDefaultProfile)
+      mPreviewBorderButton->setControlProfile(toolDefaultProfile);
+
+   mPreviewBorderButton->_setBitmap(StringTable->insert("ToolsModule:cubemapBtnBorder_n_image"));
+
+   mPreviewBorderButton->setField("Command", szBuffer); //clicking the preview does the same thing as the edit button, for simplicity
+   addObject(mPreviewBorderButton);
+
+   //
+   // Create "Open in Editor" button
+   mEditButton = new GuiBitmapButtonCtrl();
 
    dSprintf(szBuffer, sizeof(szBuffer), "ShapeEditorPlugin.openShapeAssetId(%d.getText());", retCtrl->getId());
-   mShapeEdButton->setField("Command", szBuffer);
+   mEditButton->setField("Command", szBuffer);
 
-   char bitmapName[512] = "tools/worldEditor/images/toolbar/shape-editor";
-   mShapeEdButton->setBitmap(bitmapName);
+   mEditButton->setText("Edit");
+   mEditButton->setSizing(horizResizeLeft, vertResizeAspectTop);
 
-   mShapeEdButton->setDataField(StringTable->insert("Profile"), NULL, "GuiButtonProfile");
-   mShapeEdButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
-   mShapeEdButton->setDataField(StringTable->insert("hovertime"), NULL, "1000");
-   mShapeEdButton->setDataField(StringTable->insert("tooltip"), NULL, "Open this file in the Shape Editor");
+   mEditButton->setDataField(StringTable->insert("Profile"), NULL, "ToolsGuiButtonProfile");
+   mEditButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
+   mEditButton->setDataField(StringTable->insert("hovertime"), NULL, "1000");
+   mEditButton->setDataField(StringTable->insert("tooltip"), NULL, "Open this asset in the Shape Editor");
 
-   mShapeEdButton->registerObject();
-   addObject(mShapeEdButton);
+   mEditButton->registerObject();
+   addObject(mEditButton);
+
+   //
+   mUseHeightOverride = true;
+   mHeightOverride = 72;
 
    return retCtrl;
 }
 
 bool GuiInspectorTypeShapeAssetPtr::updateRects()
 {
+   S32 rowSize = 18;
    S32 dividerPos, dividerMargin;
    mInspector->getDivider(dividerPos, dividerMargin);
    Point2I fieldExtent = getExtent();
    Point2I fieldPos = getPosition();
 
-   mCaptionRect.set(0, 0, fieldExtent.x - dividerPos - dividerMargin, fieldExtent.y);
-   mEditCtrlRect.set(fieldExtent.x - dividerPos + dividerMargin, 1, dividerPos - dividerMargin - 34, fieldExtent.y);
+   mEditCtrlRect.set(0, 0, fieldExtent.x, fieldExtent.y);
+   mLabel->resize(Point2I(mProfile->mTextOffset.x, 0), Point2I(fieldExtent.x, rowSize));
 
-   bool resized = mEdit->resize(mEditCtrlRect.point, mEditCtrlRect.extent);
-   if (mBrowseButton != NULL)
+   RectI previewRect = RectI(Point2I(mProfile->mTextOffset.x, rowSize), Point2I(50, 50));
+   mPreviewBorderButton->resize(previewRect.point, previewRect.extent);
+   mPreviewImage->resize(previewRect.point, previewRect.extent);
+
+   S32 editPos = previewRect.point.x + previewRect.extent.x + 10;
+   mEdit->resize(Point2I(editPos, rowSize * 1.5), Point2I(fieldExtent.x - editPos - 5, rowSize));
+
+   mEditButton->resize(Point2I(fieldExtent.x - 105, previewRect.point.y + previewRect.extent.y - rowSize), Point2I(100, rowSize));
+
+   mBrowseButton->setHidden(true);
+
+   return true;
+}
+
+void GuiInspectorTypeShapeAssetPtr::updateValue()
+{
+   Parent::updateValue();
+
+   updatePreviewImage();
+}
+
+void GuiInspectorTypeShapeAssetPtr::updatePreviewImage()
+{
+   const char* previewImage;
+   if (mInspector->getInspectObject() != nullptr)
+      previewImage = mInspector->getInspectObject()->getDataField(mCaption, NULL);
+   else
+      previewImage = Con::getVariable(mVariableName);
+
+   //if what we're working with isn't even a valid asset, don't present like we found a good one
+   if (!AssetDatabase.isDeclaredAsset(previewImage))
    {
-      mBrowseRect.set(fieldExtent.x - 32, 2, 14, fieldExtent.y - 4);
-      resized |= mBrowseButton->resize(mBrowseRect.point, mBrowseRect.extent);
+      mPreviewImage->_setBitmap(StringTable->EmptyString());
+      return;
    }
 
-   if (mShapeEdButton != NULL)
+   String shpPreviewAssetId = String(previewImage) + "_PreviewImage";
+   shpPreviewAssetId.replace(":", "_");
+   shpPreviewAssetId = "ToolsModule:" + shpPreviewAssetId;
+   if (AssetDatabase.isDeclaredAsset(shpPreviewAssetId.c_str()))
    {
-      RectI shapeEdRect(fieldExtent.x - 16, 2, 14, fieldExtent.y - 4);
-      resized |= mShapeEdButton->resize(shapeEdRect.point, shapeEdRect.extent);
+      mPreviewImage->setBitmap(StringTable->insert(shpPreviewAssetId.c_str()));
    }
 
-   return resized;
+   if (mPreviewImage->getBitmapAsset().isNull())
+      mPreviewImage->_setBitmap(StringTable->insert("ToolsModule:genericAssetIcon_image"));
+}
+
+void GuiInspectorTypeShapeAssetPtr::setPreviewImage(StringTableEntry assetId)
+{
+   //if what we're working with isn't even a valid asset, don't present like we found a good one
+   if (!AssetDatabase.isDeclaredAsset(assetId))
+   {
+      mPreviewImage->_setBitmap(StringTable->EmptyString());
+      return;
+   }
+
+   String shpPreviewAssetId = String(assetId) + "_PreviewImage";
+   shpPreviewAssetId.replace(":", "_");
+   shpPreviewAssetId = "ToolsModule:" + shpPreviewAssetId;
+   if (AssetDatabase.isDeclaredAsset(shpPreviewAssetId.c_str()))
+   {
+      mPreviewImage->setBitmap(StringTable->insert(shpPreviewAssetId.c_str()));
+   }
+
+   if (mPreviewImage->getBitmapAsset().isNull())
+      mPreviewImage->_setBitmap(StringTable->insert("ToolsModule:genericAssetIcon_image"));
 }
 
 IMPLEMENT_CONOBJECT(GuiInspectorTypeShapeAssetId);
@@ -596,9 +928,4 @@ void GuiInspectorTypeShapeAssetId::consoleInit()
    ConsoleBaseType::getType(TypeShapeAssetId)->setInspectorFieldType("GuiInspectorTypeShapeAssetId");
 }
 
-DefineEngineMethod(ShapeAsset, getShapeFile, const char*, (), ,
-   "Creates a new script asset using the targetFilePath.\n"
-   "@return The bool result of calling exec")
-{
-   return object->getShapeFilePath();
-}
+#endif

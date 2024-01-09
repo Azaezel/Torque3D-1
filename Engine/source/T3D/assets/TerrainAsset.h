@@ -82,7 +82,7 @@ public:
 
    inline Resource<TerrainFile> getTerrainResource(void) const { return mTerrainFile; };
 
-   bool loadTerrain();
+   U32 load();
 
    static bool getAssetByFilename(StringTableEntry fileName, AssetPtr<TerrainAsset>* shapeAsset);
    static StringTableEntry getAssetIdByFilename(StringTableEntry fileName);
@@ -101,7 +101,7 @@ protected:
 
 DefineConsoleType(TypeTerrainAssetPtr, TerrainAsset)
 DefineConsoleType(TypeTerrainAssetId, String)
-
+#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // TypeAssetId GuiInspectorField Class
 //-----------------------------------------------------------------------------
@@ -127,6 +127,6 @@ public:
    DECLARE_CONOBJECT(GuiInspectorTypeTerrainAssetId);
    static void consoleInit();
 };
-
+#endif
 #endif // _ASSET_BASE_H_
 

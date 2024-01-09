@@ -26,6 +26,10 @@
 #include "core/util/hashFunction.h"
 #include "console/consoleTypes.h"
 
+#ifdef TORQUE_NET_CURL
+#include "app/net/httpObject.h"
+#endif
+
 // jamesu - debug DNS
 //#define TORQUE_DEBUG_LOOKUPS
 
@@ -93,36 +97,6 @@ typedef int SOCKET;
 
 #define closesocket close
 
-#endif
-
-#if defined(TORQUE_USE_WINSOCK)
-static const char* strerror_wsa( S32 code )
-{
-   switch( code )
-   {
-#define E( name ) case name: return #name;
-      E( WSANOTINITIALISED );
-      E( WSAENETDOWN );
-      E( WSAEADDRINUSE );
-      E( WSAEINPROGRESS );
-      E( WSAEALREADY );
-      E( WSAEADDRNOTAVAIL );
-      E( WSAEAFNOSUPPORT );
-      E( WSAEFAULT );
-      E( WSAEINVAL );
-      E( WSAEISCONN );
-      E( WSAENETUNREACH );
-      E( WSAEHOSTUNREACH );
-      E( WSAENOBUFS );
-      E( WSAENOTSOCK );
-      E( WSAETIMEDOUT );
-      E( WSAEWOULDBLOCK );
-      E( WSAEACCES );
-#undef E
-      default:
-         return "Unknown";
-   }
-}
 #endif
 
 #include "core/util/tVector.h"
@@ -241,7 +215,7 @@ namespace PlatformNetState
 
    struct addrinfo* pickAddressByProtocol(struct addrinfo* addr, int protocol)
    {
-      for (addr; addr != NULL; addr = addr->ai_next)
+      for (; addr != NULL; addr = addr->ai_next)
       {
          if (addr->ai_family == protocol)
             return addr;
@@ -588,6 +562,9 @@ bool Net::init()
    smConnectionReceive = new ConnectionReceiveEvent();
    smPacketReceive = new PacketReceiveEvent();
 
+#ifdef TORQUE_NET_CURL
+   HTTPObject::init();
+#endif
 
    Process::notify(&Net::process, PROCESS_NET_ORDER);
 
@@ -597,6 +574,10 @@ bool Net::init()
 void Net::shutdown()
 {
    Process::remove(&Net::process);
+
+#ifdef TORQUE_NET_CURL
+   HTTPObject::shutdown();
+#endif
 
    while (gPolledSockets.size() > 0)
    {
@@ -1129,6 +1110,11 @@ void Net::process()
    processListenSocket(PlatformNetState::udpSocket);
    processListenSocket(PlatformNetState::udp6Socket);
 
+#ifdef TORQUE_NET_CURL
+   // process HTTPObject
+   HTTPObject::process();
+#endif
+
    // process the polled sockets.  This blob of code performs functions
    // similar to WinsockProc in winNet.cc
 
@@ -1243,7 +1229,8 @@ void Net::process()
          }
          break;
       case PolledSocket::NameLookupRequired:
-         U32 newState;
+      {
+         U32 newState = Net::NoError;
 
          // is the lookup complete?
          if (!gNetAsync.checkLookup(
@@ -1262,7 +1249,7 @@ void Net::process()
          {
             // try to connect
             out_h_addr.port = currentSock->remotePort;
-            const sockaddr *ai_addr = NULL;
+            const sockaddr* ai_addr = NULL;
             int ai_addrlen = 0;
             sockaddr_in socketAddress;
             sockaddr_in6 socketAddress6;
@@ -1304,7 +1291,7 @@ void Net::process()
             else
             {
                Con::errorf("Error connecting to %s: Invalid Protocol",
-               currentSock->remoteAddr);
+                  currentSock->remoteAddr);
                newState = Net::ConnectFailed;
                removeSock = true;
                removeSockHandle = currentSock->handleFd;
@@ -1319,7 +1306,7 @@ void Net::process()
                   if (err != Net::WouldBlock)
                   {
                      Con::errorf("Error connecting to %s: %u",
-                     currentSock->remoteAddr, err);
+                        currentSock->remoteAddr, err);
                      newState = Net::ConnectFailed;
                      removeSock = true;
                      removeSockHandle = currentSock->handleFd;
@@ -1340,6 +1327,7 @@ void Net::process()
 
          smConnectionNotify->trigger(currentSock->handleFd, newState);
          break;
+      }
       case PolledSocket::Listening:
          NetAddress incomingAddy;
 

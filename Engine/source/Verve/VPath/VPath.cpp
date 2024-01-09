@@ -166,8 +166,9 @@ void VPath::onRemove( void )
     Parent::onRemove();
 }
 
-void VPath::initPersistFields( void )
+void VPath::initPersistFields()
 {
+   docsURL;
     Parent::initPersistFields();
 
     addProtectedField( "PathType", TYPEID<ePathType>(), Offset( mPathType, VPath ), &setPathType, &defaultProtectedGetFn, "The type of path this is." );
@@ -538,7 +539,7 @@ VectorF VPath::getMountVelocity( const U32 &pIndex )
 void VPath::readFields( void )
 {
     const char *nodeData = "";
-    for ( S32 nodeIndex = 0; dStrcmp( nodeData = getDataField( StringTable->insert( avar( "Node%d", nodeIndex ) ), NULL ), "" ) != 0; nodeIndex++ )
+    for ( S32 nodeIndex = 0; String::compare( nodeData = getDataField( StringTable->insert( avar( "Node%d", nodeIndex ) ), NULL ), "" ) != 0; nodeIndex++ )
     {
         // Create Node.
         VPathNode *node = createNode();

@@ -43,8 +43,8 @@
 #ifndef _OPTIMIZEDPOLYLIST_H_
 #include "collision/optimizedPolyList.h"
 #endif
-#ifndef TINYXML_INCLUDED
-#include "tinyxml.h"
+#ifndef TINYXML2_INCLUDED
+#include "tinyxml2.h"
 #endif
 #ifndef _CONSOLE_H_
 #include "console/console.h"
@@ -101,7 +101,7 @@ namespace ColladaUtils
       bool           ignoreNodeScale;  // Ignore <scale> elements in <node>s
       bool           adjustCenter;     // Translate model so origin is at the center
       bool           adjustFloor;      // Translate model so origin is at the bottom
-      bool           forceUpdateMaterials;   // Force update of materials.cs
+      bool           forceUpdateMaterials;   // Force update of materials.tscript
       bool           useDiffuseNames;  // Use diffuse texture as the material name
 
       // Assimp specific preprocess import options
@@ -299,17 +299,17 @@ namespace ColladaUtils
 
    // Collada export helper functions
    Torque::Path findTexture(const Torque::Path& diffuseMap);
-   void exportColladaHeader(TiXmlElement* rootNode);
-   void exportColladaMaterials(TiXmlElement* rootNode, const OptimizedPolyList& mesh, Vector<String>& matNames, const Torque::Path& colladaFile);
-   void exportColladaTriangles(TiXmlElement* meshNode, const OptimizedPolyList& mesh, const String& meshName, const Vector<String>& matNames);
-   void exportColladaMesh(TiXmlElement* rootNode, const OptimizedPolyList& mesh, const String& meshName, const Vector<String>& matNames);
-   void exportColladaScene(TiXmlElement* rootNode, const String& meshName, const Vector<String>& matNames);
+   void exportColladaHeader(tinyxml2::XMLElement* rootNode);
+   void exportColladaMaterials(tinyxml2::XMLElement* rootNode, const OptimizedPolyList& mesh, Vector<String>& matNames, const Torque::Path& colladaFile);
+   void exportColladaTriangles(tinyxml2::XMLElement* meshNode, const OptimizedPolyList& mesh, const String& meshName, const Vector<String>& matNames);
+   void exportColladaMesh(tinyxml2::XMLElement* rootNode, const OptimizedPolyList& mesh, const String& meshName, const Vector<String>& matNames);
+   void exportColladaScene(tinyxml2::XMLElement* rootNode, const String& meshName, const Vector<String>& matNames);
 
-   void exportColladaMaterials(TiXmlElement* rootNode, const ExportData& exportData, const Torque::Path& colladaFile);
-   void exportColladaMesh(TiXmlElement* rootNode, const ExportData& exportData, const String& meshName);
-   void exportColladaCollisionTriangles(TiXmlElement* meshNode, const ExportData& exportData, const U32 collisionIdx);
-   void exportColladaTriangles(TiXmlElement* meshNode, const ExportData& exportData, const U32 detailLevel, const String& meshName);
-   void exportColladaScene(TiXmlElement* rootNode, const ExportData& exportData, const String& meshName);
+   void exportColladaMaterials(tinyxml2::XMLElement* rootNode, const ExportData& exportData, const Torque::Path& colladaFile);
+   void exportColladaMesh(tinyxml2::XMLElement* rootNode, const ExportData& exportData, const String& meshName);
+   void exportColladaCollisionTriangles(tinyxml2::XMLElement* meshNode, const ExportData& exportData, const U32 collisionIdx);
+   void exportColladaTriangles(tinyxml2::XMLElement* meshNode, const ExportData& exportData, const U32 detailLevel, const String& meshName);
+   void exportColladaScene(tinyxml2::XMLElement* rootNode, const ExportData& exportData, const String& meshName);
 
    // Export an OptimizedPolyList to a simple Collada file
    void exportToCollada(const Torque::Path& colladaFile, const OptimizedPolyList& mesh, const String& meshName = String::EmptyString);
@@ -527,7 +527,7 @@ public:
    {
       if ((index >= 0) && (index < size())) {
          if (source->getFloat_array())
-            return &source->getFloat_array()->getValue()[index*stride()];
+            return &source->getFloat_array()->getValue()[(U64)(index*stride())];
       }
       return 0;
    }
@@ -541,9 +541,9 @@ public:
       if ((index >= 0) && (index < size())) {
          // could be plain strings or IDREFs
          if (source->getName_array())
-            return source->getName_array()->getValue()[index*stride()];
+            return source->getName_array()->getValue()[(U64)(index*stride())];
          else if (source->getIDREF_array())
-            return source->getIDREF_array()->getValue()[index*stride()].getID();
+            return source->getIDREF_array()->getValue()[(U64)(index*stride())].getID();
       }
       return "";
    }
@@ -708,7 +708,7 @@ template<> inline const domListOfUInts *ColladaPrimitive<domTristrips>::getTrian
             continue;
 
          domUint* pSrcData = &(P->getValue()[0]);
-         size_t numTriangles = (P->getValue().getCount() / stride) - 2;
+         U64 numTriangles = (P->getValue().getCount() / stride) - 2;
 
          // Convert the strip back to a triangle list
          domUint* v0 = pSrcData;
@@ -723,7 +723,7 @@ template<> inline const domListOfUInts *ColladaPrimitive<domTristrips>::getTrian
             else
             {
                // CCW triangle
-               pTriangleData->appendArray(stride*3, v0);
+               pTriangleData->appendArray((U64)(stride*3), v0);
             }
          }
       }
@@ -749,7 +749,7 @@ template<> inline const domListOfUInts *ColladaPrimitive<domTrifans>::getTriangl
             continue;
 
          domUint* pSrcData = &(P->getValue()[0]);
-         size_t numTriangles = (P->getValue().getCount() / stride) - 2;
+         U64 numTriangles = (P->getValue().getCount() / stride) - 2;
 
          // Convert the fan back to a triangle list
          domUint* v0 = pSrcData + stride;
@@ -781,7 +781,7 @@ template<> inline const domListOfUInts *ColladaPrimitive<domPolygons>::getTriang
             continue;
 
          domUint* pSrcData = &(P->getValue()[0]);
-         size_t numPoints = P->getValue().getCount() / stride;
+         U64 numPoints = P->getValue().getCount() / stride;
 
          // Use a simple tri-fan (centered at the first point) method of
          // converting the polygon to triangles.
@@ -789,7 +789,7 @@ template<> inline const domListOfUInts *ColladaPrimitive<domPolygons>::getTriang
          pSrcData += stride;
          for (S32 iTri = 0; iTri < numPoints-2; iTri++) {
             pTriangleData->appendArray(stride, v0);
-            pTriangleData->appendArray(stride*2, pSrcData);
+            pTriangleData->appendArray((U64)(stride*2), pSrcData);
             pSrcData += stride;
          }
       }
@@ -831,7 +831,7 @@ template<> inline const domListOfUInts *ColladaPrimitive<domPolylist>::getTriang
          pSrcData += stride;
          for (S32 iTri = 0; iTri < vcount[iPoly]-2; iTri++) {
             pTriangleData->appendArray(stride, v0);
-            pTriangleData->appendArray(stride*2, pSrcData);
+            pTriangleData->appendArray((U64)(stride*2), pSrcData);
             pSrcData += stride;
          }
          pSrcData += stride;

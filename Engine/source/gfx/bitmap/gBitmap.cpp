@@ -32,6 +32,7 @@
 #include "console/console.h"
 #include "platform/profiler.h"
 #include "console/engineAPI.h"
+#include "gfx/bitmap/ddsFile.h"
 
 using namespace Torque;
 
@@ -319,7 +320,7 @@ void GBitmap::allocateBitmap(const U32 in_width, const U32 in_height, const bool
       U32 currWidth  = in_width;
       U32 currHeight = in_height;
 
-      do 
+      while (currWidth != 1 || currHeight != 1)
       {
          mMipLevelOffsets[mNumMipLevels] = mMipLevelOffsets[mNumMipLevels - 1] +
                                          (currWidth * currHeight * mBytesPerPixel);
@@ -330,7 +331,7 @@ void GBitmap::allocateBitmap(const U32 in_width, const U32 in_height, const bool
 
          mNumMipLevels++;
          allocPixels += currWidth * currHeight * mBytesPerPixel;
-      } while (currWidth != 1 || currHeight != 1);
+      }
 
       U32 expectedMips = mFloor(mLog2(mMax(in_width, in_height))) + 1;
       AssertFatal(mNumMipLevels == expectedMips, "GBitmap::allocateBitmap: mipmap count wrong");
@@ -727,7 +728,7 @@ bool GBitmap::checkForTransparency()
 }
 
 //------------------------------------------------------------------------------
-LinearColorF GBitmap::sampleTexel(F32 u, F32 v) const
+LinearColorF GBitmap::sampleTexel(F32 u, F32 v, bool retAlpha) const
 {
    LinearColorF col(0.5f, 0.5f, 0.5f);
    // normally sampling wraps all the way around at 1.0,
@@ -751,6 +752,13 @@ LinearColorF GBitmap::sampleTexel(F32 u, F32 v) const
       col.red = F32(buffer[lexelindex + 0]) / 255.0f;
       col.green = F32(buffer[lexelindex + 1]) / 255.0f;
       col.blue = F32(buffer[lexelindex + 2]) / 255.0f;
+      if (retAlpha)
+      {
+         if (getHasTransparency())
+            col.alpha = F32(buffer[lexelindex + 3]) / 255.0f;
+         else
+            col.alpha = 1.0f;
+      }
    }
 
    return col;
@@ -875,20 +883,8 @@ U8 GBitmap::getChanelValueAt(U32 x, U32 y, U32 chan)
 
 //-----------------------------------------------------------------------------
 
-bool GBitmap::combine( const GBitmap *bitmapA, const GBitmap *bitmapB, const GFXTextureOp combineOp )
+bool GBitmap::combine( const GBitmap *bitmapA, const GBitmap *bitmapB, const TextureOp combineOp )
 {
-   // Check valid texture ops
-   switch( combineOp )
-   {
-      case GFXTOPAdd:
-      case GFXTOPSubtract:
-         break;
-
-      default:
-         Con::errorf( "GBitmap::combine - Invalid op type" );
-         return false;
-   }
-
    // Check bitmapA format
    switch( bitmapA->getFormat() )
    {
@@ -963,11 +959,11 @@ bool GBitmap::combine( const GBitmap *bitmapA, const GBitmap *bitmapB, const GFX
             // Combine them (clamp values 0-U8_MAX)
             switch( combineOp )
             {
-               case GFXTOPAdd:
+               case Add:
                   *destBits++ = getMin( U8( pxA + pxB ), U8_MAX );
                   break;
 
-               case GFXTOPSubtract:
+               case Subtract:
                   *destBits++ = getMax( U8( pxA - pxB ), U8( 0 ) );
                   break;
                default:
@@ -1196,7 +1192,7 @@ bool GBitmap::write(Stream& io_rStream) const
 //-------------------------------------- Persistent I/O
 //
 
-bool  GBitmap::readBitmap( const String &bmType, Stream &ioStream )
+bool  GBitmap::readBitmap(const String& bmType, const Torque::Path& path)
 {
    PROFILE_SCOPE(ResourceGBitmap_readBitmap);
    const GBitmap::Registration   *regInfo = GBitmap::sFindRegInfo( bmType );
@@ -1204,23 +1200,34 @@ bool  GBitmap::readBitmap( const String &bmType, Stream &ioStream )
    if ( regInfo == NULL )
    {
       Con::errorf( "[GBitmap::readBitmap] unable to find registration for extension [%s]", bmType.c_str() );
-      return NULL;
+      return false;
    }
 
-   return regInfo->readFunc( ioStream, this );
+   return regInfo->readFunc(path, this);
 }
 
-bool  GBitmap::writeBitmap( const String &bmType, Stream &ioStream, U32 compressionLevel )
+bool  GBitmap::writeBitmap( const String &bmType, const Torque::Path& path, U32 compressionLevel )
 {
+   FileStream stream;
+   if (!stream.open(path, Torque::FS::File::Write))
+   {
+      Con::errorf("GBitmap::writeBitmap failed to open path %s", path.getFullFileName().c_str());
+      stream.close();
+      return false;
+   }
+
+   // free file for stb
+   stream.close();
+
    const GBitmap::Registration   *regInfo = GBitmap::sFindRegInfo( bmType );
 
    if ( regInfo == NULL )
    {
       Con::errorf( "[GBitmap::writeBitmap] unable to find registration for extension [%s]", bmType.c_str() );
-      return NULL;
+      return false;
    }
 
-   return regInfo->writeFunc( this, ioStream, (compressionLevel == U32_MAX) ? regInfo->defaultCompression : compressionLevel );
+   return regInfo->writeFunc(path, this, (compressionLevel == U32_MAX) ? regInfo->defaultCompression : compressionLevel );
 }
 
 template<> void *Resource<GBitmap>::create(const Torque::Path &path)
@@ -1243,7 +1250,7 @@ template<> void *Resource<GBitmap>::create(const Torque::Path &path)
 
    GBitmap *bmp = new GBitmap;
    const String extension = path.getExtension();
-   if( !bmp->readBitmap( extension, stream ) )
+   if( !bmp->readBitmap( extension, path ) )
    {
       Con::errorf( "Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str() );
       delete bmp;
@@ -1325,7 +1332,7 @@ U32 GBitmap::getSurfaceSize(const U32 mipLevel) const
    if (mInternalFormat >= GFXFormatBC1 && mInternalFormat <= GFXFormatBC3)
    {
       // From the directX docs:
-      // max(1, width ÷ 4) x max(1, height ÷ 4) x 8(DXT1) or 16(DXT2-5)
+      // max(1, width / 4) x max(1, height / 4) x 8(DXT1) or 16(DXT2-5)
 
       U32 sizeMultiple = 0;
 
@@ -1352,7 +1359,7 @@ U32 GBitmap::getSurfaceSize(const U32 mipLevel) const
 }
 
 DefineEngineFunction( getBitmapInfo, String, ( const char *filename ),,
-   "Returns image info in the following format: width TAB height TAB bytesPerPixel. "
+   "Returns image info in the following format: width TAB height TAB bytesPerPixel TAB format. "
    "It will return an empty string if the file is not found.\n"
    "@ingroup Rendering\n" )
 {
@@ -1360,7 +1367,89 @@ DefineEngineFunction( getBitmapInfo, String, ( const char *filename ),,
    if ( !image )
       return String::EmptyString;
 
-   return String::ToString( "%d\t%d\t%d", image->getWidth(), 
+   return String::ToString( "%d\t%d\t%d\t%d", image->getWidth(), 
                                           image->getHeight(),
-                                          image->getBytesPerPixel() );
+                                          image->getBytesPerPixel(),
+                                          image->getFormat());
+}
+
+DefineEngineFunction(saveScaledImage, bool, (const char* bitmapSource, const char* bitmapDest, S32 resolutionSize), ("", "", 256),
+   "Loads an image from the source path, and scales it down to the target resolution before"
+   "Saving it out to the destination path.\n")
+{
+   bool isDDS = false;
+
+   if (bitmapSource == 0 || bitmapSource[0] == '\0' || bitmapDest == 0 || bitmapDest[0] == '\0')
+   {
+      return false;
+   }
+
+   if (!Platform::isFile(bitmapSource))
+   {
+      return false;
+   }
+
+   //First, gotta check the extension, as we have some extra work to do if it's
+   //a DDS file
+   const char* ret = dStrrchr(bitmapSource, '.');
+   if (ret)
+   {
+      if (String::ToLower(ret) == String(".dds"))
+         isDDS = true;
+   }
+   else
+   {
+      return false; //no extension? bail out
+   }
+
+   GBitmap* image = NULL;
+   if (isDDS)
+   {
+      Resource<DDSFile> dds = DDSFile::load(bitmapSource, 0);
+      if (dds != NULL)
+      {
+         image = new GBitmap();
+         if (!dds->decompressToGBitmap(image))
+         {
+            delete image;
+            image = NULL;
+         }
+      }
+   }
+   else
+   {
+      Resource<GBitmap> resImage = GBitmap::load(bitmapSource);
+      image = new GBitmap(*resImage);
+   }
+
+   if (!image)
+      return false;
+   Torque::Path sourcePath = Torque::Path(bitmapSource);
+
+   if (isPow2(image->getWidth()) && isPow2(image->getHeight()))
+      image->extrudeMipLevels();
+
+   U32 mipCount = image->getNumMipLevels();
+   U32 targetMips = mFloor(mLog2((F32)(resolutionSize ? resolutionSize : 256))) + 1;
+
+   if (mipCount > targetMips)
+   {
+      image->chopTopMips(mipCount - targetMips);
+   }
+
+   //TODO: support different format targets, for now we just force
+   //to png for simplicity
+   Torque::Path destinationPath = Torque::Path(bitmapDest);
+   destinationPath.setExtension("png");
+
+   if(!image->writeBitmap("png", destinationPath.getFullPath()))
+   {
+      Con::errorf("saveScaledImage() - Error writing %s !", bitmapDest);
+      delete image;
+      return false;
+   }
+
+   
+   delete image;
+   return true;
 }

@@ -52,7 +52,6 @@ public:
   afxXM_Base*   create(afxEffectWrapper* fx, bool on_server);
 
   DECLARE_CONOBJECT(afxXM_BoxAdaptData);
-  DECLARE_CATEGORY("AFX");
 };
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
@@ -99,6 +98,7 @@ afxXM_BoxAdaptData::afxXM_BoxAdaptData(const afxXM_BoxAdaptData& other, bool tem
 
 void afxXM_BoxAdaptData::initPersistFields()
 {
+   docsURL;
   addField("scaleFactor",     TypeF32,        Offset(scale_factor, afxXM_BoxAdaptData),
     "...");
   addField("dimensionRange",  TypePoint2F,    Offset(dim_range, afxXM_BoxAdaptData),

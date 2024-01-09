@@ -109,13 +109,14 @@ DebrisData::DebrisData()
    minSpinSpeed = 0.0f;
    maxSpinSpeed = 0.0f;
    textureName = NULL;
-   shapeName = NULL;
    fade = true;
    useRadiusMass = false;
    baseRadius = 1.0f;
    gravModifier = 1.0f;
    terminalVelocity = 0.0f;
    ignoreWater = true;
+
+   INIT_ASSET(Shape);
 }
 
 //#define TRACK_DEBRIS_DATA_CLONES
@@ -150,8 +151,9 @@ DebrisData::DebrisData(const DebrisData& other, bool temp_clone) : GameBaseData(
    gravModifier = other.gravModifier;
    terminalVelocity = other.terminalVelocity;
    ignoreWater = other.ignoreWater;
-   shapeName = other.shapeName;
-   shape = other.shape; // -- TSShape loaded using shapeName
+
+   CLONE_ASSET(Shape);
+
    textureName = other.textureName;
    explosionId = other.explosionId; // -- for pack/unpack of explosion ptr
    explosion = other.explosion;
@@ -189,12 +191,7 @@ DebrisData* DebrisData::cloneAndPerformSubstitutions(const SimObject* owner, S32
 
 void DebrisData::onPerformSubstitutions() 
 { 
-   if( shapeName && shapeName[0] != '\0')
-   {
-      shape = ResourceManager::get().load(shapeName);
-      if( bool(shape) == false )
-         Con::errorf("DebrisData::onPerformSubstitutions(): failed to load shape \"%s\"", shapeName);
-   }
+   _setShape(getShape());
 }
 
 bool DebrisData::onAdd()
@@ -277,20 +274,20 @@ bool DebrisData::preload(bool server, String &errorStr)
 
    if( server ) return true;
 
-   if( shapeName && shapeName[0] != '\0' && !bool(shape) )
+   if (mShapeAsset.notNull())
    {
-      shape = ResourceManager::get().load(shapeName);
-      if( bool(shape) == false )
+      if (!mShape)
       {
-         errorStr = String::ToString("DebrisData::load: Couldn't load shape \"%s\"", shapeName);
+         errorStr = String::ToString("DebrisData::load: Couldn't load shape \"%s\"", mShapeAssetId);
          return false;
       }
       else
       {
-         TSShapeInstance* pDummy = new TSShapeInstance(shape, !server);
+         TSShapeInstance* pDummy = new TSShapeInstance(mShape, !server);
          delete pDummy;
+         if (!server && !mShape->preloadMaterialList(mShape.getPath()) && NetConnection::filesWereDownloaded())
+            return false;
       }
-
    }
 
    return true;
@@ -298,21 +295,23 @@ bool DebrisData::preload(bool server, String &errorStr)
 
 void DebrisData::initPersistFields()
 {
-   addGroup("Display");
-   addField("texture",              TypeString,                  Offset(textureName,         DebrisData), 
-      "@brief Texture imagemap to use for this debris object.\n\nNot used any more.\n");
-   addField("shapeFile",            TypeShapeFilename,           Offset(shapeName,           DebrisData), 
-      "@brief Object model to use for this debris object.\n\nThis shape is optional.  You could have Debris made up of only particles.\n");
-   endGroup("Display");
+   docsURL;
+   addGroup("Shapes");
+      addField("texture",              TypeString,                  Offset(textureName,         DebrisData), 
+         "@brief Texture imagemap to use for this debris object.\n\nNot used any more.\n", AbstractClassRep::FIELD_HideInInspectors);
+      INITPERSISTFIELD_SHAPEASSET(Shape, DebrisData, "Shape to use for this debris object.");
+   endGroup("Shapes");
 
+   addGroup("Particle Effects");
+      addField("emitters",             TYPEID< ParticleEmitterData >(),  Offset(emitterList,    DebrisData), DDC_NUM_EMITTERS, 
+         "@brief List of particle emitters to spawn along with this debris object.\n\nThese are optional.  You could have Debris made up of only a shape.\n");
+   endGroup("Particle Effects");
    addGroup("Datablocks");
-   addField("emitters",             TYPEID< ParticleEmitterData >(),  Offset(emitterList,    DebrisData), DDC_NUM_EMITTERS, 
-      "@brief List of particle emitters to spawn along with this debris object.\n\nThese are optional.  You could have Debris made up of only a shape.\n");
    addField("explosion",            TYPEID< ExplosionData >(),   Offset(explosion,           DebrisData), 
       "@brief ExplosionData to spawn along with this debris object.\n\nThis is optional as not all Debris explode.\n");
    endGroup("Datablocks");
 
-   addGroup("Physical Properties");
+   addGroup("Physics");
    addField("elasticity",           TypeF32,                     Offset(elasticity,          DebrisData), 
       "@brief A floating-point value specifying how 'bouncy' this object is.\n\nMust be in the range of -10 to 10.\n");
    addField("friction",             TypeF32,                     Offset(friction,            DebrisData), 
@@ -341,7 +340,7 @@ void DebrisData::initPersistFields()
       "@brief Use mass calculations based on radius.\n\nAllows for the adjustment of elasticity and friction based on the Debris size.\n@see baseRadius\n");
    addField("baseRadius",           TypeF32,                     Offset(baseRadius,          DebrisData), 
       "@brief Radius at which the standard elasticity and friction apply.\n\nOnly used when useRaduisMass is true.\n@see useRadiusMass.\n");
-   endGroup("Physical Properties");
+   endGroup("Physics");
 
    addGroup("Behavior");
    addField("explodeOnMaxBounce",   TypeBool,                    Offset(explodeOnMaxBounce,  DebrisData), 
@@ -384,7 +383,8 @@ void DebrisData::packData(BitStream* stream)
    stream->write(ignoreWater);
 
    stream->writeString( textureName );
-   stream->writeString( shapeName );
+
+   PACKDATA_ASSET(Shape);
 
    for( S32 i=0; i<DDC_NUM_EMITTERS; i++ )
    {
@@ -427,7 +427,8 @@ void DebrisData::unpackData(BitStream* stream)
    stream->read(&ignoreWater);
 
    textureName = stream->readSTString();
-   shapeName   = stream->readSTString();
+
+   UNPACKDATA_ASSET(Shape);
 
    for( S32 i=0; i<DDC_NUM_EMITTERS; i++ )
    {
@@ -567,6 +568,7 @@ Debris::~Debris()
 
 void Debris::initPersistFields()
 {
+   docsURL;
    addGroup( "Debris" );	
    
       addField( "lifetime", TypeF32, Offset(mLifetime, Debris), 
@@ -669,18 +671,18 @@ bool Debris::onAdd()
    mFriction = mDataBlock->friction;
 
    // Setup our bounding box
-   if( mDataBlock->shape )
+   if( mDataBlock->mShape )
    {
-      mObjBox = mDataBlock->shape->mBounds;
+      mObjBox = mDataBlock->mShape->mBounds;
    }
    else
    {
       mObjBox = Box3F(Point3F(-1, -1, -1), Point3F(1, 1, 1));
    }
 
-   if( mDataBlock->shape )
+   if( mDataBlock->mShape)
    {
-      mShape = new TSShapeInstance( mDataBlock->shape, true);
+      mShape = new TSShapeInstance( mDataBlock->mShape, true);
    }
 
    if( mPart )

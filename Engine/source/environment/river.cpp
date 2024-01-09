@@ -626,6 +626,7 @@ River::~River()
 
 void River::initPersistFields()
 {
+   docsURL;
    addGroup( "River" );
 
       addField( "SegmentLength",       TypeF32,    Offset( mMetersPerSegment, River ),
@@ -647,7 +648,7 @@ void River::initPersistFields()
 
    addGroup( "Internal" );
 
-      addProtectedField( "Node", TypeString, NULL, &addNodeFromField, &emptyStringProtectedGetFn, "For internal use, do not modify." );
+      addProtectedField( "Node", TypeString, 0, &addNodeFromField, &emptyStringProtectedGetFn, "For internal use, do not modify." );
 
    endGroup( "Internal" );
 
@@ -2254,7 +2255,7 @@ void River::_makeHighLODBuffers()
       }
    }
 
-   if ( numVerts > MAX_DYNAMIC_VERTS || numTriangles * 3 > MAX_DYNAMIC_INDICES )
+   if ( numVerts > GFX_MAX_DYNAMIC_VERTS || numTriangles * 3 > GFX_MAX_DYNAMIC_INDICES )
    {
       mVB_high = NULL;
       mPB_high = NULL;

@@ -26,6 +26,8 @@
 #include "math/mMatrix.h"
 #include "console/console.h"
 
+#include "console/enginePrimitives.h"
+#include "console/engineTypes.h"
 
 const MatrixF MatrixF::Identity( true );
 
@@ -158,6 +160,14 @@ bool MatrixF::fullInverse()
    return true;
 }
 
+void MatrixF::reverseProjection()
+{
+   m[idx(0, 2)] = m[idx(0, 3)] - m[idx(0, 2)];
+   m[idx(1, 2)] = m[idx(1, 3)] - m[idx(1, 2)];
+   m[idx(2, 2)] = m[idx(2, 3)] - m[idx(2, 2)];
+   m[idx(3, 2)] = m[idx(3, 3)] - m[idx(3, 2)];
+}
+
 EulerF MatrixF::toEuler() const
 {
    const F32 * mat = m;
@@ -181,7 +191,7 @@ EulerF MatrixF::toEuler() const
 
 void MatrixF::dumpMatrix(const char *caption /* =NULL */) const
 {
-   U32 size = dStrlen(caption);
+   U32 size = (caption == NULL)? 0 : dStrlen(caption);
    FrameTemp<char> spacer(size+1);
    char *spacerRef = spacer;
 
@@ -192,4 +202,10 @@ void MatrixF::dumpMatrix(const char *caption /* =NULL */) const
    Con::printf("%s   | %-8.4f %-8.4f %-8.4f %-8.4f |", spacerRef,  m[idx(1,0)], m[idx(1, 1)], m[idx(1, 2)], m[idx(1, 3)]);
    Con::printf("%s   | %-8.4f %-8.4f %-8.4f %-8.4f |", spacerRef,  m[idx(2,0)], m[idx(2, 1)], m[idx(2, 2)], m[idx(2, 3)]);
    Con::printf("%s   | %-8.4f %-8.4f %-8.4f %-8.4f |", spacerRef,  m[idx(3,0)], m[idx(3, 1)], m[idx(3, 2)], m[idx(3, 3)]);
+}
+
+EngineFieldTable::Field MatrixFEngineExport::getMatrixField()
+{
+   typedef MatrixF ThisType;
+   return _FIELD_AS(F32, m, m, 16, "");
 }

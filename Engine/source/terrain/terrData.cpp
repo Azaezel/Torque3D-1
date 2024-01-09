@@ -47,11 +47,13 @@
 #include "materials/baseMatInstance.h"
 #include "gfx/gfxTextureManager.h"
 #include "gfx/gfxCardProfile.h"
+#include "gfx/gfxAPI.h"
 #include "core/resourceManager.h"
 #include "T3D/physics/physicsPlugin.h"
 #include "T3D/physics/physicsBody.h"
 #include "T3D/physics/physicsCollision.h"
 #include "console/engineAPI.h"
+#include "core/util/safeRelease.h"
 
 #include "T3D/assets/TerrainMaterialAsset.h"
 using namespace Torque;
@@ -202,7 +204,12 @@ TerrainBlock::TerrainBlock()
    mPhysicsRep( NULL ),
    mScreenError( 16 ),
    mCastShadows( true ),
-   mZoningDirty( false )
+   mZoningDirty( false ),
+   mUpdateBasetex ( true ),
+   mDetailTextureArray( NULL ),
+   mMacroTextureArray( NULL ),
+   mOrmTextureArray( NULL ),
+   mNormalTextureArray( NULL )
 {
    mTypeMask = TerrainObjectType | StaticObjectType | StaticShapeObjectType;
    mNetFlags.set(Ghostable | ScopeAlways);
@@ -213,13 +220,10 @@ TerrainBlock::TerrainBlock()
    mTerrainAssetId = StringTable->EmptyString();
 }
 
-
-extern Convex sTerrainConvexList;
-
 TerrainBlock::~TerrainBlock()
 {
    // Kill collision
-   sTerrainConvexList.nukeList();
+   mTerrainConvexList.nukeList();
 
    SAFE_DELETE(mLightMap);
    mLightMapTex = NULL;
@@ -230,6 +234,11 @@ TerrainBlock::~TerrainBlock()
       editor->detachTerrain(this);
 #endif
    deleteZodiacPrimitiveBuffer();
+
+   SAFE_RELEASE(mDetailTextureArray);
+   SAFE_RELEASE(mMacroTextureArray);
+   SAFE_RELEASE(mNormalTextureArray);
+   SAFE_RELEASE(mOrmTextureArray);
 }
 
 void TerrainBlock::_onTextureEvent( GFXTexCallbackCode code )
@@ -304,7 +313,7 @@ bool TerrainBlock::_setBaseTexFormat(void *obj, const char *index, const char *d
          // If the cached base texture is older that the terrain file or
          // it doesn't exist then generate and cache it.
          String baseCachePath = terrain->_getBaseTexCacheFileName();
-         if (Platform::compareModifiedTimes(baseCachePath, terrain->mTerrainAsset->getTerrainFilePath()) < 0)
+         if (Platform::compareModifiedTimes(baseCachePath, terrain->mTerrainAsset->getTerrainFilePath()) < 0 && terrain->mUpdateBasetex)
             terrain->_updateBaseTexture(true);
          break;
       }
@@ -337,7 +346,7 @@ bool TerrainBlock::_setLightMapSize( void *obj, const char *index, const char *d
 
 bool TerrainBlock::setFile( const FileName &terrFileName )
 {
-   if ( mTerrainAsset && mTerrainAsset->getTerrainFilePath() == terrFileName )
+   if ( mTerrainAsset && mTerrainAsset->getTerrainFilePath() == StringTable->insert(terrFileName) )
       return mFile != NULL;
 
    Resource<TerrainFile> file = ResourceManager::get().load( terrFileName );
@@ -409,7 +418,7 @@ void TerrainBlock::setFile(const Resource<TerrainFile>& terr)
       // If the cached base texture is older that the terrain file or
       // it doesn't exist then generate and cache it.
       String baseCachePath = _getBaseTexCacheFileName();
-      if (Platform::compareModifiedTimes(baseCachePath, mTerrainAsset->getTerrainFilePath()) < 0)
+      if (Platform::compareModifiedTimes(baseCachePath, mTerrainAsset->getTerrainFilePath()) < 0 && mUpdateBasetex)
          _updateBaseTexture(true);
 
       // The base texture should have been cached by now... so load it.
@@ -468,16 +477,21 @@ bool TerrainBlock::saveAsset()
 
       AssetDatabase.findAssetType(pAssetQuery, "TerrainMaterialAsset");
 
-      TerrainBlock* clientTerr = static_cast<TerrainBlock*>(getClientObject());
+      TerrainBlock* terr = static_cast<TerrainBlock*>(getClientObject());
+      if (!terr)
+      {
+         Con::warnf("No active client terrain while trying to save asset. Could be a server action, but should check to be sure!");
+         terr = this;
+      }
 
       for (U32 i = 0; i < pAssetQuery->mAssetList.size(); i++)
       {
          //Acquire it so we can check it for matches
          AssetPtr<TerrainMaterialAsset> terrMatAsset = pAssetQuery->mAssetList[i];
 
-         for (U32 m = 0; m < clientTerr->mFile->mMaterials.size(); m++)
+         for (U32 m = 0; m < terr->mFile->mMaterials.size(); m++)
          {
-            StringTableEntry intMatName = clientTerr->mFile->mMaterials[m]->getInternalName();
+            StringTableEntry intMatName = terr->mFile->mMaterials[m]->getInternalName();
 
             StringTableEntry assetMatDefName = terrMatAsset->getMaterialDefinitionName();
             if (assetMatDefName == intMatName)
@@ -966,12 +980,19 @@ void TerrainBlock::addMaterial( const String &name, U32 insertAt )
 {
    TerrainMaterial *mat = TerrainMaterial::findOrCreate( name );
 
+   StringTableEntry newMatName = StringTable->insert(name.c_str());
+
    if ( insertAt == -1 )
    {
+      //Check to ensure we're not trying to add one that already exists, as that'd be kinda dumb
+      for (U32 i = 0; i < mFile->mMaterials.size(); i++)
+      {
+         if (mFile->mMaterials[i]->getInternalName() == newMatName)
+            return;
+      }
+
       mFile->mMaterials.push_back( mat );
       mFile->_initMaterialInstMapping();
-
-      bool isSrv = isServerObject();
 
       //now we update our asset
       if (mTerrainAsset)
@@ -1151,7 +1172,7 @@ void TerrainBlock::_updatePhysics()
 
    SAFE_DELETE( mPhysicsRep );
 
-   PhysicsCollision *colShape;
+   PhysicsCollision *colShape = NULL;
 
    // If we can steal the collision shape from the local server
    // object then do so as it saves us alot of cpu time and memory.
@@ -1166,22 +1187,31 @@ void TerrainBlock::_updatePhysics()
    }
    else
    {
-      // Get empty state of each vert
-      bool *holes = new bool[ getBlockSize() * getBlockSize() ];
-      for ( U32 row = 0; row < getBlockSize(); row++ )
-         for ( U32 column = 0; column < getBlockSize(); column++ )
-            holes[ row + (column * getBlockSize()) ] = mFile->isEmptyAt( row, column );
+      if (getBlockSize() > 0)
+      {
+         // Get empty state of each vert
+         bool* holes = new bool[getBlockSize() * getBlockSize()];
+         for (U32 row = 0; row < getBlockSize(); row++)
+            for (U32 column = 0; column < getBlockSize(); column++)
+               holes[row + (column * getBlockSize())] = mFile->isEmptyAt(row, column);
 
-      colShape = PHYSICSMGR->createCollision();
-      colShape->addHeightfield( mFile->getHeightMap().address(), holes, getBlockSize(), mSquareSize, MatrixF::Identity );
+         colShape = PHYSICSMGR->createCollision();
+         colShape->addHeightfield(mFile->getHeightMap().address(), holes, getBlockSize(), mSquareSize, MatrixF::Identity);
 
-      delete [] holes;
+         delete[] holes;
+      }
    }
-
-   PhysicsWorld *world = PHYSICSMGR->getWorld( isServerObject() ? "server" : "client" );
-   mPhysicsRep = PHYSICSMGR->createBody();
-   mPhysicsRep->init( colShape, 0, 0, this, world );
-   mPhysicsRep->setTransform( getTransform() );
+   if (getBlockSize() > 0)
+   {
+      PhysicsWorld* world = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
+      mPhysicsRep = PHYSICSMGR->createBody();
+      mPhysicsRep->init(colShape, 0, 0, this, world);
+      mPhysicsRep->setTransform(getTransform());
+   }
+   else
+   {
+      SAFE_DELETE(mPhysicsRep);
+   }
 }
 
 void TerrainBlock::onRemove()
@@ -1251,6 +1281,7 @@ void TerrainBlock::setScale( const VectorF &scale )
 
 void TerrainBlock::initPersistFields()
 {
+   docsURL;
    addGroup( "Media" );
 
       addProtectedField("terrainAsset", TypeTerrainAssetId, Offset(mTerrainAssetId, TerrainBlock),
@@ -1285,6 +1316,8 @@ void TerrainBlock::initPersistFields()
          "Light map dimensions in pixels." );
 
       addField( "screenError", TypeS32, Offset( mScreenError, TerrainBlock ), "Not yet implemented." );
+	
+      addField( "updateBasetex", TypeBool, Offset( mUpdateBasetex, TerrainBlock ), "Whether or not to update the Base Texture" );
 
    endGroup( "Misc" );
 
@@ -1318,13 +1351,6 @@ U32 TerrainBlock::packUpdate(NetConnection* con, U32 mask, BitStream *stream)
    if ( stream->writeFlag( mask & TransformMask ) )
       mathWrite( *stream, getTransform() );
 
-   if ( stream->writeFlag( mask & FileMask ) )
-   {
-      S32 idasdasdf = getId();
-      stream->write(mCRC);
-      stream->writeString( mTerrainAsset.getAssetId() );
-   }
-
    if ( stream->writeFlag( mask & SizeMask ) )
       stream->write( mSquareSize );
 
@@ -1336,12 +1362,20 @@ U32 TerrainBlock::packUpdate(NetConnection* con, U32 mask, BitStream *stream)
       stream->write( mLightMapSize );
    }
 
+   if ( stream->writeFlag( mask & FileMask ) )
+   {
+      stream->write(mCRC);
+      stream->writeString( mTerrainAsset.getAssetId() );
+   }
+
    stream->writeFlag( mask & HeightMapChangeMask );
 
    if ( stream->writeFlag( mask & MiscMask ) )
       stream->write( mScreenError );
 
    stream->writeInt(mBaseTexFormat, 32);
+	
+   stream->writeFlag(mUpdateBasetex);
    stream->writeFlag(mIgnoreZodiacs);
 
    return retMask;
@@ -1358,20 +1392,13 @@ void TerrainBlock::unpackUpdate(NetConnection* con, BitStream *stream)
       setTransform( mat );
    }
 
-   if ( stream->readFlag() ) // FileMask
-   {
-      stream->read(&mCRC);
-
-      char buffer[256];
-      stream->readString(buffer);
-      bool validAsset = setTerrainAsset(StringTable->insert(buffer));
-   }
 
    if ( stream->readFlag() ) // SizeMask
       stream->read( &mSquareSize );
 
    mCastShadows = stream->readFlag();
 
+   bool baseTexSizeChanged = false;
    if ( stream->readFlag() ) // MaterialMask
    {
       U32 baseTexSize;
@@ -1379,8 +1406,7 @@ void TerrainBlock::unpackUpdate(NetConnection* con, BitStream *stream)
       if ( mBaseTexSize != baseTexSize )
       {
          mBaseTexSize = baseTexSize;
-         if ( isProperlyAdded() )
-            _updateBaseTexture( NONE );
+         baseTexSizeChanged = true;
       }
 
       U32 lightMapSize;
@@ -1396,6 +1422,17 @@ void TerrainBlock::unpackUpdate(NetConnection* con, BitStream *stream)
       }
    }
 
+   if (stream->readFlag()) // FileMask
+   {
+      stream->read(&mCRC);
+
+      char buffer[256];
+      stream->readString(buffer);
+      setTerrainAsset(StringTable->insert(buffer));
+   }
+   if (baseTexSizeChanged && isProperlyAdded())
+      _updateBaseTexture(NONE);
+
    if ( stream->readFlag() && isProperlyAdded() ) // HeightMapChangeMask
    {
       _updateBounds();
@@ -1409,6 +1446,8 @@ void TerrainBlock::unpackUpdate(NetConnection* con, BitStream *stream)
       stream->read( &mScreenError );
 
    mBaseTexFormat = (BaseTexFormat)stream->readInt(32);
+	
+   mUpdateBasetex = stream->readFlag();
    mIgnoreZodiacs = stream->readFlag();
 }
 
@@ -1428,6 +1467,24 @@ void TerrainBlock::getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList)
 //-----------------------------------------------------------------------------
 // Console Methods
 //-----------------------------------------------------------------------------
+
+bool TerrainBlock::renameTerrainMaterial(StringTableEntry oldMatName, StringTableEntry newMatName)
+{
+   TerrainMaterial* newMat = TerrainMaterial::findOrCreate(newMatName);
+   if (!newMat)
+      return false;
+
+   U32 terrainMaterialCount = mFile->mMaterials.size();
+   for (U32 i = 0; i < terrainMaterialCount; i++)
+   {
+      if (mFile->mMaterials[i]->getInternalName() == oldMatName)
+      {
+         mFile->mMaterials[i] = newMat;
+      }
+   }
+
+   return true;
+}
 
 DefineEngineMethod( TerrainBlock, save, bool, ( const char* fileName),,
 				   "@brief Saves the terrain block's terrain file to the specified file name.\n\n"
@@ -1452,6 +1509,11 @@ DefineEngineMethod(TerrainBlock, saveAsset, bool, (), ,
    "@return True if file save was successful, false otherwise")
 {
    return static_cast<TerrainBlock*>(object)->saveAsset();
+}
+
+DefineEngineMethod( TerrainBlock, setMaterialsDirty, void, (),, "")
+{
+   static_cast<TerrainBlock*>(object)->setMaterialsDirty();
 }
 
 //ConsoleMethod(TerrainBlock, save, bool, 3, 3, "(string fileName) - saves the terrain block's terrain file to the specified file name.")
@@ -1579,3 +1641,33 @@ void TerrainBlock::deleteZodiacPrimitiveBuffer()
    }
 }
 
+DefineEngineMethod(TerrainBlock, getTerrain, String, (), , "Returns the terrain file used for this terrain block, either via the asset or the filename assigned, which ever is valid")
+{
+   return object->getTerrain(); 
+}
+DefineEngineMethod(TerrainBlock, getTerrainAsset, String, (), , "Returns the assetId used for this terrain block")
+{
+   return object->getTerrainAssetId();
+}
+DefineEngineMethod(TerrainBlock, setTerrain, bool, (const char* terrain), , "Terrain assignment.first tries asset then flat file.")
+{
+   return object->_setTerrain(StringTable->insert(terrain));
+}
+
+DefineEngineMethod(TerrainBlock, getTerrainMaterialCount, S32, (), , "Gets the number of terrain materials for this block")
+{
+   return object->getTerrainMaterialCount();
+}
+
+DefineEngineMethod(TerrainBlock, getTerrainMaterialName, const char*, (S32 index), , "Gets the number of terrain materials for this block")
+{
+   if (index < 0 || index >= object->getTerrainMaterialCount())
+      return StringTable->EmptyString();
+
+   return object->getTerrainMaterialName(index);
+}
+
+DefineEngineMethod(TerrainBlock, renameTerrainMaterial, bool, (const char* oldMaterialName, const char* newMaterialName), , "Updates the terrain material from the original to the new name in the file. Mostly used for import/conversions.")
+{
+   return object->renameTerrainMaterial(StringTable->insert(oldMaterialName), StringTable->insert(newMaterialName));
+}

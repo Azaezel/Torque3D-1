@@ -27,6 +27,8 @@
 /// Compiler intrinsics for GCC.
 
 #ifdef TORQUE_OS_MAC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <libkern/OSAtomic.h>
 #endif
 
@@ -79,10 +81,14 @@ inline bool dCompareAndSwap( volatile U64& ref, U64 oldVal, U64 newVal )
 inline U32 dAtomicRead( volatile U32 &ref )
 {
    #if !defined(TORQUE_OS_MAC)
-      return __sync_fetch_and_add( ( volatile long* ) &ref, 0 );
+      return __sync_fetch_and_add( &ref, 0 );
    #else
       return OSAtomicAdd32( 0, (int32_t* ) &ref);
    #endif
 }
+
+#ifdef TORQUE_OS_MAC
+#pragma GCC diagnostic pop
+#endif
 
 #endif // _TORQUE_PLATFORM_PLATFORMINTRINSICS_GCC_H_

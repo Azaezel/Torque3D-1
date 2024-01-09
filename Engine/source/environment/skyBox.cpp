@@ -56,7 +56,7 @@ SkyBox::SkyBox()
    mTypeMask |= EnvironmentObjectType | StaticObjectType;
    mNetFlags.set(Ghostable | ScopeAlways);
 
-   mMatName = "";
+   INIT_ASSET(Material);
    mMatInstance = NULL;
 
    mIsVBDirty = false;
@@ -114,10 +114,10 @@ void SkyBox::onRemove()
 
 void SkyBox::initPersistFields()
 {
+   docsURL;
    addGroup( "Sky Box" );	
 
-   addField( "material", TypeMaterialName, Offset( mMatName, SkyBox ), 
-      "The name of a cubemap material for the sky box." );
+   INITPERSISTFIELD_MATERIALASSET(Material, SkyBox, "The name of a cubemap material for the sky box.");
 
    addField( "drawBottom", TypeBool, Offset( mDrawBottom, SkyBox ),
       "If false the bottom of the skybox is not rendered." );
@@ -139,8 +139,9 @@ void SkyBox::inspectPostApply()
 U32 SkyBox::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 {
    U32 retMask = Parent::packUpdate( conn, mask, stream );
-   
-   stream->write( mMatName );
+
+   PACK_ASSET(conn, Material);
+
    stream->writeFlag( mDrawBottom );
    stream->write( mFogBandHeight );
 
@@ -151,11 +152,10 @@ void SkyBox::unpackUpdate( NetConnection *conn, BitStream *stream )
 {
    Parent::unpackUpdate( conn, stream );
 
-   String tmpString( "" );
-   stream->read( &tmpString );
-   if ( !tmpString.equal( mMatName, String::NoCase ) )
+   StringTableEntry oldMatName = getMaterial();
+   UNPACK_ASSET(conn, Material);
+   if (oldMatName != getMaterial())
    {
-      mMatName = tmpString;
       _updateMaterial();
    }
 
@@ -573,7 +573,7 @@ void SkyBox::_initRender()
    mFogBandMat->mTranslucent = true;   
    mFogBandMat->mVertColor[0] = true;
    mFogBandMat->mDoubleSided = true;
-   mFogBandMat->mEmissive[0] = true;
+   mFogBandMat->mReceiveShadows[0] = false;
 
    FeatureSet features = MATMGR->getDefaultFeatures();
    features.addFeature(MFT_isBackground);
@@ -604,13 +604,14 @@ void SkyBox::_initMaterial()
    desc.setCullMode( GFXCullNone );
    desc.setBlend( true );
    desc.setZReadWrite( true, false );
-   desc.zFunc = GFXCmpLessEqual;
+   desc.zFunc = GFXCmpGreaterEqual;
    mMatInstance->addStateBlockDesc( desc );
 
    // Also disable lighting on the skybox material by default.
    FeatureSet features = MATMGR->getDefaultFeatures();
    features.removeFeature( MFT_RTLighting );
    features.removeFeature( MFT_Visibility );
+   features.removeFeature(MFT_ReflectionProbes);
    features.addFeature(MFT_isBackground);   
    features.addFeature(MFT_SkyBox);
 
@@ -620,16 +621,15 @@ void SkyBox::_initMaterial()
 
 void SkyBox::_updateMaterial()
 {
-   if ( mMatName.isEmpty() )
-      return;
-
-   Material *pMat = NULL;
-   if ( !Sim::findObject( mMatName, pMat ) )
-      Con::printf( "SkyBox::_updateMaterial, failed to find Material of name %s!", mMatName.c_str() );
-   else if ( isProperlyAdded() )
+   if (!getMaterialResource().isValid())
    {
-      mMaterial = pMat;
-      _initMaterial(); 
+      //If our materialDef isn't valid, try setting it
+      _setMaterial(getMaterial());
+   }
+
+   if (getMaterialResource().isValid())
+   {
+      _initMaterial();
    }
 }
 
