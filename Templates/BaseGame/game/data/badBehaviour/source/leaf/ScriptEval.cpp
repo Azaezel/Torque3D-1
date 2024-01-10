@@ -66,17 +66,17 @@ Status ScriptEval::evaluateScript( SimObject *owner )
       return mDefaultReturnStatus;
 
    // get the result
-   Con::EvalResult result = Con::evaluatef("%%obj=%s; %s return %s;",
+   const char* result = Con::evaluatef("%%obj=%s; %s return %s;",
                                        owner->getIdString(),
                                        mBehaviorScript.c_str(),
-                                       EngineMarshallData< BehaviorReturnType >(mDefaultReturnStatus));
-   
-   if(result.valid)
+                                       EngineMarshallData< BehaviorReturnType >(mDefaultReturnStatus)).value.getString();
+
+   if (result[0] == '1' || result[0] == '0')
       // map true or false to SUCCEED or FAILURE
-      return static_cast<Status>(result.value.getInt());
+      return static_cast<Status>(dAtoi(result));
 
    // convert the returned value to our internal enum type
-   return EngineUnmarshallData< BehaviorReturnType >()( result.value );
+   return EngineUnmarshallData< BehaviorReturnType >()( result );
 }
 
 //------------------------------------------------------------------------------
