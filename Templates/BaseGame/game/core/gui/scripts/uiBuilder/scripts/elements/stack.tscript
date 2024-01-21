@@ -1,0 +1,27 @@
+function UIBuilder::Stack(%base)
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::Stack() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   %stack = new GuiStackControl()
+   {
+      profile = ToolsGuiDefaultProfile;
+      position = "0 0";
+      extent = %baseCtrl.extent;
+      internalName = "content";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+   };
+
+   UIBuilderStack.push_back(%stack);
+   
+   %baseCtrl.add(%stack);
+   
+   return true;
+}

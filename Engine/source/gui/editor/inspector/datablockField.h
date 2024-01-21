@@ -39,9 +39,14 @@ class GuiInspectorDatablockField : public GuiInspectorTypeMenuBase
    protected:
 
       AbstractClassRep *mDesiredClass;
+      SimObjectPtr<GuiBitmapButtonCtrl> mAddButton;
+      SimObjectPtr<GuiButtonCtrl> mEditButton;
+      RectI mBrowseRect;
 
       virtual SimSet* _getDatablockSet() const { return Sim::getDataBlockSet(); }
       virtual void _populateMenu( GuiPopUpMenuCtrlEx* menu );
+      virtual GuiControl* constructEditControl();
+      virtual bool updateRects();
       
    public:
       

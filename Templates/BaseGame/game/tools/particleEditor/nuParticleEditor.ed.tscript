@@ -1,0 +1,80 @@
+function ParticleEditorPlugin::BuildEditorUI(%this)
+{
+   if(isObject(NuParticleEditorWindow))
+      NuParticleEditorWindow.delete();  
+   
+   %peWindow = UIBuilder::Window("Particle Editor", PE_Window.Position.x - PE_Window.Extent.x SPC PE_Window.Position.y, PE_Window.Extent.x SPC PE_Window.Extent.y);
+   %peWindow.setName("NuParticleEditorWindow");
+   %peWindow.closeCommand = "EWorldEditor.remove(NuParticleEditorWindow);";
+   
+      UIBuilder::TabBook();
+         UIBuilder::TabPage("Emitter");
+            UIBuilder::Stack();
+               %inspector = UIBuilder::Inspector("NuParticleEmitterEdInspector");
+            UIBuilder::End();
+         UIBuilder::End();
+         UIBuilder::TabPage("Particle");
+            UIBuilder::Stack();
+               UIBuilder::SameLine();
+                  %particlesListCtrl = UIBuilder::Dropdown();
+                  %particlesListCtrl.setCanSearch(true);
+                  %particlesListCtrl.addCategory("Example Module");
+                  %particlesListCtrl.add("A Test Particle");
+               UIBuilder::End();
+               %inspector = UIBuilder::Inspector("NuParticleEdInspector");
+            UIBuilder::End();
+         UIBuilder::End();
+         UIBuilder::TabPage("Explosion");
+            UIBuilder::Stack();
+               %inspector = UIBuilder::Inspector("NuParticleExplosionEdInspector");
+            UIBuilder::End();
+         UIBuilder::End();
+      UIBuilder::End();
+   UIBuilder::End();
+   
+   NuParticleEmitterEdInspector.inspectCurrentTargets();
+   NuParticleEdInspector.inspectCurrentTargets();
+   NuParticleExplosionEdInspector.inspectCurrentTargets();
+   
+   %this.editorUI = %peWindow;
+   EWorldEditor.add(%peWindow);
+}
+
+function NuParticleEdInspector::inspectCurrentTargets(%this)
+{
+   %this.inspect(GunFireSmoke);
+   
+   //Remove some groups that aren't particularly relevent to our needs
+   %this.removeGroup("Internal");
+   %this.removeGroup("Ungrouped");
+   %this.removeGroup("Editing");
+   %this.removeGroup("Object");
+   %this.removeGroup("Persistence");
+   %this.removeGroup("Dynamic Fields");
+}
+
+function NuParticleEmitterEdInspector::inspectCurrentTargets(%this)
+{
+   %this.inspect(GunFireSmokeEmitter);
+   
+   //Remove some groups that aren't particularly relevent to our needs
+   %this.removeGroup("Internal");
+   %this.removeGroup("Ungrouped");
+   %this.removeGroup("Editing");
+   %this.removeGroup("Object");
+   %this.removeGroup("Persistence");
+   %this.removeGroup("Dynamic Fields");
+}
+
+function NuParticleExplosionEdInspector::inspectCurrentTargets(%this)
+{
+   %this.inspect(BulletDirtExplosion);
+   
+   //Remove some groups that aren't particularly relevent to our needs
+   %this.removeGroup("Internal");
+   %this.removeGroup("Ungrouped");
+   %this.removeGroup("Editing");
+   %this.removeGroup("Object");
+   %this.removeGroup("Persistence");
+   %this.removeGroup("Dynamic Fields");
+}

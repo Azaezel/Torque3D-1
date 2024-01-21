@@ -1,0 +1,31 @@
+function UIBuilder::Dropdown(%list, %defaultText, %variableName)
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::Dropdown() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   %edit = new GuiPopUpMenuCtrlEx()
+   {
+      class = UIBuilderDropdown;
+      profile = ToolsGuiPopUpMenuProfile;
+      extent = %baseCtrl.extent.x SPC $UIBuilder::rowHeight; 
+      text = %defaultText;
+      variable = %variableName;
+      internalName = "dropdown";
+      horizSizing = "width";
+      vertSizing = "bottom";
+   };
+
+   %baseCtrl.add(%edit);
+   
+   return %edit;
+}
+
+function UIBuilderDropdown::setCanSearch(%this, %searchable)
+{
+   %this.allowTextSearch = %searchable;
+}
