@@ -1,4 +1,4 @@
-function GuiFormBuilder::createTreeView(%base, %rootName)
+function GuiFormBuilder::TreeView(%base, %rootName)
 {
    if(%rootName $= "")
       %rootName = "Root";
@@ -13,7 +13,7 @@ function GuiFormBuilder::createTreeView(%base, %rootName)
       vertSizing = "height";
    };
    
-   %stack = new GuiTreeViewCtrl()
+   %tree= new GuiTreeViewCtrl()
    {
       profile = ToolsGuiTreeViewProfile;
       superClass = GuiFormBuilderTreeView;
@@ -26,10 +26,10 @@ function GuiFormBuilder::createTreeView(%base, %rootName)
       rootName = %rootName;
    };
    
-   %scroll.add(%stack);
+   %scroll.add(%tree);
    %base.add(%scroll);
    
-   return %stack;
+   return %scroll;
 }
 
 function GuiFormBuilderTreeView::onWake(%this)

@@ -20,40 +20,66 @@ function UIBuilder::Window(%title, %pos, %ext, %dockable)
       isDockable = %dockable;
    };
    
-   %frameset = new GuiFrameSetCtrl()
+   if(%dockable)
    {
-      profile = ToolsGuiDefaultProfile;
-      class = UIBuilderFrameset;
-      position = $GUIFormBuilder::edgePad SPC 20;
-      extent = (%window.extent.x - ($GUIFormBuilder::edgePad * 2)) SPC (%window.extent.y - 20 - $GUIFormBuilder::edgePad);
-      internalName = "frameSet";
-      horizSizing = "width";
-      vertSizing = "height";
-      margin = "2 2 2 2";
-   };
-   
-   %window.add(%frameset);
-   
-   %scroll = new GuiScrollCtrl()
+      %frameset = new GuiFrameSetCtrl()
+      {
+         profile = ToolsGuiDefaultProfile;
+         class = UIBuilderFrameset;
+         position = $UIBuilder::edgePad SPC 20;
+         extent = (%window.extent.x - ($UIBuilder::edgePad * 2)) SPC (%window.extent.y - 20 - $UIBuilder::edgePad);
+         internalName = "frameSet";
+         horizSizing = "width";
+         vertSizing = "height";
+         margin = "2 2 2 2";
+      };
+      
+      %window.add(%frameset);
+      
+      %scroll = new GuiScrollCtrl()
+      {
+         profile = ToolsGuiScrollProfile;
+         position = "0 0";
+         extent = %frameset.extent;
+         internalName = "scroll";  
+         horizSizing = "width";
+         vertSizing = "height";
+      };
+      %frameset.add(%scroll);
+      
+      %content = new GuiStackControl()
+      {
+         profile = ToolsGuiStackControl;
+         position = "0 0";
+         extent = %frameset.extent;
+         horizSizing = "width";
+         vertSizing = "height";
+      };
+      %scroll.add(%content);
+   }
+   else
    {
-      profile = ToolsGuiScrollProfile;
-      position = "0 0";
-      extent = %frameset.extent;
-      internalName = "scroll";  
-      horizSizing = "width";
-      vertSizing = "height";
-   };
-   %frameset.add(%scroll);
-   
-   %content = new GuiStackControl()
-   {
-      profile = ToolsGuiStackControl;
-      position = "0 0";
-      extent = %frameset.extent;
-      horizSizing = "width";
-      vertSizing = "height";
-   };
-   %scroll.add(%content);
+      %scroll = new GuiScrollCtrl()
+      {
+         profile = ToolsGuiScrollProfile;
+         position = $UIBuilder::edgePad SPC 20;
+         extent = (%window.extent.x - ($UIBuilder::edgePad * 2)) SPC (%window.extent.y - 20 - $UIBuilder::edgePad);
+         internalName = "scroll";  
+         horizSizing = "width";
+         vertSizing = "height";
+      };
+      %window.add(%scroll);
+      
+      %content = new GuiStackControl()
+      {
+         profile = ToolsGuiStackControl;
+         position = "1 0";
+         extent = %scroll.extent.x - 14 SPC %scroll.extent.y; // -10 for the v scroll bar
+         horizSizing = "width";
+         vertSizing = "height";
+      };
+      %scroll.add(%content);
+   }
    
    UIBuilderStack.push_back(%content);
    

@@ -11,7 +11,14 @@ function UIBuilder::EndIndent()
 function UIBuilder::End()
 {
    if(UIBuilderStack.count() != 0)
+   {
+      //Add any special-case "hey lets make sure we're all refreshed and up to date cases
+      %ctrl = UIBuilderStack.getKey(UIBuilderStack.Count()-1);
+      if(%ctrl.class $= "GuiStackCtrl")
+         %ctrl.updateStack();
+         
       UIBuilderStack.pop_back();
+   }
 }
 
 function UIBuilder::SameLine()
@@ -27,10 +34,10 @@ function UIBuilder::SameLine()
    %content = new GuiStackControl()
    {
       profile = ToolsGuiStackControl;
-      position = $GUIFormBuilder::edgePad SPC 20;
-      extent = (%baseCtrl.extent.x - ($GUIFormBuilder::edgePad * 2)) SPC (%baseCtrl.extent.y - 20 - $GUIFormBuilder::edgePad);
+      position = $UIBuilder::edgePad SPC 0;
+      extent = (%baseCtrl.extent.x - ($UIBuilder::edgePad * 2)) SPC $UIBuilder::rowHeight;
       horizSizing = "width";
-      vertSizing = "height";
+      vertSizing = "bottom";
       StackingType = "Horizontal";
    };
    

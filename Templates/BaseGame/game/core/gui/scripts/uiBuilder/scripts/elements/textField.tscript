@@ -1,4 +1,4 @@
-function UIBuilder::TextField(%labelText, %defaultValue)
+function UIBuilder::TextField(%labelText, %variableName)
 {
    if(UIBuilderStack.count() == 0)
    {
@@ -11,7 +11,7 @@ function UIBuilder::TextField(%labelText, %defaultValue)
    %container = new GuiControl()
    {
       position = 0 SPC 0;
-      extent = %baseCtrl.extent.x SPC $GUIFormBuilder::rowHeight;
+      extent = %baseCtrl.extent.x SPC $UIBuilder::rowHeight;
       internalName = "textFieldContainer";
       horizSizing = "right";
       vertSizing = "bottom";
@@ -21,7 +21,7 @@ function UIBuilder::TextField(%labelText, %defaultValue)
    {
       profile = ToolsGuiTextProfile;
       position = "0 0";
-      extent = (%baseCtrl.extent.x / 2) SPC $GUIFormBuilder::rowHeight;
+      extent = (%baseCtrl.extent.x / 2) SPC $UIBuilder::rowHeight;
       text = %labelText;
       internalName = "textFieldLabel";
       horizSizing = "width";
@@ -29,12 +29,15 @@ function UIBuilder::TextField(%labelText, %defaultValue)
    };
    %container.add(%label);
    
+   %defaultValue = getVariable(%variableName);
+   
    %edit = new GuiTextEditCtrl()
    {
       profile = ToolsGuiTextEditProfile;
       position = (%baseCtrl.extent.x / 2) SPC 0;
-      extent = (%baseCtrl.extent.x / 2) SPC $GUIFormBuilder::rowHeight; 
+      extent = (%baseCtrl.extent.x / 2) SPC $UIBuilder::rowHeight; 
       text = %defaultValue;
+      variable = %variableName;
       internalName = "textFieldEdit";
       horizSizing = "width";
       vertSizing = "bottom";
@@ -43,7 +46,7 @@ function UIBuilder::TextField(%labelText, %defaultValue)
    
    %baseCtrl.add(%container);
    
-   return true;
+   return %container;
 }
 
 function GuiFormBuilder::createTextPropertyField(%base, %labelText, %target, %accessor)

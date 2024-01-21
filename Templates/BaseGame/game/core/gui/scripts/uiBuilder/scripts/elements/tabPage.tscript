@@ -1,8 +1,8 @@
-function GuiFormBuilder::createTabPage(%title)
+function UIBuilder::TabPage(%title)
 {
    if(UIBuilderStack.count() == 0)
    {
-      error("UIBuilder::createTabPage() - attempting to create element, but we have no containing control to add it to!");
+      error("UIBuilder::TabPage() - attempting to create element, but we have no containing control to add it to!");
       return false;
    }
    
@@ -10,13 +10,12 @@ function GuiFormBuilder::createTabPage(%title)
    
    if(%baseCtrl.getClassName() !$= "GuiTabBookCtrl")
    {
-      error("UIBuilder::createTabPage() - attempting to create element, but the parent control isn't a tabbook!");
+      error("UIBuilder::TabPage() - attempting to create element, but the parent control isn't a tabbook!");
       return false;
    }
    
    %page = new GuiTabPageCtrl()
    {
-      superClass = GuiFormBuilder;
       text = %title;
       profile = ToolsGuiEditorTabPage;
       position = "0 20";
@@ -24,12 +23,12 @@ function GuiFormBuilder::createTabPage(%title)
       internalName = "page";  
       horizSizing = "width";
       vertSizing = "height";
-      margin = $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad;
+      margin = $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad;
    };
    
    UIBuilderStack.push_back(%page);
    
    %baseCtrl.add(%page);
    
-   return true;
+   return %page;
 }

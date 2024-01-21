@@ -16,14 +16,14 @@ function UIBuilder::Rollout(%title)
       internalName = "rollout";  
       horizSizing = "width";
       vertSizing = "height";
-      margin = $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad SPC $GUIFormBuilder::edgePad;
+      margin = $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad;
    };
    
    %content = new GuiStackControl()
    {
       profile = ToolsGuiStackControl;
-      position = $GUIFormBuilder::edgePad SPC 20;
-      extent = (%baseCtrl.extent.x - ($GUIFormBuilder::edgePad * 2)) SPC (%baseCtrl.extent.y - 20 - $GUIFormBuilder::edgePad);
+      position = $UIBuilder::edgePad SPC 20;
+      extent = (%baseCtrl.extent.x - ($UIBuilder::edgePad * 2)) SPC (%baseCtrl.extent.y - 20 - $UIBuilder::edgePad);
       horizSizing = "width";
       vertSizing = "height";
    };
@@ -34,5 +34,5 @@ function UIBuilder::Rollout(%title)
    
    %baseCtrl.add(%rollout);
    
-   return true;
+   return %rollout;
 }

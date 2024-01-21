@@ -1,5 +1,5 @@
-$GUIFormBuilder::rowHeight = 20;
-$GUIFormBuilder::edgePad = 5;
+$UIBuilder::rowHeight = 20;
+$UIBuilder::edgePad = 5;
 $UIBuilder::indentCount = 0;
 $UIBuilder::indentSize = 10;
 
@@ -10,14 +10,16 @@ function UIBuilder::init()
    
    //load elements
    exec("./scripts/elements/window.tscript");  
-   exec("./scripts/elements/basicStack.tscript"); 
+   exec("./scripts/elements/stack.tscript"); 
    exec("./scripts/elements/rollout.tscript"); 
    exec("./scripts/elements/tabBook.tscript"); 
    exec("./scripts/elements/tabPage.tscript"); 
    exec("./scripts/elements/textField.tscript"); 
+   exec("./scripts/elements/dropDown.tscript");
    exec("./scripts/elements/treeView.tscript"); 
    exec("./scripts/elements/splitContainer.tscript"); 
    exec("./scripts/elements/customLayout.tscript");
+   exec("./scripts/elements/inspector.tscript");
    
    exec("./scripts/tests.tscript");
    

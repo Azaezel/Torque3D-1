@@ -27,11 +27,13 @@
 #include "gui/editor/inspector/group.h"
 #include "gui/buttons/guiIconButtonCtrl.h"
 #include "gui/editor/inspector/datablockField.h"
+
 #include "sfx/sfxTypes.h"
 #include "sfx/sfxDescription.h"
 #include "sfx/sfxEnvironment.h"
 #include "sfx/sfxAmbience.h"
 #include "sfx/sfxTrack.h"
+#include "T3D/gameBase/gameBase.h"
 
 
 //-----------------------------------------------------------------------------
@@ -64,27 +66,87 @@ void GuiInspectorDatablockField::setClassName( StringTableEntry className )
    }
 }
 
-void GuiInspectorDatablockField::_populateMenu( GuiPopUpMenuCtrl* menu )
+void GuiInspectorDatablockField::_populateMenu( GuiPopUpMenuCtrlEx* menu )
 {
+   menu->setCanSearch(true);
    menu->addScheme( 1, ColorI( 80, 0, 0, 255 ), ColorI( 80, 0, 0, 255 ), ColorI( 80, 0, 0, 255 ) ); // For client-only coloring.
    menu->addEntry( "", 0 ); // For unsetting.
 
    SimSet* set = _getDatablockSet();
    U32 id = 1;
 
-   for( SimSet::iterator iter = set->begin(); iter != set->end(); ++ iter )
+   //We can do some special filtering here if it's derived from GameBase a la categories
+   if(mDesiredClass->isSubclassOf(AbstractClassRep::findClassRep("GameBaseData")))
    {
-      SimDataBlock* datablock = dynamic_cast< SimDataBlock* >( *iter );
+      //First, do categories
+      Vector<String> categories;
+      for (SimSet::iterator iter = set->begin(); iter != set->end(); ++iter)
+      {
+         SimDataBlock* datablock = dynamic_cast<SimDataBlock*>(*iter);
+
+         // Skip non-datablocks if we somehow encounter them.
+         if (!datablock)
+            continue;
+
+         if (datablock && (!mDesiredClass || datablock->getClassRep()->isClass(mDesiredClass)))
+         {
+            GameBaseData *data = dynamic_cast<GameBaseData*>(datablock);
+            if(data)
+            {
+               String category = data->mCategory;
+               if(category.isNotEmpty() && (categories.empty() || categories.find_next(category) == -1))
+                  categories.push_back(category);
+            }
+         }
+      }
+
+      if (categories.size() > 0)
+      {
+         categories.push_back("No Category");
+
+         //Now that we have our categories, lets populate our list
+         for (Vector<String>::iterator catIter = categories.begin(); catIter != categories.end(); ++catIter)
+         {
+            StringTableEntry categoryName = StringTable->insert(catIter->c_str());
+            if (categoryName != StringTable->EmptyString())
+            {
+               menu->addCategory(categoryName);
+               id++;
+            }
+
+            for (SimSet::iterator iter = set->begin(); iter != set->end(); ++iter)
+            {
+               GameBaseData* datablock = dynamic_cast<GameBaseData*>(*iter);
+
+               // Skip non-datablocks if we somehow encounter them.
+               if (!datablock)
+                  continue;
+
+               if (datablock && (!mDesiredClass || datablock->getClassRep()->isClass(mDesiredClass)) &&
+                  (datablock->mCategory == categoryName || (datablock->mCategory == StringTable->EmptyString() && categoryName == StringTable->insert("No Category"))))
+               {
+                  menu->addEntry(datablock->getName(), id++, datablock->isClientOnly() ? 1 : 0, true);
+               }
+            }
+         }
+
+         return;
+      }
+   }
+
+   for (SimSet::iterator iter = set->begin(); iter != set->end(); ++iter)
+   {
+      SimDataBlock* datablock = dynamic_cast<SimDataBlock*>(*iter);
 
       // Skip non-datablocks if we somehow encounter them.
-      if( !datablock )
+      if (!datablock)
          continue;
 
       // Ok, now we have to figure inheritance info.
-      if( datablock && ( !mDesiredClass || datablock->getClassRep()->isClass( mDesiredClass ) ) )
-         menu->addEntry( datablock->getName(), id ++, datablock->isClientOnly() ? 1 : 0 );
+      if (datablock && (!mDesiredClass || datablock->getClassRep()->isClass(mDesiredClass)))
+         menu->addEntry(datablock->getName(), id++, datablock->isClientOnly() ? 1 : 0);
    }
-   
+
    menu->sort();
 }
 
