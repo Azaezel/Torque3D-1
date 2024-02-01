@@ -9,6 +9,25 @@ datablock StaticShapeData(SpikeTrap)
    TriggerDamage = 10;
 };
 
+datablock TriggerData(TrapTrigger)
+{
+   classname = "TrapTriggerData";
+   tickPeriodMS = 100;
+};
+
+datablock TriggerData(TrapDamager)
+{
+   classname = "TrapDamagerData";
+   tickPeriodMS = 100;
+};
+
+datablock TriggerData(EnvironmentalDamager)
+{
+   tickPeriodMS = 500;
+   TriggerDamage = 5;
+};
+
+
 datablock DebrisData( barrelDebris )
 {
    explodeOnMaxBounce = false;
@@ -39,7 +58,7 @@ datablock DebrisData( barrelDebris )
 
 datablock ExplosionData(BarrelExplosion)
 {
-   lifeTimeMS = "992"; // Quick flash, short burn, and moderate dispersal
+   lifeTimeMS = "992"; // match the animated particle lifetime
 
    // Volume particles
    particleDensity = 1;
@@ -78,25 +97,8 @@ datablock RigidShapeData(boomBarrel)
    collisionTol = "0.1";
    contactTol = "0.01";
    mass = "500";
+   //used by the blowup() method
    DebrisShapeAsset = "trapsNTriggers:barrelDebris_shape";
    debris = barrelDebris;
    explosion = BarrelExplosion;
-};
-
-datablock TriggerData(TrapTrigger)
-{
-   classname = "TrapTriggerData";
-   tickPeriodMS = 100;
-};
-
-datablock TriggerData(TrapDamager)
-{
-   classname = "TrapDamagerData";
-   tickPeriodMS = 100;
-};
-
-datablock TriggerData(EnvironmentalDamager)
-{
-   tickPeriodMS = 500;
-   TriggerDamage = 5;
 };

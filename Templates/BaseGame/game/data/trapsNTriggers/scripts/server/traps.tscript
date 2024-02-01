@@ -1,7 +1,79 @@
+// ============================================================================== 
+//a simple case: enter a trigger, get harmed
+// ============================================================================== 
+//EnvironmentalDamager periodic evaluation based on it's .tickPeriodMS
+function EnvironmentalDamager::onTickTrigger(%this,%trigger)
+{	
+    // see how many objects are within a given trigger
+	%count = %trigger.getNumObjects();
+	// see how many are of a valid type
+	%victimCount = 0;	
+	for (%i=0;%i<%count;%i++)
+	{
+		%victim = %trigger.getObject(%i);
+		if (%victim.getType() &$TypeMasks::PlayerObjectType)
+		{
+			%victimCount++;
+		}
+	}
+	//if any exist
+	if (%victimCount>0)
+	{
+		for (%i=0;%i<%count;%i++)
+		{
+			%victim = %trigger.getObject(%i);
+            %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
+			if (%victim.getType() & %damageMask)
+			{
+                //hurt them
+                %victim.damage(%trigger, %trigger.position, %this.TriggerDamage, "environmmental");
+			}
+		}
+	}
+}
+
+// ============================================================================== 
+// a more complex case: 
+// using a prefab in conjunction with internalname lookups 
+// to give players a visual lead that they may take damage
+// ============================================================================== 
+//traptriggerdata periodic evaluation based on it's .tickPeriodMS
+/this particular trigger is for setting the trap off
+function TrapTriggerData::onTickTrigger(%this,%trigger)
+{	
+	%count = %trigger.getNumObjects();	
+	%victimCount = 0;
+	
+	for (%i=0;%i<%count;%i++)
+	{
+        //check objects within the trigger
+		%victim = %trigger.getObject(%i);
+        
+        //deterine object type
+        %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
+	    if (%victim.getType() & %damageMask)
+		{
+            //if valid, increment
+			%victimCount++;
+		}
+	}
+    //check the group prefab this trigger is a part of for the
+    //internalname of another object labeled vis
+    //this corresponds to a StaticShape object that
+    //unlike tsstatics, can recieve commands
+    
+	%visobject = %trigger.parentGroup-->vis;
+    //activate the trap
+    //look it up from the shared datablock namespace level
+    %visobject.getDatablock().setActive(%visobject,(%victimCount>0));
+}
+
+//activate a trap
 function trapData::setActive(%this, %obj, %activate)
 {
     if (%obj.activeState == %activate) return;
     
+    //start or stop an animation based on triggered state
     if (%activate)
     {
         %obj.playAudio(0,%this.ambientSound);
@@ -15,15 +87,22 @@ function trapData::setActive(%this, %obj, %activate)
     }
 }
 
+// on completion of a given animation, 
+// if a trap datablock has a method defined in the form
+// on<AnimName>, execute it
 function trapData::onEndSequence(%this, %obj, %slot, %name)
 {
    %script = "on" @ %name;
    if(%this.isMethod(%script))
       %this.call(%script, %obj);
 }
-
+// with a StaticShapeData pointing at a shape  
+// with an animation labeled Trip
+// onEndSequence generates an attept at calling onTrip
 function trapData::onTrip(%this,%obj)
 {
+    // as earlier, we check the larger triggers prefab 
+    // for a secondary trigger with an internalname of damager
     %damageTrigger = %obj.parentGroup-->damager;
 	%count = %damageTrigger.getNumObjects();	
 	%victimCount = 0;	
@@ -35,7 +114,9 @@ function trapData::onTrip(%this,%obj)
 		{
 			%victimCount++;
 		}
-	}	
+	}
+    
+    //if we've caught a valid damageable object within the smaller trigger
 	if (%victimCount>0)
 	{
 		for (%i=0;%i<%count;%i++)
@@ -44,69 +125,35 @@ function trapData::onTrip(%this,%obj)
             %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
 			if (%victim.getType() & %damageMask)
 			{
+                //hurt them
                 %victim.damage(%damageTrigger, %damageTrigger.position, %this.TriggerDamage, "trap");
 			}
 		}
 	}
+    //set the trap back by playing a followthrough animation
     %obj.playthread(0, "TripDone");
 }
 
+//followthrough animation callback to reset the state
 function trapData::onTripDone(%this,%obj)
 {
     %obj.activeState = false;
 }
 
-function TrapTriggerData::onTickTrigger(%this,%trigger)
-{	
-	%count = %trigger.getNumObjects();	
-	%victimCount = 0;
-	
-	for (%i=0;%i<%count;%i++)
-	{
-		%victim = %trigger.getObject(%i);
-        %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
-	    if (%victim.getType() & %damageMask)
-		{
-			%victimCount++;
-		}
-	}
-	%visobject = %trigger.parentGroup-->vis;
-    %visobject.getDatablock().setActive(%visobject,(%victimCount>0));
-}
-
-function EnvironmentalDamager::onTickTrigger(%this,%trigger)
-{	
-	%count = %trigger.getNumObjects();	
-	%victimCount = 0;
-	
-	for (%i=0;%i<%count;%i++)
-	{
-		%victim = %trigger.getObject(%i);
-		if (%victim.getType() &$TypeMasks::PlayerObjectType)
-		{
-			%victimCount++;
-		}
-	}
-	
-	if (%victimCount>0)
-	{
-		for (%i=0;%i<%count;%i++)
-		{
-			%victim = %trigger.getObject(%i);
-            %damageMask = $TypeMasks::PlayerObjectType | $TypeMasks::VehicleObjectType;
-			if (%victim.getType() & %damageMask)
-			{
-                %victim.damage(%trigger, %trigger.position, %this.TriggerDamage, "environmmental");
-			}
-		}
-	}
-}
-
+// ============================================================================== 
+// non trigger based
+// ============================================================================== 
+// exploding barrel. 'nuff said
+// ============================================================================== 
 function boomBarrel::damage(%this, %obj, %sourceObject, %position, %damage, %damageType)
 {
    if (!isObject(%obj) || !%damage)
       return;
 
+   //note that if an objet has an animation labeled "damage"
+   //and a datablock with a destroyedLevel entry
+   //not only will the health tracking number change
+   //but a blended animation will be applied as a percentage of accumulated damage to that value
    %obj.applyDamage(%damage);
    
    //determine the direction damage came from
