@@ -21,11 +21,13 @@
 //-----------------------------------------------------------------------------
 
 #include "platform/platform.h"
+#include "console/console.h"
 
 #include "core/stream/fileStream.h"
 #include "core/stream/memStream.h"
 #include "core/strings/stringFunctions.h"
 #include "gfx/bitmap/gBitmap.h"
+#include "gfx/bitmap/imageUtils.h"
 
 #ifdef __clang__
 #define STBIWDEF static inline
@@ -40,7 +42,18 @@
 #include "stb_image_write.h"
 
 static bool sReadSTB(const Torque::Path& path, GBitmap* bitmap);
+static bool sReadStreamSTB(Stream& stream, GBitmap* bitmap, U32 len);
+
 static bool sWriteSTB(const Torque::Path& path, GBitmap* bitmap, U32 compressionLevel);
+static bool sWriteStreamSTB(const String& bmType, Stream& stream, GBitmap* bitmap, U32 compressionLevel);
+
+// stbi_write callback / rextimmy.
+static void stbiWriteFunc(void* context, void* data, int size)
+{
+   Stream* stream = static_cast<Stream*>(context);
+   stream->write(size);
+   stream->write(size, data);
+}
 
 static struct _privateRegisterSTB
 {
@@ -58,8 +71,10 @@ static struct _privateRegisterSTB
       reg.extensions.push_back("tga");
 
       reg.readFunc = sReadSTB;
+      reg.readStreamFunc = sReadStreamSTB;
 
       reg.writeFunc = sWriteSTB;
+      reg.writeStreamFunc = sWriteStreamSTB;
 
       // for png only.
       reg.defaultCompression = 6;
@@ -194,6 +209,64 @@ bool sReadSTB(const Torque::Path& path, GBitmap* bitmap)
    return true;
 }
 
+bool sReadStreamSTB(Stream& stream, GBitmap* bitmap, U32 len)
+{
+   PROFILE_SCOPE(sReadStreamSTB);
+   // only used for font at the moment.
+
+   U8* data = new U8[len];
+   stream.read(len, data);
+
+   S32 width, height, comp = 0;
+   if (stbi_info_from_memory(data, len, &width, &height, &comp))
+   {
+      const char* stbErr = stbi_failure_reason();
+
+      if (!stbErr)
+         stbErr = "Unknown Error!";
+
+      Con::errorf("STB failed to get image info: %s", stbErr);
+      return false;
+   }
+
+   S32 reqCom = comp;
+
+   unsigned char* pixelData = stbi_load_from_memory((const U8*)data, (int)len, &width, &height, &comp, reqCom);
+
+   if (!pixelData)
+   {
+      const char* stbErr = stbi_failure_reason();
+
+      if (!stbErr)
+         stbErr = "Unknown Error!";
+
+      Con::errorf("sReadStreamSTB Error: %s", stbErr);
+      return false;
+   }
+   bitmap->deleteImage();
+
+   //work out what format we need to use - todo floating point?
+   GFXFormat fmt = GFXFormat_FIRST;
+   switch (comp)
+   {
+   case 1: fmt = GFXFormatA8; break;
+   case 2: fmt = GFXFormatA8L8; break; //todo check this
+   case 3: fmt = GFXFormatR8G8B8; break;
+   case 4: fmt = GFXFormatR8G8B8A8; break;
+   }
+
+   bitmap->allocateBitmap(width, height, false, fmt);
+
+   U8* pBase = bitmap->getWritableBits(0);
+   U32 rowBytes = bitmap->getByteSize();
+   dMemcpy(pBase, pixelData, rowBytes);
+
+   dFree(data);
+   dFree(pixelData);
+
+   return true;
+}
+
 /**
  * Write bitmap to an image file.
  *
@@ -268,4 +341,129 @@ bool sWriteSTB(const Torque::Path& path, GBitmap* bitmap, U32 compressionLevel)
    }
 
    return false;
+}
+
+bool sWriteStreamSTB(const String& bmType, Stream& stream, GBitmap* bitmap, U32 compressionLevel)
+{
+   PROFILE_SCOPE(sWriteStreamSTB);
+
+   S32 width = bitmap->getWidth();
+   S32 height = bitmap->getHeight();
+   const U8* pPixelData = bitmap->getBits();
+   S32 channels = bitmap->getBytesPerPixel();
+
+   if (bmType == String("png"))
+   {
+      stbi_write_png_compression_level = compressionLevel;
+      if (stbi_write_png_to_func(stbiWriteFunc, &stream, width, height, channels, pPixelData, width * channels))
+         return true;
+   }
+   else if (bmType == String("tga"))
+   {
+      if (stbi_write_tga_to_func(stbiWriteFunc, &stream, width, height, channels, pPixelData))
+         return true;
+   }
+   else if (bmType == String("bmp"))
+   {
+      if (stbi_write_bmp_to_func(stbiWriteFunc, &stream, width, height, channels, pPixelData))
+         return true;
+   }
+   else if (bmType == String("jpg") || bmType == String("jpeg"))
+   {
+      if (stbi_write_jpg_to_func(stbiWriteFunc, &stream, width, height, channels, pPixelData, compressionLevel))
+         return true;
+   }
+   else if (bmType == String("hdr"))
+   {
+      if (stbi_write_hdr_to_func(stbiWriteFunc, &stream, width, height, channels, (const F32*)pPixelData))
+         return true;
+   }
+
+   return false;
+}
+
+struct DeferredPNGWriterData
+{
+   S32 width = 0;
+   S32 height = 0;
+   S32 channels = 0;
+   dsize_t offset = 0;
+   U8* pPixelData = NULL;
+   GFXFormat format;
+   Stream* pStream = NULL;
+};
+
+DeferredPNGWriter::DeferredPNGWriter() :
+   mData(NULL),
+   mActive(false)
+{
+   mData = new DeferredPNGWriterData();
+}
+
+DeferredPNGWriter::~DeferredPNGWriter()
+{
+   if (mData)
+   {
+      SAFE_DELETE_ARRAY(mData->pPixelData);
+   }
+
+   SAFE_DELETE(mData);
+}
+
+bool DeferredPNGWriter::begin(GFXFormat format, S32 width, S32 height, Stream& stream)
+{
+   // ONLY RGB bitmap writing supported at this time!
+   AssertFatal(format == GFXFormatR8G8B8 ||
+      format == GFXFormatR8G8B8A8 ||
+      format == GFXFormatR8G8B8X8 ||
+      format == GFXFormatA8 ||
+      format == GFXFormatR5G6B5, "DeferredPNGWriter::begin: ONLY RGB bitmap writing supported at this time.");
+
+   if (format != GFXFormatR8G8B8 &&
+      format != GFXFormatR8G8B8A8 &&
+      format != GFXFormatR8G8B8X8 &&
+      format != GFXFormatA8 &&
+      format != GFXFormatR5G6B5)
+   {
+      return false;
+   }
+
+   mData->pStream = &stream;
+   mData->width = width;
+   mData->height = height;
+   mData->format = format;
+
+   const size_t dataSize = GFXFormat_getByteSize(format) * width * height;
+   mData->pPixelData = new U8[dataSize];
+
+   mActive = true;
+
+   return true;
+}
+
+void DeferredPNGWriter::append(GBitmap* bitmap, U32 rows)
+{
+   AssertFatal(mActive, "Cannot append to an inactive DeferredPNGWriter!");
+
+   if (mData->channels == 0)
+   {
+      mData->channels = bitmap->getBytesPerPixel();
+   }
+
+   const U32 height = getMin(bitmap->getHeight(), rows);
+   const dsize_t dataChuckSize = bitmap->getByteSize();
+
+   const U8* pSrcData = bitmap->getBits();
+   U8* pDstData = mData->pPixelData + mData->offset;
+   dMemcpy(pDstData, pSrcData, dataChuckSize);
+   mData->offset += dataChuckSize;
+}
+
+void DeferredPNGWriter::end()
+{
+   AssertFatal(mActive, "Cannot end an inactive DeferredPNGWriter!");
+
+   stbi_write_png_to_func(stbiWriteFunc, mData->pStream, mData->width, mData->height, mData->channels, mData->pPixelData, mData->width * mData->channels);
+
+   mActive = false;
 }
