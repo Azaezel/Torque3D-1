@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="acidBath_shape"
+    fileName="@assetFile=acidBath.dae"
+    constuctorFileName="@assetFile=acidBath.tscript"
+    materialSlot0="@asset=trapsNTriggers:FloorGray"/>

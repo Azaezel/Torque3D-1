@@ -1,0 +1,57 @@
+//--- OBJECT WRITE BEGIN ---
+$ThisPrefab = new SimGroup() {
+
+   new TSStatic() {
+      ShapeAsset = "trapsNTriggers:acidBath_shape";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
+   };
+   new WaterBlock() {
+      density = "0";
+      viscosity = "90";
+      liquidType = "Ick";
+      baseColor = "84 74 5 255";
+      specularPower = "20";
+      specularColor = "0.090842 0.009134 0.004777 1";
+      waveDir[0] = "0 1";
+      waveDir[1] = "0.707 0.707";
+      waveDir[2] = "0.5 0.86";
+      waveSpeed[0] = "1";
+      waveSpeed[1] = "1";
+      waveSpeed[2] = "1";
+      waveMagnitude[0] = "0.2";
+      waveMagnitude[1] = "0.2";
+      waveMagnitude[2] = "0.2";
+      overallWaveMagnitude = "0.1";
+      RippleTex = "Core_Rendering:ripple_image";
+      RippleTexAsset = "Core_Rendering:ripple_image";
+      rippleDir[0] = "0 1";
+      rippleDir[1] = "0.707 0.707";
+      rippleDir[2] = "0.5 0.86";
+      rippleSpeed[0] = "0.065";
+      rippleSpeed[1] = "0.09";
+      rippleSpeed[2] = "0.04";
+      rippleTexScale[0] = "7.14 7.14";
+      rippleTexScale[1] = "6.25 12.5";
+      rippleTexScale[2] = "50 50";
+      overallRippleMagnitude = "0.25";
+      FoamTex = "Core_Rendering:foam_image";
+      FoamTexAsset = "Core_Rendering:foam_image";
+      foamSpeed[0] = "0.1";
+      foamMaxDepth = "1";
+      foamAmbientLerp = "0";
+      reflectivity = "1";
+      waterFogDensity = "1";
+      waterFogDensityOffset = "2";
+      wetDepth = "0.1";
+      wetDarkening = "0.9";
+      DepthGradientTex = "Core_Rendering:depthcolor_ramp_image";
+      DepthGradientTexAsset = "Core_Rendering:depthcolor_ramp_image";
+      distortEndDist = "5";
+      distortFullDepth = "5";
+      underwaterColor = "255 16 3 240";
+      position = "0 0 0.99875";
+      scale = "7 7 1";
+   };
+};
+//--- OBJECT WRITE END ---

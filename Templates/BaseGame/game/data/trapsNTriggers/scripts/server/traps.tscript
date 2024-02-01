@@ -38,7 +38,7 @@ function EnvironmentalDamager::onTickTrigger(%this,%trigger)
 // to give players a visual lead that they may take damage
 // ============================================================================== 
 //traptriggerdata periodic evaluation based on it's .tickPeriodMS
-/this particular trigger is for setting the trap off
+//this particular trigger is for setting the trap off
 function TrapTriggerData::onTickTrigger(%this,%trigger)
 {	
 	%count = %trigger.getNumObjects();	
@@ -171,4 +171,29 @@ function boomBarrel::damage(%this, %obj, %sourceObject, %position, %damage, %dam
         %obj.blowUp();
         %obj.delete();
    }
+}
+
+// ============================================================================== 
+// and what set of traps is complete without a nice relaxing acid bath
+// ============================================================================== 
+//first check if a player enters a relevant liquid
+function playerData::onEnterLiquid(%this, %obj, %coverage, %type)
+{
+    if (%type $= "Ick") //if so, apply a damage-over-time effect
+        %obj.acidDot = %obj.getDatablock().schedule(1000, "takeDot", %obj, %type, 5);
+}
+
+// schedule can be used to call a method recursively
+// note that it returns a handle to the scheduled methodcall event 
+function playerData::takeDot(%this, %obj, %type, %damage)
+{
+    cancel(%obj.acidDot);
+    %obj.applyDamage(%damage);
+    %obj.acidDot = %obj.getDatablock().schedule(1000, "takeDot", %obj, %type, 5);
+}
+
+//do note a recursively called method *must* be manually canceled
+function playerData::onLeaveLiquid(%this, %obj, %type)
+{
+    cancel(%obj.acidDot);
 }
