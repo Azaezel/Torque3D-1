@@ -9,6 +9,80 @@ datablock StaticShapeData(SpikeTrap)
    TriggerDamage = 10;
 };
 
+datablock DebrisData( barrelDebris )
+{
+   explodeOnMaxBounce = false;
+
+   elasticity = 0.15;
+   friction = 0.5;
+
+   lifetime = 600.0;
+   lifetimeVariance = 0.0;
+
+   minSpinSpeed = 40;
+   maxSpinSpeed = 600;
+
+   numBounces = 5;
+   bounceVariance = 0;
+
+   staticOnMaxBounce = true;
+   gravModifier = 1.0;
+
+   useRadiusMass = true;
+   baseRadius = 1.0;
+
+   velocity = "10";
+   velocityVariance = "10";
+   
+   cutoffDist = "25";
+};
+
+datablock ExplosionData(BarrelExplosion)
+{
+   lifeTimeMS = "992"; // Quick flash, short burn, and moderate dispersal
+
+   // Volume particles
+   particleDensity = 1;
+   particleRadius = "0";
+
+   // Point emission
+   emitter[0] = "omniFlameEM";
+
+   // Camera Shaking
+   shakeCamera = true;
+   camShakeFreq = "10.0 11.0 9.0";
+   camShakeAmp = "4.0 4.0 4.0";
+   camShakeDuration = 1.5;
+   camShakeRadius = "200";
+   faceViewer = "1";
+   ParticleEmitter = "omniFlameEM";
+   lightStartBrightness = "20";
+   lightEndBrightness = "10";
+   lightStartRadius = "20";
+   lightStartColor = "1 1 0 1";
+   lightEndColor = "1 1 0 1";
+};
+
+datablock RigidShapeData(boomBarrel)
+{
+   ShapeAsset = "trapsNTriggers:splodieBarrel_shape";
+   renderWhenDestroyed = "1";
+   maxDamage = "100";
+   repairRate = "0";
+   disabledLevel = "80";
+   destroyedLevel = "90";
+   cameraMaxDist = "0.75";
+   integration = "8";
+   bodyRestitution = "0.1";
+   bodyFriction = "0.5";
+   collisionTol = "0.1";
+   contactTol = "0.01";
+   mass = "500";
+   DebrisShapeAsset = "trapsNTriggers:barrelDebris_shape";
+   debris = barrelDebris;
+   explosion = BarrelExplosion;
+};
+
 datablock TriggerData(TrapTrigger)
 {
    classname = "TrapTriggerData";

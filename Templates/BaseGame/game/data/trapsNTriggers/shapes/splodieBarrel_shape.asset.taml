@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="splodieBarrel_shape"
+    fileName="@assetFile=splodieBarrel.dae"
+    constuctorFileName="@assetFile=splodieBarrel.tscript"
+    materialSlot0="@asset=trapsNTriggers:interactiveRed"/>

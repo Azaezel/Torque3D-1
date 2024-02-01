@@ -101,3 +101,27 @@ function EnvironmentalDamager::onTickTrigger(%this,%trigger)
 		}
 	}
 }
+
+function boomBarrel::damage(%this, %obj, %sourceObject, %position, %damage, %damageType)
+{
+   if (!isObject(%obj) || !%damage)
+      return;
+
+   %obj.applyDamage(%damage);
+   
+   //determine the direction damage came from
+   %impulseVec = vectorSub(%obj.position,%position);
+   %impulseVec = vectorNormalize(%impulseVec);
+   
+   //apply an impulse based on how much damage it took
+   //and how much force it would take to move that much mass
+   %impulseVec = vectorMul(%impulseVec, (%damage / %this.maxDamage) * (%this.mass*32));
+   %obj.applyImpulse(%position,%impulseVec );
+   
+   //if we've taken more than the destroyed level, delete ourselves
+   if (%obj.getDamageLevel()>%this.destroyedLevel)
+   {
+        %obj.blowUp();
+        %obj.delete();
+   }
+}

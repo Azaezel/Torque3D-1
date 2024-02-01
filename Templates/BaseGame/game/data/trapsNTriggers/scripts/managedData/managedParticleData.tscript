@@ -37,7 +37,7 @@ datablock ParticleData(omniFlamePart : DefaultParticle)
    animTexFrames = "0 1-40";
    framesPerSec = "40";
    inheritedVelFactor = "0";
-   lifetimeMS = "2000";
+   lifetimeMS = "1000";
    lifetimeVarianceMS = "0";
    animateTexture = "1";
    dragCoefficient = "0";

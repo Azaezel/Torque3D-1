@@ -31,6 +31,6 @@ datablock ParticleEmitterData(omniFlameEM : DefaultEmitter)
    blendStyle = "NORMAL";
    orientParticles = "0";
    glow = "1";
-   periodVarianceMS = "999";
+   periodVarianceMS = "0";
    softParticles = "1";
 };

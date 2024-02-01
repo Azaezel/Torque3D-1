@@ -1,0 +1,5 @@
+<ShapeAsset
+    AssetName="barrelDebris_shape"
+    fileName="@assetFile=barrelDebris.dae"
+    constuctorFileName="@assetFile=barrelDebris.tscript"
+    materialSlot0="@asset=trapsNTriggers:interactiveRed"/>
