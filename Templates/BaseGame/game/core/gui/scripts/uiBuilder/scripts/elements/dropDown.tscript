@@ -1,4 +1,4 @@
-function UIBuilder::Dropdown(%list, %defaultText, %variableName)
+function UIBuilder::Dropdown(%list, %variableName, %changeCommand)
 {
    if(UIBuilderStack.count() == 0)
    {
@@ -8,19 +8,34 @@ function UIBuilder::Dropdown(%list, %defaultText, %variableName)
    
    %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
    
+   %defaultValue = getVariable(%variableName);
+   
    %edit = new GuiPopUpMenuCtrlEx()
    {
       class = UIBuilderDropdown;
       profile = ToolsGuiPopUpMenuProfile;
       extent = %baseCtrl.extent.x SPC $UIBuilder::rowHeight; 
-      text = %defaultText;
+      text = %defaultValue;
       variable = %variableName;
+      command = %changeCommand;
       internalName = "dropdown";
       horizSizing = "width";
       vertSizing = "bottom";
    };
+   
+   if(%baseCtrl.getClassName() $= "GuiStackControl" && %baseCtrl.StackingType $= "Horizontal")
+   {
+      %edit.horizSizing = "right";
+      %edit.vertSizing = "height";
+   }
 
    %baseCtrl.add(%edit);
+   
+   for(%i=0; %i < getFieldCount(%list); %i++)
+   {
+      %entry = getField(%list, %i);
+      %edit.add(%entry);  
+   }
    
    return %edit;
 }

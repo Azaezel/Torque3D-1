@@ -44,6 +44,12 @@ function UIBuilder::TextField(%labelText, %variableName)
    };
    %container.add(%edit);
    
+   if(%baseCtrl.getClassName() $= "GuiStackControl" && %baseCtrl.StackingType $= "Horizontal")
+   {
+      %container.horizSizing = "right";
+      %container.vertSizing = "height";
+   }
+   
    %baseCtrl.add(%container);
    
    return %container;

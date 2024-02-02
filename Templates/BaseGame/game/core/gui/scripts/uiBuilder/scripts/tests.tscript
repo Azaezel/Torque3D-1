@@ -22,7 +22,7 @@ function testFBFunc2()
 
 function UIBuilder::test1()
 {
-   %window = UIBuilder::Window("Test Window", "50 50", "200 500");
+   %window = UIBuilder::Window("Test Window", "50 50", "200 500", true);
 
       UIBuilder::Rollout("Test Rollout");
       
@@ -94,4 +94,15 @@ function UIBuilder::test3()
    MainMenuGui.add(%layout);
    MainMenuGui.add(%windowA);
    MainMenuGui.add(%windowB);
+}
+
+function UIBuilder::test4()
+{
+   %layout = UIBuilder::LayoutContainer("0 0", MainMenuGui.extent);
+   
+   %layout.splitFrame();
+   
+   MainMenuGui.add(%layout);
+   
+   UIBuilder::PopupMenuList("100 500");
 }

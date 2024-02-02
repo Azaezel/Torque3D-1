@@ -286,7 +286,10 @@ function doEditorResetDefaultLevel()
 
 function EditorSaveMissionMenu()
 {
-   EditorSaveMission();
+   if(EditorGui.saveAs)
+      AssetBrowser.setupCreateNewAsset("LevelAsset", AssetBrowser.selectedModule, "EditorSaveMissionAs");
+   else
+      EditorSaveMission();
 }
 
 function EditorSaveMission()
@@ -384,8 +387,6 @@ function EditorSaveMission()
 
 function EditorSaveMissionAs( %levelAsset )
 {
-   EditorGui.saveAs = true;
-   AssetBrowser.setupCreateNewAsset("LevelAsset", AssetBrowser.selectedModule,"");
    // If we didn't get passed a new mission name then
    // prompt the user for one.
    if ( %levelAsset $= "" )

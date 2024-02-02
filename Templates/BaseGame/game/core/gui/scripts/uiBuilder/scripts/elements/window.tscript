@@ -18,67 +18,57 @@ function UIBuilder::Window(%title, %pos, %ext, %dockable)
       extent = %ext;
       internalName = "GBFB_" @ %title;  
       isDockable = %dockable;
+      isDocked = false;
    };
+
+   %scroll = new GuiScrollCtrl()
+   {
+      profile = ToolsGuiScrollProfile;
+      position = $UIBuilder::edgePad SPC 20;
+      extent = (%window.extent.x - ($UIBuilder::edgePad * 2)) SPC (%window.extent.y - 20 - $UIBuilder::edgePad);
+      internalName = "scroll";  
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   %window.add(%scroll);
+   
+   %content = new GuiStackControl()
+   {
+      profile = ToolsGuiStackControl;
+      position = "1 0";
+      extent = %scroll.extent.x - 14 SPC %scroll.extent.y; // -10 for the v scroll bar
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   %scroll.add(%content);
    
    if(%dockable)
    {
-      %frameset = new GuiFrameSetCtrl()
-      {
-         profile = ToolsGuiDefaultProfile;
-         class = UIBuilderFrameset;
-         position = $UIBuilder::edgePad SPC 20;
-         extent = (%window.extent.x - ($UIBuilder::edgePad * 2)) SPC (%window.extent.y - 20 - $UIBuilder::edgePad);
-         internalName = "frameSet";
-         horizSizing = "width";
-         vertSizing = "height";
-         margin = "2 2 2 2";
+      %layoutButton = new GuiBitmapButtonCtrl() {
+         canSaveDynamicFields = "0";
+         internalName = "";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "left";
+         VertSizing = "bottom";
+         Position = %ext.x - 75 SPC 1;
+         Extent = "18 18";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "1";
+         Command = "$ThisControl.getParent().doDockingAction();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Detach Panel";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:panel_undock_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
       };
       
-      %window.add(%frameset);
-      
-      %scroll = new GuiScrollCtrl()
-      {
-         profile = ToolsGuiScrollProfile;
-         position = "0 0";
-         extent = %frameset.extent;
-         internalName = "scroll";  
-         horizSizing = "width";
-         vertSizing = "height";
-      };
-      %frameset.add(%scroll);
-      
-      %content = new GuiStackControl()
-      {
-         profile = ToolsGuiStackControl;
-         position = "0 0";
-         extent = %frameset.extent;
-         horizSizing = "width";
-         vertSizing = "height";
-      };
-      %scroll.add(%content);
-   }
-   else
-   {
-      %scroll = new GuiScrollCtrl()
-      {
-         profile = ToolsGuiScrollProfile;
-         position = $UIBuilder::edgePad SPC 20;
-         extent = (%window.extent.x - ($UIBuilder::edgePad * 2)) SPC (%window.extent.y - 20 - $UIBuilder::edgePad);
-         internalName = "scroll";  
-         horizSizing = "width";
-         vertSizing = "height";
-      };
-      %window.add(%scroll);
-      
-      %content = new GuiStackControl()
-      {
-         profile = ToolsGuiStackControl;
-         position = "1 0";
-         extent = %scroll.extent.x - 14 SPC %scroll.extent.y; // -10 for the v scroll bar
-         horizSizing = "width";
-         vertSizing = "height";
-      };
-      %scroll.add(%content);
+      %window.add(%layoutButton);
    }
    
    UIBuilderStack.push_back(%content);
@@ -187,7 +177,18 @@ function UIBuilder::undockWindow(%tab)
    %originalWindow.onMouseDragged();
 }
 
-function UIBuilderWindow::onMouseDragged(%this)
+function UIBuilder::doDockingAction(%this)
+{
+   if(%this.isDocked)
+   {
+      
+   }
+   else
+   {
+      
+   }   
+}
+/*function UIBuilderWindow::onMouseDragged(%this)
 {
    if(!%this.isDockable)
       return;
@@ -248,7 +249,7 @@ function UIBuilderWindow::onMouseDragged(%this)
    $EditorGui::draggingWindowCtrl = %ctrl;
    
    Canvas.repaint();
-}
+}*/
 
 /*function DockableWindowTabBook::onMouseDown(%this)
 {

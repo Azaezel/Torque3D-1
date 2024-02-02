@@ -1,0 +1,58 @@
+function UIBuilder::LayoutContainer(%pos, %ext)
+{
+   %container = new GuiSplitContainer()
+   {
+      profile = ToolsGuiFrameSetProfile;
+      class = UIBuilderLayout;
+      position = %pos;
+      extent = %ext;
+      internalName = "layout";
+      horizSizing = "width";
+      vertSizing = "height";
+      
+      new GuiTabBookCtrl()
+      {
+         class = UIBuilderLayoutTabBook;
+         profile = ToolsGuiTabBookProfile;
+         position = "0 0";
+         extent = %ext;
+         internalName = "book";  
+         horizSizing = "width";
+         vertSizing = "height";
+      };
+   };
+
+   UIBuilderStack.push_back(%book);
+   
+   %baseCtrl.add(%book);
+   
+   return %container;
+}
+
+function UIBuilderLayout::setMainPanel(%this, %mainPanelCtrl)
+{
+   
+}
+
+
+//==============================================================================
+// |---|---|------|---|---|
+// |   |   |      |   |   |
+// |   |   |      |   |   |
+// |---|---|      |---|---|
+// |   |   |------|   |   |
+// |   |   |      |   |   |
+// |---|---|------|---|---|
+function UIBuilderLayout::splitFrame(%this, %splitPos)
+{
+   
+   //programmatically set by target split  
+   %this.addColumn();
+   
+   UIBuilder::Set(%this);
+      UIBuilder::TabBook();
+         UIBuilder::TabPage("Test Page");
+         UIBuilder::End();
+      UIBuilder::End();
+   UIBuilder::End();
+}

@@ -1,26 +1,14 @@
 //--- OBJECT WRITE BEGIN ---
 new Scene(EditorTemplateLevel) {
-   canSave = "1";
-   canSaveDynamicFields = "1";
-      Enabled = "1";
+   isEditing = "1";
+      enabled = "1";
 
    new LevelInfo(theLevelInfo) {
-      nearClip = "0.1";
-      visibleDistance = "1000";
-      visibleGhostDistance = "0";
-      decalBias = "0.0015";
-      fogColor = "0.6 0.6 0.7 1";
-      fogDensity = "0";
+      FogColor = "0.6 0.6 0.7 1";
       fogDensityOffset = "700";
-      fogAtmosphereHeight = "0";
       canvasClearColor = "0 0 0 255";
-      ambientLightBlendPhase = "1";
-      ambientLightBlendCurve = "0 0 -1 -1";
       soundAmbience = "AudioAmbienceDefault";
-      soundDistanceModel = "Linear";
-      canSave = "1";
-      canSaveDynamicFields = "1";
-         Enabled = "1";
+         enabled = "1";
    };
    new ScatterSky(DynamicSky) {
       sunScale = "0.991102 0.921582 0.83077 1";
@@ -44,12 +32,11 @@ new Scene(EditorTemplateLevel) {
       persistentId = "289ad401-3140-11ed-aae8-c0cb519281fc";
          reflectionPath = "tools/levels/DefaultEditorLevel/probes/";
    };
-   
    new GroundPlane() {
       scaleU = "32";
       scaleV = "32";
       MaterialAsset = "Prototyping:FloorGray";
-         Enabled = "1";
+         enabled = "1";
          position = "0 0 0";
          rotation = "1 0 0 0";
          scale = "1 1 1";

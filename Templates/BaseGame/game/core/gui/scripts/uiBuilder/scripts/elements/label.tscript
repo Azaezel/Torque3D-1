@@ -1,0 +1,31 @@
+function UIBuilder::Label(%labelText)
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::TextField() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   %label = new GuiTextCtrl()
+   {
+      profile = ToolsGuiTextProfile;
+      position = "0 0";
+      extent = (%baseCtrl.extent.x / 2) SPC $UIBuilder::rowHeight;
+      text = %labelText;
+      internalName = "textFieldLabel";
+      horizSizing = "width";
+      vertSizing = "bottom";
+   };
+   
+   if(%baseCtrl.getClassName() $= "GuiStackControl" && %baseCtrl.StackingType $= "Horizontal")
+   {
+      %label.horizSizing = "right";
+      %label.vertSizing = "height";
+   }
+   
+   %baseCtrl.add(%label);
+   
+   return %label;
+}

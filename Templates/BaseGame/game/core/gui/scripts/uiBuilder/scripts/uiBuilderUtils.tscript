@@ -21,6 +21,11 @@ function UIBuilder::End()
    }
 }
 
+function UIBuilder::Set(%control)
+{
+   UIBuilderStack.push_back(%control);
+}
+
 function UIBuilder::SameLine()
 {
    if(UIBuilderStack.count() == 0)
@@ -46,4 +51,30 @@ function UIBuilder::SameLine()
    %baseCtrl.add(%content);
    
    return true;
+}
+
+function UIBuilder::FitAllOnLine()
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::SameLine() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   if(%baseCtrl.getClassName() $= "GuiStackControl" || %baseCtrl.StackingType $= "Horizontal")
+   {
+      error("UIBuilder::FitAllOnLine() - attempting to process a same line, but our current control is not a stack!");
+      return false; 
+   }
+
+   %widthSlice = %baseCtrl.extent.x / %baseCtrl.getCount();
+   for(%i=0; %i < %baseCtrl.getCount(); %i++)
+   {
+      %object = %baseCtrl.getObject(%i);
+      
+      %object.position.x = %i * %widthSlice;
+      %object.extent.x = %widthSlice;
+   }
 }

@@ -1,0 +1,210 @@
+function UIBuilder::PopupMenuList(%pos)
+{
+   
+   %popupMenuList = new GuiInputCtrl() {
+      class = PopupMenuListInputHandler;
+      ignoreMouseEvents = "0";
+      sendBreakEvents = "1";
+      extent = Canvas.extent;
+      
+      new GuiContainer(){
+         Profile = "IconDropdownProfile";
+         Position = %pos;
+         Extent = "137" SPC ((6*28)+6);//97";
+         isContainer = "1";
+         visible = "0"; 
+            
+         new GuiDynamicCtrlArrayControl() {
+           canSaveDynamicFields = "0";
+            Enabled = "1";
+            isContainer = "1";
+            Profile = "ToolsGuiSolidDefaultProfile";
+            HorizSizing = "width";
+            VertSizing = "height";
+            Position = "5 5";
+            Extent = "132" SPC getWord(CameraTypesDropdown.extent, 1)-5;
+            MinExtent = "8 2";
+            canSave = "1";
+            Visible = "1";
+            tooltipprofile = "ToolsGuiToolTipProfile";
+            hovertime = "1000";
+            colCount = "1";
+            colSize = "127";
+            rowCount = "0";
+            RowSize = "64";
+            rowSpacing = "3";
+            colSpacing = "3";
+            autoCellSize = "1";
+            fillRowFirst = "0";
+            
+            new GuiIconButtonCtrl() {
+               canSaveDynamicFields = "0";
+               internalName = "StandardCamera";
+               Enabled = "1";
+               isContainer = "0";
+               Profile = "ToolsGuiIconButtonProfile";
+               HorizSizing = "right";
+               VertSizing = "bottom";
+               Position = "5 5";
+               Extent = "127 25";
+               MinExtent = "8 8";
+               canSave = "1";
+               Visible = "1";
+               Command = "CameraTypesDropdownToggle(); EditorGuiStatusBar.setCamera(\"Standard Camera\");";
+               tooltipprofile = "ToolsGuiToolTipProfile";
+               ToolTip = "Free Camera";
+               hovertime = "1000";
+               bitmapAsset = "ToolsModule:camera_n_image";
+               groupNum = "0";
+               text="Free Camera";
+               buttonMargin = "0 4";
+               textMargin = "38";
+               groupNum = "0";
+               buttonType = "RadioButton";
+               useMouseEvents = "0";
+            };
+            new GuiIconButtonCtrl() {
+               canSaveDynamicFields = "0";
+               internalName = "OrbitCamera";
+               Enabled = "1";
+               isContainer = "0";
+               Profile = "ToolsGuiIconButtonProfile";
+               HorizSizing = "right";
+               VertSizing = "bottom";
+               Position = "5 32";
+               Extent = "127 25";
+               MinExtent = "8 8";
+               canSave = "1";
+               Visible = "1";
+               Command = "CameraTypesDropdownToggle(); EditorGuiStatusBar.setCamera(\"Orbit Camera\");";
+               tooltipprofile = "ToolsGuiToolTipProfile";
+               ToolTip = "Toggle Orbit Cam";
+               hovertime = "1000";
+               bitmapAsset = "ToolsModule:orbit_cam_n_image";
+               groupNum = "0";
+               text="Orbit Camera";
+               buttonMargin = "0 4";
+               textMargin = "38";
+               groupNum = "0";
+               buttonType = "RadioButton";
+               useMouseEvents = "0";
+            };
+            
+            new GuiIconButtonCtrl() {
+               canSaveDynamicFields = "0";
+               internalName = "PlayerCamera";
+               Enabled = "1";
+               isContainer = "0";
+               Profile = "ToolsGuiIconButtonProfile";
+               HorizSizing = "right";
+               VertSizing = "bottom";
+               Position = "5 5";
+               Extent = "127 25";
+               MinExtent = "8 8";
+               canSave = "1";
+               Visible = "1";
+               Command = "CameraTypesDropdownToggle(); EditorGuiStatusBar.setCamera(\"1st Person Camera\");";
+               tooltipprofile = "ToolsGuiToolTipProfile";
+               ToolTip = "Player Camera";
+               hovertime = "1000";
+               bitmapAsset = "ToolsModule:player_n_image";
+               groupNum = "0";
+               text="Player Camera";
+               buttonMargin = "0 4";
+               textMargin = "38";
+               groupNum = "0";
+               buttonType = "RadioButton";
+               useMouseEvents = "0";
+            };
+            new GuiIconButtonCtrl() {
+               canSaveDynamicFields = "0";
+               internalName = "trdPersonCamera";
+               Enabled = "1";
+               isContainer = "0";
+               Profile = "ToolsGuiIconButtonProfile";
+               HorizSizing = "right";
+               VertSizing = "bottom";
+               Position = "5 5";
+               Extent = "127 25";
+               MinExtent = "8 8";
+               canSave = "1";
+               Visible = "1";
+               Command = "CameraTypesDropdownToggle(); EditorGuiStatusBar.setCamera(\"3rd Person Camera\");";
+               tooltipprofile = "ToolsGuiToolTipProfile";
+               ToolTip = "3rd Person Camera";
+               hovertime = "1000";
+               bitmapAsset = "ToolsModule:3rd_person_camera_n_image";
+               groupNum = "0";
+               text="3rd Person Cam";
+               buttonMargin = "0 4";
+               textMargin = "38";
+               groupNum = "0";
+               buttonType = "RadioButton";
+               useMouseEvents = "0";
+            };
+            new GuiIconButtonCtrl() {
+               canSaveDynamicFields = "0";
+               internalName = "NewtonianCamera";
+               Enabled = "1";
+               isContainer = "0";
+               Profile = "ToolsGuiIconButtonProfile";
+               HorizSizing = "right";
+               VertSizing = "bottom";
+               Position = "5 64";
+               Extent = "127 25";
+               MinExtent = "8 8";
+               canSave = "1";
+               Visible = "1";
+               Command = "CameraTypesDropdownToggle(); EditorGuiStatusBar.setCamera(\"Smooth Camera\");";
+               tooltipprofile = "ToolsGuiToolTipProfile";
+               ToolTip = "Toggle Newtonian Cam";
+               hovertime = "1000";
+               bitmapAsset = "ToolsModule:smooth_cam_n_image";
+               groupNum = "0";
+               text="Smooth Camera";
+               buttonMargin = "0 4";
+               textMargin = "38";
+               groupNum = "0";
+               buttonType = "RadioButton";
+               useMouseEvents = "0";
+            };
+            new GuiIconButtonCtrl() {
+               canSaveDynamicFields = "0";
+               internalName = "NewtonianRotationCamera";
+               Enabled = "1";
+               isContainer = "0";
+               Profile = "ToolsGuiIconButtonProfile";
+               HorizSizing = "right";
+               VertSizing = "bottom";
+               Position = "5 64";
+               Extent = "127 25";
+               MinExtent = "8 8";
+               canSave = "1";
+               Visible = "1";
+               Command = "CameraTypesDropdownToggle(); EditorGuiStatusBar.setCamera(\"Smooth Rot Camera\");";
+               tooltipprofile = "ToolsGuiToolTipProfile";
+               ToolTip = "Toggle Smooth Camera with Smooth Rotation";
+               hovertime = "1000";
+               bitmapAsset = "ToolsModule:smooth_cam_rot_n_image";
+               groupNum = "0";
+               text="Smooth Rotate";
+               buttonMargin = "0 4";
+               textMargin = "38";
+               groupNum = "0";
+               buttonType = "RadioButton";
+               useMouseEvents = "0";
+            };
+         };
+      };
+   };
+   
+   Canvas.pushDialog(%popupMenuList);
+   
+   return %popupMenuList;
+}
+
+function PopupMenuListInputHandler::onInputEvent(%this, %device, %action, %state )
+{
+   if(%device $= "mouse")
+      Canvas.popDialog(%this);
+}

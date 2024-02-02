@@ -1,0 +1,82 @@
+function MaterialEditorPlugin::BuildEditorUI(%this)
+{
+   if(isObject(NuMaterialEditorWindow))
+      NuMaterialEditorWindow.delete();  
+      
+   $MaterialEditor::currentLayer = 0;
+   
+   %matWindow = UIBuilder::Window("Material Editor", MaterialEditorPropertiesWindow.Position.x - MaterialEditorPropertiesWindow.Extent.x SPC MaterialEditorPropertiesWindow.Position.y, MaterialEditorPropertiesWindow.Extent.x SPC MaterialEditorPropertiesWindow.Extent.y);
+   %matWindow.setName("NuMaterialEditorWindow");
+   %matWindow.closeCommand = "EWorldEditor.remove(NuMaterialEditorWindow);";
+      UIBuilder::Stack();
+         UIBuilder::SameLine();
+            %label = UIBuilder::Label("Layer");
+            %label.name = "numatedlabel";
+            %matLayerListCtrl = UIBuilder::Dropdown("0\t1\t2\t3", "$MaterialEditor::currentLayer", "onMaterialLayerSelected($ThisControl);");
+            %matLayerListCtrl.name = "NuMatEdLayerSelector";
+            UIBuilder::FitAllOnLine();
+         UIBuilder::End();
+         %inspector = UIBuilder::Inspector("NuMaterialEdPropInspector");
+      UIBuilder::End();
+   UIBuilder::End();
+   
+   %inspector.groupFilters = "-Internal -Ungrouped -Editing -Object -Persistence -Dynamic Fields";
+   
+   $MaterialEditor::currentMaterial = Cheetah_Main;
+   
+   NuMaterialEdPropInspector.refreshMaterial();
+
+   %this.editorUI = %matWindow;
+   EWorldEditor.add(%matWindow);
+}
+
+function MaterialEditorPlugin::CloseEditorUI(%this)
+{
+   EWorldEditor.remove(NuMaterialEditorWindow);
+}
+
+function onMaterialLayerSelected(%this)
+{
+   $MaterialEditor::currentLayer = %this.getText();
+   NuMaterialEdPropInspector.refreshMaterial();
+}
+
+function NuMaterialEdPropInspector::refreshMaterial(%this)
+{
+   %this.inspect($MaterialEditor::currentMaterial);
+   %this.setForcedArrayIndex($MaterialEditor::currentLayer);
+   
+   %this.findExistentGroup("Light Influence Maps").instantCollapse();
+   %this.findExistentGroup("Advanced Texture Maps").instantCollapse();
+   %this.findExistentGroup("Accumulation Properties").instantCollapse();
+   %this.findExistentGroup("Lighting Properties").instantCollapse();
+   %this.findExistentGroup("Animation Properties").instantCollapse();
+   
+   NuMaterialEditorWindow.syncGUI();
+}
+
+function NuMaterialEdPropInspector::onInspectorFieldModified(%this)
+{
+   NuMaterialEditorWindow.syncGUI();
+}
+
+function NuMaterialEditorWindow::syncGUI(%this)
+{
+   //do some presentation adjustments
+   %hideORMSliders = $MaterialEditor::currentMaterial.ORMConfigMapAsset[$MaterialEditor::currentLayer] !$= "";
+   
+   if(%hideORMSliders)
+   {
+      %group = NuMaterialEdPropInspector.findExistentGroup("Light Influence Maps");
+      %group.removeField("roughness[" @ $MaterialEditor::currentLayer @ "]");
+      %group.removeField("metalness[" @ $MaterialEditor::currentLayer @ "]");
+      %group.removeField("AOMapAsset[" @ $MaterialEditor::currentLayer @ "]");
+      %group.removeField("RoughMapAsset[" @ $MaterialEditor::currentLayer @ "]");
+      %group.removeField("MetalMapAsset[" @ $MaterialEditor::currentLayer @ "]");
+   }
+   else
+   {
+      %group = NuMaterialEdPropInspector.findExistentGroup("Light Influence Maps");
+      %group.removeField("isSRGb[" @ $MaterialEditor::currentLayer @ "]");
+   }
+}

@@ -20,6 +20,10 @@ function UIBuilder::init()
    exec("./scripts/elements/splitContainer.tscript"); 
    exec("./scripts/elements/customLayout.tscript");
    exec("./scripts/elements/inspector.tscript");
+   exec("./scripts/elements/label.tscript");
+   exec("./scripts/elements/layout.tscript");
+   exec("./scripts/elements/panel.tscript");
+   exec("./scripts/elements/popupMenuList.tscript");
    
    exec("./scripts/tests.tscript");
    
