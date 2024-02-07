@@ -278,10 +278,8 @@ float hdrLuminance( vec3 _sample )
 /// for objects in front of the player
 float occlusionFade(float playerDepth, vec3 vpos, vec2 targetSize, float oneOverTargetSize)
 {
-    vec3 ssPos = vpos;
-    //ssPos = vec3(ssPos + vec3(1.0,1.0,0.0))/2.0 * vec3(targetSize,1.0);
-    float screenAngAtten = length(ssPos.xy-(targetSize*0.5))*oneOverTargetSize;
-    float screenDistAtten = pow(clamp(playerDepth-ssPos.z*2, 0.0, 1.0 ),100.0); 
+    float screenAngAtten = length(vpos.xy-(targetSize*0.5))*oneOverTargetSize;
+    float screenDistAtten = pow(clamp(playerDepth-vpos.z, 0.0, 1.0 ),100.0); 
     
     screenAngAtten = pow(clamp(screenAngAtten+0.75, 0.0, 1.0 ),100.0);
     

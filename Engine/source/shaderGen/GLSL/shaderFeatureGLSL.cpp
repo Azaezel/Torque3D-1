@@ -462,7 +462,7 @@ Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
       }
 
       meta->addStatement(new GenOp( "   @ = @/@.w;\r\n", outVpos, outPosition, outPosition) );
-      meta->addStatement(new GenOp( "   @.xyz = vec3(@.xyz + vec3(1.0,1.0,0.0))/2.0;\r\n", outVpos, outVpos)); // get the screen coord to 0 to 1
+      meta->addStatement(new GenOp( "   @.xy = vec2(@.xy + vec2(1.0,1.0))/2.0;\r\n", outVpos, outVpos)); // get the screen coord to 0 to 1
       meta->addStatement(new GenOp("    @.y = 1.0 - @.y;\r\n", outVpos, outVpos)); // flip the y axis 
       meta->addStatement(new GenOp( "   @.xy *= @;\r\n", outVpos, targetSize)); // scale to monitor
    }
