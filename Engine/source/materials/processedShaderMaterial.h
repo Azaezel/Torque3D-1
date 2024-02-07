@@ -104,6 +104,8 @@ public:
 
    GFXShaderConstHandle* mNodeTransforms;
 
+   GFXShaderConstHandle* mPlayerDepthSC;
+
    struct customHandleData
    {
 	   StringTableEntry handleName;

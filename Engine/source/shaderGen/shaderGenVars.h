@@ -126,6 +126,8 @@ struct ShaderGenVars
 
    // Deferred Shading
    const static String matInfoFlags;
+
+   const static String playerDepth;
 };
 
 #endif

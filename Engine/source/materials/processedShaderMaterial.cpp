@@ -50,6 +50,8 @@
 
 #include "gui/controls/guiTreeViewCtrl.h"
 #include "ts/tsShape.h"
+#include "T3D/gameBase/gameConnection.h"
+#include "T3D/shapeBase.h"
 
 ///
 /// ShaderConstHandles
@@ -126,6 +128,9 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/)
 
    // Deferred Shading
    mMatInfoFlagsSC = shader->getShaderConstHandle(ShaderGenVars::matInfoFlags);
+
+   //cats
+   mPlayerDepthSC = shader->getShaderConstHandle(ShaderGenVars::playerDepth);
 }
 
 ///
@@ -1094,6 +1099,20 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
    shaderConsts->setSafe( handles->mAccumTimeSC, MATMGR->getTotalTime() );
 
    shaderConsts->setSafe(handles->mDampnessSC, MATMGR->getDampnessClamped());
+
+
+   //cats
+   F32 playerDepth = 1.0f;
+   GameConnection* conn = GameConnection::getConnectionToServer();
+   if (conn)
+   {
+      ShapeBase* control = dynamic_cast<ShapeBase*>(conn->getControlObject());
+      if (control)
+         playerDepth = (1.0f+gClientSceneGraph->getNearClip())-(control->getRenderPosition() - conn->getCameraObject()->getPosition()).len() / gClientSceneGraph->getVisibleDistance();
+   }
+
+   shaderConsts->setSafe(handles->mPlayerDepthSC, playerDepth);
+
    // If the shader constants have not been lost then
    // they contain the content from a previous render pass.
    //
