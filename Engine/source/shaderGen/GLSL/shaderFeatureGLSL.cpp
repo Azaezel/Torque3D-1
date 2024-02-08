@@ -2458,7 +2458,7 @@ void VisibilityFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    if (!oneOverTargetSize)
    {
       oneOverTargetSize = new Var();
-      oneOverTargetSize->setType("float");
+      oneOverTargetSize->setType("vec2");
       oneOverTargetSize->setName("oneOverTargetSize");
       oneOverTargetSize->uniform = true;
       oneOverTargetSize->constSortPos = cspPotentialPrimitive;
