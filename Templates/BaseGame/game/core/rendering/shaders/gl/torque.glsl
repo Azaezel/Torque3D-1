@@ -274,6 +274,19 @@ float hdrLuminance( vec3 _sample )
    return lum;
 }
 
+/// Called from the visibility feature to do occlusion fading
+/// for objects in front of the player
+float occlusionFade(float playerDepth, vec3 vpos, vec2 targetSize, vec2 oneOverTargetSize)
+{
+    float screenAngAtten = length(vpos.xy-(targetSize*0.5))*length(oneOverTargetSize);
+    float screenDistAtten = pow(clamp(playerDepth-vpos.z, 0.0, 1.0 ),100.0); 
+    
+    screenAngAtten = pow(clamp(screenAngAtten+0.5, 0.0, 1.0 ),100.0);
+    
+    screenDistAtten = max(screenDistAtten,screenAngAtten);
+    return screenDistAtten;
+}
+
 #ifdef TORQUE_PIXEL_SHADER
 /// Called from the visibility feature to do screen
 /// door transparency for fading of objects.

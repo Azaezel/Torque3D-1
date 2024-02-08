@@ -438,15 +438,6 @@ Var* ShaderFeatureGLSL::getInColor( const char *name,
 Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
                                     Vector<ShaderComponent*> &componentList )
 {
-   /*
-   // Nothing to do if we're on SM 3.0... we use the real vpos.
-   if ( GFX->getPixelShaderVersion() >= 3.0f )
-      return NULL;
-      */
-
-   // For SM 2.x we need to generate the vpos in the vertex shader
-   // and pass it as a texture coord to the pixel shader.
-
    Var *outVpos = (Var*)LangElement::find( "outVpos" );
    if ( !outVpos )
    {
@@ -460,7 +451,20 @@ Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
       Var *outPosition = (Var*) LangElement::find( "gl_Position" );
       AssertFatal( outPosition, "ShaderFeatureGLSL::addOutVpos - Didn't find the output position." );
 
-      meta->addStatement( new GenOp( "   @ = @;\r\n", outVpos, outPosition ) );
+      Var* targetSize = (Var*)LangElement::find("targetSize");
+      if (!targetSize)
+      {
+         targetSize = new Var();
+         targetSize->setType("vec2");
+         targetSize->setName("targetSize");
+         targetSize->uniform = true;
+         targetSize->constSortPos = cspPotentialPrimitive;
+      }
+
+      meta->addStatement(new GenOp( "   @ = @/@.w;\r\n", outVpos, outPosition, outPosition) );
+      meta->addStatement(new GenOp( "   @.xy = @.xy * 0.5 + vec2(0.5,0.5);\r\n", outVpos, outVpos)); // get the screen coord to 0 to 1
+      meta->addStatement(new GenOp("    @.y = 1.0 - @.y;\r\n", outVpos, outVpos)); // flip the y axis 
+      meta->addStatement(new GenOp( "   @.xy *= @;\r\n", outVpos, targetSize)); // scale to monitor
    }
 
    return outVpos;
@@ -2429,31 +2433,62 @@ void VisibilityFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    else
    {
       visibility = (Var*)LangElement::find( "visibility" );
-      
-	if ( !visibility )
-	{
-		visibility = new Var();
-		visibility->setType( "float" );
-		visibility->setName( "visibility" );
-		visibility->uniform = true;
-		visibility->constSortPos = cspPotentialPrimitive;  
-	}
+
+      if (!visibility)
+      {
+         visibility = new Var();
+         visibility->setType("float");
+         visibility->setName("visibility");
+         visibility->uniform = true;
+         visibility->constSortPos = cspPotentialPrimitive;
+      }
    }
 
-	MultiLine* meta = new MultiLine;      
-	output = meta;
-	
-   // Translucent objects do a simple alpha fade.
-   if ( fd.features[ MFT_IsTranslucent ] )
+   Var* targetSize = (Var*)LangElement::find("targetSize");
+   if (!targetSize)
    {
-      Var *color = (Var*) LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-      meta->addStatement( new GenOp( "   @.a *= @;\r\n", color, visibility ) );
-      return;
-      }
+      targetSize = new Var();
+      targetSize->setType("vec2");
+      targetSize->setName("targetSize");
+      targetSize->uniform = true;
+      targetSize->constSortPos = cspPotentialPrimitive;
+   }
+
+   Var* oneOverTargetSize = (Var*)LangElement::find("oneOverTargetSize");
+   if (!oneOverTargetSize)
+   {
+      oneOverTargetSize = new Var();
+      oneOverTargetSize->setType("vec2");
+      oneOverTargetSize->setName("oneOverTargetSize");
+      oneOverTargetSize->uniform = true;
+      oneOverTargetSize->constSortPos = cspPotentialPrimitive;
+   }
+
+   Var* playerDepth = (Var*)LangElement::find("playerDepth");
+   if (!playerDepth)
+   {
+      playerDepth = new Var();
+      playerDepth->setType("float");
+      playerDepth->setName("playerDepth");
+      playerDepth->uniform = true;
+      playerDepth->constSortPos = cspPotentialPrimitive;
+   }
+
+   MultiLine* meta = new MultiLine;
+   output = meta;
 
    // Everything else does a fizzle.
-   Var *vPos = getInVpos( meta, componentList );
-   meta->addStatement( new GenOp( "   fizzle( @.xy, @ );\r\n", vPos, visibility ) );
+   Var* vPos = getInVpos(meta, componentList);
+	
+   // Translucent objects do a simple alpha fade.
+   if (fd.features[MFT_IsTranslucent])
+   {
+      Var* color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
+      meta->addStatement(new GenOp("   @.a *= @ * occlusionFade(@, @.xyz, @, @);\r\n", color, visibility, playerDepth,  vPos, targetSize, oneOverTargetSize));
+      return;
+   }
+   // vpos is a float4 in d3d11
+   meta->addStatement(new GenOp("   fizzle( @.xy, @ * occlusionFade(@, @.xyz, @, @));\r\n", vPos, visibility, playerDepth, vPos, targetSize, oneOverTargetSize));
 }
 
 ShaderFeature::Resources VisibilityFeatGLSL::getResources( const MaterialFeatureData &fd )

@@ -116,3 +116,5 @@ const String ShaderGenVars::toneMap("$toneMap");
 
 // Deferred shading
 const String ShaderGenVars::matInfoFlags("$matInfoFlags");
+
+const String ShaderGenVars::playerDepth("$playerDepth");

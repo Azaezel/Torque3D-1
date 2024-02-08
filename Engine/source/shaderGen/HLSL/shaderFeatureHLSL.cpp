@@ -2519,22 +2519,52 @@ void VisibilityFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
          visibility->constSortPos = cspPotentialPrimitive;  
       }
    }
+   
+   Var* targetSize = (Var*)LangElement::find("targetSize");
+   if (!targetSize)
+   {
+      targetSize = new Var();
+      targetSize->setType("float2");
+      targetSize->setName("targetSize");
+      targetSize->uniform = true;
+      targetSize->constSortPos = cspPotentialPrimitive;
+   }
+
+   Var* oneOverTargetSize = (Var*)LangElement::find("oneOverTargetSize");
+   if (!oneOverTargetSize)
+   {
+      oneOverTargetSize = new Var();
+      oneOverTargetSize->setType("float2");
+      oneOverTargetSize->setName("oneOverTargetSize");
+      oneOverTargetSize->uniform = true;
+      oneOverTargetSize->constSortPos = cspPotentialPrimitive;
+   }
+
+   Var* playerDepth = (Var*)LangElement::find("playerDepth");
+   if (!playerDepth)
+   {
+      playerDepth = new Var();
+      playerDepth->setType("float");
+      playerDepth->setName("playerDepth");
+      playerDepth->uniform = true;
+      playerDepth->constSortPos = cspPotentialPrimitive;
+   }
 
    MultiLine *meta = new MultiLine;
    output = meta;
+
+   // Everything else does a fizzle.
+   Var *vPos = getInVpos( meta, componentList );
 
    // Translucent objects do a simple alpha fade.
    if ( fd.features[ MFT_IsTranslucent ] )
    {
       Var *color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-      meta->addStatement( new GenOp( "   @.a *= @;\r\n", color, visibility ) );
+      meta->addStatement( new GenOp( "   @.a *= @ * occlusionFade(@,@.xyz, @, @);\r\n", color, visibility, playerDepth, vPos, targetSize, oneOverTargetSize) );
       return;
    }
-
-   // Everything else does a fizzle.
-   Var *vPos = getInVpos( meta, componentList );
    // vpos is a float4 in d3d11
-   meta->addStatement( new GenOp( "   fizzle( @.xy, @ );\r\n", vPos, visibility ) );
+   meta->addStatement( new GenOp( "   fizzle( @.xy, @ * occlusionFade(@,@.xyz, @, @));\r\n", vPos, visibility, playerDepth, vPos, targetSize, oneOverTargetSize));
 }
 
 ShaderFeature::Resources VisibilityFeatHLSL::getResources( const MaterialFeatureData &fd )
