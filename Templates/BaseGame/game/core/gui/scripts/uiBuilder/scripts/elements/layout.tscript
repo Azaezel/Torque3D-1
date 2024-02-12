@@ -1,6 +1,6 @@
 function UIBuilder::LayoutContainer(%pos, %ext)
 {
-   %container = new GuiSplitContainer()
+   %container = new GuiContainer()
    {
       profile = ToolsGuiFrameSetProfile;
       class = UIBuilderLayout;
@@ -9,22 +9,11 @@ function UIBuilder::LayoutContainer(%pos, %ext)
       internalName = "layout";
       horizSizing = "width";
       vertSizing = "height";
-      
-      new GuiTabBookCtrl()
-      {
-         class = UIBuilderLayoutTabBook;
-         profile = ToolsGuiTabBookProfile;
-         position = "0 0";
-         extent = %ext;
-         internalName = "book";  
-         horizSizing = "width";
-         vertSizing = "height";
-      };
    };
 
-   UIBuilderStack.push_back(%book);
+   UIBuilderStack.push_back(%container);
    
-   %baseCtrl.add(%book);
+   //%baseCtrl.add(%container);
    
    return %container;
 }
@@ -34,14 +23,42 @@ function UIBuilderLayout::setMainPanel(%this, %mainPanelCtrl)
    
 }
 
+function UIBuilderLayout::dockControl(%this, %control, %position)
+{
+   switch$(%position)
+   {
+      case "Center":
+         echo("UIBuilderLayout::dockControl() - docked center");
+      case "CenterBottom":
+         echo("UIBuilderLayout::dockControl() - docked bottom");
+      case "Left":
+         echo("UIBuilderLayout::dockControl() - docked left");
+      case "FarLeft":
+         
+      case "Right":
+         echo("UIBuilderLayout::dockControl() - docked right");
+      default:
+         echo("UIBuilderLayout::dockControl() - invalid dock position: " @ %position);
+   }
+}
+
+function UIBuilderLayout::dockControlCenter(%this, %control)
+{
+   %this.add(%control);
+}
+
+function UIBuilderLayout::dockControlCenterBottom(%this, %control)
+{
+   
+}
 
 //==============================================================================
 // |---|---|------|---|---|
 // |   |   |      |   |   |
-// |   |   |      |   |   |
+// | 8 | 6 |   0  | 2 | 4 |
 // |---|---|      |---|---|
 // |   |   |------|   |   |
-// |   |   |      |   |   |
+// | 9 | 7 |   1  | 3 | 5 |
 // |---|---|------|---|---|
 function UIBuilderLayout::splitFrame(%this, %splitPos)
 {

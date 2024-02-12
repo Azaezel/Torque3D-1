@@ -672,10 +672,7 @@ void GuiInspectorTypeImageAssetPtr::updatePreviewImage()
 {
    const char* previewImage;
    if (mInspector->getInspectObject() != nullptr)
-   {
       previewImage = getData();
-      //previewImage = mInspector->getInspectObject()->getDataField(mCaption, NULL);
-   }
    else
       previewImage = Con::getVariable(mVariableName);
 

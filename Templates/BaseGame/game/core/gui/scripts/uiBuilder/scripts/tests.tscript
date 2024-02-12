@@ -99,10 +99,15 @@ function UIBuilder::test3()
 function UIBuilder::test4()
 {
    %layout = UIBuilder::LayoutContainer("0 0", MainMenuGui.extent);
+   UIBuilder::End();
    
-   %layout.splitFrame();
+   %testCtrl = UIBuilder::Label("test");
+   
+   %layout.dockControl(%testCtrl, "Center");
+   
+   //%layout.splitFrame();
    
    MainMenuGui.add(%layout);
    
-   UIBuilder::PopupMenuList("100 500");
+   //UIBuilder::PopupMenuList("100 500");
 }

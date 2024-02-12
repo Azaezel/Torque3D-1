@@ -27,7 +27,6 @@
 #include "gui/editor/inspector/group.h"
 #include "gui/buttons/guiIconButtonCtrl.h"
 #include "gui/editor/inspector/datablockField.h"
-
 #include "sfx/sfxTypes.h"
 #include "sfx/sfxDescription.h"
 #include "sfx/sfxEnvironment.h"
@@ -122,8 +121,9 @@ void GuiInspectorDatablockField::_populateMenu( GuiPopUpMenuCtrlEx* menu )
                if (!datablock)
                   continue;
 
-               if (datablock && (!mDesiredClass || datablock->getClassRep()->isClass(mDesiredClass)) &&
-                  (String::ToLower(datablock->mCategory) == categoryName || (datablock->mCategory == String::EmptyString && categoryName == String("No Category"))))
+               String dbCategory = String(datablock->mCategory).isEmpty() ? String("no category") : String::ToLower(datablock->mCategory);
+
+               if (datablock && (!mDesiredClass || datablock->getClassRep()->isClass(mDesiredClass)) && (dbCategory == categoryName))
                {
                   menu->addEntry(datablock->getName(), id++, datablock->isClientOnly() ? 1 : 0, true);
                }
@@ -146,7 +146,7 @@ void GuiInspectorDatablockField::_populateMenu( GuiPopUpMenuCtrlEx* menu )
       if (datablock && (!mDesiredClass || datablock->getClassRep()->isClass(mDesiredClass)))
          menu->addEntry(datablock->getName(), id++, datablock->isClientOnly() ? 1 : 0);
    }
-
+   
    menu->sort();
 }
 
