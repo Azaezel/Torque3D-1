@@ -461,10 +461,14 @@ Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
          targetSize->constSortPos = cspPotentialPrimitive;
       }
 
-      meta->addStatement(new GenOp( "   @ = @/@.w;\r\n", outVpos, outPosition, outPosition) );
-      meta->addStatement(new GenOp( "   @.xy = @.xy * 0.5 + vec2(0.5,0.5);\r\n", outVpos, outVpos)); // get the screen coord to 0 to 1
-      meta->addStatement(new GenOp("    @.y = 1.0 - @.y;\r\n", outVpos, outVpos)); // flip the y axis 
-      meta->addStatement(new GenOp( "   @.xy *= @;\r\n", outVpos, targetSize)); // scale to monitor
+      meta->addStatement(new GenOp("   @ = @;\r\n", outVpos, outPosition));
+      //meta->addStatement(new GenOp("   @.xyz = @.xyz / @.w;\r\n", outVpos, outPosition, outPosition));
+      
+      //meta->addStatement(new GenOp( "   @.xyz = @.xyz / @.w;\r\n", outVpos, outPosition, outPosition) );
+      //meta->addStatement(new GenOp("    @.w = @.w;\r\n", outVpos, outPosition));
+      //meta->addStatement(new GenOp( "   @.xy = @.xy * 0.5 + vec2(0.5,0.5);\r\n", outVpos, outVpos)); // get the screen coord to 0 to 1
+      //meta->addStatement(new GenOp("    @.y = 1.0 - @.y;\r\n", outVpos, outVpos)); // flip the y axis 
+      //meta->addStatement(new GenOp( "   @.xy *= @;\r\n", outVpos, targetSize)); // scale to monitor
    }
 
    return outVpos;
@@ -473,7 +477,7 @@ Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
 Var* ShaderFeatureGLSL::getInVpos(  MultiLine *meta,
                                     Vector<ShaderComponent*> &componentList )
 {
-   Var *inVpos = (Var*)LangElement::find( "vpos" );
+   Var *inVpos = (Var*)LangElement::find( "inVpos" );
    if ( inVpos )
       return inVpos;
 
@@ -482,6 +486,26 @@ Var* ShaderFeatureGLSL::getInVpos(  MultiLine *meta,
    inVpos->setName( "inVpos" );
    inVpos->setStructName( "IN" );
    inVpos->setType( "vec4" );
+
+   Var* targetSize = (Var*)LangElement::find("targetSize");
+   if (!targetSize)
+   {
+      targetSize = new Var();
+      targetSize->setType("vec2");
+      targetSize->setName("targetSize");
+      targetSize->uniform = true;
+      targetSize->constSortPos = cspPotentialPrimitive;
+   }
+
+   // transform projection space to screen space, needs to be done per-pixel. D3D automatically does this with SV_POSITION semantic types (note GLSL doesn't have semantics, even though Torque still uses the RT_ enums for them for some shaderconnector business)
+   // optional: OGL provides this data as gl_FragCoord automatically
+   // Note: for 100% parity with gl_FragCoord (but NOT with vpos in D3D) set .w = 1/.w
+   meta->addStatement(new GenOp("   @.xyz = @.xyz / @.w;\r\n", inVpos, inVpos, inVpos));
+   meta->addStatement(new GenOp("   @.w = @.w;\r\n", inVpos, inVpos)); // for parity w/ gl_FragCoord set: meta->addStatement(new GenOp("    @.w = 1.0 / @.w;\r\n", inVpos, inVpos));
+   meta->addStatement(new GenOp("   @.xy = @.xy * 0.5 + vec2(0.5,0.5);\r\n", inVpos, inVpos)); // get the screen coord to 0 to 1
+   meta->addStatement(new GenOp("   @.y = 1.0 - @.y;\r\n", inVpos, inVpos)); // flip the y axis 
+   meta->addStatement(new GenOp("   @.xy *= @;\r\n", inVpos, targetSize)); // scale to monitor
+
    return inVpos;
 }
 
@@ -2479,16 +2503,22 @@ void VisibilityFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
    // Everything else does a fizzle.
    Var* vPos = getInVpos(meta, componentList);
+
+   //ShaderConnector* conn = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
+   //Var* fragcoord = conn->getElement(RT_POSITION);
+   //fragcoord->setName("gl_FragCoord");
+   //Var* fragcoord = (Var*)LangElement::find("gl_FragCoord");
+   //AssertFatal(fragcoord, "VisibilityFeatGLSL::processPix - Automatic fragment coord gl_FragCoord does not exist? Seems bad.");
 	
    // Translucent objects do a simple alpha fade.
    if (fd.features[MFT_IsTranslucent])
    {
       Var* color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-      meta->addStatement(new GenOp("   @.a *= @ * occlusionFade(@, @.xyz, @, @);\r\n", color, visibility, playerDepth,  vPos, targetSize, oneOverTargetSize));
+      meta->addStatement(new GenOp("   @.a *= @ * occlusionFade(@, gl_FragCoord.xyzw, @, @);\r\n", color, visibility, playerDepth, targetSize, oneOverTargetSize));
       return;
    }
    // vpos is a float4 in d3d11
-   meta->addStatement(new GenOp("   fizzle( @.xy, @ * occlusionFade(@, @.xyz, @, @));\r\n", vPos, visibility, playerDepth, vPos, targetSize, oneOverTargetSize));
+   meta->addStatement(new GenOp("   fizzle( gl_FragCoord.xy, @ * occlusionFade(@, gl_FragCoord.xyzw, @, @));\r\n", visibility, playerDepth, targetSize, oneOverTargetSize));
 }
 
 ShaderFeature::Resources VisibilityFeatGLSL::getResources( const MaterialFeatureData &fd )

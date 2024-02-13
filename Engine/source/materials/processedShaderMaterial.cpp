@@ -1108,7 +1108,14 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
    {
       ShapeBase* control = dynamic_cast<ShapeBase*>(conn->getControlObject());
       if (control)
-         playerDepth = (1.0f+gClientSceneGraph->getNearClip())-(control->getRenderPosition() - conn->getCameraObject()->getPosition()).len() / gClientSceneGraph->getVisibleDistance();
+      {
+         MatrixF camMat;
+         conn->getControlCameraTransform(0, &camMat);
+         // Box center seems like a good compromise for most character shapes, db value on the control sb might be helpful. Needed 2 * radius to not get fizzle on the player model.
+         // This is in absolute distance from the camera, along the camera vector, so if getting depth to something off-center of the camera, dot it against the cam forward vec
+         // to get a depth that will match the output vpos.w or gl_FragOut.w
+         playerDepth = ((control->getRenderWorldBox().getCenter() - camMat.getPosition()).len() - gClientSceneGraph->getNearClip() - control->getWorldSphere().radius * 2.0f);  
+      }
    }
 
    shaderConsts->setSafe(handles->mPlayerDepthSC, playerDepth);
