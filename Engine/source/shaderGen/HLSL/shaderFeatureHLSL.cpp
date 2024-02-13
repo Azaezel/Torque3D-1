@@ -2560,11 +2560,11 @@ void VisibilityFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    if ( fd.features[ MFT_IsTranslucent ] )
    {
       Var *color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-      meta->addStatement( new GenOp( "   @.a *= @ * occlusionFade(@,@.xyz, @, @);\r\n", color, visibility, playerDepth, vPos, targetSize, oneOverTargetSize) );
+      meta->addStatement( new GenOp( "   @.a *= @ * occlusionFade(@,@.xyzw, @, @);\r\n", color, visibility, playerDepth, vPos, targetSize, oneOverTargetSize) );
       return;
    }
    // vpos is a float4 in d3d11
-   meta->addStatement( new GenOp( "   fizzle( @.xy, @ * occlusionFade(@,@.xyz, @, @));\r\n", vPos, visibility, playerDepth, vPos, targetSize, oneOverTargetSize));
+   meta->addStatement( new GenOp( "   fizzle( @.xy, @ * occlusionFade(@,@.xyzw, @, @));\r\n", vPos, visibility, playerDepth, vPos, targetSize, oneOverTargetSize));
 }
 
 ShaderFeature::Resources VisibilityFeatHLSL::getResources( const MaterialFeatureData &fd )
