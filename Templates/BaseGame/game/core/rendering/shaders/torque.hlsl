@@ -278,7 +278,7 @@ float hdrLuminance( float3 sample )
 float occlusionFade(float playerDepth, float4 vpos, float2 targetSize, float2 oneOverTargetSize)
 {
     float screenAngAtten = length(vpos.xy-(targetSize*0.5))*length(oneOverTargetSize);
-    float screenDistAtten = pow(saturate(vpos.w - playerDepth),100.0); 
+    float screenDistAtten = saturate(vpos.w-playerDepth); 
     
     screenAngAtten = pow(saturate(screenAngAtten+0.5),100.0);
     
