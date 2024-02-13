@@ -450,25 +450,7 @@ Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
 
       Var *outPosition = (Var*) LangElement::find( "gl_Position" );
       AssertFatal( outPosition, "ShaderFeatureGLSL::addOutVpos - Didn't find the output position." );
-
-      Var* targetSize = (Var*)LangElement::find("targetSize");
-      if (!targetSize)
-      {
-         targetSize = new Var();
-         targetSize->setType("vec2");
-         targetSize->setName("targetSize");
-         targetSize->uniform = true;
-         targetSize->constSortPos = cspPotentialPrimitive;
-      }
-
       meta->addStatement(new GenOp("   @ = @;\r\n", outVpos, outPosition));
-      //meta->addStatement(new GenOp("   @.xyz = @.xyz / @.w;\r\n", outVpos, outPosition, outPosition));
-      
-      //meta->addStatement(new GenOp( "   @.xyz = @.xyz / @.w;\r\n", outVpos, outPosition, outPosition) );
-      //meta->addStatement(new GenOp("    @.w = @.w;\r\n", outVpos, outPosition));
-      //meta->addStatement(new GenOp( "   @.xy = @.xy * 0.5 + vec2(0.5,0.5);\r\n", outVpos, outVpos)); // get the screen coord to 0 to 1
-      //meta->addStatement(new GenOp("    @.y = 1.0 - @.y;\r\n", outVpos, outVpos)); // flip the y axis 
-      //meta->addStatement(new GenOp( "   @.xy *= @;\r\n", outVpos, targetSize)); // scale to monitor
    }
 
    return outVpos;
@@ -2504,21 +2486,15 @@ void VisibilityFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    // Everything else does a fizzle.
    Var* vPos = getInVpos(meta, componentList);
 
-   //ShaderConnector* conn = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
-   //Var* fragcoord = conn->getElement(RT_POSITION);
-   //fragcoord->setName("gl_FragCoord");
-   //Var* fragcoord = (Var*)LangElement::find("gl_FragCoord");
-   //AssertFatal(fragcoord, "VisibilityFeatGLSL::processPix - Automatic fragment coord gl_FragCoord does not exist? Seems bad.");
-	
    // Translucent objects do a simple alpha fade.
    if (fd.features[MFT_IsTranslucent])
    {
       Var* color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-      meta->addStatement(new GenOp("   @.a *= @ * occlusionFade(@, gl_FragCoord.xyzw, @, @);\r\n", color, visibility, playerDepth, targetSize, oneOverTargetSize));
+      meta->addStatement(new GenOp("   @.a *= @ * occlusionFade(@, vec4(gl_FragCoord.xyz,1/gl_FragCoord.w), @, @);\r\n", color, visibility, playerDepth, targetSize, oneOverTargetSize));
       return;
    }
    // vpos is a float4 in d3d11
-   meta->addStatement(new GenOp("   fizzle( gl_FragCoord.xy, @ * occlusionFade(@, gl_FragCoord.xyzw, @, @));\r\n", visibility, playerDepth, targetSize, oneOverTargetSize));
+   meta->addStatement(new GenOp("   fizzle( gl_FragCoord.xy, @ * occlusionFade(@, vec4(gl_FragCoord.xyz,1/gl_FragCoord.w), @, @));\r\n", visibility, playerDepth, targetSize, oneOverTargetSize));
 }
 
 ShaderFeature::Resources VisibilityFeatGLSL::getResources( const MaterialFeatureData &fd )
