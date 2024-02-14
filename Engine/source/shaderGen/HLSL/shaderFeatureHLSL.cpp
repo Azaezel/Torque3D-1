@@ -2497,6 +2497,7 @@ void VisibilityFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
       return;
 
    addOutVpos( meta, componentList );
+   addOutWsPosition(componentList, fd.features[MFT_UseInstancing], meta);
 }
 
 void VisibilityFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList, 
@@ -2555,16 +2556,18 @@ void VisibilityFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
    // Everything else does a fizzle.
    Var *vPos = getInVpos( meta, componentList );
+   Var* wsPosition = getInWsPosition(componentList);
+   Var* wsView = getWsView(wsPosition, meta);
 
    // Translucent objects do a simple alpha fade.
    if ( fd.features[ MFT_IsTranslucent ] )
    {
       Var *color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-      meta->addStatement( new GenOp( "   @.a *= @ * occlusionFade(@,@, @, @);\r\n", color, visibility, playerDepth, vPos, targetSize, oneOverTargetSize) );
+      meta->addStatement( new GenOp( "   @.a *= @ * occlusionFade(@, @, @, @, @.z);\r\n", color, visibility, playerDepth, vPos, targetSize, oneOverTargetSize, wsView) );
       return;
    }
    // vpos is a float4 in d3d11
-   meta->addStatement( new GenOp( "   fizzle( @.xy, @ * occlusionFade(@,@, @, @));\r\n", vPos, visibility, playerDepth, vPos, targetSize, oneOverTargetSize));
+   meta->addStatement( new GenOp( "   fizzle( @.xy, @ * occlusionFade(@, @, @, @, @.z));\r\n", vPos, visibility, playerDepth, vPos, targetSize, oneOverTargetSize, wsView));
 }
 
 ShaderFeature::Resources VisibilityFeatHLSL::getResources( const MaterialFeatureData &fd )
