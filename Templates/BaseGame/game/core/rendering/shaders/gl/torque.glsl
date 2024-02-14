@@ -276,14 +276,20 @@ float hdrLuminance( vec3 _sample )
 
 /// Called from the visibility feature to do occlusion fading
 /// for objects in front of the player
-float occlusionFade(float playerDepth, vec4 vpos, vec2 targetSize, vec2 oneOverTargetSize)
+float occlusionFade(float playerDepth, vec4 vpos, vec2 targetSize, vec2 oneOverTargetSize, float camAng)
 {
     float screenAngAtten = length(vpos.xy-(targetSize*0.5))*length(oneOverTargetSize);
-    float screenDistAtten = clamp(vpos.w-playerDepth, 0.0, 1.0 ); 
-    
     screenAngAtten = pow(clamp(screenAngAtten+0.5, 0.0, 1.0 ),100.0);
     
+    float tiltBias; 
+    if (vpos.w>playerDepth)
+        tiltBias = 1.0;
+    else
+        tiltBias = (vpos.y-(targetSize.y*0.5))*(oneOverTargetSize.y)*camAng;
+
+    float screenDistAtten =  pow(1.0-clamp(playerDepth-vpos.w*tiltBias,0.0,1.0),20.0);   
     screenDistAtten = max(screenDistAtten,screenAngAtten);
+    
     return screenDistAtten;
 }
 
