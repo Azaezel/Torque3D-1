@@ -13,6 +13,11 @@ function UIBuilder::LayoutContainer(%pos, %ext)
 
    UIBuilderStack.push_back(%container);
    
+   %layoutTabbook = UIBuilder::TabBook();
+   %layoutTabbook.class = UIBldrLayoutTabbook;
+   %layoutTabbook.internalName = "LayoutTabbook";
+   %layoutTabbook.allowReorder = true;
+   
    //%baseCtrl.add(%container);
    
    return %container;
@@ -23,53 +28,202 @@ function UIBuilderLayout::setMainPanel(%this, %mainPanelCtrl)
    
 }
 
-function UIBuilderLayout::dockControl(%this, %control, %position)
+function UIBuilderLayout::split(%this, %direction)
 {
-   switch$(%position)
-   {
-      case "Center":
-         echo("UIBuilderLayout::dockControl() - docked center");
-      case "CenterBottom":
-         echo("UIBuilderLayout::dockControl() - docked bottom");
-      case "Left":
-         echo("UIBuilderLayout::dockControl() - docked left");
-      case "FarLeft":
-         
-      case "Right":
-         echo("UIBuilderLayout::dockControl() - docked right");
-      default:
-         echo("UIBuilderLayout::dockControl() - invalid dock position: " @ %position);
-   }
-}
-
-function UIBuilderLayout::dockControlCenter(%this, %control)
-{
-   %this.add(%control);
-}
-
-function UIBuilderLayout::dockControlCenterBottom(%this, %control)
-{
-   
+     
 }
 
 //==============================================================================
-// |---|---|------|---|---|
-// |   |   |      |   |   |
-// | 8 | 6 |   0  | 2 | 4 |
-// |---|---|      |---|---|
-// |   |   |------|   |   |
-// | 9 | 7 |   1  | 3 | 5 |
-// |---|---|------|---|---|
-function UIBuilderLayout::splitFrame(%this, %splitPos)
+function UIBldrLayoutTabbook::onTabDraggedOut(%this, %tabObj)
 {
+   echo("UIBldrLayoutTabbook::onTabDraggedOut() - tab: " @ %tabObj);
    
-   //programmatically set by target split  
-   %this.addColumn();
+   %tabText = %tabObj.text;
+   %tabTextWidth = %tabObj.profile.getStringWidth(%tabText) + 30;
    
-   UIBuilder::Set(%this);
-      UIBuilder::TabBook();
-         UIBuilder::TabPage("Test Page");
-         UIBuilder::End();
-      UIBuilder::End();
-   UIBuilder::End();
+   if(!isObject(EditorDragAndDropLayer))
+   {
+      new GuiControl(EditorDragAndDropLayer)
+      {
+         position = "0 0";
+         extent = Canvas.extent;
+      };
+      
+      EditorDragAndDropLayer.highlightControl = new GuiPanel() {
+          position = "0 0";
+          extent = "20 20";
+          profile = UIBuilderLayoutHighlightProfile; // Assume this is a predefined profile for highlighting.
+          visible = false;
+      };
+      
+      EditorDragAndDropLayer.add(EditorDragAndDropLayer.highlightControl);
+   }
+   
+   %cursorpos = Canvas.getCursorPos();
+   %xPos = getWord( %cursorpos, 0 );
+   %yPos = getWord( %cursorpos, 1 );
+   
+   %tabRef = new GuiTextCtrl() {
+      profile = GuiMenuTextProfile;
+      text = %tabText;
+      extent = %tabTextWidth SPC 30;
+      tabRef = %tabObj;
+   };
+   
+   // Create the drag control.
+   %ctrl = new GuiDragAndDropControl()
+   {
+      canSaveDynamicFields    = "0";
+      Profile                 = GuiMenuBackgroundProfile;
+      HorizSizing             = "right";
+      VertSizing              = "bottom";
+      Position                = %xPos SPC %yPos;
+      extent                  = %tabRef.extent;
+      MinExtent               = "4 4";
+      canSave                 = "1";
+      Visible                 = "1";
+      hovertime               = "1000";
+
+      // Let the GuiDragAndDropControl delete itself on mouse-up.  When the drag is aborted,
+      // this not only deletes the drag control but also our payload.
+      deleteOnMouseUp         = true;
+      
+      useWholeCanvas = true;
+
+      // To differentiate drags, use the namespace hierarchy to classify them.
+      // This will allow a color swatch drag to tell itself apart from a file drag, for example.
+      class                   = "GuiFormBuilderCustomLayoutDrop";
+   };
+   
+   // Add the temporary color swatch to the drag control as the payload.
+   %ctrl.add( %tabRef );
+   
+   
+   
+   // Start drag by adding the drag control to the canvas and then calling startDragging().
+   //Canvas.getContent().add( %ctrl );
+   EditorDragAndDropLayer.add(%ctrl);
+   Canvas.pushDialog(EditorDragAndDropLayer);
+   
+   %ctrl.startDragging( 0, 0);
+   
+   Canvas.repaint();
+}
+
+function UIBuilderCustomLayoutDrop::onControlDragCancelled(%this)
+{
+   Canvas.popDialog(EditorDragAndDropLayer);
+}
+
+function UIBldrLayoutTabbook::onControlDragged(%this, %payload, %point)
+{
+   EditorDragAndDropLayer.highlightControl.position = %this.position;
+   EditorDragAndDropLayer.highlightControl.extent = %this.extent.x SPC 20;
+   EditorDragAndDropLayer.highlightControl.visible = true;
+   
+   return;
+}
+
+function UIBldrLayoutTabbook::onControlDropped(%this, %payload, %point)
+{
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
+   %this.add(%payload.tabRef);  
+}
+
+function UIBldrLayoutTab::onControlDragged(%this, %payload, %point)
+{
+   %targetPos = %this.getPosition();
+   %targetX = getWord(%targetPos, 0);
+   %targetY = getWord(%targetPos, 1);
+   %targetWidth = %this.extent.x;
+   %targetHeight = %this.extent.y;
+
+   // Calculate the 20% margin for each side.
+   %marginWidth = %targetWidth * 0.2;
+   %marginHeight = %targetHeight * 0.2;
+   
+   %mouseX = %point.x;
+   %mouseY = %point.y;
+
+   // Check if the mouse is within the target's bounds.
+   if (%mouseX >= %targetX && %mouseX <= (%targetX + %targetWidth) &&
+      %mouseY >= %targetY && %mouseY <= (%targetY + %targetHeight)) {
+      // Determine the mouse position relative to the target's edges.
+      %relativeX = %mouseX - %targetX;
+      %relativeY = %mouseY - %targetY;
+
+      // Initialize highlight position and size variables.
+      %highlightX = %targetX;
+      %highlightY = %targetY;
+      %highlightWidth = %targetWidth;
+      %highlightHeight = %targetHeight/2; // Default to top section height.
+
+      // Check if within top 20% margin.
+      if (%relativeY <= %marginHeight) {
+          // Highlight the top area.
+          %highlightY = %targetY;
+          %payload.targetPosition = "top";
+      }
+      // Check if within bottom 20% margin.
+      else if (%relativeY >= (%targetHeight - %marginHeight)) {
+          // Highlight the bottom area.
+          %highlightY = %targetY + (%targetHeight/2);
+          %payload.targetPosition = "bottom";
+      }
+      // Check if within left 20% margin.
+      else if (%relativeX <= %marginWidth) {
+          // Highlight the left area, adjust width and height for vertical highlight.
+          %highlightX = %targetX;
+          %highlightWidth = %targetWidth/2;
+          %highlightHeight = %targetHeight;
+          %payload.targetPosition = "left";
+      }
+      // Check if within right 20% margin.
+      else if (%relativeX >= (%targetWidth - %marginWidth)) {
+          // Highlight the right area, adjust width and height for vertical highlight.
+          %highlightX = %targetX + (%targetWidth/2);
+          %highlightWidth = %targetWidth/2;
+          %highlightHeight = %targetHeight;
+          %payload.targetPosition = "right";
+      }
+      else {
+          //get the parent tabbook to highlight it'll be converted to a tab
+          %tabbook = %this.getParent();
+          %highlightX = %tabbook.position.x;
+          %highlightY = %tabbook.position.y;
+          %highlightWidth = %tabbook.extent.x;
+          %highlightHeight = 20;
+          %payload.targetPosition = "tab";
+      }
+
+      EditorDragAndDropLayer.highlightControl.position = %highlightX SPC %highlightY;
+      EditorDragAndDropLayer.highlightControl.extent = %highlightWidth SPC %highlightHeight;
+      EditorDragAndDropLayer.highlightControl.visible = true;
+   
+      // Create a new GUI control to represent the highlight.
+      /*%this.highlightControl = new GuiControl() {
+          position = %highlightX SPC %highlightY;
+          extent = %highlightWidth SPC %highlightHeight;
+          profile = GuiDefaultProfile; // Assume this is a predefined profile for highlighting.
+      };
+      Canvas.add(%this.highlightControl); // Add the highlight control to the canvas or the parent GUI.*/
+   }
+   
+   return;
+}
+
+function UIBldrLayoutTab::onControlDropped(%this, %payload, %point)
+{
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
+   if(%payload.targetPosition $= "tab")
+   {
+      %this.getParent().add(%payload.tabRef);  
+   }
+   else
+   {
+      echo("UIBldrLayoutTab::onControlDropped() - not yet handled region: " @ %payload.targetPosition);
+      %layout = %this.getParent().getParent();
+   }
 }

@@ -188,7 +188,7 @@ function UIBuilder::doDockingAction(%this)
       
    }   
 }
-/*function UIBuilderWindow::onMouseDragged(%this)
+function UIBuilderWindow::onMouseDragged(%this)
 {
    if(!%this.isDockable)
       return;
@@ -249,9 +249,9 @@ function UIBuilder::doDockingAction(%this)
    $EditorGui::draggingWindowCtrl = %ctrl;
    
    Canvas.repaint();
-}*/
+}
 
-/*function DockableWindowTabBook::onMouseDown(%this)
+function DockableWindowTabBook::onMouseDown(%this)
 {
    %hoverPageNum = %this.getHoveredPage();
 
@@ -348,7 +348,7 @@ function DockableWindowTabBook::closeTab(%this, %tabNum)
       %parentWindow.closeTabButton.position = -10 SPC -10;
    }
 }
-*/
+
 function UIBuilderCustomLayoutDrop::onControlDragCancelled(%this)
 {
    %window = %this.getObject(0);

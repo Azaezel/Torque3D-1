@@ -23,6 +23,7 @@ function UIBuilder::TabPage(%title)
       internalName = "page";  
       horizSizing = "width";
       vertSizing = "height";
+      fitBook = true;
       margin = $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad;
    };
    

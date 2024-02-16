@@ -5,6 +5,8 @@ $UIBuilder::indentSize = 10;
 
 function UIBuilder::init()
 {
+   exec("./scripts/profiles.tscript");
+   
    exec("./scripts/uiBuilderUtils.tscript"); 
    exec("./scripts/propertyField.tscript");  
    

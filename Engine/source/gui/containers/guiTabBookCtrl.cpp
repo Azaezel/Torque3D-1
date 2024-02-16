@@ -430,6 +430,18 @@ void GuiTabBookCtrl::onMouseMove(const GuiEvent &event)
 void GuiTabBookCtrl::onMouseLeave( const GuiEvent &event )
 {
    Parent::onMouseLeave( event );
+
+   if(mDraggingTab)
+   {
+      //we dragged the tab out, so do something about that
+      GuiTabPageCtrl* selectedPage = NULL;
+      if (mSelectedPageNum != -1)
+         selectedPage = mPages[mSelectedPageNum].Page;
+
+      mDraggingTab = false;
+
+      Con::executef(this, "onTabDraggedOut", selectedPage->getIdString());
+   }
    
    mHoverTab = NULL;
 }

@@ -1,0 +1,7 @@
+singleton GuiControlProfile( UIBuilderLayoutHighlightProfile )
+{
+   opaque = true;
+   fillColor = "255 255 255 64";  
+   category = "UIBuilder"; 
+   modal = false;
+};
