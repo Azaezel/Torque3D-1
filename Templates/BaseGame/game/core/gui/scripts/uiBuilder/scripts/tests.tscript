@@ -108,25 +108,17 @@ function UIBuilder::test4()
       %tabA = UIBuilder::TabPage("Test A");
       %tabA.className = "UIBldrLayoutTab";
       UIBuilder::End();
-   
-   UIBuilder::End();
-   MainMenuGui.add(%layout);
-   
-   %layout2 = UIBuilder::LayoutContainer(MainMenuGui.extent.x/2 SPC 0, MainMenuGui.extent.x/2 SPC MainMenuGui.extent.y);
-   UIBuilder::End();
-   
-   %tabbook2 = %layout2-->layoutTabbook;
-   
-   UIBuilder::Set(%tabbook2);
-   
+      
       %tabB = UIBuilder::TabPage("Test B");
       %tabB.className = "UIBldrLayoutTab";
       UIBuilder::End();
       
-      %tabB = UIBuilder::TabPage("Test C");
-      %tabB.className = "UIBldrLayoutTab";
+      %tabC = UIBuilder::TabPage("Test C");
+      %tabC.className = "UIBldrLayoutTab";
       UIBuilder::End();
+      %tabbook.dock(%tabC, "right");
    
    UIBuilder::End();
-   MainMenuGui.add(%layout2);
+   
+   MainMenuGui.add(%layout);
 }

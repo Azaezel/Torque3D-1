@@ -320,6 +320,15 @@ bool GuiTabBookCtrl::resize(const Point2I &newPosition, const Point2I &newExtent
    bool result = Parent::resize( newPosition, newExtent );
 
    calculatePageTabs();
+
+   for (S32 i = 0; i < mPages.size(); i++)
+   {
+      const TabHeaderInfo& info = mPages[i];
+      GuiTabPageCtrl* page = info.Page;
+
+      if(page->getFitBook())
+         fitPage(page);
+   }
    
    return result;
 }

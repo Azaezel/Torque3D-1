@@ -128,12 +128,15 @@ function UIBldrLayoutTabbook::onControlDropped(%this, %payload, %point)
 {
    Canvas.popDialog(EditorDragAndDropLayer);
    
-   %this.add(%payload.tabRef);  
+   %this.dock(%payload.tabRef, "tab");
 }
 
 function UIBldrLayoutTab::onControlDragged(%this, %payload, %point)
 {
-   %targetPos = %this.getPosition();
+   %targetPos = %this.getGlobalPosition();
+   
+   echo("targetObj: " @ %this @ " targetPos: " @ %targetPos);
+
    %targetX = getWord(%targetPos, 0);
    %targetY = getWord(%targetPos, 1);
    %targetWidth = %this.extent.x;
@@ -190,40 +193,145 @@ function UIBldrLayoutTab::onControlDragged(%this, %payload, %point)
       else {
           //get the parent tabbook to highlight it'll be converted to a tab
           %tabbook = %this.getParent();
-          %highlightX = %tabbook.position.x;
-          %highlightY = %tabbook.position.y;
+          
+          %tabbookPos = %tabbook.getGlobalPosition();
+          
+          %highlightX = %tabbookPos.x;
+          %highlightY = %tabbookPos.y;
+          
           %highlightWidth = %tabbook.extent.x;
           %highlightHeight = 20;
           %payload.targetPosition = "tab";
       }
+      
+      echo("target region: " @ %payload.targetPosition);
 
       EditorDragAndDropLayer.highlightControl.position = %highlightX SPC %highlightY;
       EditorDragAndDropLayer.highlightControl.extent = %highlightWidth SPC %highlightHeight;
       EditorDragAndDropLayer.highlightControl.visible = true;
-   
-      // Create a new GUI control to represent the highlight.
-      /*%this.highlightControl = new GuiControl() {
-          position = %highlightX SPC %highlightY;
-          extent = %highlightWidth SPC %highlightHeight;
-          profile = GuiDefaultProfile; // Assume this is a predefined profile for highlighting.
-      };
-      Canvas.add(%this.highlightControl); // Add the highlight control to the canvas or the parent GUI.*/
    }
-   
-   return;
 }
 
 function UIBldrLayoutTab::onControlDropped(%this, %payload, %point)
 {
    Canvas.popDialog(EditorDragAndDropLayer);
    
-   if(%payload.targetPosition $= "tab")
+   %tabbook = %this.getParent();
+   %tabbook.dock(%payload.tabRef, %payload.targetPosition);
+}
+
+function UIBldrLayoutTabbook::dock(%this, %tabObj, %position)
+{
+   %layout = %this.getParent();
+   
+   %tabOldParent = %tabObj.getParent();
+      
+   if(%position !$= "tab")
    {
-      %this.getParent().add(%payload.tabRef);  
+      UIBuilder::Set(%layout);
+         %orientation = (%position $= "top" || %position $= "bottom") ? "Horizontal" : "Vertical";
+         %splitPoint = %layout.extent.x/2 SPC %layout.extent.y/2;
+         
+         echo("UIBldrLayoutTabbook::dock() - orientation: " @ %orientation);
+         %split = UIBuilder::SplitContainer(%orientation, %splitPoint);
+         
+         echo("UIBldrLayoutTabbook::dock() - splitcontainer: " @ %split);
+         UIBuilder::End();
+      UIBuilder::End();
+         
+      %moveCurrentToPanel = "";
+      %newBookPanel = "";
+      
+      switch$(%position)
+      {
+         case "left":
+            %newBookPanel = %split-->Panel1;
+            %moveCurrentToPanel = %split-->Panel2;
+         case "right":
+            %newBookPanel = %split-->Panel2;
+            %moveCurrentToPanel = %split-->Panel1;
+         case "top":
+            %newBookPanel = %split-->Panel1;
+            %moveCurrentToPanel = %split-->Panel2;
+         case "bottom":
+            %newBookPanel = %split-->Panel2;
+            %moveCurrentToPanel = %split-->Panel1;
+         default:
+            error("UIBldrLayoutTabbook::dock() - invalid drop region");
+      }
+      
+      echo("UIBldrLayoutTabbook::dock() - tab name: " @ %tabObj.text);
+      echo("UIBldrLayoutTabbook::dock() - moveCurrentToPanel: " @ %moveCurrentToPanel.internalName);
+      echo("UIBldrLayoutTabbook::dock() - newBookPanel: " @ %newBookPanel.internalName);
+      
+      UIBuilder::Set(%newBookPanel);
+         %newBook = UIBuilder::TabBook(true);
+         %newBook.class = UIBldrLayoutTabbook;
+         %newBook.add(%tabObj);
+         
+         //%newBook.resize(0,0,%newBookPanel.extent.x,%newBookPanel.extent.y);
+         %tabObj.resize(0,0,%newBook.extent.x,%newBook.extent.y);
+         UIBuilder::End();
+      UIBuilder::End();
+      
+      %moveCurrentToPanel.add(%this);
+      %panelExt = %moveCurrentToPanel.extent;
+      %this.resize(0,0,%panelExt.x,%panelExt.y);
+      
+      echo("UIBldrLayoutTabbook::dock() - currentBook ext: " @ %this.extent);
+      echo("UIBldrLayoutTabbook::dock() - newBook ext: " @ %this.extent);
    }
    else
    {
-      echo("UIBldrLayoutTab::onControlDropped() - not yet handled region: " @ %payload.targetPosition);
-      %layout = %this.getParent().getParent();
+      %this.add(%tabObj);
+   }
+   
+   %tabOldParent.undock(%tabObj);
+}
+
+function UIBldrLayoutTabbook::undock(%this, %tabObj)
+{
+   //Now we update the original holder of our moved tab, and adjust layout stuffs as needed
+   echo("tab old parent: " @ %this);
+   if(%this.getCount() == 0)
+   {
+      echo("tabbook is out of tabs!");
+      //we need to collapse it  
+      %oldPanel = %this.getParent();
+      %oldSplitCtrl = %oldPanel.getParent();
+
+      echo("old layout ctrl: " @ %oldSplitCtrl);
+      
+      if(%oldSplitCtrl.getClassName() $= "GuiSplitContainer")
+      {
+         //we need to fold things up  
+         echo("Collapse split containers!");
+         %splitContainerParent = %oldSplitCtrl.getParent();
+         
+         echo("Split container parent: " @ %splitContainerParent);
+         
+         //get our sibling
+         %objIdx = %oldSplitCtrl.getObjectIndex(%oldPanel);
+         
+         echo("   objIdx: " @ %objIdx);
+         
+         %siblingIndex = %objIdx == 0 ? 1 : 0;
+         
+         echo("   siblingIndex: " @ %siblingIndex);
+         
+         %otherPanel = %oldSplitCtrl.getObject(%siblingIndex);
+         
+         %otherTabbook = %otherPanel.getObject(0);
+         %splitContainerParent.add(%otherTabbook);
+         %otherTabbook.resize(0,0,%splitContainerParent.extent.x, %splitContainerParent.extent.y);
+         %oldSplitCtrl.delete();
+         %otherPanel.delete();
+         %this.schedule(32, "delete");
+      }
+      else
+      {
+         %oldPanel.delete();  
+         echo("deleted old panel");
+      }
    }
 }

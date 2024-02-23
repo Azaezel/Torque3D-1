@@ -1,18 +1,29 @@
-function GuiFormBuilder::createSplitContainer(%base)
+function UIBuilder::SplitContainer(%orientation, %splitPoint)
 {
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::SplitContainer() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   if(%orientation $= "")
+      %orientation = "Horizontal";
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
    %split = new GuiSplitContainer()
    {
-      profile = ToolsGuiSolidDefaultProfile;
-      superClass = GuiFormBuilderSplitContainer;
+      profile = GuiMenuPanelProfile;
       position = "0 0";
-      extent = %base.extent;
+      extent = %baseCtrl.extent;
       internalName = "splitContainer";
       horizSizing = "width";
       vertSizing = "height";
       margin = "2 2 2 2";
+      orientation = %orientation;
+      splitPoint = %splitPoint;
       
       new GuiPanel() {
-         superClass = GuiFormBuilder;
          docking = "Client";
          margin = "0 0 0 0";
          padding = "0 0 0 0";
@@ -36,7 +47,6 @@ function GuiFormBuilder::createSplitContainer(%base)
          canSaveDynamicFields = "0";
       };
       new GuiPanel() {
-         superClass = GuiFormBuilder;
          docking = "Client";
          margin = "0 0 0 0";
          padding = "0 0 0 0";
@@ -61,7 +71,7 @@ function GuiFormBuilder::createSplitContainer(%base)
       };
    };
 
-   %base.add(%split);
+   %baseCtrl.add(%split);
    
    return %split;
 }

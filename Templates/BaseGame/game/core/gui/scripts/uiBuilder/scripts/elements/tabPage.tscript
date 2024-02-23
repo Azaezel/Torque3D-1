@@ -1,4 +1,4 @@
-function UIBuilder::TabPage(%title)
+function UIBuilder::TabPage(%title, %forceCreate)
 {
    if(UIBuilderStack.count() == 0)
    {
@@ -8,7 +8,7 @@ function UIBuilder::TabPage(%title)
    
    %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
    
-   if(%baseCtrl.getClassName() !$= "GuiTabBookCtrl")
+   if(%baseCtrl.getClassName() !$= "GuiTabBookCtrl" && !%forceCreate)
    {
       error("UIBuilder::TabPage() - attempting to create element, but the parent control isn't a tabbook!");
       return false;

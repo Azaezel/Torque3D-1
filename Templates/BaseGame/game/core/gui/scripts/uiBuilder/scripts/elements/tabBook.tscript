@@ -1,4 +1,4 @@
-function UIBuilder::TabBook()
+function UIBuilder::TabBook(%allowReorder)
 {
    if(UIBuilderStack.count() == 0)
    {
@@ -7,6 +7,9 @@ function UIBuilder::TabBook()
    }
    
    %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   echo("UIBuilder::TabBook() - baseCtrl: " @ %baseCtrl.getClassName());
+   echo("    extent: " @ %baseCtrl.extent);
    
    %book = new GuiTabBookCtrl()
    {
@@ -17,6 +20,7 @@ function UIBuilder::TabBook()
       internalName = "book";  
       horizSizing = "width";
       vertSizing = "height";
+      allowReorder = %allowReorder;
    };
 
    UIBuilderStack.push_back(%book);
