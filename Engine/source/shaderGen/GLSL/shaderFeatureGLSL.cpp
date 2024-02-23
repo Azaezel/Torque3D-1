@@ -441,15 +441,14 @@ Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
    Var *outVpos = (Var*)LangElement::find( "outVpos" );
    if ( !outVpos )
    {
-      ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
-
-      outVpos = connectComp->getElement( RT_TEXCOORD );
-      outVpos->setName( "outVpos" );
-      outVpos->setStructName( "OUT" );
-      outVpos->setType( "vec4" );
+      ShaderConnector* connectComp = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
+      outVpos = connectComp->getElement(RT_TEXCOORD);
+      outVpos->setName("outVpos");
+      outVpos->setStructName("OUT");
+      outVpos->setType("vec4");
 
       Var *outPosition = (Var*) LangElement::find( "gl_Position" );
-      AssertFatal( outPosition, "ShaderFeatureGLSL::addOutVpos - Didn't find the output position." );
+      AssertFatal( outPosition, "ShaderFeatureGLSL::addOutVpos - gl_Position somehow undefined?." );
       meta->addStatement(new GenOp("   @ = @;\r\n", outVpos, outPosition));
    }
 
@@ -459,15 +458,15 @@ Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
 Var* ShaderFeatureGLSL::getInVpos(  MultiLine *meta,
                                     Vector<ShaderComponent*> &componentList )
 {
-   Var *inVpos = (Var*)LangElement::find( "inVpos" );
-   if ( inVpos )
+   Var* inVpos = (Var*)LangElement::find("inVpos");
+   if (inVpos)
       return inVpos;
 
-   ShaderConnector *connectComp = dynamic_cast<ShaderConnector*>( componentList[C_CONNECTOR] );
-   inVpos = connectComp->getElement( RT_TEXCOORD );
-   inVpos->setName( "inVpos" );
-   inVpos->setStructName( "IN" );
-   inVpos->setType( "vec4" );
+   ShaderConnector* connectComp = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
+   inVpos = connectComp->getElement(RT_TEXCOORD);
+   inVpos->setName("inVpos");
+   inVpos->setStructName("IN");
+   inVpos->setType("vec4");
 
    Var* targetSize = (Var*)LangElement::find("targetSize");
    if (!targetSize)
@@ -487,7 +486,6 @@ Var* ShaderFeatureGLSL::getInVpos(  MultiLine *meta,
    meta->addStatement(new GenOp("   @.xy = @.xy * 0.5 + vec2(0.5,0.5);\r\n", inVpos, inVpos)); // get the screen coord to 0 to 1
    meta->addStatement(new GenOp("   @.y = 1.0 - @.y;\r\n", inVpos, inVpos)); // flip the y axis 
    meta->addStatement(new GenOp("   @.xy *= @;\r\n", inVpos, targetSize)); // scale to monitor
-
    return inVpos;
 }
 
@@ -2427,6 +2425,7 @@ void VisibilityFeatGLSL::processVert( Vector<ShaderComponent*> &componentList,
       return;
 
    addOutVpos( meta, componentList );
+   addOutWsPosition(componentList, fd.features[MFT_UseInstancing], meta);
 }
 
 void VisibilityFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList, 
@@ -2484,17 +2483,19 @@ void VisibilityFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    output = meta;
 
    // Everything else does a fizzle.
-   Var* vPos = getInVpos(meta, componentList);
+   Var* invPos = getInVpos(meta, componentList);
+   Var* wsPosition = getInWsPosition(componentList);
+   Var* wsView = getWsView(wsPosition, meta);
 
    // Translucent objects do a simple alpha fade.
    if (fd.features[MFT_IsTranslucent])
    {
       Var* color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-      meta->addStatement(new GenOp("   @.a *= @ * occlusionFade(@, vec4(gl_FragCoord.xyz,1/gl_FragCoord.w), @, @);\r\n", color, visibility, playerDepth, targetSize, oneOverTargetSize));
+      meta->addStatement(new GenOp("   @.a *= @ * occlusionFade(@, vec4(gl_FragCoord.xyz,1/gl_FragCoord.w), @, @, @.z);\r\n", color, visibility, playerDepth, targetSize, oneOverTargetSize, wsView));
       return;
    }
    // vpos is a float4 in d3d11
-   meta->addStatement(new GenOp("   fizzle( gl_FragCoord.xy, @ * occlusionFade(@, vec4(gl_FragCoord.xyz,1/gl_FragCoord.w), @, @));\r\n", visibility, playerDepth, targetSize, oneOverTargetSize));
+   meta->addStatement(new GenOp("   fizzle( gl_FragCoord.xy, @ * occlusionFade(@, vec4(gl_FragCoord.xyz,1/gl_FragCoord.w), @, @, @.z));\r\n", visibility, playerDepth, targetSize, oneOverTargetSize, wsView));
 }
 
 ShaderFeature::Resources VisibilityFeatGLSL::getResources( const MaterialFeatureData &fd )

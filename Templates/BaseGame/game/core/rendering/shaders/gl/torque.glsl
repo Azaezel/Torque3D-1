@@ -279,16 +279,12 @@ float hdrLuminance( vec3 _sample )
 float occlusionFade(float playerDepth, vec4 vpos, vec2 targetSize, vec2 oneOverTargetSize, float camAng)
 {
     float screenAngAtten = length(vpos.xy-(targetSize*0.5))*length(oneOverTargetSize);
-    screenAngAtten = pow(clamp(screenAngAtten+0.5, 0.0, 1.0 ),100.0);
+    screenAngAtten = clamp(screenAngAtten+0.5, 0.0, 1.0 );
     
-    float tiltBias; 
-    if (vpos.w>playerDepth)
-        tiltBias = 1.0;
-    else
-        tiltBias = (vpos.y-(targetSize.y*0.5))*(oneOverTargetSize.y)*camAng;
+    float tiltBias = (vpos.y-(targetSize.y*0.5))*(oneOverTargetSize.y)*camAng;
 
-    float screenDistAtten =  pow(1.0-clamp(playerDepth-vpos.w*tiltBias,0.0,1.0),20.0);   
-    screenDistAtten = max(screenDistAtten,screenAngAtten);
+    float screenDistAtten =  clamp(playerDepth-vpos.w*tiltBias*(1.0-pow(screenAngAtten,2)),0.0,1.0);   
+    screenDistAtten = clamp(pow(max(vpos.w*2-screenDistAtten,screenAngAtten),50),0.125,1.0);
     
     return screenDistAtten;
 }
