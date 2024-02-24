@@ -1,4 +1,4 @@
-function UIBuilder::TabBook(%allowReorder)
+function UIBuilder::TabBook(%allowReorder, %doActionButton)
 {
    if(UIBuilderStack.count() == 0)
    {
@@ -26,6 +26,26 @@ function UIBuilder::TabBook(%allowReorder)
    UIBuilderStack.push_back(%book);
    
    %baseCtrl.add(%book);
+   
+   if(%doActionButton $= "")
+      %doActionButton = false;
+   
+   if(%doActionButton)
+   {
+      %button = new GuiBitmapButtonCtrl(){
+         bitmapAsset = "Core_GUI:optionsButton_image";
+         position = %baseCtrl.extent.x - 20 SPC 0;
+         extent = "20 20";
+         horizSizing = "left";
+         vertSizing = "bottom";
+         command = %book @ ".onTabAction();";
+      };
+      
+      %baseCtrl.add(%button);
+      
+      %book.actionButton = %button;
+   }
+
    
    return %book;
 }

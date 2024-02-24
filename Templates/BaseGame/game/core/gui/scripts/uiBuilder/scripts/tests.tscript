@@ -122,3 +122,9 @@ function UIBuilder::test4()
    
    MainMenuGui.add(%layout);
 }
+
+function UIBuilder::test5()
+{
+   UIBuilder::test4();
+   UIBuilder::test1();
+}

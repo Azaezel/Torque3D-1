@@ -13,7 +13,7 @@ function UIBuilder::LayoutContainer(%pos, %ext)
 
    UIBuilderStack.push_back(%container);
    
-   %layoutTabbook = UIBuilder::TabBook();
+   %layoutTabbook = UIBuilder::TabBook(true, true);
    %layoutTabbook.class = UIBldrLayoutTabbook;
    %layoutTabbook.internalName = "LayoutTabbook";
    %layoutTabbook.allowReorder = true;
@@ -23,24 +23,13 @@ function UIBuilder::LayoutContainer(%pos, %ext)
    return %container;
 }
 
-function UIBuilderLayout::setMainPanel(%this, %mainPanelCtrl)
+function UIBuilderLayout::undockContent(%this, %control)
 {
    
 }
 
-function UIBuilderLayout::split(%this, %direction)
+function UIBuilder::makeLayoutDragNDropLayer()
 {
-     
-}
-
-//==============================================================================
-function UIBldrLayoutTabbook::onTabDraggedOut(%this, %tabObj)
-{
-   echo("UIBldrLayoutTabbook::onTabDraggedOut() - tab: " @ %tabObj);
-   
-   %tabText = %tabObj.text;
-   %tabTextWidth = %tabObj.profile.getStringWidth(%tabText) + 30;
-   
    if(!isObject(EditorDragAndDropLayer))
    {
       new GuiControl(EditorDragAndDropLayer)
@@ -57,7 +46,17 @@ function UIBldrLayoutTabbook::onTabDraggedOut(%this, %tabObj)
       };
       
       EditorDragAndDropLayer.add(EditorDragAndDropLayer.highlightControl);
-   }
+   }  
+}
+//==============================================================================
+function UIBldrLayoutTabbook::onTabDraggedOut(%this, %tabObj)
+{
+   echo("UIBldrLayoutTabbook::onTabDraggedOut() - tab: " @ %tabObj);
+   
+   %tabText = %tabObj.text;
+   %tabTextWidth = %tabObj.profile.getStringWidth(%tabText) + 30;
+   
+   UIBuilder::makeLayoutDragNDropLayer();
    
    %cursorpos = Canvas.getCursorPos();
    %xPos = getWord( %cursorpos, 0 );
@@ -92,13 +91,13 @@ function UIBldrLayoutTabbook::onTabDraggedOut(%this, %tabObj)
 
       // To differentiate drags, use the namespace hierarchy to classify them.
       // This will allow a color swatch drag to tell itself apart from a file drag, for example.
-      class                   = "GuiFormBuilderCustomLayoutDrop";
+      class                   = "UIBuilderLayoutTabDrop";
+      
+      tabRefCtrl = %tabRef;
    };
    
    // Add the temporary color swatch to the drag control as the payload.
    %ctrl.add( %tabRef );
-   
-   
    
    // Start drag by adding the drag control to the canvas and then calling startDragging().
    //Canvas.getContent().add( %ctrl );
@@ -110,9 +109,10 @@ function UIBldrLayoutTabbook::onTabDraggedOut(%this, %tabObj)
    Canvas.repaint();
 }
 
-function UIBuilderCustomLayoutDrop::onControlDragCancelled(%this)
+function UIBuilderLayoutTabDrop::onControlDragCancelled(%this)
 {
    Canvas.popDialog(EditorDragAndDropLayer);
+   %this.tabRefCtrl.delete();
 }
 
 function UIBldrLayoutTabbook::onControlDragged(%this, %payload, %point)
@@ -128,7 +128,10 @@ function UIBldrLayoutTabbook::onControlDropped(%this, %payload, %point)
 {
    Canvas.popDialog(EditorDragAndDropLayer);
    
-   %this.dock(%payload.tabRef, "tab");
+   if(isObject(%payload.tabRef))
+      %this.dock(%payload.tabRef, "tab");
+   else
+      %this.dock(%payload, "tab");
 }
 
 function UIBldrLayoutTab::onControlDragged(%this, %payload, %point)
@@ -210,6 +213,10 @@ function UIBldrLayoutTab::onControlDragged(%this, %payload, %point)
       EditorDragAndDropLayer.highlightControl.extent = %highlightWidth SPC %highlightHeight;
       EditorDragAndDropLayer.highlightControl.visible = true;
    }
+   else
+   {
+      EditorDragAndDropLayer.highlightControl.visible = false;
+   }
 }
 
 function UIBldrLayoutTab::onControlDropped(%this, %payload, %point)
@@ -217,25 +224,53 @@ function UIBldrLayoutTab::onControlDropped(%this, %payload, %point)
    Canvas.popDialog(EditorDragAndDropLayer);
    
    %tabbook = %this.getParent();
-   %tabbook.dock(%payload.tabRef, %payload.targetPosition);
+   
+   if(isObject(%payload.tabRef))
+      %tabbook.dock(%payload.tabRef, %payload.targetPosition);
+   else
+      %tabbook.dock(%payload, %payload.targetPosition);
 }
 
-function UIBldrLayoutTabbook::dock(%this, %tabObj, %position)
+function UIBldrLayoutTabbook::dock(%this, %dockObject, %position)
 {
    %layout = %this.getParent();
    
-   %tabOldParent = %tabObj.getParent();
+   if(%dockObject.getClassName() $= "GuiTabPageCtrl")
+   {
+      %tabObj = %dockObject;
+      %tabOldParent = %tabObj.getParent();
+   }
+   else if(%dockObject.getClassName() $= "GuiWindowCtrl")
+   {
+      %tabObj = new GuiTabPageCtrl()
+      {
+         text = %dockObject.text;
+         profile = ToolsGuiEditorTabPage;
+         position = "0 20";
+         extent = %dockObject.extent;
+         internalName = "page";  
+         horizSizing = "width";
+         vertSizing = "height";
+         fitBook = true;
+         margin = $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad;
+      };
       
+      for(%i=0; %i < %dockObject.getCount(); %i++)
+      {
+         %childObj = %dockObject.getObject(%i);
+         %tabObj.add(%childObj);
+      }
+      
+      %tabOldParent = %dockObject;
+   }
+   
    if(%position !$= "tab")
    {
       UIBuilder::Set(%layout);
          %orientation = (%position $= "top" || %position $= "bottom") ? "Horizontal" : "Vertical";
          %splitPoint = %layout.extent.x/2 SPC %layout.extent.y/2;
          
-         echo("UIBldrLayoutTabbook::dock() - orientation: " @ %orientation);
          %split = UIBuilder::SplitContainer(%orientation, %splitPoint);
-         
-         echo("UIBldrLayoutTabbook::dock() - splitcontainer: " @ %split);
          UIBuilder::End();
       UIBuilder::End();
          
@@ -260,12 +295,8 @@ function UIBldrLayoutTabbook::dock(%this, %tabObj, %position)
             error("UIBldrLayoutTabbook::dock() - invalid drop region");
       }
       
-      echo("UIBldrLayoutTabbook::dock() - tab name: " @ %tabObj.text);
-      echo("UIBldrLayoutTabbook::dock() - moveCurrentToPanel: " @ %moveCurrentToPanel.internalName);
-      echo("UIBldrLayoutTabbook::dock() - newBookPanel: " @ %newBookPanel.internalName);
-      
       UIBuilder::Set(%newBookPanel);
-         %newBook = UIBuilder::TabBook(true);
+         %newBook = UIBuilder::TabBook(true, true);
          %newBook.class = UIBldrLayoutTabbook;
          %newBook.add(%tabObj);
          
@@ -275,49 +306,46 @@ function UIBldrLayoutTabbook::dock(%this, %tabObj, %position)
       UIBuilder::End();
       
       %moveCurrentToPanel.add(%this);
+      if(isObject(%this.actionButton))
+      {
+         %moveCurrentToPanel.add(%this.actionButton);
+         %this.actionButton.position.x = %moveCurrentToPanel.extent.x - 20;  
+      }
       %panelExt = %moveCurrentToPanel.extent;
       %this.resize(0,0,%panelExt.x,%panelExt.y);
       
-      echo("UIBldrLayoutTabbook::dock() - currentBook ext: " @ %this.extent);
-      echo("UIBldrLayoutTabbook::dock() - newBook ext: " @ %this.extent);
+      //force compliance by re-setting the split point just to be sure
+      %split.splitPoint = %splitPoint;
    }
    else
    {
       %this.add(%tabObj);
    }
    
-   %tabOldParent.undock(%tabObj);
+   if(%tabOldParent.getClassName() $= "GuiTabbookCtrl")
+      %tabOldParent.undock(%tabObj);
+   else if(%tabOldParent.getClassName() $= "GuiWindowCtrl")
+      %tabOldParent.delete();
 }
 
 function UIBldrLayoutTabbook::undock(%this, %tabObj)
 {
    //Now we update the original holder of our moved tab, and adjust layout stuffs as needed
-   echo("tab old parent: " @ %this);
    if(%this.getCount() == 0)
    {
-      echo("tabbook is out of tabs!");
       //we need to collapse it  
       %oldPanel = %this.getParent();
       %oldSplitCtrl = %oldPanel.getParent();
-
-      echo("old layout ctrl: " @ %oldSplitCtrl);
       
       if(%oldSplitCtrl.getClassName() $= "GuiSplitContainer")
       {
          //we need to fold things up  
-         echo("Collapse split containers!");
          %splitContainerParent = %oldSplitCtrl.getParent();
-         
-         echo("Split container parent: " @ %splitContainerParent);
          
          //get our sibling
          %objIdx = %oldSplitCtrl.getObjectIndex(%oldPanel);
          
-         echo("   objIdx: " @ %objIdx);
-         
          %siblingIndex = %objIdx == 0 ? 1 : 0;
-         
-         echo("   siblingIndex: " @ %siblingIndex);
          
          %otherPanel = %oldSplitCtrl.getObject(%siblingIndex);
          
@@ -331,7 +359,54 @@ function UIBldrLayoutTabbook::undock(%this, %tabObj)
       else
       {
          %oldPanel.delete();  
-         echo("deleted old panel");
       }
    }
+}
+
+function UIBldrLayoutTabbook::onTabAction(%this)
+{
+   if(!isObject(TabBookActionPopup))
+   {
+      new PopupMenu( TabBookActionPopup )
+      {
+         superClass = "MenuBuilder";
+         class = "EditorWorldMenu";
+         //isPopup = true;
+
+         item[ 0 ] = "Undock Tab" TAB "" TAB "performLayoutUndock();";
+      };
+   }
+   
+   TabBookActionPopup.showPopup(Canvas);
+   TabBookActionPopup.tabbookId = %this;
+}
+
+function performLayoutUndock()
+{
+   %tabIdx = TabBookActionPopup.tabbookId.getSelectedPage();
+   %tabObj = TabBookActionPopup.tabbookId.getObject(%tabIdx);
+
+   //now that we've undocked it, make a new window and shove the tab into it
+   %newWindowPos = TabBookActionPopup.tabbookId.getGlobalPosition();
+   %newWindowPos.x += 20;
+   %newWindowPos.y += 20;
+   
+   %newWindowExt = TabBookActionPopup.tabbookId.extent;
+   %newWindowExt.x -= 40;
+   %newWindowExt.y -= 40;
+   %newWindow = UIBuilder::Window(%tabObj.text, %newWindowPos, %newWindowExt, true);
+   UIBuilder::End();
+   
+   for(%i=0; %i < %tabObj.getCount(); %i++)
+   {
+      %childObj = %tabObj.getObject(%i);
+      %newWindow.add(%childObj);
+   }
+   
+   Canvas.getContent().add(%newWindow);
+   
+   TabBookActionPopup.tabbookId.remove(%tabObj);
+   %tabObj.delete();
+   
+   TabBookActionPopup.tabbookId.undock(%tabObj);
 }

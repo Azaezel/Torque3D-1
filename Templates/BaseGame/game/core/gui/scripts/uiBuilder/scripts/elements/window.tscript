@@ -196,14 +196,7 @@ function UIBuilderWindow::onMouseDragged(%this)
    //container it in a dnd control
    echo("UIBuilderWindow::onMouseDragged()");
    
-   if(!isObject(EditorDragAndDropLayer))
-   {
-      new GuiControl(EditorDragAndDropLayer)
-      {
-         position = "0 0";
-         extent = Canvas.extent;
-      };
-   }
+   UIBuilder::makeLayoutDragNDropLayer();
    
    %cursorpos = Canvas.getCursorPos();
    %xPos = getWord( %cursorpos, 0 );
@@ -231,7 +224,7 @@ function UIBuilderWindow::onMouseDragged(%this)
 
       // To differentiate drags, use the namespace hierarchy to classify them.
       // This will allow a color swatch drag to tell itself apart from a file drag, for example.
-      class                   = "UIBuilderCustomLayoutDrop";
+      class                   = "UIBuilderDockableWindowDrop";
    };
    
    // Add the temporary color swatch to the drag control as the payload.
@@ -245,111 +238,11 @@ function UIBuilderWindow::onMouseDragged(%this)
    Canvas.pushDialog(EditorDragAndDropLayer);
    
    %ctrl.startDragging( 0, 0);
-   
-   $EditorGui::draggingWindowCtrl = %ctrl;
-   
+
    Canvas.repaint();
 }
 
-function DockableWindowTabBook::onMouseDown(%this)
-{
-   %hoverPageNum = %this.getHoveredPage();
-
-   if(%hoverPageNum != -1)
-   {
-      $UIBuilder::isDraggingTab = true;
-      $UIBuilder::isDraggingWindow = false;
-      $UIBuilder::draggedTab = %this.getObject(%hoverPageNum);
-   }
-   else
-   {
-      $UIBuilder::isDraggingTab = false;
-      $UIBuilder::isDraggingWindow = true;
-   }
-   
-   $UIBuilder::dragStartPos = Canvas.getCursorPos();
-}
-
-function DockableWindowTabBook::onMouseUp(%this)
-{
-   echo("Ending drag!");
-   
-   $UIBuilder::isDraggingTab = false;
-   $UIBuilder::isDraggingWindow = false;
-}
-
-function DockableWindowTabBook::onMouseDragged(%this)
-{
-   if($UIBuilder::isDraggingTab)
-   {
-      %dragCurrentPos = Canvas.getCursorPos();
-      %dragDelta = VectorSub($UIBuilder::dragStartPos, %dragCurrentPos);
-      
-      if(VectorLen(%dragDelta) > 10)
-      {
-         UIBuilder::undockWindow($UIBuilder::draggedTab);
-         $UIBuilder::isDraggingTab = false;
-         $UIBuilder::isDraggingWindow = false;
-      }  
-   }
-   else if($UIBuilder::isDraggingWindow)
-   {
-      $UIBuilder::isDraggingTab = false;
-      $UIBuilder::isDraggingWindow = false;
-      echo(%this.getParent().getClassName());
-      %this.getParent().onMouseDragged();
-   }
-}
-
-function DockableWindowTabBook::onMouseMove(%this)
-{
-   if(!$UIBuilder::isDraggingTab && !$UIBuilder::isDraggingWindow)
-   {
-      %parentWindow = %this.getParent();
-      
-      %hoverPageNum = %this.getHoveredPage();
-      if(%hoverPageNum != -1)
-      {
-         %rect = %this.getTabRect(%hoverPageNum);
-         
-         if(!isObject(%parentWindow.closeTabButton))
-         {
-            %parentWindow.closeTabButton = new GuiBitmapButtonCtrl(){
-               bitmapAsset = "Core_GUI:button_image";
-               extent = 20 SPC 20;
-               command = %this @ ".closeTab(" @ %hoverPageNum @ ");";
-            };
-            
-            %parentWindow.add(%parentWindow.closeTabButton);
-         }
-         
-         %parentWindow.closeTabButton.position = %rect.x + %rect.z - 20 SPC 0;
-         %parentWindow.closeTabButton.hidden = false;
-      }
-      else
-      {
-         %parentWindow.closeTabButton.hidden = true;  
-         %parentWindow.closeTabButton.position = -10 SPC -10;
-      }
-   }
-}
-
-function DockableWindowTabBook::closeTab(%this, %tabNum)
-{
-   %tab = %this.getObject(%tabNum);
-   %this.remove(%tab);
-   
-   %tab.delete();
-   
-   %parentWindow = %this.getParent();
-   if(isObject(%parentWindow.closeTabButton))
-   {
-      %parentWindow.closeTabButton.hidden = true;  
-      %parentWindow.closeTabButton.position = -10 SPC -10;
-   }
-}
-
-function UIBuilderCustomLayoutDrop::onControlDragCancelled(%this)
+function UIBuilderDockableWindowDrop::onControlDragCancelled(%this)
 {
    %window = %this.getObject(0);
    
@@ -357,6 +250,4 @@ function UIBuilderCustomLayoutDrop::onControlDragCancelled(%this)
    
    Canvas.getContent().add(%window);
    Canvas.popDialog(EditorDragAndDropLayer);
-   
-   $EditorGui::draggingWindowCtrl = "";
 }
