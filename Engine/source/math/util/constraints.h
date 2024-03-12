@@ -22,52 +22,66 @@
 
 #ifndef _CONSTRAINTS_H_
 #define _CONSTRAINTS_H_
-template<typename Dimensions> class Constraint
+template<typename PosDimensions, typename RotDimensions> class Constraint
 {
 public:
-   enum rangeType
+   enum posRangeType
    {
       MinPos = 0,
       MaxPos,
-      MinRot,
-      MaxRot,
       MinScale,
       MaxScale,
-      MaxTypes
+      MaxPosTypes
    };
 
-   struct Range
+   enum rotRangeType
    {
-      Dimensions min;
-      Dimensions max;
-      Range(Dimensions inMin, Dimensions inMax) :min(inMin),max(inMax) {};
+      MinRot,
+      MaxRot,
+      MaxRotTypes
    };
 
-   Dimensions mRanges[MaxTypes];
-   void setPosRange(Dimensions min, Dimensions max) { mRanges[MinPos] = min; mRanges[MaxPos] = max; };
-   void setPosRange(Dimensions inPos[2]) { mRanges[MinPos] = inPos[0]; mRanges[MaxPos] = inPos[1]; };
-
-   void setRotRange(Dimensions min, Dimensions max) { mRanges[MinRot] = min; mRanges[MinRot] = max; };
-   void setRotRange(Dimensions inRot[2]) { mRanges[MinRot] = inRot[0]; mRanges[MinRot] = inRot[1]; };
-
-   void setScaleRange(Dimensions min, Dimensions max) { mRanges[MinScale] = min; mRanges[MaxScale] = max; };
-   void setScaleRange(Dimensions inScale[2]) { mRanges[MinScale] = inScale[0]; mRanges[MaxScale] = inScale[1]; };
-
-   Range getPosRange() { return Range(mRanges[MinPos], mRanges[MaxPos]); }
-   Range getRotRange() { return  Range(mRanges[MinRot], mRanges[MaxRot]); }
-   Range getScaleRange() { return  Range(mRanges[MinScale], mRanges[MaxScale]); }
-
-   Constraint(Dimensions inRanges[MaxTypes])
+   struct PosRange
    {
-      *mRanges = *inRanges;
+      PosDimensions min;
+      PosDimensions max;
+      PosRange(PosDimensions inMin, PosDimensions inMax) :min(inMin),max(inMax) {};
+   };
+
+   struct RotRange
+   {
+      RotDimensions min;
+      RotDimensions max;
+      RotRange(RotDimensions inMin, RotDimensions inMax) :min(inMin), max(inMax) {};
+   };
+
+   PosDimensions mPosRanges[MaxPosTypes];
+   RotDimensions mRotRanges[MaxRotTypes];
+   void setPosRange(PosDimensions min, PosDimensions max) { mPosRanges[MinPos] = min; mPosRanges[MaxPos] = max; };
+   void setPosRange(PosDimensions inPos[2]) { mPosRanges[MinPos] = inPos[0]; mPosRanges[MaxPos] = inPos[1]; };
+
+   void setRotRange(RotDimensions min, RotDimensions max) { mRotRanges[MinRot] = min; mRotRanges[MinRot] = max; };
+   void setRotRange(RotDimensions inRot[2]) { mRotRanges[MinRot] = inRot[0]; mRotRanges[MinRot] = inRot[1]; };
+
+   void setScaleRange(PosDimensions min, PosDimensions max) { mPosRanges[MinScale] = min; mPosRanges[MaxScale] = max; };
+   void setScaleRange(PosDimensions inScale[2]) { mPosRanges[MinScale] = inScale[0]; mPosRanges[MaxScale] = inScale[1]; };
+
+   PosRange getPosRange() { return PosRange(mPosRanges[MinPos], mPosRanges[MaxPos]); }
+   RotRange getRotRange() { return  RotRange(mRotRanges[MinRot], mRotRanges[MaxRot]); }
+   PosRange getScaleRange() { return  PosRange(mPosRanges[MinScale], mPosRanges[MaxScale]); }
+
+   Constraint(PosDimensions inPosRanges[MaxPosTypes], RotDimensions inRotRanges[MaxPosTypes])
+   {
+      *mPosRanges = *inRanges;
+      *mRotRanges = *inRotRanges;
    }
-   Constraint(Dimensions inPos[2], Dimensions inRot[2], Dimensions inScale[2])
+   Constraint(PosDimensions inPos[2], RotDimensions inRot[2], PosDimensions inScale[2])
    {
       setPosRange(inPos);
       setRotRange(inRot);
       setScaleRange(inScale);
    }
-   Constraint(Dimensions minPos, Dimensions maxPos, Dimensions minRot, Dimensions maxRot, Dimensions minScale, Dimensions maxScale)
+   Constraint(PosDimensions minPos, PosDimensions maxPos, RotDimensions minRot, RotDimensions maxRot, PosDimensions minScale, PosDimensions maxScale)
    {
       setPosRange(minPos, maxPos);
       setRotRange(minRot, maxRot);
@@ -79,9 +93,9 @@ public:
       return String("not implemented");
    }
 
-   Constraint<Dimensions> fromString(String inString)
+   Constraint<PosDimensions,RotDimensions> fromString(String inString)
    {
-      return Constraint<Dimensions>();
+      return Constraint<Dimensions, RotDimensions>();
    }
 
    Constraint() = default;

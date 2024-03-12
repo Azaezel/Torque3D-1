@@ -24,7 +24,7 @@
 #include "math/util/TransformVec3D.h"
 
 IMPLEMENT_CONOBJECT(TransformVec3D);
-ConsoleDocClass(TransformVec3D, "Matrix Relational Vector");
+ConsoleDocClass(TransformVec3D, "Relational Vector 3D space");
 
 void testTransformVec3D()
 {
@@ -85,6 +85,12 @@ DefineEngineMethod(TransformVec3D, getRotation, AngAxisF, (S32 id, bool global),
    AngAxisF aa(*space);
    aa.axis.normalize();
    return aa;
+}
+
+DefineEngineMethod(TransformVec3D, getScale, Point3F, (S32 id, bool global), (0, false), "")
+{
+   MatrixF* space = (global) ? object->global(id) : object->local(id);
+   return space->getScale();
 }
 
 DefineEngineMethod(TransformVec3D, getEuler, EulerF, (S32 id, bool global), (0, false), "")

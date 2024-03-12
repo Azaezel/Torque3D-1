@@ -23,36 +23,46 @@
 #define _TransformVec3D_H_
 #include "math/util/relationVec.h"
 
-typedef Constraint<Point3F> Constraint3D;
-typedef RelationVec<MatrixF, Point3F> RelationVec3D;
+typedef Constraint<Point3F, Point3F> Constraint3D;
+typedef RelationVec<MatrixF, Point3F, Point3F> RelationVec3D;
 
 template<> inline String Constraint3D::toString()
 {
-   String retval = String::ToString("%g %g %g", mRanges[0].x, mRanges[0].y, mRanges[0].z);
-   for (U32 i = 1; i < MaxTypes; i++)
-   {
-      retval += String::ToString(" %g %g %g", mRanges[i].x, mRanges[i].y, mRanges[i].z);
-   }
+   String retval = String::ToString("%g %g %g", mPosRanges[MinPos].x, mPosRanges[MinPos].y, mPosRanges[MinPos].z);
+   retval += String::ToString(" %g %g %g", mPosRanges[MaxPos].x, mPosRanges[MaxPos].y, mPosRanges[MaxPos].z);
+   retval += String::ToString(" %g %g %g", mRotRanges[MinRot].x, mRotRanges[MinRot].y, mRotRanges[MinRot].z);
+   retval += String::ToString(" %g %g %g", mRotRanges[MaxRot].x, mRotRanges[MaxRot].y, mRotRanges[MaxRot].z);
+   retval += String::ToString(" %g %g %g", mPosRanges[MinScale].x, mPosRanges[MinScale].y, mPosRanges[MinScale].z);
+   retval += String::ToString(" %g %g %g", mPosRanges[MaxScale].x, mPosRanges[MaxScale].y, mPosRanges[MaxScale].z);
    return retval;
 };
 
 template<> inline Constraint3D Constraint3D::fromString(String inString)
 {
-   Point3F outval[MaxTypes];
+   Constraint3D outVal;
    Vector<String> elements;
    inString.split(" ", elements);
-   AssertWarn(elements.size() == 3 * MaxTypes, avar("fromString got %d entries, expected 3x%d", elements.size(), MaxTypes));
-   U32 offset = 0;
-   for (U32 i = 0; i < 3 * MaxTypes; i+=3)
-   {
-      Point3F range;
-      range.x = dAtof(elements[i].c_str());
-      range.y = dAtof(elements[i + 1].c_str());
-      range.z = dAtof(elements[i + 2].c_str());
-      outval[offset] = range;
-      offset++;
-   };
-   return Constraint(outval);
+
+   //check to ensure we have PosDimensions*MaxPosTypes+RotDimensions*MaxRotTypes
+   AssertWarn(elements.size() ==  (3*MaxPosTypes+3*MaxRotTypes), avar("fromString got %d entries, expected %d", elements.size(), (3*MaxPosTypes+3*MaxRotTypes)));
+
+   U32 i = 0;
+   Point3F posRange[2];
+   posRange[0] = Point3F(dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()));
+   posRange[1] = Point3F(dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()));
+   outVal.setPosRange(posRange);
+
+   Point3F rotRange[2];
+   rotRange[0] = Point3F(dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()));
+   rotRange[1] = Point3F(dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()));
+   outVal.setRotRange(rotRange);
+
+   Point3F scaleRange[2];
+   scaleRange[0] = Point3F(dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()));
+   scaleRange[1] = Point3F(dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()), dAtof(elements[i++].c_str()));
+   outVal.setScaleRange(scaleRange);
+
+   return outVal;
 };
 
 

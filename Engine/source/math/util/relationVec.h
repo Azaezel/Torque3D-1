@@ -38,7 +38,7 @@ struct RelationNode
    RelationNode(S32 root = -1) : mRoot(root) {};
 };
 
-template<typename Transform, typename Dimensions> class RelationVec
+template<typename Transform, typename PosDimensions, typename RotDimensions> class RelationVec
 {
 public:
    //initializers
@@ -85,20 +85,20 @@ public:
    void setCached(bool cached) { mCachedResult = cached; };
    bool isCached() { return mCachedResult; };
    //base math
-   void setPosition(S32 id, Dimensions pos) { mCachedResult = false; };
-   void setRotation(S32 id, Dimensions rot) { mCachedResult = false; };
-   void setScale(S32 id, Dimensions trans) { mCachedResult = false; };
-   Dimensions getPosition(S32 id) { return Dimensions(); };
-   Dimensions getRotation(S32 id) { return Dimensions(); };
-   Dimensions getScale(S32 id) { return Dimensions(); };
+   void setPosition(S32 id, PosDimensions pos) { mCachedResult = false; };
+   void setRotation(S32 id, RotDimensions rot) { mCachedResult = false; };
+   void setScale(S32 id, PosDimensions trans) { mCachedResult = false; };
+   PosDimensions getPosition(S32 id) { return PosDimensions(); };
+   RotDimensions getRotation(S32 id) { return RotDimensions(); };
+   PosDimensions getScale(S32 id) { return PosDimensions(); };
    //incremental math
-   void translate(S32 id, Dimensions pos) { mCachedResult = false; };
+   void translate(S32 id, PosDimensions pos) { mCachedResult = false; };
    void rotate(S32 id, U32 axis, F32 radians) { mCachedResult = false; };
    void orbit(S32 id, U32 axis, F32 radians) { mCachedResult = false; };
-   void scale(S32 id, Dimensions rot) { mCachedResult = false; };
+   void scale(S32 id, PosDimensions rot) { mCachedResult = false; };
    //constraints
-   Vector<Constraint<Dimensions>>* refConstraints() { return &mConstraints; };
-   void setConstraint(S32 id, Constraint<Dimensions> ranges)
+   Vector<Constraint<PosDimensions, RotDimensions>>* refConstraints() { return &mConstraints; };
+   void setConstraint(S32 id, Constraint<PosDimensions, RotDimensions> ranges)
    {
       //first, allocate a copy of local size for global space
       if (mConstraints.size() < mLocal.size())
@@ -106,7 +106,7 @@ public:
       mConstraints[id] = ranges;
       setCached(false);
    };
-   Constraint<Dimensions>* getConstraint(S32 id) { return &mConstraints[id]; };
+   Constraint<PosDimensions, RotDimensions>* getConstraint(S32 id) { return &mConstraints[id]; };
 #ifdef TORQUE_DEBUG_GUARD
    inline void setFileAssociation(const char* file,  const U32   line) { mFileAssociation = file; mLineAssociation = line; }
 #endif
@@ -114,7 +114,7 @@ private:
    Vector<Transform> mLocal;
    Vector<Transform> mGlobal;
    Vector<RelationNode> mRelation;
-   Vector<Constraint<Dimensions>> mConstraints;
+   Vector<Constraint<PosDimensions, RotDimensions>> mConstraints;
    bool mCachedResult = false;
 #ifdef TORQUE_DEBUG_GUARD
    const char* mFileAssociation = "";
