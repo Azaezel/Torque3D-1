@@ -919,6 +919,27 @@ inline F64 mCross(const Point2F &p0, const Point2F &p1, const Point2F &pt2)
 }
 
 
+inline Point2F mMin2D(const Point2F& a, const Point2F& b)
+{
+   Point2F temp;
+   temp.x = (a.x < b.x) ? a.x : b.x;
+   temp.y = (a.y < b.y) ? a.y : b.y;
+   return temp;
+}
+
+inline Point2F mMax2D(const Point2F& a, const Point2F& b)
+{
+   Point2F temp;
+   temp.x = (a.x > b.x) ? a.x : b.x;
+   temp.y = (a.y > b.y) ? a.y : b.y;
+   return temp;
+}
+
+inline Point2F mClamp2D(const Point2F& val, const Point2F& low, const Point2F& high)
+{
+   return mMax2D(mMin2D(val, high), low);
+}
+
 namespace DictHash
 {
    /// Generates a 32bit hash from a Point2I.
