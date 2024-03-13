@@ -212,8 +212,20 @@ class TransformVec3D : public RelationVec3D, public SimObject
 public:
 
    //type specific I/O
-   void setTransform(S32 id, AngAxisF trans) { setCached(false); };
-   void constrain(S32 id) { setCached(false); };
+   void setTransform(S32 id, AngAxisF trans)
+   {
+      MatrixF mat;
+      trans.setMatrix(&mat);
+      setLocal(id, mat);
+      setCached(false);
+   };
+   void constrain(S32 id)
+   {
+      translate(id, Point3F(0, 0, 0));
+      rotate(id,0,0);
+      scale(id, Point3F(1, 1, 1));
+      setCached(false);
+   };
 
    TransformVec3D() {};
    DECLARE_CONOBJECT(TransformVec3D);

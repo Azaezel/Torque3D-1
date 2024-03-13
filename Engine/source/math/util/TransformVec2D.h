@@ -37,19 +37,46 @@ public:
    Box2DF(const Point2F& in_rMin, const Point2F& in_rExtent, F32 inrot) : RectF(in_rMin, in_rExtent), rot(inrot) {};
    Box2DF(const F32 in_left, const F32 in_top, const F32 in_width, const F32 in_height) : RectF(in_left, in_top, in_width, in_height), rot(0.0f) {};
    Box2DF(const F32 in_left, const F32 in_top, const F32 in_width, const F32 in_height, F32 inrot) : RectF(in_left, in_top, in_width, in_height), rot(inrot) {};
-   Box2DF& mul(const Box2DF& a); ///< M * a -> M
-   Box2DF& mul(const Box2DF& a, const Box2DF& b); ///< a * b -> M
+   Box2DF& mul(const Box2DF& origin); ///< M * a -> M
+   Box2DF& mul(const Box2DF& origin, const Box2DF& local); ///< a * b -> M
    String toString();
    Box2DF fromString(String inString);
 };
 
-inline Box2DF& Box2DF::mul(const Box2DF& a)
-{ ///< M * a -> M
+inline Box2DF& Box2DF::mul(const Box2DF& origin)
+{
+   // get incomming angle
+   float s = mSin(origin.rot);
+   float c = mCos(origin.rot);
+
+   // translate point back to origin:
+   point -= origin.point;
+
+   // rotate point
+   Point2F rotPoint = Point2F(point.x * c - point.y * s, point.x * s + point.y * c);
+
+   // translate point back:
+   extent * origin.extent;
+   point = rotPoint + origin.point * extent;
    return (*this);
 }
 
-inline Box2DF& Box2DF::mul(const Box2DF& a, const Box2DF& b)
-{ ///< a * b -> M
+inline Box2DF& Box2DF::mul(const Box2DF& origin, const Box2DF& local)
+{
+   // get incomming angle
+   float s = mSin(origin.rot + local.rot);
+   float c = mCos(origin.rot + local.rot);
+
+   // translate point back to origin:
+   Point2F relPoint = local.point - origin.point;
+
+   // rotate point
+   Point2F rotPoint = Point2F(local.point.x * c - local.point.y * s, local.point.x * s + local.point.y * c);
+
+   // translate point back:
+   Point2F relScale = local.extent * origin.extent;
+   relPoint = rotPoint + local.point* relScale;
+   Box2DF newBox = Box2DF(relPoint, relScale, origin.rot * local.rot);
    return (*this);
 }
 
@@ -195,7 +222,7 @@ template<> inline void RelationVec2D::rotate(S32 id, U32 axis, F32 radianDelta)
 template<> inline void RelationVec2D::orbit(S32 id, U32 axis, F32 radianDelta)
 {
    F32 endRot = mClampF(mLocal[id].rot + radianDelta, getConstraint(id)->getRotRange().min, getConstraint(id)->getRotRange().max);
-   Box2DF temp = Box2DF(endRot);
+   Box2DF temp = Box2DF(mLocal[id].point, mLocal[id].extent, endRot);
    mLocal[id].mul(temp);
    mCachedResult = false;
 };
@@ -206,8 +233,19 @@ class TransformVec2D : public RelationVec2D, public SimObject
 public:
 
    //type specific I/O
-   void setTransform(S32 id, AngAxisF trans) { setCached(false); };
-   void constrain(S32 id) { setCached(false); };
+   void setTransform(S32 id, Box2DF trans)
+   {
+      setLocal(id, trans);
+      setCached(false);
+   };
+
+   void constrain(S32 id)
+   {
+      translate(id, Point2F(0, 0));
+      rotate(id, 0, 0);
+      scale(id, Point2F(1, 1));
+      setCached(false);
+   };
 
    TransformVec2D() {};
    DECLARE_CONOBJECT(TransformVec2D);

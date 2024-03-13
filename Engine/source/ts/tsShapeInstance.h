@@ -49,8 +49,8 @@
 #ifndef _TSMATERIALLIST_H_
 #include "ts/tsMaterialList.h"
 #endif
-#ifndef _MATRIXVEC_H_
-#include "math/util/matrixVec.h"
+#ifndef _TransformVec3D_H_
+#include "math/util/TransformVec3D.h"
 #endif
 class RenderItem;
 class TSThread;
