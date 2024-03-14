@@ -141,27 +141,27 @@ GFXD3D11ShaderConstBuffer::GFXD3D11ShaderConstBuffer(GFXD3D11Shader* shader)
 
    for (U32 i = 0; i < 6; i++)
    {
-      for (U32 j = 0; j < 3; j++)
+      for (U32 j = 0; j < 16; j++)
       {
-         mBoundBuffers[i][j] = NULL;
+         mBoundBuffers[i][j] = nullptr;
       }
    }
 }
 
 GFXD3D11ShaderConstBuffer::~GFXD3D11ShaderConstBuffer()
 {
-   for (U32 i = 0; i < 6; i++)
-   {
-      for (U32 j = 0; j < 3; j++)
-      {
-         SAFE_RELEASE(mBoundBuffers[i][j]);
-      }
-   }
-
    for (auto& pair : mBufferMap) {
       delete[] pair.value.data;
    }
    mBufferMap.clear(); // Clear the map
+
+   for (U32 i = 0; i < 6; i++)
+   {
+      for (U32 j = 0; j < 16; j++)
+      {
+         mBoundBuffers[i][j] = nullptr;
+      }
+   }
 
    if (mShader)
       mShader->_unlinkBuffer(this);
@@ -459,40 +459,31 @@ const String GFXD3D11ShaderConstBuffer::describeSelf() const
    return ret;
 }
 
-void GFXD3D11ShaderConstBuffer::addBuffer(U32 bufBindingPoint, GFXShaderStage shaderStage, U32 size)
+void GFXD3D11ShaderConstBuffer::addBuffer(const GFXShaderConstDesc desc)
 {
    S32 shaderStageID = -1; // Initialize to -1 (bit not found)
    for (int i = 0; i < sizeof(S32) * 8; ++i) {
-      if (shaderStage & (1 << i)) {
+      if (desc.shaderStage & (1 << i)) {
          shaderStageID = i;
          break;
       }
    }
 
-   const BufferKey bufKey(bufBindingPoint, shaderStageID);
+   // no shaderstage defined? cannot be!!!
+   if (shaderStageID == -1)
+   {
+      AssertFatal(false, "DX Const buffer requires a shaderStage flag.");
+   }
+
+   const BufferKey bufKey(desc.bindPoint, shaderStageID);
    // doesnt matter if its already added.
-   U8* buf = new U8[size];
-   dMemset(buf, 0, size);
+   U8* buf = new U8[desc.size];
+   dMemset(buf, 0, desc.size);
    mBufferMap[bufKey].data = buf;
-   mBufferMap[bufKey].size = size;
+   mBufferMap[bufKey].size = desc.size;
    mBufferMap[bufKey].isDirty = true;
 
-   //ID3D11Buffer* tempBuf;
-   D3D11_BUFFER_DESC cbDesc;
-   cbDesc.ByteWidth = size;
-   cbDesc.Usage = D3D11_USAGE_DEFAULT;
-   cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-   cbDesc.CPUAccessFlags = 0;
-   cbDesc.MiscFlags = 0;
-   cbDesc.StructureByteStride = 0;
-
-   HRESULT hr;
-   hr = D3D11DEVICE->CreateBuffer(&cbDesc, NULL, &mBoundBuffers[(U32)shaderStageID][bufBindingPoint]);
-
-   if (FAILED(hr))
-   {
-      AssertFatal(false, "can't create constant buffer");
-   }
+   mBoundBuffers[(U32)shaderStageID][desc.bindPoint] = D3D11->getDeviceBuffer(desc);
 }
 
 void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderBuffer )
@@ -572,21 +563,13 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       D3D11DEVICECONTEXT->GSSetConstantBuffers(bufStartSlot, numBufs, psBuffers);
    }
 
-
    mWasLost = false;
+
 }
 
 void GFXD3D11ShaderConstBuffer::onShaderReload( GFXD3D11Shader *shader )
 {
    AssertFatal( shader == mShader, "GFXD3D11ShaderConstBuffer::onShaderReload is hosed!" );
-
-   for (U32 i = 0; i < 6; i++)
-   {
-      for (U32 j = 0; j < 3; j++)
-      {
-         SAFE_RELEASE(mBoundBuffers[i][j]);
-      }
-   }
 
    for (auto& pair : mBufferMap) {
       delete[] pair.value.data;
@@ -596,7 +579,7 @@ void GFXD3D11ShaderConstBuffer::onShaderReload( GFXD3D11Shader *shader )
    for (GFXD3D11Shader::BufferMap::Iterator i = shader->mBuffers.begin(); i != shader->mBuffers.end(); ++i)
    {
       // add our buffer descriptions to the full const buffer.
-      this->addBuffer(i->value.bindPoint, i->value.shaderStage, i->value.size);
+      this->addBuffer(i->value);
    }
 
    // Set the lost state.
@@ -916,7 +899,26 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection* refTable,
          desc.bindPoint = shaderInputBind.BindPoint;
          if (String::compare(desc.name, "$Globals") == 0 || String::compare(desc.name, "$Params") == 0)
          {
-            desc.name = desc.name + String::ToString((U32)shaderStage-1);
+            switch (shaderStage)
+            {
+            case VERTEX_SHADER:
+               desc.name = desc.name + "_" + mVertexFile.getFileName();
+               break;
+            case PIXEL_SHADER:
+               desc.name = desc.name + "_" + mPixelFile.getFileName();
+               break;
+            case GEOMETRY_SHADER:
+               desc.name = desc.name + "_" + mGeometryFile.getFileName();
+               break;
+            case DOMAIN_SHADER:
+               break;
+            case HULL_SHADER:
+               break;
+            case COMPUTE_SHADER:
+               break;
+            default:
+               break;
+            }
          }
 
          mBuffers[desc.name] = desc;
@@ -1091,6 +1093,8 @@ GFXShaderConstType GFXD3D11Shader::convertConstType(const D3D11_SHADER_TYPE_DESC
       }
    }
 
+   return GFXSCT_Uknown;
+
 }
 
 void GFXD3D11Shader::_buildShaderConstantHandles()
@@ -1219,7 +1223,7 @@ GFXShaderConstBufferRef GFXD3D11Shader::allocConstBuffer()
    for (BufferMap::Iterator i = mBuffers.begin(); i != mBuffers.end(); ++i)
    {
       // add our buffer descriptions to the full const buffer.
-      buffer->addBuffer(i->value.bindPoint, i->value.shaderStage, i->value.size);
+      buffer->addBuffer(i->value);
    }
 
    mActiveBuffers.push_back( buffer );

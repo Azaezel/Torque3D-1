@@ -434,30 +434,27 @@ void GFXGLShaderConstBuffer::activate(GFXGLShaderConstBuffer* prevShaderBuffer)
    mWasLost = false;
 }
 
-void GFXGLShaderConstBuffer::addBuffer(S32 bufBindingPoint, U32 size)
+void GFXGLShaderConstBuffer::addBuffer(const GFXShaderConstDesc desc)
 {
    // if this is the global buffer set it to the highest.
-   if (bufBindingPoint == -1)
+   if (desc.bindPoint == -1)
    {
       // we dont create a bufferhandle for this one.
-      U8* buf = new U8[size];
-      dMemset(buf, 0, size);
+      U8* buf = new U8[desc.size];
+      dMemset(buf, 0, desc.size);
       mBufferMap[-1].data = buf;
-      mBufferMap[-1].size = size;
+      mBufferMap[-1].size = desc.size;
       mBufferMap[-1].isDirty = true;
    }
    else
    {
-      U8* buf = new U8[size];
-      dMemset(buf, 0, size);
-      mBufferMap[bufBindingPoint].data = buf;
-      mBufferMap[bufBindingPoint].size = size;
-      mBufferMap[bufBindingPoint].isDirty = true;
+      U8* buf = new U8[desc.size];
+      dMemset(buf, 0, desc.size);
+      mBufferMap[desc.bindPoint].data = buf;
+      mBufferMap[desc.bindPoint].size = desc.size;
+      mBufferMap[desc.bindPoint].isDirty = true;
 
-      GLuint uboHandle;
-      glGenBuffers(1, &uboHandle);
-
-      mBufferMap[bufBindingPoint].bufHandle = uboHandle;
+      mBufferMap[desc.bindPoint].bufHandle = GFXGL->getDeviceBuffer(desc);
    }
 }
 
@@ -478,7 +475,7 @@ void GFXGLShaderConstBuffer::onShaderReload(GFXGLShader* shader)
    for (GFXGLShader::BufferMap::Iterator i = shader->mBuffers.begin(); i != shader->mBuffers.end(); ++i)
    {
       // add our buffer descriptions to the full const buffer.
-      this->addBuffer(i->value.bindPoint, i->value.size);
+      this->addBuffer(i->value);
    }
 
    mWasLost = true;
@@ -868,10 +865,12 @@ GFXShaderConstType GFXGLShader::convertConstType(GLenum constType)
       return GFXSCT_SamplerTextureArray;
       break;
    default:
-      AssertFatal(false, "GFXGLShader::initConstantDescs - unrecognized uniform type");
+      AssertFatal(false, "Unknown shader constant class enum, maybe you could add it?");
       // If we don't recognize the constant don't add its description.
       break;
    }
+
+   return GFXSCT_Uknown;
 }
 
 void GFXGLShader::initHandles()
@@ -1159,7 +1158,7 @@ GFXShaderConstBufferRef GFXGLShader::allocConstBuffer()
    for (BufferMap::Iterator i = mBuffers.begin(); i != mBuffers.end(); ++i)
    {
       // add our buffer descriptions to the full const buffer.
-      buffer->addBuffer(i->value.bindPoint, i->value.size);
+      buffer->addBuffer(i->value);
    }
 
    buffer->registerResourceWithDevice(getOwningDevice());
