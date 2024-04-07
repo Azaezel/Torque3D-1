@@ -52,9 +52,7 @@ void GuiMaterialCtrl::initPersistFields()
 {
    docsURL;
    addGroup( "Material" );
-   INITPERSISTFIELD_MATERIALASSET(Material, GuiMaterialCtrl, "");
-   addProtectedField( "materialName", TypeStringFilename, Offset( mMaterialName, GuiMaterialCtrl ), &GuiMaterialCtrl::_setMaterialData, &defaultProtectedGetFn, "", AbstractClassRep::FIELD_HideInInspectors );
-   endGroup( "Material" );
+   INITPERSISTFIELD_MATERIALASSET(Material, GuiMaterialCtrl, "");   endGroup( "Material" );
 
    Parent::initPersistFields();
 }

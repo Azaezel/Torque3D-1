@@ -234,8 +234,6 @@ void ProjectileData::initPersistFields()
 {
    docsURL;
    addGroup("Shapes");
-      addProtectedField("projectileShapeName", TypeShapeFilename, Offset(mProjectileShapeName, ProjectileData), &_setProjectileShapeData, &defaultProtectedGetFn,
-         "@brief File path to the model of the projectile.\n\n", AbstractClassRep::FIELD_HideInInspectors);
       INITPERSISTFIELD_SHAPEASSET(ProjectileShape, ProjectileData, "@brief The model of the projectile.\n\n");
       addField("scale", TypePoint3F, Offset(scale, ProjectileData),
          "@brief Scale to apply to the projectile's size.\n\n"

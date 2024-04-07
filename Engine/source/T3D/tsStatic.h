@@ -169,7 +169,6 @@ protected:
 
    void _renderNormals(ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat);
 
-   void _onResourceChanged(const Torque::Path& path);
    void onShapeChanged();
 
    // ProcessObject

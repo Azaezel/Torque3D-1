@@ -75,9 +75,11 @@ public:
 protected:
    DECLARE_IMAGEASSET(CubemapData, CubeMap, onCubemapChanged, GFXStaticTextureSRGBProfile);
    DECLARE_ASSET_SETGET(CubemapData, CubeMap);
+   StringTableEntry mCubeMapName;
 
    DECLARE_IMAGEASSET_ARRAY(CubemapData, CubeMapFace, 6);
    DECLARE_IMAGEASSET_ARRAY_SETGET(CubemapData, CubeMapFace);
+   StringTableEntry mCubeMapFaceName[6];
 
    GFXTexHandle mDepthBuff;
    GFXTextureTargetRef mRenderTarget;

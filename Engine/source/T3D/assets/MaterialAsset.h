@@ -186,23 +186,19 @@ public:
 /// This establishes the assetId, asset and legacy filepath fields, along with supplemental getter and setter functions
 /// </Summary>
 #define DECLARE_MATERIALASSET(className, name) public: \
-   StringTableEntry m##name##Name;\
    StringTableEntry m##name##AssetId;\
    AssetPtr<MaterialAsset>  m##name##Asset;\
    SimObjectPtr<Material> m##name;\
 public: \
-   const StringTableEntry get##name##File() const { return m##name##Name; }\
-   void set##name##Name(const FileName &_in) { m##name##Name = StringTable->insert(_in.c_str());}\
    const AssetPtr<MaterialAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(const AssetPtr<MaterialAsset> &_in) { m##name##Asset = _in;}\
    \
    bool _set##name(StringTableEntry _in)\
    {\
-      if(m##name##AssetId != _in || m##name##Name != _in)\
+      if(m##name##AssetId != _in)\
       {\
          if (_in == NULL || _in == StringTable->EmptyString())\
          {\
-            m##name##Name = StringTable->EmptyString();\
             m##name##AssetId = StringTable->EmptyString();\
             m##name##Asset = NULL;\
             m##name = NULL;\
@@ -212,13 +208,7 @@ public: \
          if (AssetDatabase.isDeclaredAsset(_in))\
          {\
             m##name##AssetId = _in;\
-            \
-            U32 assetState = MaterialAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
-            \
-            if (MaterialAsset::Ok == assetState)\
-            {\
-               m##name##Name = StringTable->EmptyString();\
-            }\
+            MaterialAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
          }\
          else\
          {\
@@ -226,15 +216,11 @@ public: \
             if (assetId != StringTable->EmptyString())\
             {\
                m##name##AssetId = assetId;\
-               if (MaterialAsset::getAssetById(m##name##AssetId, &m##name##Asset) == MaterialAsset::Ok)\
-               {\
-                  m##name##Name = StringTable->EmptyString();\
-               }\
+               MaterialAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
             }\
             else\
             {\
-               m##name##Name = _in;\
-               m##name##AssetId = StringTable->EmptyString();\
+               m##name##AssetId = _in;\
                m##name##Asset = NULL;\
             }\
          }\
@@ -273,14 +259,7 @@ public: \
    \
    const StringTableEntry get##name() const\
    {\
-      if (m##name##Asset && (m##name##Asset->getMaterialDefinitionName() != StringTable->EmptyString()))\
-         return m##name##Asset->getMaterialDefinitionName();\
-      else if (m##name##AssetId != StringTable->EmptyString())\
-         return m##name##AssetId;\
-      else if (m##name##Name != StringTable->EmptyString())\
-         return m##name##Name;\
-      else\
-         return StringTable->EmptyString();\
+      return m##name##AssetId;\
    }\
    SimObjectPtr<Material> get##name##Resource() \
    {\
@@ -288,29 +267,16 @@ public: \
    }\
    bool is##name##Valid() {return (get##name() != StringTable->EmptyString() && m##name##Asset->getStatus() == AssetBase::Ok); }
 
-#ifdef TORQUE_SHOW_LEGACY_FILE_FIELDS
 
 #define INITPERSISTFIELD_MATERIALASSET(name, consoleClass, docs) \
-   addProtectedField(#name, TypeMaterialName, Offset(m##name##Name, consoleClass), _set##name##Data, &defaultProtectedGetFn,assetDoc(name, docs)); \
    addProtectedField(assetText(name, Asset), TypeMaterialAssetId, Offset(m##name##AssetId, consoleClass), _set##name##Data, &defaultProtectedGetFn, assetDoc(name, asset docs.));
-
-#else
-
-#define INITPERSISTFIELD_MATERIALASSET(name, consoleClass, docs) \
-   addProtectedField(#name, TypeMaterialName, Offset(m##name##Name, consoleClass), _set##name##Data, &defaultProtectedGetFn,assetDoc(name, docs), AbstractClassRep::FIELD_HideInInspectors); \
-   addProtectedField(assetText(name, Asset), TypeMaterialAssetId, Offset(m##name##AssetId, consoleClass), _set##name##Data, &defaultProtectedGetFn, assetDoc(name, asset docs.));
-
-#endif // SHOW_LEGACY_FILE_FIELDS
 
 #define LOAD_MATERIALASSET(name)\
 if (m##name##AssetId != StringTable->EmptyString())\
 {\
    S32 assetState = MaterialAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
-   if (assetState == MaterialAsset::Ok )\
-   {\
-      m##name##Name = StringTable->EmptyString();\
-   }\
-   else Con::warnf("Warning: %s::LOAD_MATERIALASSET(%s)-%s", mClassName, m##name##AssetId, MaterialAsset::getAssetErrstrn(assetState).c_str());\
+   if (assetState != MaterialAsset::Ok )\
+      Con::warnf("Warning: %s::LOAD_MATERIALASSET(%s)-%s", mClassName, m##name##AssetId, MaterialAsset::getAssetErrstrn(assetState).c_str());\
 }
 #pragma endregion
 

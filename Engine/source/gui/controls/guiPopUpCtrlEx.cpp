@@ -356,7 +356,6 @@ void GuiPopUpMenuCtrlEx::initPersistFields(void)
    addField("sbUsesNAColor",            TypeBool,         Offset(mRenderScrollInNA, GuiPopUpMenuCtrlEx), "Deprecated" "@internal");
    addField("reverseTextList",          TypeBool,         Offset(mReverseTextList, GuiPopUpMenuCtrlEx), "Reverses text list if popup extends up, instead of down");
 
-   addProtectedField("bitmap",          TypeImageFilename,     Offset(mBitmapName, GuiPopUpMenuCtrlEx), _setBitmaps, &defaultProtectedGetFn, "File name of bitmap to use");
    addProtectedField("bitmapAsset", TypeImageAssetId, Offset(mBitmapAssetId, GuiPopUpMenuCtrlEx), _setBitmaps, &defaultProtectedGetFn, "Name of bitmap asset to use");
 
    addField("bitmapBounds",             TypePoint2I,      Offset(mBitmapBounds, GuiPopUpMenuCtrlEx), "Boundaries of bitmap displayed");

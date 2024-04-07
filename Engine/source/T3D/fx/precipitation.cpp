@@ -144,14 +144,7 @@ PrecipitationData::PrecipitationData()
 void PrecipitationData::initPersistFields()
 {
    docsURL;
-   INITPERSISTFIELD_SOUNDASSET(Sound, PrecipitationData, "Looping SFXProfile effect to play while Precipitation is active.");
-
-   addProtectedField( "dropTexture", TypeFilename, Offset(mDropName, PrecipitationData), &_setDropData, &defaultProtectedGetFn,
-      "@brief Texture filename for drop particles.\n\n"
-      "The drop texture can contain several different drop sub-textures "
-      "arranged in a grid. There must be the same number of rows as columns. A "
-      "random frame will be chosen for each drop.", AbstractClassRep::FIELD_HideInInspectors );
-      
+   INITPERSISTFIELD_SOUNDASSET(Sound, PrecipitationData, "Looping SFXProfile effect to play while Precipitation is active.");         
    INITPERSISTFIELD_IMAGEASSET(Drop, PrecipitationData, "@brief Texture for drop particles.\n\n"
       "The drop texture can contain several different drop sub-textures "
       "arranged in a grid. There must be the same number of rows as columns. A "
@@ -160,12 +153,6 @@ void PrecipitationData::initPersistFields()
    addField( "dropShader", TypeString, Offset(mDropShaderName, PrecipitationData),
       "The name of the shader used for raindrops." );
       
-   addProtectedField("splashTexture", TypeFilename, Offset(mSplashName, PrecipitationData), &_setSplashData, &defaultProtectedGetFn,
-      "@brief Texture filename for splash particles.\n\n"
-      "The splash texture can contain several different splash sub-textures "
-      "arranged in a grid. There must be the same number of rows as columns. A "
-      "random frame will be chosen for each splash.", AbstractClassRep::FIELD_HideInInspectors);
-
    INITPERSISTFIELD_IMAGEASSET(Splash, PrecipitationData, "@brief Texture for splash particles.\n\n"
       "The splash texture can contain several different splash sub-textures "
       "arranged in a grid. There must be the same number of rows as columns. A "

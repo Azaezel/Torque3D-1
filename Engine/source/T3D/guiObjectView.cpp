@@ -647,7 +647,7 @@ void GuiObjectView::_initAnimation()
       {
          Con::errorf( "GuiObjectView::_initAnimation - Cannot find animation sequence '%s' on '%s'",
             mAnimationSeqName.c_str(),
-            mModelName
+            mModelAssetId
          );
          
          return;
@@ -662,7 +662,7 @@ void GuiObjectView::_initAnimation()
       {
          Con::errorf( "GuiObjectView::_initAnimation - Sequence '%i' out of range for model '%s'",
             mAnimationSeq,
-            mModelName
+            mModelAssetId
          );
          
          mAnimationSeq = -1;
@@ -698,7 +698,7 @@ void GuiObjectView::_initMount()
       {
          Con::errorf( "GuiObjectView::_initMount - No node '%s' on '%s'",
             mMountNodeName.c_str(),
-            mModelName
+            mModelAssetId
          );
          
          return;
@@ -711,7 +711,7 @@ void GuiObjectView::_initMount()
    {
       Con::errorf( "GuiObjectView::_initMount - Mount node index '%i' out of range for '%s'",
          mMountNode,
-         mModelName
+         mModelAssetId
       );
       
       mMountNode = -1;

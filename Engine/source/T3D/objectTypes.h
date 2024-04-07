@@ -121,7 +121,7 @@ enum SceneObjectTypes
 
    /// A human or AI player object.
    /// @see Player
-   PlayerObjectType = BIT( 14 ),
+   PlayerControllerObjectType = BIT( 14 ),
 
    /// An item pickup.
    /// @see Item
@@ -178,6 +178,8 @@ enum SceneObjectTypeMasks : U32
 {
    STATIC_COLLISION_TYPEMASK = (StaticShapeObjectType |
    EntityObjectType),
+
+   PlayerObjectType = (DynamicShapeObjectType | PlayerControllerObjectType),
 
    DAMAGEABLE_TYPEMASK = (   PlayerObjectType        |
                               EntityObjectType |

@@ -138,11 +138,6 @@ void GuiBitmapButtonCtrl::initPersistFields()
 {
    docsURL;
    addGroup( "Bitmap" );
-
-      addProtectedField("Bitmap", TypeImageFilename, Offset(mBitmapName, GuiBitmapButtonCtrl), _setBitmapFieldData, &defaultProtectedGetFn, "Texture file to display on this button.\n"
-         "If useStates is false, this will be the file that renders on the control.  Otherwise, this will "
-         "specify the default texture name to which the various state and modifier suffixes are appended "
-         "to find the per-state and per-modifier (if enabled) textures.", AbstractClassRep::FIELD_HideInInspectors); \
       addProtectedField("BitmapAsset", TypeImageAssetId, Offset(mBitmapAssetId, GuiBitmapButtonCtrl), _setBitmapFieldData, &defaultProtectedGetFn, "Texture file to display on this button.\n"
          "If useStates is false, this will be the file that renders on the control.  Otherwise, this will "
          "specify the default texture name to which the various state and modifier suffixes are appended "
@@ -193,7 +188,7 @@ bool GuiBitmapButtonCtrl::onWake()
 
 void GuiBitmapButtonCtrl::onSleep()
 {
-   if( dStricmp(mBitmapName, "texhandle") != 0 )
+   if( dStricmp(mBitmapAssetId, "texhandle") != 0 )
       for( U32 i = 0; i < NumModifiers; ++ i )
       {
          mTextures[ i ].mTextureNormal = NULL;
@@ -259,7 +254,7 @@ void GuiBitmapButtonCtrl::setAutoFitExtents( bool state )
 {
    mAutoFitExtents = state;
    if( mAutoFitExtents )
-      setBitmap( mBitmapName );
+      setBitmap( mBitmapAssetId);
 }
 
 //-----------------------------------------------------------------------------
@@ -405,7 +400,7 @@ void GuiBitmapButtonCtrl::setBitmap( StringTableEntry name )
 
             if( i == 0 && mTextures[ i ].mTextureNormal.isNull() && mTextures[ i ].mTextureHilight.isNull() && mTextures[ i ].mTextureDepressed.isNull() && mTextures[ i ].mTextureInactive.isNull() )
             {
-               Con::warnf( "GuiBitmapButtonCtrl::setBitmap - Unable to load texture: %s", mBitmapName );
+               Con::warnf( "GuiBitmapButtonCtrl::setBitmap - Unable to load texture: %s", mBitmapAssetId);
                this->setBitmap( StringTable->insert(GFXTextureManager::getUnavailableTexturePath().c_str()) );
                return;
             }
@@ -457,7 +452,7 @@ void GuiBitmapButtonCtrl::setBitmapHandles(GFXTexHandle normal, GFXTexHandle hig
       }
    }
 
-   mBitmapName = "texhandle";
+   mBitmapAssetId = "texhandle";
 }
 
 //------------------------------------------------------------------------------
@@ -645,7 +640,7 @@ bool GuiBitmapButtonCtrl::pointInControl(const Point2I& parentCoordPoint)
       bmp = getTextureForCurrentState().getBitmap();
       if (!bmp)
       {
-         setBitmap(mBitmapName);
+         setBitmap(mBitmapAssetId);
          bmp = getTextureForCurrentState().getBitmap();
       }
 

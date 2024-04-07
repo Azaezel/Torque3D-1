@@ -1635,7 +1635,7 @@ void PostEffect::reload()
 void PostEffect::setTexture( U32 index, const String &texFilePath )
 {
 	// Set the new texture name.
-	mTextureName[index] = texFilePath;
+	mTextureAssetId[index] = texFilePath;
 	mTexture[index].free();
 
     // Skip empty stages or ones with variable or target names.
@@ -1653,7 +1653,7 @@ void PostEffect::setTexture( U32 index, const String &texFilePath )
 void PostEffect::setTexture(U32 index, const GFXTexHandle& texHandle)
 {
    // Set the new texture name.
-   mTextureName[index] = StringTable->EmptyString();
+   mTextureAssetId[index] = StringTable->EmptyString();
    mTexture[index].free();
 
    // Skip empty stages or ones with variable or target names.
@@ -1842,7 +1842,7 @@ void PostEffect::_checkRequirements()
    {
       if (mTextureType[i] == NormalTextureType)
       {
-         const String &texFilename = mTextureName[i];
+         const String &texFilename = mTextureAssetId[i];
 
          if (texFilename.isNotEmpty() && texFilename[0] == '#')
          {

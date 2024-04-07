@@ -180,11 +180,6 @@ void TSStatic::initPersistFields()
    addGroup("Shape");
 
    INITPERSISTFIELD_SHAPEASSET(Shape, TSStatic, "Model to use for this TSStatic");
-
-   addProtectedField("shapeName", TypeShapeFilename, Offset(mShapeName, TSStatic),
-      &TSStatic::_setShapeData, &defaultProtectedGetFn,
-      "%Path and filename of the model file (.DTS, .DAE) to use for this TSStatic. Legacy field. Any loose files assigned here will attempt to be auto-imported in as an asset.", AbstractClassRep::FIELD_HideInInspectors);
-
    endGroup("Shape");
 
    addGroup("Materials");
@@ -604,15 +599,6 @@ void TSStatic::onRemove()
       mCubeReflector.unregisterReflector();
 
    Parent::onRemove();
-}
-
-void TSStatic::_onResourceChanged(const Torque::Path& path)
-{
-   if (path != Path(mShapeName))
-      return;
-
-   _createShape();
-   _updateShouldTick();
 }
 
 void TSStatic::onShapeChanged()
@@ -1600,7 +1586,7 @@ void TSStatic::updateMaterials()
    if (mShapeAsset->isAssetValid())
       path = mShapeAsset->getShapeFileName();
    else
-      path = mShapeName;
+      path = mShapeAssetId;
 
    pMatList->setTextureLookupPath(path);
 

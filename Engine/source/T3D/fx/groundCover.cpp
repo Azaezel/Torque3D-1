@@ -563,7 +563,6 @@ void GroundCover::initPersistFields()
 
          addField( "billboardUVs",  TypeRectUV,    Offset( mBillboardRects, GroundCover ), MAX_COVERTYPES,  "Subset material UV coordinates for this cover billboard." );
 
-         addField("shapeFilename", TypeFilename, Offset(mShapeName, GroundCover), MAX_COVERTYPES, "The cover shape filename. [Optional]", AbstractClassRep::FIELD_HideInInspectors);
          INITPERSISTFIELD_SHAPEASSET_ARRAY(Shape, MAX_COVERTYPES, GroundCover, "The cover shape. [Optional]");
 
          addField( "layer",         TypeTerrainMaterialAssetId, Offset( mLayer, GroundCover ), MAX_COVERTYPES,      "Terrain material assetId to limit coverage to, or blank to not limit." );

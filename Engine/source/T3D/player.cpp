@@ -1131,17 +1131,10 @@ void PlayerData::initPersistFields()
 
       // Mounted images arrays
       addArray( "Mounted Images", ShapeBase::MaxMountedImages );
-         addProtectedField("shapeNameFP", TypeShapeFilename, Offset(mShapeFPName, PlayerData), &_setShapeFPData, &defaultProtectedGetFn, ShapeBase::MaxMountedImages,
-            "@brief File name of this player's shape that will be used in conjunction with the corresponding mounted image.\n\n"
-            "These optional parameters correspond to each mounted image slot to indicate a shape that is rendered "
-            "in addition to the mounted image shape.  Typically these are a player's arms (or arm) that is "
-            "animated along with the mounted image's state animation sequences.\n", AbstractClassRep::FIELD_HideInInspectors);
-
          INITPERSISTFIELD_SHAPEASSET_ARRAY(ShapeFP, ShapeBase::MaxMountedImages, PlayerData, "@brief File name of this player's shape that will be used in conjunction with the corresponding mounted image.\n\n"
             "These optional parameters correspond to each mounted image slot to indicate a shape that is rendered "
             "in addition to the mounted image shape.  Typically these are a player's arms (or arm) that is "
             "animated along with the mounted image's state animation sequences.\n");
-
       endArray( "Mounted Images" );
 
    endGroup( "First Person Arms" );

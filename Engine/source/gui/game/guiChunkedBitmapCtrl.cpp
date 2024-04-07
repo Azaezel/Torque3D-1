@@ -113,13 +113,13 @@ bool GuiChunkedBitmapCtrl::onWake()
       return false;
 
    if( !mBitmap
-       && ( ( mBitmapName && mBitmapName[ 0 ] )
+       && ( ( mBitmapAssetId && mBitmapAssetId[ 0 ] )
             || ( mUseVariable && mConsoleVariable && mConsoleVariable[ 0 ] ) ) )
    {
       if ( mUseVariable )
          mBitmap.set( Con::getVariable( mConsoleVariable ), &GFXDefaultGUIProfile, avar("%s() - mTexHandle (line %d)", __FUNCTION__, __LINE__) );
       else
-         mBitmap.set( mBitmapName, &GFXDefaultGUIProfile, avar("%s() - mTexHandle (line %d)", __FUNCTION__, __LINE__) );
+         mBitmap.set( mBitmapAssetId, &GFXDefaultGUIProfile, avar("%s() - mTexHandle (line %d)", __FUNCTION__, __LINE__) );
    }
 
    return true;

@@ -149,11 +149,6 @@ void ParticleData::initPersistFields()
 {
    docsURL;
    addGroup("Basic");
-      addProtectedField("textureName", TYPEID< StringTableEntry >(), Offset(mTextureName, ParticleData), _setTextureData, defaultProtectedGetFn,
-         "Texture file to use for this particle.", AbstractClassRep::FIELD_HideInInspectors);
-      addField("animTexName", TYPEID< StringTableEntry >(), Offset(mTextureName, ParticleData),
-         "@brief Texture file to use for this particle if animateTexture is true.\n\n"
-         "Deprecated. Use textureName instead.", AbstractClassRep::FIELD_HideInInspectors);
       INITPERSISTFIELD_IMAGEASSET(Texture, ParticleData, "Texture to use for this particle.");
       addField("useInvAlpha", TYPEID< bool >(), Offset(useInvAlpha, ParticleData),
          "@brief Controls how particles blend with the scene.\n\n"
@@ -239,8 +234,7 @@ void ParticleData::initPersistFields()
    endGroup("Over Time");
 
    addGroup("AFX");
-      addProtectedField("textureExtName", TypeFilename, Offset(mTextureExtName,     ParticleData), _setTextureExtData, &defaultProtectedGetFn, "", AbstractClassRep::FIELD_HideInInspectors);
-      INITPERSISTFIELD_IMAGEASSET(TextureExt, ParticleData, "");
+   INITPERSISTFIELD_IMAGEASSET(TextureExt, ParticleData, "");
       addField("constrainPos",         TypeBool,     Offset(constrain_pos,      ParticleData));
       addField("angle",                TypeF32,      Offset(start_angle,        ParticleData));
       addField("angleVariance",        TypeF32,      Offset(angle_variance,     ParticleData));

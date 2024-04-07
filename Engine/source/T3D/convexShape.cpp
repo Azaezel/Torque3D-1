@@ -560,7 +560,7 @@ U32 ConvexShape::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
             conn->packNetStringHandleU(stream, assetIdStr);
          }
          else
-            stream->writeString(mSurfaceTextures[i].mMaterialName);
+            stream->writeString(mSurfaceTextures[i].mMaterialAssetId);
 	  }
    }
 
@@ -628,7 +628,7 @@ void ConvexShape::unpackUpdate( NetConnection *conn, BitStream *stream )
            mSurfaceTextures[i]._setMaterial(mSurfaceTextures[i].mMaterialAssetId);
          }
          else
-           mSurfaceTextures[i].mMaterialName = stream->readSTString();
+           mSurfaceTextures[i].mMaterialAssetId = stream->readSTString();
 	  }
 
      if (isProperlyAdded())

@@ -29,7 +29,6 @@
 
 //iniitalization
 #define INIT_ASSET(name) \
-   m##name##Name = StringTable->EmptyString(); \
    m##name##AssetId = StringTable->EmptyString(); \
    m##name##Asset = NULL;\
    m##name = NULL;
@@ -39,16 +38,12 @@
 if (m##name##AssetId != StringTable->EmptyString())\
 {\
    S32 assetState = assetClass::getAssetById(m##name##AssetId, &m##name##Asset);\
-   if (assetState == assetClass::Ok )\
-   {\
-      m##name##Name = StringTable->EmptyString();\
-   }\
-   else Con::warnf("Warning: %s::LOAD_ASSET(%s)-%s", mClassName, m##name##AssetId, assetClass::getAssetErrstrn(assetState).c_str());\
+   if (assetState != assetClass::Ok )\
+      Con::warnf("Warning: %s::LOAD_ASSET(%s)-%s", mClassName, m##name##AssetId, assetClass::getAssetErrstrn(assetState).c_str());\
 }
 
 // copy constructor 
 #define CLONE_ASSET(name) \
-   m##name##Name = other.m##name##Name;\
    m##name##AssetId = other.m##name##AssetId;\
    m##name##Asset = other.m##name##Asset;\
    m##name = other.m##name
@@ -80,9 +75,7 @@ if (m##name##AssetId != StringTable->EmptyString())\
    if (stream->writeFlag(m##name##Asset.notNull()))\
    {\
       stream->writeString(m##name##Asset.getAssetId());\
-   }\
-   else\
-      stream->writeString(m##name##Name);
+   }
 
 //network recieve - datablock
 #define UNPACKDATA_ASSET(name)\
@@ -92,10 +85,7 @@ if (m##name##AssetId != StringTable->EmptyString())\
       _set##name(m##name##AssetId);\
    }\
    else\
-   {\
-      m##name##Name = stream->readSTString();\
-      _set##name(m##name##Name);\
-   }
+      _set##name("");
 
 //network send - object-instance
 #define PACK_ASSET(netconn, name)\
@@ -103,9 +93,7 @@ if (m##name##AssetId != StringTable->EmptyString())\
    {\
       NetStringHandle assetIdStr = m##name##Asset.getAssetId();\
       netconn->packNetStringHandleU(stream, assetIdStr);\
-   }\
-   else\
-      stream->writeString(m##name##Name);
+   }
 
 //network recieve - object-instance
 #define UNPACK_ASSET(netconn, name)\
@@ -115,7 +103,7 @@ if (m##name##AssetId != StringTable->EmptyString())\
       _set##name(m##name##AssetId);\
    }\
    else\
-      m##name##Name = stream->readSTString();
+      _set##name("");
 
 //script methods for class.asset acces
 //declare general get<entry>, get<entry>Asset and set<entry> methods
@@ -140,7 +128,6 @@ DefineEngineMethod(className, set##name, bool, (const char* assetName), , assetT
 //iniitalization
 #define INIT_ASSET_ARRAY(name, index) \
 {\
-   m##name##Name[index] = StringTable->EmptyString(); \
    m##name##AssetId[index] = StringTable->EmptyString(); \
    m##name##Asset[index] = NULL;\
    m##name[index] = NULL;\
@@ -151,17 +138,13 @@ DefineEngineMethod(className, set##name, bool, (const char* assetName), , assetT
 if (m##name##AssetId[index] != StringTable->EmptyString())\
 {\
    S32 assetState = assetClass::getAssetById(m##name##AssetId[index], &m##name##Asset[index]);\
-   if (assetState == assetClass::Ok )\
-   {\
-      m##name##Name[index] = StringTable->EmptyString();\
-   }\
-   else Con::warnf("Warning: %s::LOAD_ASSET(%s[%d])-%s", mClassName, m##name##AssetId[index],index, assetClass::getAssetErrstrn(assetState).c_str());\
+   if (assetState != assetClass::Ok )\
+      Con::warnf("Warning: %s::LOAD_ASSET(%s[%d])-%s", mClassName, m##name##AssetId[index],index, assetClass::getAssetErrstrn(assetState).c_str());\
 }
 
 // copy constructor 
 #define CLONE_ASSET_ARRAY(name, index) \
 {\
-   m##name##Name[index] = other.m##name##Name[index];\
    m##name##AssetId[index] = other.m##name##AssetId[index];\
    m##name##Asset[index] = other.m##name##Asset[index];\
    m##name[index] = other.m##name[index];\
@@ -199,9 +182,7 @@ if (m##name##AssetId[index] != StringTable->EmptyString())\
    if (stream->writeFlag(m##name##Asset[index].notNull()))\
    {\
       stream->writeString(m##name##Asset[index].getAssetId());\
-   }\
-   else\
-      stream->writeString(m##name##Name[index]);
+   }
 
 //network recieve - datablock
 #define UNPACKDATA_ASSET_ARRAY(name, index)\
@@ -211,10 +192,7 @@ if (m##name##AssetId[index] != StringTable->EmptyString())\
       _set##name(m##name##AssetId[index], index);\
    }\
    else\
-   {\
-      m##name##Name[index] = stream->readSTString();\
-      _set##name(m##name##Name[index], index);\
-   }
+      _set##name("", index);\
 
 //network send - object-instance
 #define PACK_ASSET_ARRAY(netconn, name, index)\
@@ -222,9 +200,7 @@ if (m##name##AssetId[index] != StringTable->EmptyString())\
    {\
       NetStringHandle assetIdStr = m##name##Asset[index].getAssetId();\
       netconn->packNetStringHandleU(stream, assetIdStr);\
-   }\
-   else\
-      stream->writeString(m##name##Name[index]);
+   }
 
 //network recieve - object-instance
 #define UNPACK_ASSET_ARRAY(netconn, name, index)\
@@ -234,10 +210,7 @@ if (m##name##AssetId[index] != StringTable->EmptyString())\
       _set##name(m##name##AssetId[index], index);\
    }\
    else\
-   {\
-      m##name##Name[index] = stream->readSTString();\
-      _set##name(m##name##Name[index], index);\
-   }
+      _set##name("", index);\
 
 //script methods for class.asset acces
 //declare general get<entry>, get<entry>Asset and set<entry> methods
@@ -276,8 +249,6 @@ DefineEngineMethod(className, set##name, bool, (const char* assetName, S32 index
       const char* enumString = castConsoleTypeToString(static_cast<enumType>(index));\
       Con::printf("pack: %s = %s",enumString, m##name##AssetId[index]);\
    }\
-   else\
-      stream->writeString(m##name##Name[index]);\
 }
 //network recieve - object-instance
 #define UNPACKDATA_ASSET_ARRAY_ENUMED(name, enumType, index )\
@@ -290,9 +261,6 @@ DefineEngineMethod(className, set##name, bool, (const char* assetName, S32 index
       Con::printf("unpack: %s = %s",enumString, m##name##AssetId[index]);\
    }\
    else\
-   {\
-      m##name##Name[index] = stream->readSTString();\
-      _set##name(m##name##AssetId[index], index);\
-   }\
+      _set##name("", index);\
 }
 

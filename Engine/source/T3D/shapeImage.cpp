@@ -585,13 +585,13 @@ void ShapeBaseImageData::handleStateSoundTrack(const U32& stateId)
 
    if (s.sound == NULL)
    {
-      if (mstateSoundName[stateId] != StringTable->EmptyString())
+      if (mstateSoundAssetId[stateId] != StringTable->EmptyString())
       {
          //ok, so we've got some sort of special-case here like a fallback or SFXPlaylist. So do the hook-up now
          SFXTrack* sndTrack;
-         if (!Sim::findObject(mstateSoundName[stateId], sndTrack))
+         if (!Sim::findObject(mstateSoundAssetId[stateId], sndTrack))
          {
-            Con::errorf("ShapeBaseImageData::onAdd() - attempted to find sound %s but failed!", mstateSoundName[stateId]);
+            Con::errorf("ShapeBaseImageData::onAdd() - attempted to find sound %s but failed!", mstateSoundAssetId[stateId]);
          }
          else
          {

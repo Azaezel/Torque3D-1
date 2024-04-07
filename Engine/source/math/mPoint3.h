@@ -157,10 +157,6 @@ class Point3F
 
    //-------------------------------------- Overloaded operators
   public:
-   // Comparison operators
-   bool operator==(const Point3F&) const;
-   bool operator!=(const Point3F&) const;
-
    // Arithmetic w/ other points
    Point3F  operator+(const Point3F&) const;
    Point3F  operator-(const Point3F&) const;
@@ -638,16 +634,6 @@ inline void Point3F::normalizeSafe()
 inline void Point3F::normalize(F32 val)
 {
    m_point3F_normalize_f(*this, val);
-}
-
-inline bool Point3F::operator==(const Point3F& _test) const
-{
-   return (x == _test.x) && (y == _test.y) && (z == _test.z);
-}
-
-inline bool Point3F::operator!=(const Point3F& _test) const
-{
-   return operator==(_test) == false;
 }
 
 inline Point3F Point3F::operator+(const Point3F& _add) const

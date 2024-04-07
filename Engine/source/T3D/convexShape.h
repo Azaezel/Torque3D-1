@@ -245,7 +245,7 @@ public:
 
    /// @}
 
-      String getMaterialName() { return mMaterialName; }
+      String getMaterialName() { return mMaterialAssetId; }
 
 protected:
 

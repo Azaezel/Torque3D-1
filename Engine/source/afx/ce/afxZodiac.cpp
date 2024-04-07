@@ -347,7 +347,7 @@ void afxZodiacData::onPerformSubstitutions()
       mTextureAsset = mTextureAssetId;
       if (mTextureAsset.notNull())
       {
-         if (getTexture() != StringTable->EmptyString() && mTextureName != StringTable->insert("texhandle"))
+         if (getTexture() != StringTable->EmptyString() && getTexture() != StringTable->insert("texhandle"))
          {
             if (mTextureAsset.notNull())
             {

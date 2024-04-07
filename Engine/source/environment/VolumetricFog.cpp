@@ -599,7 +599,7 @@ void VolumetricFog::unpackUpdate(NetConnection *con, BitStream *stream)
    VectorF mOldScale = getScale();
    StringTableEntry oldTextureName = mTextureAssetId;
    StringTableEntry oldShapeAsset = mShapeAssetId;
-   StringTableEntry oldShape = mShapeName;
+   StringTableEntry oldShape = mShapeAssetId;
 
    if (stream->readFlag())// Fog color
       stream->read(&mFogColor);
@@ -673,7 +673,7 @@ void VolumetricFog::unpackUpdate(NetConnection *con, BitStream *stream)
 
       mathRead(*stream, &mat);
       mathRead(*stream, &scale);
-      if (strcmp(oldShapeAsset, mShapeAssetId) != 0 || strcmp(oldShape, mShapeName) != 0)
+      if (strcmp(oldShapeAsset, mShapeAssetId) != 0)
       {
          mIsVBDirty = true;
          mShapeLoaded = LoadShape();

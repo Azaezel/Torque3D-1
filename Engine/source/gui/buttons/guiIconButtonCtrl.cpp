@@ -127,7 +127,6 @@ void GuiIconButtonCtrl::initPersistFields()
    docsURL;
    addField( "buttonMargin",     TypePoint2I,   Offset( mButtonMargin, GuiIconButtonCtrl ),"Margin area around the button.\n");
 
-   addProtectedField( "iconBitmap", TypeImageFilename,  Offset( mBitmapName, GuiIconButtonCtrl ), &_setBitmapData, &defaultProtectedGetFn, "Bitmap file for the icon to display on the button.\n", AbstractClassRep::FIELD_HideInInspectors);
    INITPERSISTFIELD_IMAGEASSET(Bitmap, GuiIconButtonCtrl, "Bitmap file for the icon to display on the button.\n");
 
    addField( "iconLocation",     TYPEID< IconLocation >(), Offset( mIconLocation, GuiIconButtonCtrl ),"Where to place the icon on the control. Options are 0 (None), 1 (Left), 2 (Right), 3 (Center).\n");
@@ -148,7 +147,7 @@ bool GuiIconButtonCtrl::onWake()
       return false;
    setActive(true);
 
-   setBitmap(mBitmapName);
+   setBitmap(mBitmapAssetId);
 
    if( mProfile )
       mProfile->constructBitmapArray();

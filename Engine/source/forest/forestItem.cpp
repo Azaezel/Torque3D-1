@@ -60,11 +60,7 @@ void ForestItemData::initPersistFields()
 {
    docsURL;
    addGroup( "Shapes" );
-
-      INITPERSISTFIELD_SHAPEASSET(Shape, ForestItemData, "Shape asset for this item type");
-      
-      addProtectedField( "shapeFile",  TypeShapeFilename, Offset( mShapeName, ForestItemData ), &_setShapeData, &defaultProtectedGetFn,
-         "Shape file for this item type", AbstractClassRep::FIELD_HideInInspectors );
+      INITPERSISTFIELD_SHAPEASSET(Shape, ForestItemData, "Shape asset for this item type");      
    endGroup( "Shapes" );
 
    addGroup("Physics");

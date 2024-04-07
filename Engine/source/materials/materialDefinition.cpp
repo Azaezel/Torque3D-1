@@ -496,27 +496,6 @@ void Material::initPersistFields()
    #endif
    endGroup("Behavioral (All Layers)");
 
-   // For backwards compatibility.  
-   //
-   // They point at the new 'map' fields, but reads always return
-   // an empty string and writes only apply if the value is not empty.
-   //
-   addProtectedField("baseTex", TypeImageFilename, Offset(mDiffuseMapName, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see diffuseMap\n", AbstractClassRep::FIELD_HideInInspectors);
-   addProtectedField("detailTex", TypeImageFilename, Offset(mDetailMapName, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see detailMap\n", AbstractClassRep::FIELD_HideInInspectors);
-   addProtectedField("overlayTex", TypeImageFilename, Offset(mOverlayMapName, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see overlayMap\n", AbstractClassRep::FIELD_HideInInspectors);
-   addProtectedField("bumpTex", TypeImageFilename, Offset(mNormalMapName, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see normalMap\n", AbstractClassRep::FIELD_HideInInspectors);
-   addProtectedField("colorMultiply", TypeColorF, Offset(mDiffuse, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see diffuseColor\n", AbstractClassRep::FIELD_HideInInspectors);
-
    Parent::initPersistFields();
 }
 
@@ -618,7 +597,7 @@ bool Material::isLightmapped() const
 {
    bool ret = false;
    for (U32 i = 0; i < MAX_STAGES; i++)
-      ret |= mLightMapName[i] != StringTable->EmptyString() || mToneMapName[i] != StringTable->EmptyString() || mVertLit[i];
+      ret |= mLightMapAssetId[i] != StringTable->EmptyString() || mToneMapAssetId[i] != StringTable->EmptyString() || mVertLit[i];
    return ret;
 }
 
@@ -651,21 +630,21 @@ void Material::_mapMaterial()
    // If mapTo not defined in script, try to use the base texture name instead
    if (mMapTo.isEmpty())
    {
-      if (mDiffuseMapName[0] == StringTable->EmptyString() && mDiffuseMapAsset->isNull())
+      if (mDiffuseMapAssetId[0] == StringTable->EmptyString() && mDiffuseMapAsset->isNull())
          return;
 
       else
       {
          // extract filename from base texture
-         if (mDiffuseMapName[0] != StringTable->EmptyString())
+         if (mDiffuseMapAssetId[0] != StringTable->EmptyString())
          {
-            U32 slashPos = String(mDiffuseMapName[0]).find('/', 0, String::Right);
+            U32 slashPos = String(mDiffuseMapAssetId[0]).find('/', 0, String::Right);
             if (slashPos == String::NPos)
                // no '/' character, must be no path, just the filename
-               mMapTo = mDiffuseMapName[0];
+               mMapTo = mDiffuseMapAssetId[0];
             else
                // use everything after the last slash
-               mMapTo = String(mDiffuseMapName[0]).substr(slashPos + 1, (U32)strlen(mDiffuseMapName[0]) - slashPos - 1);
+               mMapTo = String(mDiffuseMapAssetId[0]).substr(slashPos + 1, (U32)strlen(mDiffuseMapAssetId[0]) - slashPos - 1);
          }
          else if (!mDiffuseMapAsset->isNull())
          {

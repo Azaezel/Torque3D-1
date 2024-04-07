@@ -252,18 +252,15 @@ public:
 
 #define DECLARE_SHAPEASSET(className,name,changeFunc) public: \
    Resource<TSShape>m##name;\
-   StringTableEntry m##name##Name; \
    StringTableEntry m##name##AssetId;\
    AssetPtr<ShapeAsset>  m##name##Asset;\
 public: \
-   const StringTableEntry get##name##File() const { return StringTable->insert(m##name##Name); }\
-   void set##name##Name(const FileName &_in) { m##name##Name = _in;}\
    const AssetPtr<ShapeAsset> & get##name##Asset() const { return m##name##Asset; }\
    void set##name##Asset(const AssetPtr<ShapeAsset> &_in) { m##name##Asset = _in;}\
    \
    bool _set##name(StringTableEntry _in)\
    {\
-      if(m##name##AssetId != _in || m##name##Name != _in)\
+      if(m##name##AssetId != _in)\
       {\
          if (m##name##Asset.notNull())\
          {\
@@ -271,7 +268,6 @@ public: \
          }\
          if (_in == NULL || _in == StringTable->EmptyString())\
          {\
-            m##name##Name = StringTable->EmptyString();\
             m##name##AssetId = StringTable->EmptyString();\
             m##name##Asset = NULL;\
             m##name = NULL;\
@@ -282,12 +278,7 @@ public: \
          {\
             m##name##AssetId = _in;\
             \
-            U32 assetState = ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
-            \
-            if (ShapeAsset::Ok == assetState)\
-            {\
-               m##name##Name = StringTable->EmptyString();\
-            }\
+            ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
          }\
          else\
          {\
@@ -295,14 +286,10 @@ public: \
             if (assetId != StringTable->EmptyString())\
             {\
                m##name##AssetId = assetId;\
-               if (ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset) == ShapeAsset::Ok)\
-               {\
-                  m##name##Name = StringTable->EmptyString();\
-               }\
+               ShapeAsset::getAssetById(m##name##AssetId, &m##name##Asset);\
             }\
             else\
             {\
-               m##name##Name = _in;\
                m##name##AssetId = StringTable->EmptyString();\
                m##name##Asset = NULL;\
             }\
@@ -337,14 +324,7 @@ public: \
    \
    const StringTableEntry get##name() const\
    {\
-      if (m##name##Asset && (m##name##Asset->getShapePath() != StringTable->EmptyString()))\
-         return m##name##Asset->getShapePath();\
-      else if (m##name##AssetId != StringTable->EmptyString())\
-         return m##name##AssetId;\
-      else if (m##name##Name != StringTable->EmptyString())\
-         return m##name##Name;\
-      else\
-         return StringTable->EmptyString();\
+      return m##name##AssetId;\
    }\
    Resource<TSShape> get##name##Resource() \
    {\
@@ -352,19 +332,9 @@ public: \
    }\
    bool is##name##Valid() {return (get##name() != StringTable->EmptyString() && m##name##Asset->getStatus() == AssetBase::Ok); }
 
-#ifdef TORQUE_SHOW_LEGACY_FILE_FIELDS
 
 #define INITPERSISTFIELD_SHAPEASSET(name, consoleClass, docs) \
-   addProtectedField(assetText(name, File), TypeShapeFilename, Offset(m##name##Name, consoleClass), _set##name##Data, & defaultProtectedGetFn, assetText(name, docs)); \
    addProtectedField(assetText(name, Asset), TypeShapeAssetId, Offset(m##name##AssetId, consoleClass), _set##name##Data, & defaultProtectedGetFn, assetText(name, asset reference.));
-
-#else
-
-#define INITPERSISTFIELD_SHAPEASSET(name, consoleClass, docs) \
-   addProtectedField(assetText(name, File), TypeShapeFilename, Offset(m##name##Name, consoleClass), _set##name##Data, & defaultProtectedGetFn, assetText(name, docs), AbstractClassRep::FIELD_HideInInspectors); \
-   addProtectedField(assetText(name, Asset), TypeShapeAssetId, Offset(m##name##AssetId, consoleClass), _set##name##Data, & defaultProtectedGetFn, assetText(name, asset reference.));
-
-#endif // SHOW_LEGACY_FILE_FIELDS
 
 #pragma endregion
 
@@ -373,24 +343,20 @@ public: \
 #define DECLARE_SHAPEASSET_ARRAY(className,name,max) public: \
    static const U32 sm##name##Count = max;\
    Resource<TSShape>m##name[max];\
-   StringTableEntry m##name##Name[max]; \
    StringTableEntry m##name##AssetId[max];\
    AssetPtr<ShapeAsset>  m##name##Asset[max];\
 public: \
-   const StringTableEntry get##name##File(const U32& index) const { return m##name##Name[index]; }\
-   void set##name##Name(const FileName &_in, const U32& index) { m##name##Name[index] = _in;}\
    const AssetPtr<ShapeAsset> & get##name##Asset(const U32& index) const { return m##name##Asset[index]; }\
    void set##name##Asset(const AssetPtr<ShapeAsset> &_in, const U32& index) { m##name##Asset[index] = _in;}\
    \
    bool _set##name(StringTableEntry _in, const U32& index)\
    {\
-      if(m##name##AssetId[index] != _in || m##name##Name[index] != _in)\
+      if(m##name##AssetId[index] != _in)\
       {\
          if(index >= sm##name##Count || index < 0)\
             return false;\
          if (_in == NULL || _in == StringTable->EmptyString())\
          {\
-            m##name##Name[index] = StringTable->EmptyString();\
             m##name##AssetId[index] = StringTable->EmptyString();\
             m##name##Asset[index] = NULL;\
             m##name[index] = NULL;\
@@ -401,12 +367,7 @@ public: \
          {\
             m##name##AssetId[index] = _in;\
             \
-            U32 assetState = ShapeAsset::getAssetById(m##name##AssetId[index], &m##name##Asset[index]);\
-            \
-            if (ShapeAsset::Ok == assetState)\
-            {\
-               m##name##Name[index] = StringTable->EmptyString();\
-            }\
+            ShapeAsset::getAssetById(m##name##AssetId[index], &m##name##Asset[index]);\
          }\
          else\
          {\
@@ -414,14 +375,10 @@ public: \
             if (assetId != StringTable->EmptyString())\
             {\
                m##name##AssetId[index] = assetId;\
-               if (ShapeAsset::getAssetById(m##name##AssetId[index], &m##name##Asset[index]) == ShapeAsset::Ok)\
-               {\
-                  m##name##Name[index] = StringTable->EmptyString();\
-               }\
+               ShapeAsset::getAssetById(m##name##AssetId[index], &m##name##Asset[index]);\
             }\
             else\
             {\
-               m##name##Name[index] = _in;\
                m##name##AssetId[index] = StringTable->EmptyString();\
                m##name##Asset[index] = NULL;\
             }\
@@ -454,14 +411,7 @@ public: \
    \
    const StringTableEntry get##name(const U32& index) const\
    {\
-      if (m##name##Asset[index] && (m##name##Asset[index]->getShapePath() != StringTable->EmptyString()))\
-         return m##name##Asset[index]->getShapePath();\
-      else if (m##name##AssetId[index] != StringTable->EmptyString())\
-         return m##name##AssetId[index];\
-      else if (m##name##Name[index] != StringTable->EmptyString())\
-         return StringTable->insert(m##name##Name[index]);\
-      else\
-         return StringTable->EmptyString();\
+      return m##name##AssetId[index];\
    }\
    Resource<TSShape> get##name##Resource(const U32& index) \
    {\
@@ -471,19 +421,10 @@ public: \
    }\
    bool is##name##Valid(const U32& id) {return (get##name(id) != StringTable->EmptyString() && m##name##Asset[id]->getStatus() == AssetBase::Ok); }
 
-#ifdef TORQUE_SHOW_LEGACY_FILE_FIELDS
 
 #define INITPERSISTFIELD_SHAPEASSET_ARRAY(name, arraySize, consoleClass, docs) \
-   addProtectedField(assetText(name, File), TypeShapeFilename, Offset(m##name##Name, consoleClass), _set##name##Data, & defaultProtectedGetFn, arraySize, assetText(name, docs)); \
-   addProtectedField(assetText(name, Asset), TypeShapeAssetId, Offset(m##name##AssetId, consoleClass), _set##name##Data, & defaultProtectedGetFn, arraySize, assetText(name, asset reference.));
-
-#else
-
-#define INITPERSISTFIELD_SHAPEASSET_ARRAY(name, arraySize, consoleClass, docs) \
-   addProtectedField(assetText(name, File), TypeShapeFilename, Offset(m##name##Name, consoleClass), _set##name##Data, & defaultProtectedGetFn, arraySize, assetText(name, docs), AbstractClassRep::FIELD_HideInInspectors); \
    addProtectedField(assetText(name, Asset), TypeShapeAssetId, Offset(m##name##AssetId, consoleClass), _set##name##Data, & defaultProtectedGetFn, arraySize,assetText(name, asset reference.));
 
-#endif // SHOW_LEGACY_FILE_FIELDS
 
 #pragma endregion
 

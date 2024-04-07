@@ -81,7 +81,6 @@ void GuiBitmapCtrl::initPersistFields()
    docsURL;
    addGroup( "Bitmap" );
 
-      addField("Bitmap", TypeImageFilename, Offset(mBitmapName, GuiBitmapCtrl), assetDoc(Bitmap, docs), AbstractClassRep::FIELD_HideInInspectors);
       addField("BitmapAsset", TypeImageAssetId, Offset(mBitmapAssetId, GuiBitmapCtrl), assetDoc(Bitmap, asset docs.));
 
       addField("color", TypeColorI, Offset(mColor, GuiBitmapCtrl),"color mul");
@@ -101,14 +100,14 @@ bool GuiBitmapCtrl::onWake()
       return false;
    setActive(true);
 
-   if (mBitmapName != StringTable->insert("texhandle"))
+   if (mBitmapAssetId != StringTable->insert("texhandle"))
       setBitmap(getBitmap());
    return true;
 }
 
 void GuiBitmapCtrl::onSleep()
 {
-   if ( mBitmapName != StringTable->insert("texhandle") )
+   if ( mBitmapAssetId != StringTable->insert("texhandle") )
       mBitmap = NULL;
 
    Parent::onSleep();
@@ -121,7 +120,7 @@ void GuiBitmapCtrl::inspectPostApply()
    //Because we don't do the normal protectedField setup for the bitmapName/bitmapAsset fields
    //which would automatically update the internal values and bound content, we'll do it here manually
    //to ensure it's updated before we force a refresh, which would thrash the new values
-   if (mBitmapName != StringTable->insert("texhandle"))
+   if (mBitmapAssetId != StringTable->insert("texhandle"))
    {
       _setBitmap(mBitmapAssetId);
    }
@@ -166,7 +165,7 @@ void GuiBitmapCtrl::setBitmapHandle(GFXTexHandle handle, bool resize)
 {
    mBitmap = handle;
 
-   mBitmapName = StringTable->insert("texhandle");
+   mBitmapAssetId = StringTable->insert("texhandle");
 
    // Resize the control to fit the bitmap
    if (resize) 
