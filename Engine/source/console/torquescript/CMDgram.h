@@ -125,7 +125,7 @@ extern int CMDdebug;
     opNDASN = 326,                 /* opNDASN  */
     opNTASN = 327,                 /* opNTASN  */
     opSTRNE = 328,                 /* opSTRNE  */
-    UNARY = 329                    /* UNARY  */
+    UMINUS = 329                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
