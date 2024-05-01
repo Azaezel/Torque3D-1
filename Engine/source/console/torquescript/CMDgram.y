@@ -148,7 +148,6 @@ struct Token
 %left opOR
 %left opAND
 %left '|'
-%left '^'
 %left '&'
 %left opEQ opNE
 %left '<' opLE '>' opGE
@@ -156,6 +155,7 @@ struct Token
 %left opSHL opSHR
 %left '+' '-'
 %left '*' '/' '%'
+%left '^'
 %right '!' '~' opPLUSPLUS opMINUSMINUS UNARY
 %left '.'
 %left opINTNAME opINTNAMER
@@ -387,8 +387,8 @@ expr
       { $$ = $1; }
    | '(' expr ')'
       { $$ = $2; }
-   | expr '^' expr
-      { $$ = IntBinaryExprNode::alloc( $1->dbgLineNumber, $2.value, $1, $3); }
+   | '-' expr  %prec UNARY
+      { $$ = FloatUnaryExprNode::alloc( $1.lineNumber, $1.value, $2); }
    | expr '%' expr
       { $$ = IntBinaryExprNode::alloc( $1->dbgLineNumber, $2.value, $1, $3); }
    | expr '&' expr
@@ -403,8 +403,8 @@ expr
       { $$ = FloatBinaryExprNode::alloc( $1->dbgLineNumber, $2.value, $1, $3); }
    | expr '/' expr
       { $$ = FloatBinaryExprNode::alloc( $1->dbgLineNumber, $2.value, $1, $3); }
-   | '-' expr  %prec UNARY
-      { $$ = FloatUnaryExprNode::alloc( $1.lineNumber, $1.value, $2); }
+   | expr '^' expr
+      { $$ = IntBinaryExprNode::alloc( $1->dbgLineNumber, $2.value, $1, $3); }
    | '*' expr %prec UNARY
       { $$ = TTagDerefNode::alloc( $1.lineNumber, $2 ); }
    | TTAG
