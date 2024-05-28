@@ -348,7 +348,6 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    //
    if (  features.hasFeature( MFT_UseInstancing ) &&
          mMaxStages == 1 &&
-         !mMaterial->mGlow[0] &&
          shaderVersion >= 3.0f )
       fd.features.addFeature( MFT_UseInstancing );
 
@@ -659,7 +658,6 @@ bool ProcessedShaderMaterial::_addPass( ShaderRenderPassData &rpd,
    // Set number of textures, stage, glow, etc.
    rpd.mNumTex = texIndex;
    rpd.mStageNum = stageNum;
-   rpd.mGlow |= mMaterial->mGlow[stageNum];
 
    // Copy over features
    rpd.mFeatureData.materialFeatures = fd.features;
@@ -677,10 +675,6 @@ bool ProcessedShaderMaterial::_addPass( ShaderRenderPassData &rpd,
    if( !rpd.shader )
       return false;
    rpd.shaderHandles.init( rpd.shader );
-
-   // If a pass glows, we glow
-   if( rpd.mGlow )
-      mHasGlow = true;
  
    ShaderRenderPassData *newPass = new ShaderRenderPassData( rpd );
    mPasses.push_back( newPass );

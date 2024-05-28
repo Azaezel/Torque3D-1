@@ -54,7 +54,6 @@ void _initShaderGenHLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_DiffuseColor, new DiffuseFeatureHLSL );
    FEATUREMGR->registerFeature( MFT_DiffuseVertColor, new DiffuseVertColorFeatureHLSL );
    FEATUREMGR->registerFeature( MFT_AlphaTest, new AlphaTestHLSL );
-   FEATUREMGR->registerFeature( MFT_GlowMask, new GlowMaskHLSL );
    FEATUREMGR->registerFeature( MFT_LightMap, new LightmapFeatHLSL );
    FEATUREMGR->registerFeature( MFT_ToneMap, new TonemapFeatHLSL );
    FEATUREMGR->registerFeature( MFT_VertLit, new VertLitHLSL );

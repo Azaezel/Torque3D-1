@@ -305,7 +305,6 @@ public:
    F32 mSeqFramePerSec[MAX_STAGES];
    F32 mSeqSegSize[MAX_STAGES];
 
-   bool mGlow[MAX_STAGES];          // entire stage glows
    bool mReceiveShadows[MAX_STAGES];
    bool mIgnoreLighting[MAX_STAGES];
 

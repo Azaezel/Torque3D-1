@@ -51,7 +51,6 @@ void RenderPassData::reset()
 
    mCubeMap = NULL;
    mNumTex = mNumTexReg = mStageNum = 0;
-   mGlow = false;
    mBlendOp = Material::None;
 
    mFeatureData.clear();
@@ -92,7 +91,6 @@ ProcessedMaterial::ProcessedMaterial()
 :  mMaterial( NULL ),
    mCurrentParams( NULL ),
    mHasSetStageData( false ),
-   mHasGlow( false ),   
    mHasAccumulation( false ),   
    mMaxStages( 0 ),
    mVertexFormat( NULL ),
@@ -358,9 +356,6 @@ U32 ProcessedMaterial::_getRenderStateIndex( const SceneRenderState *sceneState,
    //
    // For example sgData.visibility would be bad to use
    // in here without changing how RenderMeshMgr works.
-
-   if ( sgData.binType == SceneData::GlowBin )
-      currState |= RenderPassData::STATE_GLOW;
 
    if ( sceneState && sceneState->isReflectPass() )
       currState |= RenderPassData::STATE_REFLECT;

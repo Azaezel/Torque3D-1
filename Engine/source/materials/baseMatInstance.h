@@ -200,7 +200,6 @@ public:
    virtual BaseMaterialDefinition* getMaterial() = 0;
 
    // BTRTODO: This stuff below should probably not be in BaseMatInstance
-   virtual bool hasGlow() = 0;
    virtual bool hasAccumulation() = 0;
    
    virtual U32 getCurPass() = 0;

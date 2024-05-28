@@ -160,7 +160,6 @@ Material::Material()
       mVertLit[i] = false;
       mVertColor[i] = false;
 
-      mGlow[i] = false;
       mReceiveShadows[i] = true;
       mIgnoreLighting[i] = false;
 
@@ -332,8 +331,6 @@ void Material::initPersistFields()
          "Shadows being cast onto the material.");
       addField("ignoreLighting", TypeBool, Offset(mIgnoreLighting, Material), MAX_STAGES,
          "Enables emissive lighting for the material.");
-      addField("glow", TypeBool, Offset(mGlow, Material), MAX_STAGES,
-         "Enables rendering as glowing.");
       addField("parallaxScale", TypeF32, Offset(mParallaxScale, Material), MAX_STAGES,
          "Enables parallax mapping and defines the scale factor for the parallax effect.  Typically "
          "this value is less than 0.4 else the effect breaks down.");

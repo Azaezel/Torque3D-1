@@ -2517,26 +2517,6 @@ void AlphaTestGLSL::processPix(  Vector<ShaderComponent*> &componentList,
 
 
 //****************************************************************************
-// GlowMask
-//****************************************************************************
-
-void GlowMaskGLSL::processPix(   Vector<ShaderComponent*> &componentList,
-                                 const MaterialFeatureData &fd )
-{
-   output = NULL;
-
-   // Get the output color... and make it black to mask out 
-   // glow passes rendered before us.
-   //
-   // The shader compiler will optimize out all the other
-   // code above that doesn't contribute to the alpha mask.
-   Var *color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-   if ( color )
-      output = new GenOp( "   @.rgb = vec3(0);\r\n", color );
-}
-
-
-//****************************************************************************
 // RenderTargetZero
 //****************************************************************************
 

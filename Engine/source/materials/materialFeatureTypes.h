@@ -143,7 +143,6 @@ DeclareFeatureType( MFT_IsTranslucentZWrite );
 DeclareFeatureType( MFT_NormalsOut );
 
 DeclareFeatureType( MFT_MinnaertShading );
-DeclareFeatureType( MFT_GlowMask );
 DeclareFeatureType( MFT_Visibility );
 DeclareFeatureType( MFT_EyeSpaceDepthOut );
 DeclareFeatureType( MFT_DepthOut );

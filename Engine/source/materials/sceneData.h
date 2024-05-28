@@ -45,10 +45,6 @@ struct SceneData
       /// the special bins we care about.
       RegularBin = 0,
 
-      /// The glow render bin.
-      /// @see RenderGlowMgr
-      GlowBin,
-
       /// The deferred render bin.
       /// @RenderDeferredMgr
       DeferredBin,

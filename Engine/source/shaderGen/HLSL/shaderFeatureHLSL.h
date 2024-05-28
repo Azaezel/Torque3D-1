@@ -548,24 +548,6 @@ public:
    }
 };
 
-
-/// Special feature used to mask out the RGB color for
-/// non-glow passes of glow materials.
-/// @see RenderGlowMgr
-class GlowMaskHLSL : public ShaderFeatureHLSL
-{
-public:
-   void processPix(   Vector<ShaderComponent*> &componentList, 
-                              const MaterialFeatureData &fd ) override;
-
-   Material::BlendOp getBlendOp() override { return Material::None; }
-
-   String getName() override
-   {
-      return "Glow Mask";
-   }
-};
-
 /// This should be the final feature on most pixel shaders which
 /// encodes the color for the current HDR target format.
 /// @see HDRPostFx

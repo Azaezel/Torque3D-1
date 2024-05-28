@@ -85,8 +85,6 @@ public:
 
    MaterialFeatureData mFeatureData;
 
-   bool mGlow;
-
    Material::BlendOp mBlendOp;
 
    U32 mStageNum;
@@ -204,9 +202,6 @@ public:
    /// Returns the number of passes we are rendering (not to be confused with the number of stages).
    U32 getNumPasses() const { return mPasses.size(); }
 
-   /// Returns true if any pass glows
-   bool hasGlow() const { return mHasGlow; }
-
    /// Returns true if any pass accumulates
    bool hasAccumulation() const { return mHasAccumulation; }
 
@@ -255,9 +250,6 @@ protected:
 
    /// If we've already loaded the stage data
    bool mHasSetStageData;
-
-   /// If we glow
-   bool mHasGlow;
 
    /// If we have accumulation.
    bool mHasAccumulation;

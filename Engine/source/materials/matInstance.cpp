@@ -517,14 +517,6 @@ RenderPassData* MatInstance::getPass(U32 pass)
    return mProcessedMaterial->getPass(pass);
 }
 
-bool MatInstance::hasGlow() 
-{ 
-   if( mProcessedMaterial )
-      return mProcessedMaterial->hasGlow(); 
-   else
-      return false;
-}
-
 bool MatInstance::hasAccumulation() 
 { 
    if( mProcessedMaterial )

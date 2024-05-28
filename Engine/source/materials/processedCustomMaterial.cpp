@@ -48,7 +48,6 @@ ProcessedCustomMaterial::ProcessedCustomMaterial(Material &mat)
    AssertFatal(dynamic_cast<CustomMaterial*>(mMaterial), "Incompatible Material type!");
    mCustomMaterial = static_cast<CustomMaterial*>(mMaterial);
    mHasSetStageData = false;
-   mHasGlow = false;
    mHasAccumulation = false;
    mMaxStages = 0;
    mMaxTex = 0;
@@ -202,9 +201,6 @@ void ProcessedCustomMaterial::_setStageData()
       if ( texTarget )
          texTarget->getShaderMacros( &mConditionerMacros );
    }
-
-   // Copy the glow state over.
-   mHasGlow = mCustomMaterial->mGlow[0];
 }
 
 bool ProcessedCustomMaterial::init( const FeatureSet &features, 

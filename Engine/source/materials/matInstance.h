@@ -77,7 +77,6 @@ public:
    void setUserObject( SimObject *userObject ) override { mUserObject = userObject; }
    SimObject* getUserObject() const override { return mUserObject; }
    Material *getMaterial() override { return mMaterial; }
-   bool hasGlow() override;
    bool hasAccumulation() override;
    U32 getCurPass() override { return getMax( mCurPass, 0 ); }
    U32 getCurStageNum() override;
