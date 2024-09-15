@@ -89,6 +89,8 @@ function initializeAssetBrowser()
    exec("./scripts/setAssetTarget." @ $TorqueScriptFileExtension);
    
    //Processing for the different asset types
+   exec("./scripts/assetTypes/genericAsset." @ $TorqueScriptFileExtension); 
+   
    exec("./scripts/assetTypes/component." @ $TorqueScriptFileExtension); 
    exec("./scripts/assetTypes/cpp." @ $TorqueScriptFileExtension);
    exec("./scripts/assetTypes/gameObject." @ $TorqueScriptFileExtension);   

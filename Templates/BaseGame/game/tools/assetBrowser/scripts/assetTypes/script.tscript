@@ -1,3 +1,5 @@
+AssetBrowser::registerFileType("ScriptFileType", "Script", ".tscript;.cs;.dso");
+
 function AssetBrowser::createScriptAsset(%this)
 {
    %moduleName = AssetBrowser.newAssetSettings.moduleName;
@@ -89,20 +91,23 @@ function AssetBrowser::moveScriptAsset(%this, %assetDef, %destination)
    AssetDatabase.addDeclaredAsset(%targetModule, %newAssetPath);
 }
 
-function AssetBrowser::buildScriptAssetPreview(%this, %assetDef, %previewData)
+function ScriptFileType::buildBrowserElement(%name, %contentData, %previewData)
 {
-   %previewData.assetName = %assetDef.assetName;
-   %previewData.assetPath = %assetDef.scriptFile;
-   //%previewData.doubleClickCommand = "EditorOpenFileInTorsion( \""@%previewData.assetPath@"\", 0 );";
+   %fullPath = %contentData !$= "" ? %contentData @ "/" @ %name : %name;
    
-   if(%assetDef.isServerSide)
+   %previewData.assetName = %name;
+   %previewData.assetPath = %fullPath;
+   %previewData.doubleClickCommand = "systemCommand(\"start \"\" \"" @ %fullPath @ "\");";
+   
+   /*if(%assetDef.isServerSide)
       %previewData.previewImage = "ToolsModule:serverScriptIcon_image";
    else
-      %previewData.previewImage = "ToolsModule:clientScriptIcon_image";
+      %previewData.previewImage = "ToolsModule:clientScriptIcon_image";*/
+   %previewData.previewImage = "ToolsModule:clientScriptIcon_image";
    
-   %previewData.assetFriendlyName = %assetDef.assetName;
-   %previewData.assetDesc = %assetDef.description;
-   %previewData.tooltip = "Asset Name: " @ %assetDef.assetName @ "\nDefinition Path: " @ %assetDef.getFilename();
+   %previewData.assetFriendlyName = %name;
+   %previewData.assetDesc = %fullPath;
+   %previewData.tooltip = "Script File: " @ %name;
 }
 
 function AssetBrowser::buildTScriptPreview(%this, %assetDef, %previewData)

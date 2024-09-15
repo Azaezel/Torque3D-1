@@ -1,3 +1,5 @@
+AssetBrowser::registerFileType("PrefabFileType", "Prefab", ".prefab");
+
 function AssetBrowser::createPrefab(%this)
 {
    %moduleName = AssetBrowser.newAssetSettings.moduleName;
@@ -15,19 +17,32 @@ function AssetBrowser::createPrefab(%this)
    EditorTree.buildVisibleTree( true ); 
 }
 
-function AssetBrowser::buildPrefabPreview(%this, %assetDef, %previewData)
+function PrefabFileType::buildBrowserElement(%fileName, %path, %previewData)
 {
-   %fullPath = %assetDef.dirPath @ "/" @ %assetDef.assetName;
-   %previewData.assetName = %assetDef.assetName;
+   %fullPath = %path !$= "" ? %path @ "/" @ %fileName : %fileName;
+
+   %previewData.assetName = %fileName;
    %previewData.assetPath = %fullPath;
+   
+   echo("PrefabFileType::buildBrowserElement() - name, path: " @ %fileName @ ", " @ %fullPath);
    
    %previewData.previewImage = "ToolsModule:prefabIcon_image";
    
    //%previewData.assetFriendlyName = %assetDef.assetName;
-   %previewData.assetDesc = %assetDef.description;
+   %previewData.assetDesc = %fullPath;
    %previewData.tooltip = %fullPath;
    //%previewData.doubleClickCommand = "AssetBrowser.schedule(10, \"navigateTo\",\""@ %assetDef.dirPath @ "/" @ %assetDef.assetName @"\");";//browseTo %assetDef.dirPath / %assetDef.assetName
    %previewData.doubleClickCommand = "AssetBrowser.autoImportFile(\"" @ %fullPath @ "\");";
+}
+
+function PrefabFileType::onMovePath(%fileName, %assetBrowser, %destinationPath)
+{
+   
+}
+
+function PrefabFileType::onMoveModule(%fileName, %assetBrowser, %destinationPath)
+{
+   
 }
 
 function AssetBrowser::onPrefabEditorDropped(%this, %assetDef, %position)

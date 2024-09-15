@@ -11,7 +11,17 @@ function AssetBrowser_editAsset::saveAsset(%this)
    %assetDef = AssetDatabase.acquireAsset(%this.editedAssetId);
    %assetDef.refreshAsset();
    
-   AssetBrowser.call("on" @ %assetType @ "Changed", %assetDef);
+   if(isMethod(%assetType, "onChanged"))
+   {
+      %buildCommand = %assetType @ "::onChanged(" @ %assetDef @ ");";
+      eval(%buildCommand);
+   }
+   else if(isMethod("GenericAsset", "onChanged"))
+   {
+      GenericAsset::onChanged(%assetDef);
+   }
+   
+   //AssetBrowser.call("on" @ %assetType @ "Changed", %assetDef);
    AssetDatabase.releaseAsset(%this.editedAssetId);
 
    Canvas.popDialog(AssetBrowser_editAsset);
@@ -127,17 +137,29 @@ function AssetBrowser::refreshAsset(%this, %assetId)
 //------------------------------------------------------------
 function AssetBrowser::regeneratePreviewImage(%this)
 {
-   %assetDef = AssetDatabase.acquireAsset(EditAssetPopup.assetId);
+   %assetDef = AssetDatabase.acquireAsset(AssetBrowser.popupMenu.objectId);
    %dummyObj = new ScriptObject();
-   %dummyObj.moduleName = AssetDatabase.getAssetModule(EditAssetPopup.assetId).moduleId;
-   %dummyObj.assetName = AssetDatabase.getAssetName(EditAssetPopup.assetId);
+   %dummyObj.moduleName = AssetDatabase.getAssetModule(AssetBrowser.popupMenu.objectId).moduleId;
+   %dummyObj.assetName = AssetDatabase.getAssetName(AssetBrowser.popupMenu.objectId);
+   
+   %assetType = AssetBrowser.popupMenu.objectType;
+   
+   if(isMethod(%assetType, "generatePreviewImage"))
+   {
+      %buildCommand = %assetType @ "::generatePreviewImage(" @ %dummyObj @ ", true);";
+      eval(%buildCommand);
+   }
+   else if(isMethod("GenericAsset", "generatePreviewImage"))
+   {
+      GenericAsset::generatePreviewImage(%dummyObj, true);
+   }
 
-   %regenCommand = "AssetBrowser.generate" @ EditAssetPopup.assetType @ 
-                     "PreviewImage(" @ %dummyObj @ ", true);";
-   eval(%regenCommand);
+   //%regenCommand = "AssetBrowser.generate" @ EditAssetPopup.assetType @ 
+   //                  "PreviewImage(" @ %dummyObj @ ", true);";
+   //eval(%regenCommand);
 
    %dummyObj.delete();
-   AssetDatabase.releaseAsset(EditAssetPopup.assetId);
+   AssetDatabase.releaseAsset(AssetBrowser.popupMenu.objectId);
 }
 
 //------------------------------------------------------------
@@ -415,7 +437,17 @@ function AssetBrowser::confirmDeleteAsset(%this)
    %currentSelectedItem = AssetBrowserFilterTree.getSelectedItem();
    %currentItemParent = AssetBrowserFilterTree.getParentItem(%currentSelectedItem);
    
-   if(EditFolderPopup.visible)
+   if(isMethod(%this.popupMenu.objectType, "onDelete"))
+   {
+      %buildCommand = %this.popupMenu.objectType @ "::onDelete(\"" @ %this.popupMenu.objectId @ "\", " @ %this @ ");";
+      eval(%buildCommand);
+   }
+   else if(isMethod("GenericAsset", "onDelete"))
+   {
+      GenericAsset::onDelete(%this.popupMenu.objectId, %this);
+   }
+   
+   /*if(EditFolderPopup.visible)
    {
       if(EditFolderPopup.dirPath !$= "")
          %folderPath = EditFolderPopup.dirPath;
@@ -438,7 +470,7 @@ function AssetBrowser::confirmDeleteAsset(%this)
          eval(%this @ ".delete"@%assetType@"("@%assetDef@");");
       
       AssetDatabase.deleteAsset(EditAssetPopup.assetId, true, false);
-   }
+   }*/
 
    %this.refresh();
 }

@@ -1,3 +1,5 @@
+AssetBrowser::registerAssetType("ShapeAsset", "Shapes"); 
+
 function AssetBrowser::createShapeAsset(%this)
 {
    %moduleName = AssetBrowser.newAssetSettings.moduleName;
@@ -38,8 +40,9 @@ function AssetBrowser::editShapeAsset(%this, %assetDef)
    ShapeEditorPlugin.openShapeAsset(%assetDef);    
 }
 
-function AssetBrowser::onShapeAssetChanged(%this, %assetDef)
+function ShapeAsset::onChanged(%this)
 {
+   echo("ShapeAsset::onChanged() - asset " @ %this.assetId @ " has changed!");
 }
 
 function AssetBrowser::deleteShapeAsset(%this, %assetDef)
@@ -264,22 +267,24 @@ function AssetBrowser::importShapeAsset(%this, %assetItem)
       AssetDatabase.refreshAsset(%assetId);
 }
 
-function AssetBrowser::buildShapeAssetPreview(%this, %assetDef, %previewData, %forcePreviewRegenerate)
+function ShapeAsset::buildBrowserElement(%assetName, %moduleName, %previewData)
 {
    %previewData.previewImage = "ToolsModule:genericAssetIcon_image";
    %previewData.previewLoaded = false; //this marks it for loading progressively later
    
-   %previewData.assetName = %assetDef.assetName;
+   %assetDef = AssetDatabase.acquireAsset(%moduleName @ ":" @ %assetName);
+   
+   %previewData.assetName = %assetName;
    %previewData.assetPath = %assetDef.fileName;
    
    %previewData.assetFriendlyName = %assetDef.assetName;
    %previewData.assetDesc = %assetDef.description;
-   %previewData.tooltip = "Asset Name: " @ %assetDef.assetName @ "\n" @ 
+   %previewData.tooltip = "Asset Name: " @ %assetName @ "\n" @ 
                            "Asset Type: Shape Asset\n" @ 
                            "Asset Definition ID: " @  %assetDef @ "\n" @ 
                            "Shape File path: " @ %assetDef.getShapePath();
                            
-   if(%this.selectMode)
+   /*if(%this.selectMode)
    {
       %previewData.doubleClickCommand = "AssetBrowser.selectAsset( AssetBrowser.selectedAsset );";
    }
@@ -293,10 +298,10 @@ function AssetBrowser::buildShapeAssetPreview(%this, %assetDef, %previewData, %f
       {
          %previewData.doubleClickCommand = "AssetBrowser.onShapeAssetEditorDropped( "@%assetDef@" );";
       }
-   }
+   }*/
 }
 
-function AssetBrowser::generateShapeAssetPreviewImage(%this, %previewButton, %forceRegenerate)
+function ShapeAsset::generatePreviewImage(%previewButton, %forceRegenerate)
 {
    if(%forceRegenerate $= "")
       %forceRegenerate = false;
@@ -305,12 +310,12 @@ function AssetBrowser::generateShapeAssetPreviewImage(%this, %previewButton, %fo
       
    %assetDef = AssetDatabase.acquireAsset(%assetId);
       
-   %module = %this.dirHandler.getModuleFromAddress(makeRelativePath(filePath(%assetDef.getShapePath())));
+   %module = %previewButton.assetBrowser.dirHandler.getModuleFromAddress(makeRelativePath(filePath(%assetDef.getShapePath())));
    %previewPath = "tools/resources/previewCache/" @ %module.moduleId @ "/";
    
    if(!IsDirectory(%previewPath))
    {
-      %this.dirHandler.createFolder(%previewPath);
+      %previewButton.assetBrowser.dirHandler.createFolder(%previewPath);
    }
    
    %generatePreview = false;
@@ -380,9 +385,9 @@ function AssetBrowser::generateShapeAssetPreviewImage(%this, %previewButton, %fo
    return false;
 }
 
-function AssetBrowser::onShapeAssetEditorDropped(%this, %assetDef, %position)
+function ShapeAsset::onWorldEditorDropped(%assetName, %moduleName, %position)
 {
-   %assetId = %assetDef.getAssetId();
+   %assetId = %moduleName @ ":" @ %assetName;
    
    %newStatic = new TSStatic()
    {

@@ -1,3 +1,5 @@
+AssetBrowser::registerObjectType("DatablockObjectType", "Datablock Objects", "GameBaseData");
+
 function AssetBrowser::createNewDatablock(%this)
 {
    AssetBrowser_newFolderNameTxt.text = "NewFolder";
@@ -40,15 +42,16 @@ function AssetBrowser::doCreateNewDatablock(%this)
    %this.navigateTo(%newFolderPath);
 }
 
-function AssetBrowser::buildDatablockPreview(%this, %assetDef, %previewData)
+function DatablockObjectType::buildBrowserElement(%name, %contentData, %previewData)
 {
-   %previewData.assetName = %assetDef;
-   %previewData.assetPath = "";
+   echo("DatablockObjectType::buildBrowserElement() - " @ %name @ ", " @ %contentData);
+   %previewData.assetName = %contentData.getName();
+   %previewData.assetPath = %contentData.getFileName();
    
    %previewData.previewImage = "ToolsModule:datablockIcon_image";
    
    //Lets see if we have a icon for specifically for this datablock type
-   %dataClass = %assetDef.getClassName();
+   %dataClass = %contentData.getClassName();
    %dataClass = strreplace(%dataClass, "Data", "");
    
    %previewImage = "tools/classIcons/" @ %dataClass @ ".png";
@@ -58,13 +61,13 @@ function AssetBrowser::buildDatablockPreview(%this, %assetDef, %previewData)
    }
    
    //%previewData.assetFriendlyName = %assetDef.assetName;
-   %previewData.assetDesc = %assetDef;
-   %previewData.tooltip =  "\nDatablock Name: " @ %assetDef @ 
-                           "\nDatablock Type: " @ %assetDef.getClassName() @
-                           "\nDefinition Path: " @ %assetDef.getFilename();
+   %previewData.assetDesc = %contentData;
+   %previewData.tooltip =  "\nDatablock Name: " @ %previewData.assetName @ 
+                           "\nDatablock Type: " @ %dataClass @
+                           "\nDefinition Path: " @ %previewData.assetPath;
                            
    
-   if(%this.selectMode)
+   /*if(%this.selectMode)
    {
       %previewData.doubleClickCommand = "AssetBrowser.selectAsset( AssetBrowser.selectedAsset );";
    }
@@ -78,8 +81,24 @@ function AssetBrowser::buildDatablockPreview(%this, %assetDef, %previewData)
       {
          %previewData.doubleClickCommand = "AssetBrowser.onDatablockEditorDropped( "@%assetDef@" );";
       }
-   }
+   }*/
 }
+
+function DatablockObjectType::onMovePath(%this, %assetBrowser, %destinationPath)
+{
+   
+}
+
+function DatablockObjectType::onMoveModule(%this, %assetBrowser, %destinationPath)
+{
+   
+}
+
+function DatablockObjectType::onShowActionMenu(%this, %assetBrowser)
+{
+   
+}
+
 
 function spawnDatablockObject(%datablock)
 {
