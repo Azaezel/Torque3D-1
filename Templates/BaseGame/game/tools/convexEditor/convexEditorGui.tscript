@@ -59,6 +59,9 @@ function ConvexEditorGui::onWake( %this )
       %this.resizing = false;
       %this.releaseSidePanel();
    }
+   %this.UseGridSnap = EditorSettings.value("ConvexEditorGui/Tools/UseGridSnap");
+   CESnapOptions-->objectGridSnapBtn.setStateOn( %this.UseGridSnap );
+   %this.setGridSnap( ConvexEditorGui.UseGridSnap );
 }
 
 function ConvexEditorGui::onSleep( %this )
@@ -212,7 +215,10 @@ function ConvexEditorMaterialResetBtn::onClick(%this)
 
 function ConvexEditorGui::toggleGridSnap(%this)
 {
-	%this.toggleGridSnapping();
+    ConvexEditorGui.UseGridSnap = !ConvexEditorGui.UseGridSnap;
+    EditorSettings.setValue("ConvexEditorGui/Tools/UseGridSnap", ConvexEditorGui.UseGridSnap );
+    CESnapOptions-->objectGridSnapBtn.setStateOn( %this.UseGridSnap );
+    %this.setGridSnap( ConvexEditorGui.UseGridSnap );
 }
 
 function ConvexEditorGridSnapSizeFld::onReturn(%this)
