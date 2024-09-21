@@ -41,7 +41,7 @@
             <Setting
                 name="doubleClickAction">Edit Asset</Setting>
             <Setting
-                name="LastPosExt">0 634 1560 360</Setting>
+                name="LastPosExt">0 1047 2200 360</Setting>
             <Setting
                 name="previewTileSize">1</Setting>
             <Setting
@@ -368,6 +368,8 @@
         <Setting
             name="EditorLayoutMode">Modern</Setting>
         <Setting
+            name="forceLoadDAE">0</Setting>
+        <Setting
             name="forceSidebarToSide">1</Setting>
         <Setting
             name="orthoFOV">1.21430779</Setting>
@@ -482,7 +484,7 @@
             <Setting
                 name="dropAtScreenCenterScalar">1</Setting>
             <Setting
-                name="objectsUseBoxCenter">1</Setting>
+                name="objectsUseBoxCenter">0</Setting>
             <Setting
                 name="OffsetZValue">0.01</Setting>
             <Setting

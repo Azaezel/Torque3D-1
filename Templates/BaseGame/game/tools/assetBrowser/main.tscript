@@ -51,6 +51,9 @@ function initializeAssetBrowser()
       AssetFilterTypeList.add("TerrainMaterialAsset");
    }
    
+   if(!isObject(ABAssetTypesList))
+      new ArrayObject(ABAssetTypesList){};  
+
    exec("./scripts/profiles." @ $TorqueScriptFileExtension);
    
    exec("./guis/assetBrowser.gui");

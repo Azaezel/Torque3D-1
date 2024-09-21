@@ -1,4 +1,5 @@
 AssetBrowser::registerFileType("ScriptFileType", "Script", ".tscript;.cs;.dso");
+AssetBrowser::registerAssetType("ScriptAsset", "Scripts");
 
 function AssetBrowser::createScriptAsset(%this)
 {
@@ -68,12 +69,6 @@ function AssetBrowser::renameScriptAsset(%this, %assetDef, %newAssetName)
    renameAssetFile(%assetDef, %newAssetName);
 }
 
-//Deletes the asset
-function AssetBrowser::deleteScriptAsset(%this, %assetDef)
-{
-   AssetDatabase.deleteAsset(%assetDef.getAssetId(), true);
-}
-
 //Moves the asset to a new path/module
 function AssetBrowser::moveScriptAsset(%this, %assetDef, %destination)
 {
@@ -91,13 +86,11 @@ function AssetBrowser::moveScriptAsset(%this, %assetDef, %destination)
    AssetDatabase.addDeclaredAsset(%targetModule, %newAssetPath);
 }
 
-function ScriptFileType::buildBrowserElement(%name, %contentData, %previewData)
+function ScriptAsset::buildBrowserElement(%assetDef, %previewData)
 {
-   %fullPath = %contentData !$= "" ? %contentData @ "/" @ %name : %name;
-   
-   %previewData.assetName = %name;
-   %previewData.assetPath = %fullPath;
-   %previewData.doubleClickCommand = "systemCommand(\"start \"\" \"" @ %fullPath @ "\");";
+   %previewData.assetName = %assetDef.assetName;
+   %previewData.assetPath = %assetDef.fileName;
+   %previewData.doubleClickCommand = "systemCommand(\"start \\\"\\\" \\\"" @ %assetDef.fileName @ "\\\"\");";
    
    /*if(%assetDef.isServerSide)
       %previewData.previewImage = "ToolsModule:serverScriptIcon_image";
@@ -105,25 +98,27 @@ function ScriptFileType::buildBrowserElement(%name, %contentData, %previewData)
       %previewData.previewImage = "ToolsModule:clientScriptIcon_image";*/
    %previewData.previewImage = "ToolsModule:clientScriptIcon_image";
    
-   %previewData.assetFriendlyName = %name;
-   %previewData.assetDesc = %fullPath;
-   %previewData.tooltip = "Script File: " @ %name;
+   %previewData.assetFriendlyName = %assetDef.assetName;
+   %previewData.assetDesc = %assetDef.fileName;
+   %previewData.tooltip = "Script Asset: " @ %assetDef.getAssetId() @ "\n" @ 
+                          "File path: " @ %assetDef.fileName;
 }
 
-function AssetBrowser::buildTScriptPreview(%this, %assetDef, %previewData)
+function ScriptFileType::buildBrowserElement(%filePath, %previewData)
 {
-   %previewData.assetName = %assetDef.assetName;
-   %previewData.assetPath = %assetDef.scriptFile;
-   //%previewData.doubleClickCommand = "EditorOpenFileInTorsion( \""@%previewData.assetPath@"\", 0 );";
+   %previewData.assetName = fileName(%filePath);
+   %previewData.assetPath = %filePath;
+   %previewData.doubleClickCommand = "systemCommand(\"start \\\"\\\" \\\"" @ %filePath @ "\\\"\");";
    
-   if(%assetDef.isServerSide)
+   /*if(%assetDef.isServerSide)
       %previewData.previewImage = "ToolsModule:serverScriptIcon_image";
    else
-      %previewData.previewImage = "ToolsModule:clientScriptIcon_image";
+      %previewData.previewImage = "ToolsModule:clientScriptIcon_image";*/
+   %previewData.previewImage = "ToolsModule:clientScriptIcon_image";
    
-   %previewData.assetFriendlyName = %assetDef.assetName;
-   %previewData.assetDesc = %assetDef.description;
-   %previewData.tooltip = "Asset Name: " @ %assetDef.assetName @ "\nDefinition Path: " @ %assetDef.getFilename();
+   %previewData.assetFriendlyName = %previewData.assetName;
+   %previewData.assetDesc = %filePath;
+   %previewData.tooltip = "Script File: " @ %filePath;
 }
 
 function GuiInspectorTypeScriptAssetPtr::onClick( %this, %fieldName )

@@ -45,7 +45,7 @@ function ShapeAsset::onChanged(%this)
    echo("ShapeAsset::onChanged() - asset " @ %this.assetId @ " has changed!");
 }
 
-function AssetBrowser::deleteShapeAsset(%this, %assetDef)
+function AssetBrowser::onDelete(%this)
 {
    
 }
@@ -267,22 +267,20 @@ function AssetBrowser::importShapeAsset(%this, %assetItem)
       AssetDatabase.refreshAsset(%assetId);
 }
 
-function ShapeAsset::buildBrowserElement(%assetName, %moduleName, %previewData)
+function ShapeAsset::buildBrowserElement(%this, %previewData)
 {
    %previewData.previewImage = "ToolsModule:genericAssetIcon_image";
    %previewData.previewLoaded = false; //this marks it for loading progressively later
    
-   %assetDef = AssetDatabase.acquireAsset(%moduleName @ ":" @ %assetName);
+   %previewData.assetName = %this.assetName;
+   %previewData.assetPath = %this.fileName;
    
-   %previewData.assetName = %assetName;
-   %previewData.assetPath = %assetDef.fileName;
-   
-   %previewData.assetFriendlyName = %assetDef.assetName;
-   %previewData.assetDesc = %assetDef.description;
-   %previewData.tooltip = "Asset Name: " @ %assetName @ "\n" @ 
+   %previewData.assetFriendlyName = %this.assetName;
+   %previewData.assetDesc = %this.description;
+   %previewData.tooltip = "Asset Name: " @ %this.assetName @ "\n" @ 
                            "Asset Type: Shape Asset\n" @ 
-                           "Asset Definition ID: " @  %assetDef @ "\n" @ 
-                           "Shape File path: " @ %assetDef.getShapePath();
+                           "Asset Definition ID: " @  %this @ "\n" @ 
+                           "Shape File path: " @ %this.getShapePath();
                            
    /*if(%this.selectMode)
    {
@@ -301,16 +299,14 @@ function ShapeAsset::buildBrowserElement(%assetName, %moduleName, %previewData)
    }*/
 }
 
-function ShapeAsset::generatePreviewImage(%previewButton, %forceRegenerate)
+function ShapeAsset::generatePreviewImage(%this, %previewButton, %forceRegenerate)
 {
    if(%forceRegenerate $= "")
       %forceRegenerate = false;
       
-   %assetId = %previewButton.moduleName @ ":" @ %previewButton.assetName;
-      
-   %assetDef = AssetDatabase.acquireAsset(%assetId);
-      
-   %module = %previewButton.assetBrowser.dirHandler.getModuleFromAddress(makeRelativePath(filePath(%assetDef.getShapePath())));
+   %assetId = %this.getAssetId();
+
+   %module = %previewButton.assetBrowser.dirHandler.getModuleFromAddress(makeRelativePath(filePath(%this.getShapePath())));
    %previewPath = "tools/resources/previewCache/" @ %module.moduleId @ "/";
    
    if(!IsDirectory(%previewPath))
@@ -320,19 +316,19 @@ function ShapeAsset::generatePreviewImage(%previewButton, %forceRegenerate)
    
    %generatePreview = false;
    
-   %previewFilePath = %previewPath @ %assetDef.assetName @ "_Preview.dds";
-   if(!isFile(%previewFilePath) || (compareFileTimes(%assetDef.getShapePath(), %previewFilePath) == 1))
+   %previewFilePath = %previewPath @ %this.assetName @ "_Preview.dds";
+   if(!isFile(%previewFilePath) || (compareFileTimes(%this.getShapePath(), %previewFilePath) == 1))
    {
       %generatePreview = true;
    }
    
-   %previewAssetName = %module.moduleId @ "_" @ %assetDef.assetName @ "_PreviewImage";
+   %previewAssetName = %module.moduleId @ "_" @ %this.assetName @ "_PreviewImage";
    
    if(%generatePreview || %forceRegenerate)
    {
       //real fast, we'll be 100% sure that the image resource we need is loaded
       
-      %matSlot0AssetId = %assetDef.materialSlot0;
+      %matSlot0AssetId = %this.materialSlot0;
       if(AssetDatabase.isDeclaredAsset(%matSlot0AssetId))
       {
          %matAsset = AssetDatabase.acquireAsset(%matSlot0AssetId);
@@ -342,7 +338,7 @@ function ShapeAsset::generatePreviewImage(%previewButton, %forceRegenerate)
       //This is slightly hacky, but we're going to utilize the imposter/last detail system
       //to generate our previews for us and then clean up the unneeded bits
       
-      %filePath = %assetDef.generateCachedPreviewImage();
+      %filePath = %this.generateCachedPreviewImage();
       
       pathCopy(%filePath, %previewFilePath, false);
       fileDelete(%filePath); //cleanup
@@ -385,9 +381,9 @@ function ShapeAsset::generatePreviewImage(%previewButton, %forceRegenerate)
    return false;
 }
 
-function ShapeAsset::onWorldEditorDropped(%assetName, %moduleName, %position)
+function ShapeAsset::onWorldEditorDropped(%assetDef, %position)
 {
-   %assetId = %moduleName @ ":" @ %assetName;
+   %assetId = %assetDef.getAssetId();
    
    %newStatic = new TSStatic()
    {
@@ -405,6 +401,11 @@ function ShapeAsset::onWorldEditorDropped(%assetName, %moduleName, %position)
    EWorldEditor.isDirty = true;
    
    MECreateUndoAction::submit(%newStatic );
+}
+
+function ShapeAsset::onGUIEditorDropped(%assetDef, %position)
+{
+   
 }
 
 function GuiInspectorTypeShapeAssetPtr::onControlDropped( %this, %payload, %position )

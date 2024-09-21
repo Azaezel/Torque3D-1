@@ -1,4 +1,4 @@
-AssetBrowser::registerAssetType("FolderObjectType", "Folder", "/");
+AssetBrowser::registerFileType("FolderObjectType", "Folder", "/");
 
 function AssetBrowser::createNewFolder(%this)
 {
@@ -57,22 +57,22 @@ function AssetBrowser::doCreateNewFolder(%this)
       SelectAssetPath.showDialog(%newFolderPath, SelectAssetPath.callback);
 }
 
-function FolderObjectType::buildBrowserElement(%folderName, %path, %previewData)
+function FolderObjectType::buildBrowserElement(%folderPath, %previewData)
 {
-   %fullPath = %path !$= "" ? %path @ "/" @ %folderName : %folderName;
-
+   %folderName = fileBase(%folderPath);
+   
    %previewData.assetName = %folderName;
-   %previewData.assetPath = %fullPath;
+   %previewData.assetPath = %folderPath;
    
    %previewData.previewImage = "ToolsModule:FolderIcon_image";
    
    //%previewData.assetFriendlyName = %assetDef.assetName;
    %previewData.assetDesc = "Folder";
-   %previewData.tooltip = %fullPath;
-   %previewData.doubleClickCommand = "AssetBrowser.schedule(10, \"navigateTo\",\""@ %previewData.assetPath @"\");"; //browseTo %this.dirPath / %this.assetName
+   %previewData.tooltip = %folderPath;
+   %previewData.doubleClickCommand = "AssetBrowser.schedule(10, \"navigateTo\",\""@ %folderPath @"\");"; //browseTo %this.dirPath / %this.assetName
 }
 
-function FolderObjectType::onShowActionMenu(%folderName, %path, %assetBrowser)
+function FolderObjectType::onShowActionMenu(%folderPath)
 {
    if( !isObject( EditFolderTypePopup ) )
    {
@@ -86,24 +86,24 @@ function FolderObjectType::onShowActionMenu(%folderName, %path, %assetBrowser)
       };
    }
    
-   EditFolderTypePopup.objectId = %path @ "/" @ %folderName;
+   EditFolderTypePopup.objectData = %folderPath;
    EditFolderTypePopup.objectType = "FolderObjectType";
    
    //Regen the menu so we're fully up and current with options and references
    EditFolderTypePopup.clearItems();
    
-   EditFolderTypePopup.item[ 0 ] = "Rename Folder" TAB "" TAB %assetBrowser @ ".renameAsset();";
-   EditFolderTypePopup.item[ 1 ] = "Duplicate Folder" TAB "" TAB %assetBrowser @ ".duplicateAsset();";
+   EditFolderTypePopup.item[ 0 ] = "Rename Folder" TAB "" TAB $CurrentAssetBrowser @ ".renameAsset();";
+   EditFolderTypePopup.item[ 1 ] = "Duplicate Folder" TAB "" TAB $CurrentAssetBrowser @ ".duplicateAsset();";
    EditFolderTypePopup.item[ 2 ] = "-";
-   EditFolderTypePopup.item[ 3 ] = "Open Folder Location" TAB "" TAB %assetBrowser @ ".openFolderLocation(" @ EditFolderTypePopup.folderPath @ ");";
+   EditFolderTypePopup.item[ 3 ] = "Open Folder Location" TAB "" TAB $CurrentAssetBrowser @ ".openFolderLocation(" @ %folderPath @ ");";
    EditFolderTypePopup.item[ 4 ] = "-";
-   EditFolderTypePopup.item[ 5 ] = "Delete Folder" TAB "" TAB %assetBrowser @ ".deleteAsset();";
+   EditFolderTypePopup.item[ 5 ] = "Delete Folder" TAB "" TAB $CurrentAssetBrowser @ ".deleteAsset();";
 
    EditFolderTypePopup.reloadItems();
    
    EditFolderTypePopup.showPopup(Canvas); 
    
-   %assetBrowser.popupMenu = EditFolderTypePopup;
+   $CurrentAssetBrowser.popupMenu = EditFolderTypePopup;
 }
 
 function AssetBrowser::renameFolder(%this, %folderPath, %newFolderName)
@@ -172,28 +172,27 @@ function AssetBrowser::moveFolder(%this, %folderPath, %newFolderPath)
    }
 }
 
-function FolderObjectType::onDelete(%folderPath, %assetBrowser)
+function FolderObjectType::onDelete(%folderPath)
 {
    echo("DELETING " @ %folderPath);
    
-   %assetBrowser.dirHandler.deleteFolder(%folderPath);
+   $CurrentAssetBrowser.dirHandler.deleteFolder(%folderPath);
    
-   %assetBrowser.refresh();
+   $CurrentAssetBrowser.refresh();
 }
 
-function FolderObjectType::onWorldEditorDropped(%folderName, %path, %position)
+function FolderObjectType::onWorldEditorDropped(%folderPath, %position)
 {
    //We do nothing with this as we don't process entire folders for spawning
 }
 
-function FolderObjectType::onGuiEditorDropped(%folderName, %path, %position)
+function FolderObjectType::onGuiEditorDropped(%folderPath, %position)
 {
    //We do nothing with this as we don't process entire folders for spawning
 }
 
-function FolderObjectType::onMovePath(%folderName, %path, %assetBrowser, %destinationPath)
+function FolderObjectType::onMovePath(%folderPath, %destinationPath)
 {
-   %folderPath = %path @ "/" @ %folderName;
    %fullPath = makeFullPath(%folderPath);
    %newFullPath = makeFullPath(%destinationPath);
    
@@ -204,14 +203,20 @@ function FolderObjectType::onMovePath(%folderName, %path, %assetBrowser, %destin
    %basePath = getTokens(%fullPath, "/", 0, %count-2);
    %oldName = getToken(%fullPath, "/", %count-1);
    
-   %copiedSuccess = %assetBrowser.dirHandler.copyFolder(%fullPath, %newFullPath);
-   %assetBrowser.dirHandler.deleteFolder(%fullPath);
+   %copiedSuccess = $CurrentAssetBrowser.dirHandler.copyFolder(%fullPath, %newFullPath);
+   $CurrentAssetBrowser.dirHandler.deleteFolder(%fullPath);
    
-   %assetBrowser.loadDirectories();
+   $CurrentAssetBrowser.loadDirectories();
+}
+
+function FolderObjectType::onMoveModule(%folderPath, %destinationPath)
+{
+   //Same logic as a regular folder move
+   FolderObjectType::onMovePath(%folderPath, %destinationPath);
    
    //thrash the modules and reload them
-   %oldModule = %assetBrowser.dirHandler.getModuleFromAddress(%folderPath);
-   %newModule = %assetBrowser.dirHandler.getModuleFromAddress(%destinationPath);
+   %oldModule = $CurrentAssetBrowser.dirHandler.getModuleFromAddress(%folderPath);
+   %newModule = $CurrentAssetBrowser.dirHandler.getModuleFromAddress(%destinationPath);
    
    //if we didn't move modules, then we don't need to do anything other than refresh the assets within it
    if(%oldModule == %newModule)
@@ -228,10 +233,4 @@ function FolderObjectType::onMovePath(%folderName, %path, %assetBrowser, %destin
       ModuleDatabase.unloadExplicit(%newModule.getModuleId());
       ModuleDatabase.loadExplicit(%newModule.getModuleId());
    }
-}
-
-function FolderObjectType::onMoveModule(%folderName, %path, %assetBrowser, %destinationPath)
-{
-   //Same logic as a regular folder move
-   FolderObjectType::onMovePath(%folderName, %path, %assetBrowser, %destinationPath);
 }
