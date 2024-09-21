@@ -51,6 +51,9 @@ function initializeAssetBrowser()
       AssetFilterTypeList.add("TerrainMaterialAsset");
    }
    
+   if(!isObject(ABAssetTypesList))
+      new ArrayObject(ABAssetTypesList){};  
+
    exec("./scripts/profiles." @ $TorqueScriptFileExtension);
    
    exec("./guis/assetBrowser.gui");
@@ -90,6 +93,8 @@ function initializeAssetBrowser()
    exec("./scripts/utils." @ $TorqueScriptFileExtension);
    
    //Processing for the different asset types
+   exec("./scripts/assetTypes/genericAsset." @ $TorqueScriptFileExtension); 
+   
    exec("./scripts/assetTypes/component." @ $TorqueScriptFileExtension); 
    exec("./scripts/assetTypes/cpp." @ $TorqueScriptFileExtension);
    exec("./scripts/assetTypes/gameObject." @ $TorqueScriptFileExtension);   

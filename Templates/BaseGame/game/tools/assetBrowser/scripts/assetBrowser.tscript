@@ -29,6 +29,150 @@ function AssetBrowser::addToolbarButton(%this)
 }
 //
 
+//
+function AssetBrowser::registerAssetType(%assetTypeName, %humanReadableName, %assetClassNamesList)
+{
+   ABAssetTypesList.add("Asset", %assetTypeName TAB %humanReadableName TAB %assetClassNamesList);
+}
+
+function AssetBrowser::registerFileType(%fileTypeName, %humanReadableName, %fileExtensionsList)
+{
+   ABAssetTypesList.add("File", %fileTypeName TAB %humanReadableName TAB %fileExtensionsList);
+}
+
+function AssetBrowser::registerObjectType(%objectTypeName, %humanReadableName, %objectClassNames)
+{
+   ABAssetTypesList.add("Object", %objectTypeName TAB %humanReadableName TAB %objectClassNames);
+}
+
+function AssetBrowser::callAssetTypeFunc(%this, %type, %function, %param0, %param1, %param2, %param3, %param4)
+{
+   //echo("AssetBrowser::callAssetTypeFunc() - deets: " @ %type @ ", " @ %function @ ", " @ %param0 @ ", " @ %param1 @ ", " @ %param2 @ ", " @ %param3 @ ", " @ %param4);
+   $paramCache0 = %param0;
+   $paramCache1 = %param1;
+   $paramCache2 = %param2;
+   $paramCache3 = %param3;
+   $paramCache4 = %param4;
+   
+   $CurrentAssetBrowser = %this;
+   
+   //look up the type group
+   %typeGroup = "";
+   %typeData = "";
+   for(%i=0; %i < ABAssetTypesList.count(); %i++)
+   {
+      %group = ABAssetTypesList.getKey(%i);
+      %typeData = ABAssetTypesList.getValue(%i);
+      
+      if(getField(%typeData, 0) $= %type)
+      {
+         %typeGroup = %group;
+         %typeData = %typeData;
+         break;
+      }
+   }
+
+   %paramOffset = 0;
+   %isStaticCall = false;
+   %command = "";
+   if(%typeGroup $= "Asset")
+   {
+      //check to see if the first param is an asset definition
+      if(isObject(%param0) && %param0.isInNamespaceHierarchy("AssetDefinition"))
+      {
+         %command = %param0 @ "." @ %function @ "(";
+         %paramOffset = 1;
+      }
+      else
+      {
+         //we may have to build the assetID
+         %assetId = %param0 @ ":" @ %param1;
+         if(AssetDatabase.isDeclaredAsset(%assetId))
+         {
+            %assetDef = AssetDatabase.acquireAsset(%assetId);
+            %command = %assetDef @ "." @ %function @ "(";
+            %paramOffset = 2;
+         }
+      }
+   }
+   else if(%typeGroup $= "File")
+   {
+      %compoundPath = %param0 @ "/" @ %param1;
+      if(isFile(%compoundPath) || isDirectory(%compoundPath))
+      {
+         %command = %type @ "::" @ %function @ "(\"" @ %compoundPath @ "\"";
+         %paramOffset = 2;
+         %isStaticCall = true;
+      }
+      else if(isFile(%param0) || isDirectory(%param0))
+      {
+         %command = %type @ "::" @ %function @ "(\"" @ %param0 @ "\"";
+         %paramOffset = 1;
+         %isStaticCall = true;
+      }
+   }
+   else if(%typeGroup $= "Object")
+   {
+      if(isObject(%param0) && %param0.isMethod(%function))
+      {
+         %command = %param0 @ "." @ %function @ "(";
+         %paramOffset = 1;
+      }
+      else
+      {
+         %command = %type @ "::" @ %function @ "(";
+         %isStaticCall = true;
+      }
+   }
+   
+   if(%command $= "")
+   {
+      if(isMethod("GenericAsset", %function))
+      {
+         %command = "GenericAsset::" @ %function @ "(";
+         %isStaticCall = true;
+      }
+      else
+      {
+         error("AssetBrowser::callAssetTypeFunc() - unable to find a valid type: " @ %type @ " to call function: " @ %function);
+         return;
+      }
+   }
+   
+   for(%i=%paramOffset; %i < 5; %i++)
+   {
+      %paramVar = getVariable("$paramCache" @ %i);
+      if(%paramVar !$= "")
+      {
+         if(%paramOffset != 0 && %i==%paramOffset && %isStaticCall)
+            %command = %command @ ",";
+            
+         if(getWordCount(%paramVar) > 1 || strPos(%paramVar, "/") != 0 || stePos(%paramVar, "\\") != 0)
+            %command = %command @ "\"" @ %paramVar @ "\"";
+         else
+            %command = %command @ %paramVar;
+      }
+      %nextParamVar = getVariable("$paramCache" @ %i+1);
+      if(%nextParamVar !$= "")
+      {
+         %command = %command @ ",";
+      }
+   }
+   
+   %command = %command @ ");";
+   
+   //echo("AssetBrowser::callAssetTypeFunc() - executing command: " @ %command);
+      
+   %return = "";
+   if(%command !$= "")
+      %return = eval(%command);
+      
+   $CurrentAssetBrowser = "";
+   
+   return %return;
+}
+
+//
 function AssetBrowser::initialize(%this)
 {
    // manage preview array
@@ -37,7 +181,7 @@ function AssetBrowser::initialize(%this)
       
    if(!isObject(ObjectCreator))
       new ScriptObject(ObjectCreator);
-      
+
    if(!isObject(%this.dirHandler))
    {
       %this.dirHandler = makedirectoryHandler(AssetBrowser-->filterTree, "cache,shaderCache", ""); 
@@ -82,6 +226,8 @@ function AssetBrowser::onWake(%this)
    AssetBrowserWindow.dockPanel();
 }
 
+//
+//
 function AssetBrowser::onDialogPop(%this)
 {
    $AssetBrowser::Open = false;
@@ -177,6 +323,9 @@ function contentTreeTabBook::onTabSelected(%this, %tabText, %tabIndex)
       AssetBrowser-->filterTree.buildVisibleTree(true);
    }
 }
+
+//
+//
 
 //Filters
 function AssetBrowser::showFilterPopup(%this)
@@ -461,9 +610,8 @@ function AssetBrowser::buildAssetPreview( %this, %asset, %moduleName )
       {
          %assetType = getField(%asset,0);
          %assetName = getField(%asset, 1);
-         %sdfasdgah = true;  
          
-         if(%assetType $= "Folder")
+         if(%assetType $= "FolderObjectType")
          {
             %fullPath = %moduleName !$= "" ? %moduleName @ "/" @ %assetName : %assetName;
             %fullPath = strreplace(%fullPath, "/", "_");
@@ -499,7 +647,7 @@ function AssetBrowser::buildAssetPreview( %this, %asset, %moduleName )
             %assetDesc.description = %moduleName @ "/" @ %assetName;
             %assetDesc.assetType = %assetType;
          }
-         else if(%assetType $= "Prefab")
+         else if(%assetType $= "PrefabObject")
          {
             %fullPath = %moduleName !$= "" ? %moduleName @ "/" @ %assetName : %assetName;
             %fullPath = strreplace(%fullPath, "/", "_");
@@ -590,6 +738,7 @@ function AssetBrowser::buildAssetPreview( %this, %asset, %moduleName )
       buttonType = "RadioButton";
       buttonMargin = "0 -10";
       profile = ToolsGuiDefaultIconBtnProfile;
+      assetBrowser = %this;
    };
    
    %previewScaleSize = AssetBrowser-->previewSlider.getValue();
@@ -634,9 +783,8 @@ function AssetBrowser::buildAssetPreview( %this, %asset, %moduleName )
    
    %this.previewData.previewLoaded = true;
    
-   //Build out the preview
-   %buildCommand = %this @ ".build" @ %assetType @ "Preview(\"" @ %assetDesc @ "\"," @ %this.previewData @ ");";
-   eval(%buildCommand);
+   //echo("AssetBrowser::buildAssetPreview() - building preview of asset type: " @ %assetType);
+   %this.callAssetTypeFunc(%assetType, "buildBrowserElement", %moduleName, %assetName, %this.previewData);
    
    //debug dump
    %tooltip = %this.previewData.tooltip;
@@ -649,6 +797,7 @@ function AssetBrowser::buildAssetPreview( %this, %asset, %moduleName )
    %previewButton.assetName = %assetName;
    %previewButton.moduleName = %moduleName;
    %previewButton.assetType = %assetType;
+   %previewButton.assetBrowser = %this;
    
    %previewButton.bitmapAsset = %this.previewData.previewImage;
    
@@ -703,11 +852,13 @@ function AssetBrowser::populatePreviewImages(%this)
    for(%i=0; %i < AssetPreviewArray.count(); %i++)
    {
       %previewButton = AssetPreviewArray.getKey(%i);
-      %type = %previewButton.assetType;
+      %assetType = %previewButton.assetType;
       
       echo("   - Generating preview for asset: " @ %previewButton.moduleName @ ":" @ %previewButton.assetName);
       
-      AssetBrowser.call("generate" @ %previewButton.assetType @ "PreviewImage", %previewButton);
+      AssetBrowser.callAssetTypeFunc(%assetType, "generatePreviewImage", %previewButton.moduleName, %previewButton.assetName, %previewButton);
+      
+      //ssetBrowser.call("generate" @ %previewButton.assetType @ "PreviewImage", %previewButton);
       AssetPreviewArray.erase(%i);
       
       echo("   - done, scheduling another pass");
@@ -1179,7 +1330,11 @@ function AssetBrowser::reImportAsset(%this)
 // RMB context popups
 function AssetBrowserPreviewButton::onRightClick(%this)
 {
-   AssetBrowser.selectedAssetPreview = %this;
+   %this.assetBrowser.selectedAssetPreview = %this;
+   %this.assetBrowser.callAssetTypeFunc(%this.assetType, "onShowActionMenu", %this.moduleName, %this.assetName);
+   
+   /*return;
+   
    EditAssetPopup.assetId = %this.moduleName @ ":" @ %this.assetName;
    EditAssetPopup.assetType = %this.assetType;
    %assetType = %this.assetType;
@@ -1189,7 +1344,7 @@ function AssetBrowserPreviewButton::onRightClick(%this)
    EditAssetPopup.enableItem(9, true);
    
    //Is it an editable type?
-   if(%assetType $= "ImageAsset" /*|| %assetType $= "GameObjectAsset"*/ || %assetType $= "CppAsset")
+   if(%assetType $= "ImageAsset" || %assetType $= "CppAsset")
    {
       EditAssetPopup.enableItem(0, false);
    }
@@ -1214,7 +1369,7 @@ function AssetBrowserPreviewButton::onRightClick(%this)
       AssetDatabase.releaseAsset(EditAssetPopup.assetId);
    }*/
    
-   if(%assetType $= "LevelAsset")
+   /*if(%assetType $= "LevelAsset")
    {
       EditLevelAssetPopup.showPopup(Canvas);  
    }
@@ -1235,7 +1390,7 @@ function AssetBrowserPreviewButton::onRightClick(%this)
    if(%assetType $= "Folder")
    {
       EditAssetPopup.assetId = %this.moduleName @ "/" @ %this.assetName;
-   }
+   }*/
 }
 
 //function AssetListPanel::onRightMouseDown(%this)
@@ -1565,7 +1720,7 @@ function AssetBrowser::doRebuildAssetArray(%this)
          {
             if(matchesSearch(%folderName, "Folder", ""))
             {
-               $AssetBrowser::AssetArray.add( %breadcrumbPath, "Folder" TAB %folderName );
+               $AssetBrowser::AssetArray.add( %breadcrumbPath, "FolderObjectType" TAB %folderName );
                continue;
             }
          }
@@ -1581,7 +1736,7 @@ function AssetBrowser::doRebuildAssetArray(%this)
             if(!%this.toolsModulesFilter && %folderName $= "tools" && %breadcrumbPath $= "")
                continue;
                
-            $AssetBrowser::AssetArray.add( %breadcrumbPath, "Folder" TAB %folderName );
+            $AssetBrowser::AssetArray.add( %breadcrumbPath, "FolderObjectType" TAB %folderName );
          }
       }
    }
@@ -1638,7 +1793,7 @@ function AssetBrowser::doRebuildAssetArray(%this)
                {
                   $AssetBrowser::AssetArray.add( %moduleName, %assetId );
                   
-                  if(%assetType !$= "Folder")
+                  if(%assetType !$= "FolderObjectType")
                      %finalAssetCount++;
                }
             }
@@ -1648,15 +1803,139 @@ function AssetBrowser::doRebuildAssetArray(%this)
                //got it.	
                $AssetBrowser::AssetArray.add( %moduleName, %assetId );
                
-               if(%assetType !$= "Folder")
+               if(%assetType !$= "FolderObjectType")
                   %finalAssetCount++;
             }
          }
       }
    }
+   
+   if(!isObject(ABLooseFileArray))
+      new ArrayObject(ABLooseFileArray){};
+      
+   %nonAssetFileCount = getNonAssetFilesInDir(%this.dirHandler.currentAddress, ABLooseFileArray);
+   
+   //echo("doRebuildAssetArray() - iterating over nonAsset files. Number: " @ %nonAssetFileCount);
+   
+   %looseFiles = ABLooseFileArray.count();
+   for( %i=0; %i < %looseFiles; %i++)
+   {
+      %looseFileFullPath = ABLooseFileArray.getKey(%i);
+      %looseFilePath = filePath(%looseFileFullPath);
+      %looseFileName = fileName(%looseFileFullPath);
+      %looseFileExt = fileExt(%looseFileFullPath);
+      
+      //echo("   checking file: " @ %looseFileFullPath);
+      //echo("   name: " @ %looseFileName);
+      //echo("   ext: " @ %looseFileExt);
+      
+      //iterate over the registered types to filter out types we special handle
+      for(%t=0; %t < ABAssetTypesList.count(); %t++)
+      {
+         %typeGroup = ABAssetTypesList.getKey(%t);
+         //echo("      checking %typeGroup: " @ %typeGroup);
+         
+         if(%typeGroup $= "Asset")
+         {
+            %assetTypeEntry = getField(ABAssetTypesList.getValue(%t), 0);
+            
+            %classNameList = getField(ABAssetTypesList.getValue(%t), 2);
+            %classNameCount = getTokenCount(%classNameList, ";");
+            
+            for(%e=0; %e < %classNameCount; %e++)
+            {
+               %className = getToken(%classNameList, ";", %e);
+               
+               //echo("         checking asset className: " @ %className);
+               if(%className $= %looseFileExt)
+               {
+                  //echo("         FOUND!");  
+                  $AssetBrowser::AssetArray.add( %looseFilePath, %assetTypeEntry TAB %looseFileName );
+               }
+            }
+         }
+         else if(%typeGroup $= "File")
+         {
+            %fileTypeEntry = getField(ABAssetTypesList.getValue(%t), 0);
+            //echo("      checking fileType: " @ %fileTypeEntry);
+            
+            %extensionsList = getField(ABAssetTypesList.getValue(%t), 2);
+            %extensionsCount = getTokenCount(%extensionsList, ";");
+            
+            for(%e=0; %e < %extensionsCount; %e++)
+            {
+               %extension = getToken(%extensionsList, ";", %e);
+               
+               //echo("         checking extension: " @ %extension);
+               if(%extension $= %looseFileExt)
+               {
+                  //echo("         FOUND!");  
+                  $AssetBrowser::AssetArray.add( %looseFilePath, %fileTypeEntry TAB %looseFileName );
+               }
+            }
+         }
+         else if(%typeGroup $= "Object")
+         {
+            %objTypeEntry = getField(ABAssetTypesList.getValue(%t), 0);
+            //echo("      checking objectType: " @ %objTypeEntry);
+            
+            %classNameList = getField(ABAssetTypesList.getValue(%t), 2);
+            %classNameCount = getTokenCount(%classNameList, ";");
+            
+            //echo("         checking RootGroup-----");
+            //now we iterate over the root group to find any and all objects that match to class
+            for(%rgo = 0; %rgo < RootGroup.getCount(); %rgo++)
+            {
+               %rootGroupObj = RootGroup.getObject(%rgo);
+               %rootGroupObjPath = filePath(%rootGroupObj.getFileName());
+               if(%rootGroupObjPath !$= %this.dirHandler.currentAddress)
+                  continue;
+               
+               for(%c=0; %c < %classNameCount; %c++)
+               {
+                  %className = getToken(%classNameList, ";", %c);
+
+                  //echo("         checking looking for class names: " @ %className);
+                  //echo("            object name: " @ %rootGroupObj.getName());
+                  if(%rootGroupObj.isMemberOfClass(%className))
+                  {
+                     //echo("         FOUND!");
+                     $AssetBrowser::AssetArray.add( %rootGroupObj, %objTypeEntry TAB %className );
+                  }
+               }
+            }
+            
+            //echo("         checking DatablockGroup-----");
+            //check the datablocks group for certainty as well`
+            for(%rgo = 0; %rgo < DatablockGroup.getCount(); %rgo++)
+            {
+               %dbGroupObject = DatablockGroup.getObject(%rgo);
+               %dbGroupObjPath = filePath(%dbGroupObject.getFileName());
+               if(%dbGroupObjPath !$= %this.dirHandler.currentAddress)
+                  continue;
+               
+               for(%c=0; %c < %classNameCount; %c++)
+               {
+                  %className = getToken(%classNameList, ";", %c);
+
+                  //echo("         checking looking for class names: " @ %className);
+                  //echo("            object name: " @ %dbGroupObject.getName());
+                  if(%dbGroupObject.isMemberOfClass(%className))
+                  {
+                     //echo("         FOUND!");
+                     //echo("           - data being added to array: " @ %dbGroupObject @ ", " @ %objTypeEntry TAB %className);
+                     $AssetBrowser::AssetArray.add( %dbGroupObject, %objTypeEntry TAB %className );
+                  }
+               }
+            }
+         }
+      }
+  
+      //$AssetBrowser::AssetArray.add( %looseFilePath, "LooseFile" TAB %looseFileName );
+   }
 
    //Add Non-Asset Scripted Objects. Datablock, etc based
-   %hasDBFilter = true;
+   /*%hasDBFilter = true;
    if(AssetBrowser.assetTypeFilter !$= "")
    {
       %hasDBFilter = false;
@@ -1703,35 +1982,16 @@ function AssetBrowser::doRebuildAssetArray(%this)
          {
             %dbName = %obj.getName();
             $AssetBrowser::AssetArray.add( %dbFilename, "Datablock" TAB %dbName );
-            
-            /*%catItem = AssetBrowser-->filterTree.findItemByName(%obj.category);
-            
-            if(%catItem == 0)
-               AssetBrowser-->filterTree.insertItem(%scriptedItem, %obj.category, "scripted");*/
-            /*%ctrl = %this.findIconCtrl( %obj.category );
-            if ( %ctrl == -1 )
-            {
-               %this.addFolderIcon( %obj.category );
-            }*/
+
          }
       }
       
       
-      %this.getLooseFilesInDir();
+      //%this.getLooseFilesInDir();
       
-      %looseFiles = ABLooseFileArray.count();
-      for( %i=0; %i < %looseFiles; %i++)
-      {
-         %looseFileFullPath = ABLooseFileArray.getKey(%i);
-         %looseFilePath = filePath(%looseFileFullPath);
-         %looseFileName = fileName(%looseFileFullPath);
-         %looseFileExt = fileExt(%looseFileFullPath);
-         
-         $AssetBrowser::AssetArray.add( %looseFilePath, "LooseFile" TAB %looseFileName );
-      }
          
       //Prefabs
-      %expr = "*.prefab";
+      /*%expr = "*.prefab";
       %fullPrefabPath = findFirstFile( %breadcrumbPath @ "/" @ %expr );
       
       while ( %fullPrefabPath !$= "" )
@@ -1804,10 +2064,10 @@ function AssetBrowser::doRebuildAssetArray(%this)
          {
             $AssetBrowser::AssetArray.add( %cppPath, "Cpp" TAB %cppName );
          }
-      }
+      }*/
       
       //script files
-      %tscriptPattern = %breadcrumbPath @ "/" @ "*.tscript";
+      /*%tscriptPattern = %breadcrumbPath @ "/" @ "*.tscript";
       for (%fullScriptPath = findFirstFile(%tscriptPattern); %fullScriptPath !$= ""; %fullScriptPath = findNextFile(%tscriptPattern))
       {
          //If it's associated to an asset, we'll want to do extra checks
@@ -1821,7 +2081,7 @@ function AssetBrowser::doRebuildAssetArray(%this)
             for(%i=0; %i < %count; %i++)
             {
                %assetId = %assetQuery.getAsset(%i);
-               %foundAssetType = AssetDatabase.getAssetType(%assetId);
+               %foundAssetType = AssetDatabase.ge`tAssetType(%assetId);
 
                if(%foundAssetType !$= "ScriptAsset" && %foundAssetType !$= "GUIAsset")
                {
@@ -1853,7 +2113,7 @@ function AssetBrowser::doRebuildAssetArray(%this)
             $AssetBrowser::AssetArray.add( %tscriptPath, "tscript" TAB %tscriptName );
          }
       }
-   }
+   }*/
 	
 	//If we've selected into the Creator section, we have special handling for that
 	if(startsWith(%breadcrumbPath, "Creator"))
@@ -2527,11 +2787,30 @@ function EWorldEditor::onControlDropped( %this, %payload, %position )
 
    %assetType = %payload.assetType;
    
-   %pos = ObjectCreator.getCreateObjectPosition(); //LocalClientConnection.camera.position; 
-   %module = %payload.moduleName;
-   %asset = %payload.assetName;
+   %createPosition = ObjectCreator.getCreateObjectPosition(); //LocalClientConnection.camera.position; 
+   %targetPosition = EWorldEditor.unproject(%createPosition SPC 1);
+   %camPos = LocalClientConnection.camera.getPosition();
+   %rayResult = containerRayCast(%camPos, %targetPosition, -1);
    
-   if(AssetBrowser.isMethod("on" @ %assetType @ "EditorDropped"))
+   %pos = ObjectCreator.getCreateObjectPosition();
+
+   if(%rayResult != 0)
+   {
+      %pos = getWords(%rayResult, 1, 3);
+   }
+   else
+   {
+      %pos = "0 0 0";  
+   }
+   
+   AssetBrowser.callAssetTypeFunc(%assetType, "onWorldEditorDropped", %payload.moduleName, %payload.assetName, %pos);
+   
+   if(EditorSettings.value("AssetManagement/Assets/closeBrowserOnDragAction", false))
+   {
+      AssetBrowser.hideDialog();  
+   }
+   
+   /*if(AssetBrowser.isMethod("on" @ %assetType @ "EditorDropped"))
    {
       if(%assetType $= "Datablock")
       {
@@ -2552,11 +2831,8 @@ function EWorldEditor::onControlDropped( %this, %payload, %position )
       }
       eval(%buildCommand);
       
-      if(EditorSettings.value("AssetManagement/Assets/closeBrowserOnDragAction", false))
-      {
-         AssetBrowser.hideDialog();  
-      }
-   }
+      
+   }*/
    
    EWorldEditor.isDirty = true;
 }
@@ -2582,25 +2858,8 @@ function GuiEditor::onControlDropped(%this, %payload, %position)
       //dealing with an actual asset, so build the assetName
       %assetId = %payload.moduleName @ ":" @ %payload.assetName;
       %assetType = AssetDatabase.getAssetType(%assetId);
- 
-      if(AssetBrowser.isMethod("on" @ %assetType @ "GUIEditorDropped"))
-      {
-        %module = %payload.moduleName;
-        %asset = %payload.assetName;
-        %assetDef = AssetDatabase.acquireAsset(%module @ ":" @ %asset);
-        %buildCommand = AssetBrowser @ ".on" @ %assetType @ "GUIEditorDropped(" @ %assetDef @ ",\"" @ %pos @ "\");";  
-        eval(%buildCommand);    
-      }
-      else
-      {
-        //fallback example
-        if(%assetType $= "ImageAsset")
-        {
-            %cmd = "return new guiBitmapCtrl();";
-            %ctrl = eval( %cmd ); 
-            %ctrl.bitmap = %assetId;
-        }
-      }
+      
+      AssetBrowser.callAssetTypeFunc(%assetType, "GUIEditorDropped", %payload.moduleName, %payload.assetName, %pos);
    }
    else
    {
@@ -2649,11 +2908,20 @@ function AssetBrowserFilterTree::onControlDropped( %this, %payload, %position )
       
       if(%path !$= AssetBrowser.dirHandler.CurrentAddress)
       {
+         if(getModuleFromAddress(%path) !$= getModuleFromAddress(AssetBrowser.dirHandler.CurrentAddress))
+         {
+            AssetBrowser.callAssetTypeFunc(%this.assetType, "onMoveModule", %this.moduleName, %this.assetName, %path);
+         }
+         else
+         {
+            AssetBrowser.callAssetTypeFunc(%this.assetType, "onMovePath", %this.moduleName, %this.assetName, %path);
+         }
+   
          //we're trying to move the asset to a different module!
          //toolsMessageBoxYesNo( "Move Asset", "Do you wish to move asset " @ %assetName @ " to " @ %path @ "?", 
          //      "AssetBrowser.moveAsset(\""@ %moduleName @ ":" @ %assetName @"\", \""@%path@"\");", ""); 
          
-         if(%assetType $= "Folder")
+         /*if(%assetType $= "Folder")
          {
             %originFolder = %moduleName @ "/" @ %assetName;
             %path = %path @ "/" @ %assetName;
@@ -2680,7 +2948,7 @@ function AssetBrowserFilterTree::onControlDropped( %this, %payload, %position )
                
                AssetBrowser.refresh();
             }
-         }
+         }*/
       }
    }
 }
@@ -2793,6 +3061,44 @@ function AssetBrowser::getLooseFilesInDir(%this)
    %aq.delete();
    return false;
 }
+
+function getNonAssetFilesInDir(%path, %arrayObj)
+{
+   echo("getNonAssetFilesInDir() - path: " @ %path);
+   
+   if(!isObject(%arrayObj))
+   {
+      error("getNonAssetFilesInDir() - requires a valid arrayObject to place found non-Asset files into!");
+      return 0;
+   }
+   
+   %arrayObj.empty();
+   
+   //First, wipe out any files inside the folder first
+   %file = findFirstFileMultiExpr( %path @ "/*.*", false);
+   
+   %aq = new AssetQuery();
+
+   while( %file !$= "" )
+   {      
+      if(!strIsMatchExpr("*.asset.taml", %file) && !strIsMatchExpr("*.taml", %file) && !strIsMatchExpr("*.cached.dts", %file))
+      {
+         %assetsFound = AssetDatabase.findAssetLooseFile(%aq, %file);
+         
+         if(%assetsFound == 0)
+         {
+            %arrayObj.add(%file);
+         }
+      }
+      
+      %file = findNextFileMultiExpr( %path @ "/*.*" );
+   }
+   
+   %aq.delete();
+   
+   return %arrayObj.count();
+}
+
 //
 //
 function AssetBrowser::importLooseFiles(%this)

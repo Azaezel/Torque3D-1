@@ -11,7 +11,9 @@ function AssetBrowser_editAsset::saveAsset(%this)
    %assetDef = AssetDatabase.acquireAsset(%this.editedAssetId);
    %assetDef.refreshAsset();
    
-   AssetBrowser.call("on" @ %assetType @ "Changed", %assetDef);
+   AssetBrowser.callAssetTypeFunc(%assetType, "onChanged", %assetDef);
+   
+   //AssetBrowser.call("on" @ %assetType @ "Changed", %assetDef);
    AssetDatabase.releaseAsset(%this.editedAssetId);
 
    Canvas.popDialog(AssetBrowser_editAsset);
@@ -127,17 +129,21 @@ function AssetBrowser::refreshAsset(%this, %assetId)
 //------------------------------------------------------------
 function AssetBrowser::regeneratePreviewImage(%this)
 {
-   %assetDef = AssetDatabase.acquireAsset(EditAssetPopup.assetId);
+   %assetDef = AssetDatabase.acquireAsset(AssetBrowser.popupMenu.objectData);
    %dummyObj = new ScriptObject();
-   %dummyObj.moduleName = AssetDatabase.getAssetModule(EditAssetPopup.assetId).moduleId;
-   %dummyObj.assetName = AssetDatabase.getAssetName(EditAssetPopup.assetId);
+   %dummyObj.moduleName = AssetDatabase.getAssetModule(AssetBrowser.popupMenu.objectData).moduleId;
+   %dummyObj.assetName = AssetDatabase.getAssetName(AssetBrowser.popupMenu.objectData);
+   
+   %assetType = AssetBrowser.popupMenu.objectType;
+   
+   AssetBrowser.callAssetTypeFunc(%assetType, "generatePreviewImage", %dummyObj, true);
 
-   %regenCommand = "AssetBrowser.generate" @ EditAssetPopup.assetType @ 
-                     "PreviewImage(" @ %dummyObj @ ", true);";
-   eval(%regenCommand);
+   //%regenCommand = "AssetBrowser.generate" @ EditAssetPopup.assetType @ 
+   //                  "PreviewImage(" @ %dummyObj @ ", true);";
+   //eval(%regenCommand);
 
    %dummyObj.delete();
-   AssetDatabase.releaseAsset(EditAssetPopup.assetId);
+   AssetDatabase.releaseAsset(AssetBrowser.popupMenu.objectData);
 }
 
 //------------------------------------------------------------
@@ -344,8 +350,8 @@ function moveAssetLooseFile(%file, %destinationPath)
 
 function AssetBrowser::duplicateAsset(%this)
 {
-   %assetDef = AssetDatabase.acquireAsset(EditAssetPopup.assetId);
-   %assetType = AssetDatabase.getAssetType(EditAssetPopup.assetId);
+   %assetDef = AssetDatabase.acquireAsset(%this.popupMenu.objectData);
+   %assetType = %this.popupMenu.objectType;
    
    %trailingNum = getTrailingNumber(%assetDef.assetName);
    if(%trailingNum != -1)
@@ -370,18 +376,22 @@ function AssetBrowser::duplicateAsset(%this)
 
 function AssetBrowser::doDuplicateAsset(%this)
 {
-   %assetDef = AssetDatabase.acquireAsset(EditAssetPopup.assetId);
-   %assetType = AssetDatabase.getAssetType(EditAssetPopup.assetId);
+   %assetType = %this.popupMenu.objectType;
+   %assetDef = AssetDatabase.acquireAsset(%this.popupMenu.objectData);
    
    if(AssetBrowser_assetNameEditTxt.text !$= "" && AssetBrowser_assetNameEditTxt.text !$= %assetDef.assetName)
    {
+      AssetDatabase.releaseAsset(%this.popupMenu.objectData);
+      
+      %this.callAssetTypeFunc(%assetType, "onDuplicate", %this.popupMenu.objectData, AssetBrowser_assetNameEditTxt.text);
+   
       //this acts as a redirect based on asset type and will enact the appropriate function
       //so for a GameObjectAsset, it'll become %this.duplicateGameObjectAsset(%assetDef, %targetModule);
       //and call to the tools/assetBrowser/scripts/assetTypes/gameObject.tscript file for implementation
-      if(%this.isMethod("duplicate"@%assetType))
-         eval(%this @ ".duplicate"@%assetType@"("@%assetDef@","@AssetBrowser_assetNameEditTxt.text@");");
+      //if(%this.isMethod("duplicate"@%assetType))
+      //   eval(%this @ ".duplicate"@%assetType@"("@%assetDef@","@AssetBrowser_assetNameEditTxt.text@");");
          
-      AssetBrowser.refresh();
+      %this.refresh();
    }
 }
 
@@ -440,7 +450,9 @@ function AssetBrowser::confirmDeleteAsset(%this)
    %currentSelectedItem = AssetBrowserFilterTree.getSelectedItem();
    %currentItemParent = AssetBrowserFilterTree.getParentItem(%currentSelectedItem);
    
-   if(EditFolderPopup.visible)
+   %this.callAssetTypeFunc(%this.popupMenu.objectType, "onDelete", %this.popupMenu.objectData);
+   
+   /*if(EditFolderPopup.visible)
    {
       if(EditFolderPopup.dirPath !$= "")
          %folderPath = EditFolderPopup.dirPath;
@@ -463,7 +475,7 @@ function AssetBrowser::confirmDeleteAsset(%this)
          eval(%this @ ".delete"@%assetType@"("@%assetDef@");");
       
       AssetDatabase.deleteAsset(EditAssetPopup.assetId, true, false);
-   }
+   }*/
 
    %this.refresh();
 }
