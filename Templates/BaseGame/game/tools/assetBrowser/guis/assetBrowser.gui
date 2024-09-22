@@ -138,7 +138,7 @@ $guiContent = new GuiControl(AssetBrowser) {
       };
    };
    new GuiWindowCtrl(AssetBrowserWindow) {
-      text = "::  Asset Browser";
+      text = ":: Asset Browser";
       resizeWidth = "0";
       resizeHeight = "1";
       canMove = "1";

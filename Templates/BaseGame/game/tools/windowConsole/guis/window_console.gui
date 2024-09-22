@@ -15,7 +15,7 @@ $guiContent = new GuiControl(windowConsoleDlg) {
    canSaveDynamicFields = "0";
 
    new GuiWindowCtrl(windowConsoleControl) {
-      text = "::   Console Log";
+      text = "::  Console Log";
       resizeWidth = "1";
       resizeHeight = "1";
       canMove = "1";

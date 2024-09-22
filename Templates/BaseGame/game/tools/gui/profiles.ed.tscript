@@ -37,7 +37,7 @@ $Gui::fontTypeMono = "Arial";
 $GUI::fontSize[12] = 12;
 $GUI::fontSize[14] = 14;
 $GUI::fontSize[16] = 16;
-$GUI::fontSize[18] = 18;
+$GUI::fontSize[18] = 17;
 $GUI::fontSize[24] = 24;
 $GUI::fontSize[36] = 36;
 
@@ -195,8 +195,8 @@ new GuiControlProfile (ToolsGuiWindowProfile)
    hasBitmapArray = true;
    justify = "left";
    category = "Tools";
-   fontType = $Gui::fontTypeMedium;
-   fontSize = $GUI::fontSize[18];
+   fontType = $Gui::fontTypeBold;
+   fontSize = $GUI::fontSize[16];
 };
 
 if( !isObject( ToolsGuiPaneProfile ) )
@@ -211,7 +211,7 @@ new GuiControlProfile (ToolsGuiPaneProfile)
    borderColor = EditorSettings.value("Theme/windowBackgroundColor");
    category = "Tools";
    fontType = $Gui::fontTypeMedium;
-   fontSize = $GUI::fontSize[18];
+   fontSize = $GUI::fontSize[16];
 };
 
 if( !isObject( ToolsGuiToolbarWindowProfile ) )
@@ -940,6 +940,14 @@ singleton GuiControlProfile( GuiBackFillProfile )
    fontColorHL = "50 50 50";
    fixedExtent = true;
    justify = "center";
+   category = "Editor";
+};
+
+singleton GuiControlProfile( GuiDarkFillProfile )
+{
+   opaque = true;
+   fillColor = "25 25 25";
+   border = false;
    category = "Editor";
 };
 
