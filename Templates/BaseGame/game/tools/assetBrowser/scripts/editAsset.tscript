@@ -1,29 +1,28 @@
 function AssetBrowser_editAsset::saveAsset(%this)
 {
-   %file = AssetDatabase.getAssetFilePath(%this.editedAssetId);
-   %success = TamlWrite(AssetBrowser_editAsset.editedAsset, %file);
+   AssetBrowser_editAssetWindow.text = "Asset Properties";
    
-   AssetBrowser.reloadAsset(%this.editedAssetId);
-
-   AssetBrowser.refresh();
-   
-   %assetType = AssetDatabase.getAssetType(%this.editedAssetId);
-   %assetDef = AssetDatabase.acquireAsset(%this.editedAssetId);
-   %assetDef.refreshAsset();
-   
-   AssetBrowser.callAssetTypeFunc(%assetType, "onChanged", %assetDef);
-   
-   //AssetBrowser.call("on" @ %assetType @ "Changed", %assetDef);
-   AssetDatabase.releaseAsset(%this.editedAssetId);
+   AssetBrowser.callAssetTypeFunc(%this.editedObjectType, "onSaveProperties", %this.editedObjectData);
+   AssetBrowser.callAssetTypeFunc(%this.editedObjectType, "onChanged", %this.editedObjectData);
 
    Canvas.popDialog(AssetBrowser_editAsset);
 }
 
 function AssetBrowser::editAsset(%this, %assetDef)
 {
+   if(isObject(%assetDef))
+   {
+      %assetType = AssetDatabase.getAssetType(%assetDef.getAssetId());
+      %this.callAssetTypeFunc(%assetType, "onEdit", %assetDef);
+   }
+   else if(%this.popupMenu.objectType !$= "" && %this.popupMenu.objectData !$= "")
+   {
+      %this.callAssetTypeFunc(%this.popupMenu.objectType, "onEdit", %this.popupMenu.objectData);
+   }
+   
    //Find out what type it is
    //If the passed-in definition param is blank, then we're likely called via a popup
-   if(%assetDef $= "")
+   /*if(%assetDef $= "")
    {
       if(AssetDatabase.isDeclaredAsset(EditAssetPopup.assetId))
       {
@@ -64,7 +63,7 @@ function AssetBrowser::editAsset(%this, %assetDef)
       //Build out the edit command
       %buildCommand = %this @ ".edit" @ %assetType @ "(" @ %assetDef @ ");";
       eval(%buildCommand);
-   }
+   }*/
 }
 
 function AssetBrowser::appendSubLevel(%this)
@@ -77,27 +76,9 @@ function AssetBrowser::appendSubLevel(%this)
 
 function AssetBrowser::editAssetInfo(%this)
 {
-   Canvas.pushDialog(AssetBrowser_editAsset); 
-   
-   %assetDef = AssetDatabase.acquireAsset(EditAssetPopup.assetId);
-   
-   AssetBrowser.tempAsset = %assetDef.deepClone();
-   
-   AssetEditInspector.inspect(AssetBrowser.tempAsset);  
-   AssetBrowser_editAsset.editedAssetId = EditAssetPopup.assetId;
-   AssetBrowser_editAsset.editedAsset = AssetBrowser.tempAsset;
-   
-   //remove some of the groups we don't need:
-   for(%i=0; %i < AssetEditInspector.getCount(); %i++)
+   if(%this.popupMenu.objectType !$= "" && %this.popupMenu.objectData !$= "")
    {
-      %caption = AssetEditInspector.getObject(%i).caption;
-      
-      if(%caption $= "Ungrouped" || %caption $= "Object" || %caption $= "Editing" 
-         || %caption $= "Persistence" || %caption $= "Dynamic Fields")
-      {
-         AssetEditInspector.remove(AssetEditInspector.getObject(%i));
-         %i--;
-      }
+      %this.callAssetTypeFunc(%this.popupMenu.objectType, "onEditProperties", %this.popupMenu.objectData);
    }
 }
 
@@ -509,21 +490,27 @@ function AssetBrowser::updateAssetReference(%this, %targetPath, %oldAssetId, %ne
 
 function AssetBrowser::openFileLocation(%this)
 {
-   %filePath = "";
-   if(EditAssetPopup.assetId !$= "")
+   if(isFunction("systemCommand"))
    {
-      if(AssetDatabase.isDeclaredAsset(EditAssetPopup.assetId))
+      warnf("AssetBrowser::openFileLocation() - systemCommand function disabled in this build. Unable to launch application to edit file.");
+      return;  
+   }
+   
+   %filePath = "";
+   if(%this.popuMenu.assetId !$= "")
+   {
+      if(AssetDatabase.isDeclaredAsset(%this.popuMenu.objectData))
       {
-         %filePath = AssetDatabase.getAssetPath(EditAssetPopup.assetId);
+         %filePath = AssetDatabase.getAssetPath(%this.popuMenu.objectData);
       }
       else
       {
          //probably a file path
-         %pathSplit = strpos(EditAssetPopup.assetId, ":");
+         %pathSplit = strpos(%this.popuMenu.objectData, ":");
          if(%pathSplit != -1)
          {
-            %path = getSubStr(EditAssetPopup.assetId, 0, %pathSplit);
-            %file = getSubStr(EditAssetPopup.assetId, %pathSplit + 1);
+            %path = getSubStr(%this.popuMenu.objectData, 0, %pathSplit);
+            %file = getSubStr(%this.popuMenu.objectData, %pathSplit + 1);
             
             //datablocks pack the originator file in the parent path as-is, so check that
             if(fileExt(%path) !$= "")
@@ -536,14 +523,6 @@ function AssetBrowser::openFileLocation(%this)
             }
          }
       }
-   }
-   else if(EditLevelAssetPopup.assetId !$= "")
-   {
-      %filePath = AssetDatabase.getAssetPath(EditAssetPopup.assetId);
-   }
-   else if(EditTerrainAssetPopup.assetId !$= "")
-   {
-      %filePath = AssetDatabase.getAssetPath(EditAssetPopup.assetId);
    }
    
    if(isFile(%filePath) || isDirectory(%filePath))
@@ -565,20 +544,27 @@ function AssetBrowser::openFileLocation(%this)
    }
 }
 
-function AssetBrowser::openFolderLocation(%this)
+function AssetBrowser::openFolderLocation(%this, %folderPath)
 {
-   %filePath = AssetBrowser.dirHandler.currentAddress;
+   if(!isFunction("systemCommand"))
+   {
+      warn("AssetBrowser::openFolderLocation() - systemCommand function disabled in this build. Unable to launch application to open this folder.");
+      return;
+   }
    
-   if(%filePath !$= "")
+   if(%folderPath $= "")
+      %folderPath = filePath(%this.dirHandler.currentAddress);
+   
+   if(%folderPath !$= "")
    {
       if($platform $= "windows")
       {
-         %cmd = "cd \"" @ makeFullPath(%filePath) @ "\" && start .";
+         %cmd = "cd \"" @ makeFullPath(%folderPath) @ "\" && start .";
          systemCommand(%cmd);
       }
       else
       {
-         %cmd = "open \"" @ makeFullPath(%filePath) @ "\"";
+         %cmd = "open \"" @ makeFullPath(%folderPath) @ "\"";
          systemCommand(%cmd);
       }
    }

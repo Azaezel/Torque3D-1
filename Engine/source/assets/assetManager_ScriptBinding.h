@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Copyright (c) 2013 GarageGames, LLC
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -428,6 +428,20 @@ DefineEngineMethod(AssetManager, getAssetTags, S32, (), ,
     AssetTagsManifest* pAssetTagsManifest = object->getAssetTags();
 
     return pAssetTagsManifest == NULL ? 0 : pAssetTagsManifest->getId();
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineMethod(AssetManager, getAssetLooseFiles, const char*, (const char* assetId), (""),
+   "Finds the specified asset Id and gets a list of its loose files.\n"
+   "@param assetId The selected asset Id.\n"
+   "@return A tab-delinated list of loose files associated to the assetId.\n")
+{
+   // Fetch asset Id.
+   const char* pAssetId = assetId;
+
+   // Delete asset.
+   return object->getAssetLooseFiles(pAssetId);
 }
 
 //-----------------------------------------------------------------------------

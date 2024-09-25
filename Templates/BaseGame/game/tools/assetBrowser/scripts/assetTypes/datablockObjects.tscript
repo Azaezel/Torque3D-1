@@ -42,16 +42,16 @@ function AssetBrowser::doCreateNewDatablock(%this)
    %this.navigateTo(%newFolderPath);
 }
 
-function DatablockObjectType::buildBrowserElement(%datablock, %name, %previewData)
+function DatablockObjectType::buildBrowserElement(%this, %previewData)
 {
    //echo("DatablockObjectType::buildBrowserElement() - " @ %datablock @ ", " @ %name @ ", " @ %previewData);
-   %previewData.assetName = %datablock.getName();
-   %previewData.assetPath = %datablock.getFileName();
+   %previewData.assetName = %this.getName();
+   %previewData.assetPath = %this.getFileName();
    
    %previewData.previewImage = "ToolsModule:datablockIcon_image";
    
    //Lets see if we have a icon for specifically for this datablock type
-   %dataClass = %datablock.getClassName();
+   %dataClass = %this.getClassName();
    %dataClass = strreplace(%dataClass, "Data", "");
    
    %previewImage = "tools/classIcons/" @ %dataClass @ ".png";
@@ -61,7 +61,7 @@ function DatablockObjectType::buildBrowserElement(%datablock, %name, %previewDat
    }
    
    //%previewData.assetFriendlyName = %assetDef.assetName;
-   %previewData.assetDesc = %datablock;
+   %previewData.assetDesc = %this;
    %previewData.tooltip =  "\nDatablock Name: " @ %previewData.assetName @ 
                            "\nDatablock Type: " @ %dataClass @
                            "\nDefinition Path: " @ %previewData.assetPath;

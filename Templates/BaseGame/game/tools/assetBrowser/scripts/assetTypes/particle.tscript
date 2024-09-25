@@ -1,2 +1,0 @@
-AssetBrowser::registerObjectType("ParticleEmitterObject", "Particle Emitter", "ParticleEmitterData;ParticleEmitterNode");
-

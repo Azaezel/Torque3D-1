@@ -265,13 +265,18 @@ function AssetBrowser::buildPopupMenus(%this)
          radioSelection = false;
       };
       
-      AssetTypeListPopup.addItem(0, AssetFilterTypeList.getKey(0) TAB "" TAB "AssetBrowser.toggleAssetTypeFilter(" @ 0 @ ");");
-      AssetTypeListPopup.addItem(1, "-");
+      AssetTypeListPopup.addItem(0, "All" TAB "" TAB %this @ ".toggleAssetTypeFilter(0);");
+      //AssetTypeListPopup.addItem(1, "-");
       
-      for(%i=1; %i < AssetFilterTypeList.Count(); %i++)
+      %listIndex = 2;
+      for(%i=0; %i < ABAssetTypesList.Count(); %i++)
       {
-         %assetTypeName = AssetFilterTypeList.getKey(%i);
-         AssetTypeListPopup.addItem(%i+1, %assetTypeName TAB "" TAB "AssetBrowser.toggleAssetTypeFilter(" @ %i + 1 @ ");");
+         %assetTypeData = ABAssetTypesList.getValue(%i);
+         if(getWord(%assetTypeData, 3) != true)
+            continue;
+            
+         AssetTypeListPopup.addItem(%listIndex, getWord(%assetTypeData,1) TAB "" TAB %this @ ".toggleAssetTypeFilter(" @ %listIndex @ ");");
+         %listIndex++;
       }
    }
    

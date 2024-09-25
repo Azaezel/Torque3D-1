@@ -1,35 +1,12 @@
-function AssetBrowser::buildCppPreview(%this, %assetDef, %previewData)
-{
-   %previewData.assetName = %assetDef.assetName;
-   %previewData.assetPath = %assetDef.codeFilePath;
-   %previewData.doubleClickCommand = "echo(\"Not yet implemented to edit C++ files from the editor\");";//"EditorOpenFileInTorsion( "@%previewData.assetPath@", 0 );";
-   
-   %previewData.previewImage = "ToolsModule:cppIcon_image";
-   
-   %previewData.assetFriendlyName = %assetDef.assetName;
-   %previewData.assetDesc = %assetDef.description;
-   %previewData.tooltip = %assetDef.assetName;
-}
+AssetBrowser::registerAssetType("CppAsset", "C++ Assets", "");
+AssetBrowser::registerFileType("CPPFileType", "C++ Files", ".cpp;.h;.c", false);
 
-function AssetBrowser::buildCppAssetPreview(%this, %assetDef, %previewData)
+function CppAsset::onCreateNew()
 {
-   %previewData.assetName = %assetDef.assetName;
-   %previewData.assetPath = %assetDef.codeFilePath;
-   %previewData.doubleClickCommand = "echo(\"Not yet implemented to edit C++ files from the editor\");";//"EditorOpenFileInTorsion( "@%previewData.assetPath@", 0 );";
-   
-   %previewData.previewImage = "ToolsModule:cppIcon_image";
-   
-   %previewData.assetFriendlyName = %assetDef.assetName;
-   %previewData.assetDesc = %assetDef.description;
-   %previewData.tooltip = %assetDef.assetName;
-}
-
-function AssetBrowser::createCppAsset(%this)
-{
-   %moduleName = AssetBrowser.newAssetSettings.moduleName;
+   %moduleName = $CurrentAssetBrowser.newAssetSettings.moduleName;
    %modulePath = "data/" @ %moduleName;
       
-   %assetName = AssetBrowser.newAssetSettings.assetName;  
+   %assetName = $CurrentAssetBrowser.newAssetSettings.assetName;  
    
    %assetPath = NewAssetTargetAddress.getText() @ "/";     
    
@@ -67,28 +44,28 @@ function AssetBrowser::createCppAsset(%this)
 	
 	if($AssetBrowser::newAssetTypeOverride $= "StaticClass")
 	{
-	   %cppTemplateCodeFilePath = %this.templateFilesPath @ "CppStaticClassFile.cpp.template";
-	   %cppTemplateHeaderFilePath = %this.templateFilesPath @ "CppStaticClassFile.h.template";
+	   %cppTemplateCodeFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppStaticClassFile.cpp.template";
+	   %cppTemplateHeaderFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppStaticClassFile.h.template";
 	}
 	else if($AssetBrowser::newAssetTypeOverride $= "ScriptClass")
 	{
-	   %cppTemplateCodeFilePath = %this.templateFilesPath @ "CppScriptClassFile.cpp.template";
-	   %cppTemplateHeaderFilePath = %this.templateFilesPath @ "CppScriptClassFile.h.template";
+	   %cppTemplateCodeFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppScriptClassFile.cpp.template";
+	   %cppTemplateHeaderFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppScriptClassFile.h.template";
 	}
 	else if($AssetBrowser::newAssetTypeOverride $= "AssetTypeCppClass")
 	{
-	   %cppTemplateCodeFilePath = %this.templateFilesPath @ "CppAssetTypeClassFile.cpp.template";
-	   %cppTemplateHeaderFilePath = %this.templateFilesPath @ "CppAssetTypeClassFile.h.template";
+	   %cppTemplateCodeFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppAssetTypeClassFile.cpp.template";
+	   %cppTemplateHeaderFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppAssetTypeClassFile.h.template";
 	}
 	else if($AssetBrowser::newAssetTypeOverride $= "RenderCppClass")
 	{
-	   %cppTemplateCodeFilePath = %this.templateFilesPath @ "CppRenderClassFile.cpp.template";
-	   %cppTemplateHeaderFilePath = %this.templateFilesPath @ "CppRenderClassFile.h.template";
+	   %cppTemplateCodeFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppRenderClassFile.cpp.template";
+	   %cppTemplateHeaderFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppRenderClassFile.h.template";
 	}
 	else if($AssetBrowser::newAssetTypeOverride $= "SceneObjectCppClass")
 	{
-	   %cppTemplateCodeFilePath = %this.templateFilesPath @ "CppSceneObjectClassFile.cpp.template";
-	   %cppTemplateHeaderFilePath = %this.templateFilesPath @ "CppSceneObjectClassFile.h.template";
+	   %cppTemplateCodeFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppSceneObjectClassFile.cpp.template";
+	   %cppTemplateHeaderFilePath = $CurrentAssetBrowser.templateFilesPath @ "CppSceneObjectClassFile.h.template";
 	}
 	
 	$AssetBrowser::newAssetTypeOverride = "";
@@ -144,7 +121,7 @@ function AssetBrowser::createCppAsset(%this)
 	   %file = new FileObject();
 	   %templateFile = new FileObject();
    
-      if(%file.openForWrite(%cppModuleFilePath) && %templateFile.openForRead(%this.templateFilesPath @ "CppModuleFile.cpp"))
+      if(%file.openForWrite(%cppModuleFilePath) && %templateFile.openForRead($CurrentAssetBrowser.templateFilesPath @ "CppModuleFile.cpp"))
       {
          while( !%templateFile.isEOF() )
          {
@@ -170,50 +147,93 @@ function AssetBrowser::createCppAsset(%this)
 	return "";
 }
 
-function AssetBrowser::editCppAsset(%this, %assetDef)
+function CppAsset::buildBrowserElement(%this, %previewData)
 {
+   %previewData.assetName = %this.assetName;
+   %previewData.assetPath = %this.codeFilePath;
+   //%previewData.doubleClickCommand = "echo(\"Not yet implemented to edit C++ files from the editor\");";//"EditorOpenFileInTorsion( "@%previewData.assetPath@", 0 );";
+   
+   %previewData.previewImage = "ToolsModule:cppIcon_image";
+   
+   %previewData.assetFriendlyName = %this.assetName;
+   %previewData.assetDesc = %this.description;
+   %previewData.tooltip = %this.assetName;
 }
 
-//Renames the asset
-function AssetBrowser::renameCppAsset(%this, %assetDef, %newAssetName)
+function CppAsset::onEditCodeFile(%this, %filePath)
 {
-   %newCodeLooseFilename = renameAssetLooseFile(%assetDef.codefile, %newAssetName);
-   
-   if(!%newCodeLooseFilename $= "")
-      return;
-      
-   %newHeaderLooseFilename = renameAssetLooseFile(%assetDef.headerFile, %newAssetName);
-   
-   if(!%newHeaderLooseFilename $= "")
-      return;
-      
-   %assetDef.codefile = %newCodeLooseFilename;
-   %assetDef.headerFile = %newHeaderLooseFilename;
-   %assetDef.saveAsset();
-   
-   renameAssetFile(%assetDef, %newAssetName);
+   if(isFunction("systemCommand"))
+      eval("systemCommand(\"start \\\"\\\" \\\"" @ %this.fileName @ "\\\"\");");
+   else  
+      warnf("ScriptAsset::onEdit() - systemCommand function disabled in this build. Unable to launch application to edit file.");
 }
 
-//Deletes the asset
-function AssetBrowser::deleteCppAsset(%this, %assetDef)
+function CppAsset::onEditHeaderFile(%this, %filePath)
 {
-   AssetDatabase.deleteAsset(%assetDef.getAssetId(), true);
+   if(isFunction("systemCommand"))
+      eval("systemCommand(\"start \\\"\\\" \\\"" @ %this.fileName @ "\\\"\");");
+   else  
+      warnf("ScriptAsset::onEdit() - systemCommand function disabled in this build. Unable to launch application to edit file.");
+}
+//==============================================================================
+function CPPFileType::buildBrowserElement(%filePath, %previewData)
+{
+   %previewData.assetName = fileName(%filePath);
+   %previewData.assetPath = %filePath;
+   //%previewData.doubleClickCommand = "echo(\"Not yet implemented to edit C++ files from the editor\");";//"EditorOpenFileInTorsion( "@%previewData.assetPath@", 0 );";
+   
+   %previewData.previewImage = "ToolsModule:cppIcon_image";
+   
+   %previewData.assetFriendlyName = %previewData.assetName;
+   %previewData.assetDesc = %filePath;
+   %previewData.tooltip = %filePath;
 }
 
-//Moves the asset to a new path/module
-function AssetBrowser::moveCppAsset(%this, %assetDef, %destination)
+function CPPFileType::onEdit(%filePath)
 {
-   %currentModule = AssetDatabase.getAssetModule(%assetDef.getAssetId());
-   %targetModule = AssetBrowser.dirHandler.getModuleFromAddress(%destination);
-   
-   %newAssetPath = moveAssetFile(%assetDef, %destination);
-   
-   if(%newAssetPath $= "")
-      return false;
+   if(isFunction("systemCommand"))
+      eval("systemCommand(\"start \\\"\\\" \\\"" @ %filePath @ "\\\"\");");
+   else  
+      warn("CPPFileType::onEdit() - systemCommand function disabled in this build. Unable to launch application to edit file.");
+}
 
-   moveAssetLooseFile(%assetDef.codeFile, %destination);
-   moveAssetLooseFile(%assetDef.headerFile, %destination);
+function CPPFileType::onShowActionMenu(%filePath)
+{
+   if( !isObject( EditCPPFileTypePopup ) )
+   {
+      new PopupMenu( EditCPPFileTypePopup )
+      {
+         superClass = "MenuBuilder";
+         class = "EditorWorldMenu";
+
+         jumpFileName = "";
+         jumpLineNumber = "";
+      };
+   }
    
-   AssetDatabase.removeDeclaredAsset(%assetDef.getAssetId());
-   AssetDatabase.addDeclaredAsset(%targetModule, %newAssetPath);
+   //Regen the menu so we're fully up and current with options and references
+   EditCPPFileTypePopup.clearItems();
+   
+   EditCPPFileTypePopup.item[ 0 ] = "Edit C++ File" TAB "" TAB $CurrentAssetBrowser @ ".editAsset();";
+   EditCPPFileTypePopup.item[ 1 ] = "Rename File" TAB "" TAB $CurrentAssetBrowser @ ".renameAsset();";
+   EditCPPFileTypePopup.item[ 2 ] = "-";
+   EditCPPFileTypePopup.item[ 3 ] = "Duplicate File" TAB "" TAB $CurrentAssetBrowser @ ".duplicateAsset();";
+   EditCPPFileTypePopup.item[ 4 ] = "-";
+   EditCPPFileTypePopup.item[ 5 ] = "Open File Location" TAB "" TAB $CurrentAssetBrowser @ ".openFileLocation();";
+   EditCPPFileTypePopup.item[ 6 ] = "-";
+   EditCPPFileTypePopup.item[ 7 ] = "Delete File" TAB "" TAB $CurrentAssetBrowser @ ".deleteAsset();";
+
+   EditCPPFileTypePopup.objectData = %filePath;
+   EditCPPFileTypePopup.objectType = "CPPFileType";
+   
+   EditCPPFileTypePopup.reloadItems();
+   
+   EditCPPFileTypePopup.showPopup(Canvas); 
+   
+   $CurrentAssetBrowser.popupMenu = EditCPPFileTypePopup;
+}
+
+function CPPFileType::onEditProperties(%this, %inspector)
+{
+   
 }

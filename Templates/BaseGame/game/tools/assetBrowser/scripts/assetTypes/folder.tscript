@@ -1,6 +1,6 @@
-AssetBrowser::registerFileType("FolderObjectType", "Folder", "/");
+AssetBrowser::registerFileType("FolderObjectType", "Folder", "/", false);
 
-function AssetBrowser::createNewFolder(%this)
+function FolderObjectType::setupCreateNew()
 {
    AssetBrowser_newFolderNameTxt.text = "NewFolder";
    Canvas.pushDialog(AssetBrowser_newFolder, 99, true);
@@ -8,7 +8,7 @@ function AssetBrowser::createNewFolder(%this)
    AssetBrowser_newFolderNameTxt.selectAllText();
 }
 
-function AssetBrowser::doCreateNewFolder(%this)
+function FolderObjectType::onCreateNew()
 {
    %newFolderName = AssetBrowser_newFolderNameTxt.getText();
    
@@ -21,7 +21,7 @@ function AssetBrowser::doCreateNewFolder(%this)
    }
    else
    {
-      %currentAddressPath = AssetBrowser.dirHandler.currentAddress;
+      %currentAddressPath = $CurrentAssetBrowser.dirHandler.currentAddress;
    }
       
    %newFolderIdx = "";
@@ -48,9 +48,9 @@ function AssetBrowser::doCreateNewFolder(%this)
    fileDelete(%newFolderPath @ "/test");
    
    //refresh the directory
-   AssetBrowser.loadDirectories();
+   $CurrentAssetBrowser.loadDirectories();
    
-   %this.navigateTo(%newFolderPath);
+   $CurrentAssetBrowser.navigateTo(%newFolderPath);
    
    //On the off chance we're trying to select a path, we'll update the select path window too
    if(SelectAssetPath.isAwake())
@@ -106,7 +106,7 @@ function FolderObjectType::onShowActionMenu(%folderPath)
    $CurrentAssetBrowser.popupMenu = EditFolderTypePopup;
 }
 
-function AssetBrowser::renameFolder(%this, %folderPath, %newFolderName)
+function FolderObjectType::onRename(%folderPath, %newFolderName)
 {
    %fullPath = makeFullPath(%folderPath);
    %newFullPath = makeFullPath(%folderPath);
@@ -121,61 +121,21 @@ function AssetBrowser::renameFolder(%this, %folderPath, %newFolderName)
    //so, we nix any assets active for the module, do the delete action on the old folder, and then re-acquire our assets.
    //This will have the added benefit of updating paths for asset items
    
-   %module = AssetBrowser.dirHandler.getModuleFromAddress(AssetBrowser.dirHandler.currentAddress);
+   %module = $CurrentAssetBrowser.dirHandler.getModuleFromAddress($CurrentAssetBrowser.dirHandler.currentAddress);
    %moduleId = %module.ModuleId;
    
-   AssetDatabase.removeDeclaredAssets(%moduleId);
+   $CurrentAssetBrowser.removeDeclaredAssets(%moduleId);
    
-   %copiedSuccess = %this.dirHandler.copyFolder(%fullPath, %basePath @ "/" @ %newFolderName);
-   %this.dirHandler.deleteFolder(%fullPath);
+   %copiedSuccess = $CurrentAssetBrowser.dirHandler.copyFolder(%fullPath, %basePath @ "/" @ %newFolderName);
+   $CurrentAssetBrowser.dirHandler.deleteFolder(%fullPath);
    
-   %this.loadDirectories();
+   $CurrentAssetBrowser.loadDirectories();
    
-   AssetDatabase.addModuleDeclaredAssets(%moduleId);
-}
-
-function AssetBrowser::moveFolder(%this, %folderPath, %newFolderPath)
-{
-   %fullPath = makeFullPath(%folderPath);
-   %newFullPath = makeFullPath(%newFolderPath);
-   
-   %fullPath = strreplace(%fullPath, "//", "/");
-   %newFullPath = strreplace(%newFullPath, "//", "/");
-   
-   %count = getTokenCount(%fullPath, "/");
-   %basePath = getTokens(%fullPath, "/", 0, %count-2);
-   %oldName = getToken(%fullPath, "/", %count-1);
-   
-   %copiedSuccess = %this.dirHandler.copyFolder(%fullPath, %newFullPath);
-   %this.dirHandler.deleteFolder(%fullPath);
-   
-   %this.loadDirectories();
-   
-   //thrash the modules and reload them
-   %oldModule = %this.dirHandler.getModuleFromAddress(%folderPath);
-   %newModule = %this.dirHandler.getModuleFromAddress(%newFolderPath);
-   
-   //if we didn't move modules, then we don't need to do anything other than refresh the assets within it
-   if(%oldModule == %newModule)
-   {
-      //only do a refresh to update asset loose file paths
-      AssetDatabase.refreshAllAssets();
-   }
-   else
-   {
-      //they're different moduels now, so we gotta unload/reload both
-      ModuleDatabase.unloadExplicit(%oldModule.getModuleId());
-      ModuleDatabase.loadExplicit(%oldModule.getModuleId());
-      
-      ModuleDatabase.unloadExplicit(%newModule.getModuleId());
-      ModuleDatabase.loadExplicit(%newModule.getModuleId());
-   }
+   $CurrentAssetBrowser.addModuleDeclaredAssets(%moduleId);
 }
 
 function FolderObjectType::onDelete(%folderPath)
 {
-   echo("DELETING " @ %folderPath);
-   
    $CurrentAssetBrowser.dirHandler.deleteFolder(%folderPath);
    
    $CurrentAssetBrowser.refresh();

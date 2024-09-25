@@ -27,30 +27,6 @@ function initializeAssetBrowser()
    $AssetBrowser::collectionSetsFile = "tools/assetBrowser/searchCollectionSets.xml";
    $AssetBrowser::currentImportConfig = "";
    
-   if(!isObject(AssetFilterTypeList))
-   {
-      new ArrayObject(AssetFilterTypeList);
-
-      AssetFilterTypeList.add("All");
-      AssetFilterTypeList.add("ComponentAsset");
-      AssetFilterTypeList.add("CppAsset");
-      AssetFilterTypeList.add("CubemapAsset");
-      AssetFilterTypeList.add("GameObjectAsset");
-      AssetFilterTypeList.add("GUIAsset");
-      AssetFilterTypeList.add("ImageAsset");
-      AssetFilterTypeList.add("LevelAsset");
-      AssetFilterTypeList.add("MaterialAsset");
-      AssetFilterTypeList.add("ParticleAsset");
-      AssetFilterTypeList.add("PostFXAsset");
-      AssetFilterTypeList.add("ScriptAsset");
-      AssetFilterTypeList.add("ShapeAsset");
-      AssetFilterTypeList.add("ShapeAnimationAsset");
-      AssetFilterTypeList.add("SoundAsset");
-      AssetFilterTypeList.add("StateMachineAsset");
-      AssetFilterTypeList.add("TerrainAsset");
-      AssetFilterTypeList.add("TerrainMaterialAsset");
-   }
-   
    if(!isObject(ABAssetTypesList))
       new ArrayObject(ABAssetTypesList){};  
 
