@@ -165,7 +165,7 @@ void AssimpShapeLoader::enumerateScene()
 #ifdef TORQUE_DEBUG
    aiEnableVerboseLogging(true);
 #endif
-
+   aiSetImportPropertyInteger(props, AI_CONFIG_IMPORT_FBX_IGNORE_UP_DIRECTION, 1);
    mScene = (aiScene*)aiImportFileExWithProperties(shapePath.getFullPath().c_str(), ppsteps, NULL, props);
 
    aiReleasePropertyStore(props);
