@@ -1,4 +1,4 @@
-AssetBrowser::registerFileType("PrefabFileType", "Prefab", ".prefab");
+AssetBrowser::registerFileType("PrefabFileType", "Prefabs", ".prefab");
 
 function PrefabFileType::onCreateNew()
 {

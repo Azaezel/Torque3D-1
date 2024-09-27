@@ -182,8 +182,6 @@ function AssetBrowser::buildPopupMenus(%this)
          item[12] = "View Loose Files" TAB "" TAB "AssetBrowser.importLooseFiles();";
          Item[ 13 ] = "-";
          item[ 14 ] = "Open Folder Location" TAB "" TAB "AssetBrowser.openFolderLocation();";
-         
-      
       };
    }
    

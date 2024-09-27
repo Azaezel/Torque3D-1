@@ -1,50 +1,15 @@
 AssetBrowser::registerObjectType("DatablockObjectType", "Datablock Objects", "GameBaseData");
 
-function AssetBrowser::createNewDatablock(%this)
+function DatablockObjectType::onEdit(%this, %className)
 {
-   AssetBrowser_newFolderNameTxt.text = "NewFolder";
-   Canvas.pushDialog(AssetBrowser_newFolder);
+   $CurrentAssetBrowser.hideDialog();
+   
+   DatablockEditorPlugin.openDatablock(%this);
 }
 
-function AssetBrowser::doCreateNewDatablock(%this)
+function DatablockObjectType::buildBrowserElement(%this, %className, %previewData)
 {
-   %newFolderName = AssetBrowser_newFolderNameTxt.getText();
-   
-   if(%newFolderName $= "")
-      %newFolderName = "NewFolder";
-      
-   %newFolderIdx = "";
-   %matched = true;
-   %newFolderPath = "";
-   while(%matched == true)
-   {
-      %newFolderPath = AssetBrowser.dirHandler.currentAddress @ "/" @ %newFolderName @ %newFolderIdx;
-      if(!isDirectory(%newFolderPath))
-      {
-         %matched = false;
-      }
-      else
-      {
-         %newFolderIdx++;         
-      }
-   }
-   
-   //make a dummy file
-   %file = new FileObject();
-   %file.openForWrite(%newFolderPath @ "/test");
-   %file.close();
-   
-   fileDelete(%newFolderPath @ "/test");
-   
-   //refresh the directory
-   AssetBrowser.loadDirectories();
-   
-   %this.navigateTo(%newFolderPath);
-}
-
-function DatablockObjectType::buildBrowserElement(%this, %previewData)
-{
-   //echo("DatablockObjectType::buildBrowserElement() - " @ %datablock @ ", " @ %name @ ", " @ %previewData);
+   echo("DatablockObjectType::buildBrowserElement() - " @ %this @ ", " @ %previewData);
    %previewData.assetName = %this.getName();
    %previewData.assetPath = %this.getFileName();
    
@@ -66,35 +31,9 @@ function DatablockObjectType::buildBrowserElement(%this, %previewData)
                            "\nDatablock Type: " @ %dataClass @
                            "\nDefinition Path: " @ %previewData.assetPath;
                            
-   
-   /*if(%this.selectMode)
-   {
-      %previewData.doubleClickCommand = "AssetBrowser.selectAsset( AssetBrowser.selectedAsset );";
-   }
-   else
-   {
-      if(EditorSettings.value("Assets/Browser/doubleClickAction", "Edit Asset") $= "Edit Asset")
-      {
-         %previewData.doubleClickCommand = "DatablockEditorPlugin.openDatablock( "@%assetDef@" );";
-      }
-      else
-      {
-         %previewData.doubleClickCommand = "AssetBrowser.onDatablockEditorDropped( "@%assetDef@" );";
-      }
-   }*/
 }
 
-function DatablockObjectType::onMovePath(%this, %destinationPath)
-{
-   
-}
-
-function DatablockObjectType::onMoveModule(%this, %destinationPath)
-{
-   
-}
-
-function DatablockObjectType::onShowActionMenu(%datablockObj)
+function DatablockObjectType::onShowActionMenu(%this, %className)
 {
    if( !isObject( EditDatablockObjectTypePopup ) )
    {
@@ -108,7 +47,7 @@ function DatablockObjectType::onShowActionMenu(%datablockObj)
       };
    }
    
-   EditDatablockObjectTypePopup.objectData = %datablockObj;
+   EditDatablockObjectTypePopup.objectData = %this;
    EditDatablockObjectTypePopup.objectType = "DatablockObjectType";
    
    //Regen the menu so we're fully up and current with options and references
@@ -116,12 +55,7 @@ function DatablockObjectType::onShowActionMenu(%datablockObj)
    
    EditDatablockObjectTypePopup.item[ 0 ] = "Edit Datablock" TAB "" TAB $CurrentAssetBrowser @ ".editAsset();";
    EditDatablockObjectTypePopup.item[ 1 ] = "-";
-   EditDatablockObjectTypePopup.item[ 2 ] = "Rename Datablock" TAB "" TAB $CurrentAssetBrowser @ ".renameAsset();";
-   EditDatablockObjectTypePopup.item[ 3 ] = "Duplicate Datablock" TAB "" TAB $CurrentAssetBrowser @ ".duplicateAsset();";
-   EditDatablockObjectTypePopup.item[ 4 ] = "-";
-   EditDatablockObjectTypePopup.item[ 5 ] = "Open Datablock Location" TAB "" TAB $CurrentAssetBrowser @ ".openFolderLocation(" @ %datablockObj.getFilename() @ ");";
-   EditDatablockObjectTypePopup.item[ 6 ] = "-";
-   EditDatablockObjectTypePopup.item[ 7 ] = "Delete Datablock" TAB "" TAB $CurrentAssetBrowser @ ".deleteAsset();";
+   EditDatablockObjectTypePopup.item[ 2 ] = "Open Datablock Location" TAB "" TAB $CurrentAssetBrowser @ ".openFolderLocation(" @ %this.getFilename() @ ");";
 
    EditDatablockObjectTypePopup.reloadItems();
    
@@ -139,79 +73,6 @@ function spawnDatablockObject(%datablock)
    %shapePath = ( %datablock.shapeAsset !$= "" ) ? %datablock.shapeFile : %datablock.shapeName;
    %createCmd = "ObjectCreator.createObject( \"" @ %cmd @ "\" );";
    return eval(%createCmd);//eval("showImportDialog( \"" @ %shapePath @ "\", \"" @ %createCmd @ "\" );");
-}
-
-function AssetBrowser::renameDatablock(%this, %folderPath, %newFolderName)
-{
-   %fullPath = makeFullPath(%folderPath);
-   %newFullPath = makeFullPath(%folderPath);
-   
-   %fullPath = strreplace(%fullPath, "//", "/");
-   
-   %count = getTokenCount(%fullPath, "/");
-   %basePath = getTokens(%fullPath, "/", 0, %count-2);
-   %oldName = getToken(%fullPath, "/", %count-1);
-   
-   //We need to ensure that no files are 'active' while we try and clean up behind ourselves with the delete action
-   //so, we nix any assets active for the module, do the delete action on the old folder, and then re-acquire our assets.
-   //This will have the added benefit of updating paths for asset items
-   
-   %module = AssetBrowser.dirHandler.getModuleFromAddress(AssetBrowser.dirHandler.currentAddress);
-   %moduleId = %module.ModuleId;
-   
-   AssetDatabase.removeDeclaredAssets(%moduleId);
-   
-   %copiedSuccess = %this.dirHandler.copyDatablock(%fullPath, %basePath @ "/" @ %newFolderName);
-   %this.dirHandler.deleteDatablock(%fullPath);
-   
-   %this.loadDirectories();
-   
-   AssetDatabase.addModuleDeclaredAssets(%moduleId);
-}
-
-function AssetBrowser::moveDatablock(%this, %folderPath, %newFolderPath)
-{
-   %fullPath = makeFullPath(%folderPath);
-   %newFullPath = makeFullPath(%newFolderPath);
-   
-   %fullPath = strreplace(%fullPath, "//", "/");
-   %newFullPath = strreplace(%newFullPath, "//", "/");
-   
-   %count = getTokenCount(%fullPath, "/");
-   %basePath = getTokens(%fullPath, "/", 0, %count-2);
-   %oldName = getToken(%fullPath, "/", %count-1);
-   
-   %copiedSuccess = %this.dirHandler.copyDatablock(%fullPath, %newFullPath);
-   %this.dirHandler.deleteDatablock(%fullPath);
-   
-   %this.loadDirectories();
-   
-   //thrash the modules and reload them
-   %oldModule = %this.dirHandler.getModuleFromAddress(%folderPath);
-   %newModule = %this.dirHandler.getModuleFromAddress(%newFolderPath);
-   
-   //if we didn't move modules, then we don't need to do anything other than refresh the assets within it
-   if(%oldModule == %newModule)
-   {
-      //only do a refresh to update asset loose file paths
-      AssetDatabase.refreshAllAssets();
-   }
-   else
-   {
-      //they're different moduels now, so we gotta unload/reload both
-      ModuleDatabase.unloadExplicit(%oldModule.getModuleId());
-      ModuleDatabase.loadExplicit(%oldModule.getModuleId());
-      
-      ModuleDatabase.unloadExplicit(%newModule.getModuleId());
-      ModuleDatabase.loadExplicit(%newModule.getModuleId());
-   }
-}
-
-function AssetBrowser::deleteDatablock(%this, %folderPath)
-{
-   %this.dirHandler.deleteDatablock(%folderPath);
-   
-   %this.refresh();
 }
 
 function DatablockObjectType::onWorldEditorDropped(%datablockObj, %position)

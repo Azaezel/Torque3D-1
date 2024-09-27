@@ -10,7 +10,7 @@ function GameModeType::onCreateNew()
    
 }
 
-function GameModeType::buildBrowserElement(%this, %previewData)
+function GameModeType::buildBrowserElement(%this, %className, %previewData)
 {
    //echo("DatablockObjectType::buildBrowserElement() - " @ %datablock @ ", " @ %name @ ", " @ %previewData);
    %previewData.assetName = %this.getName();
@@ -32,21 +32,4 @@ function GameModeType::buildBrowserElement(%this, %previewData)
    %previewData.assetDesc = %this;
    %previewData.tooltip =  "\nGameMode Name: " @ %previewData.assetName @ 
                            "\nPath: " @ %previewData.assetPath;
-                           
-   
-   /*if(%this.selectMode)
-   {
-      %previewData.doubleClickCommand = "AssetBrowser.selectAsset( AssetBrowser.selectedAsset );";
-   }
-   else
-   {
-      if(EditorSettings.value("Assets/Browser/doubleClickAction", "Edit Asset") $= "Edit Asset")
-      {
-         %previewData.doubleClickCommand = "DatablockEditorPlugin.openDatablock( "@%assetDef@" );";
-      }
-      else
-      {
-         %previewData.doubleClickCommand = "AssetBrowser.onDatablockEditorDropped( "@%assetDef@" );";
-      }
-   }*/
 }

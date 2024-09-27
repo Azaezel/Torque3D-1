@@ -1,4 +1,4 @@
-AssetBrowser::registerAssetType("ImageAsset", "Image"); 
+AssetBrowser::registerAssetType("ImageAsset", "Images"); 
 
 function ImageAsset::buildBrowserElement(%this, %previewData)
 {

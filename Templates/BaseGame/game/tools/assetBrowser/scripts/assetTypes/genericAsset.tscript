@@ -8,6 +8,7 @@ AssetBrowser::registerAssetType("GenericAsset", "", "");
 //just the basic AssetName and AssetDescription files
 function GenericAsset::setupCreateNew()
 {
+   echo("GenericAsset::setupCreateNew()");
 }
 
 //This is called when we actually finally decide to create the new asset itself
@@ -15,6 +16,7 @@ function GenericAsset::setupCreateNew()
 //then register with the AssetDatabase so it's available for use
 function GenericAsset::onCreateNew()
 {
+   echo("GenericAsset::onCreateNew()");
 }
 
 //This us called when we are creating a 'card' in the AssetBrowser for viewing

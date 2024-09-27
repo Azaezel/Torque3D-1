@@ -1,4 +1,4 @@
-AssetBrowser::registerAssetType("MaterialAsset", "Material"); 
+AssetBrowser::registerAssetType("MaterialAsset", "Materials"); 
 
 function MaterialAsset::createMaterialAsset(%this)
 {
