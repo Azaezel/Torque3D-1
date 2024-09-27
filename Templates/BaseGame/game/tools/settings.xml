@@ -99,7 +99,9 @@
     <Group
         name="DatablockEditor">
         <Setting
-            name="libraryTab">1</Setting>
+            name="libraryTab">0</Setting>
+        <Setting
+            name="selectedDatablock">PrototypeItemData</Setting>
     </Group>
     <Group
         name="GuiEditor">

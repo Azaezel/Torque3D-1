@@ -28,7 +28,7 @@ function initializeAssetBrowser()
    $AssetBrowser::currentImportConfig = "";
    
    if(!isObject(ABAssetTypesList))
-      new ArrayObject(ABAssetTypesList){};  
+      new ArrayObject(ABAssetTypesList){};
 
    exec("./scripts/profiles." @ $TorqueScriptFileExtension);
    

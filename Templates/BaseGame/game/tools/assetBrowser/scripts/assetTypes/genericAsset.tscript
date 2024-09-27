@@ -1,7 +1,7 @@
 //This function registers the asset type, associated file extensions and human-readable name with the Asset Browser
 //This is primarily so there's an easy hook-in point for the 'type' namespace, as well as registration for AB
 //filter modes and file scanning
-AssetBrowser::registerAssetType("GenericAsset", "", "");
+AssetBrowser::registerAssetType("GenericAsset", "", "", false);
 
 //This function is called when we want to have adjustable field information for a new asset
 //This could be a secondary name or description, a 'preview image' or anything else beyond

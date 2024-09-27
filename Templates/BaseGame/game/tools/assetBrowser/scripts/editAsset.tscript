@@ -10,60 +10,22 @@ function AssetBrowser_editAsset::saveAsset(%this)
 
 function AssetBrowser::editAsset(%this, %assetDef)
 {
-   if(isObject(%assetDef))
+   if(%this.selectMode)
    {
-      %assetType = AssetDatabase.getAssetType(%assetDef.getAssetId());
-      %this.callAssetTypeFunc(%assetType, "onEdit", %assetDef);
+      %this.selectAsset(%this.selectedAsset);
    }
-   else if(%this.popupMenu.objectType !$= "" && %this.popupMenu.objectData !$= "")
+   else
    {
-      %this.callAssetTypeFunc(%this.popupMenu.objectType, "onEdit", %this.popupMenu.objectData);
-   }
-   
-   //Find out what type it is
-   //If the passed-in definition param is blank, then we're likely called via a popup
-   /*if(%assetDef $= "")
-   {
-      if(AssetDatabase.isDeclaredAsset(EditAssetPopup.assetId))
+      if(isObject(%assetDef))
       {
-         %assetDef = AssetDatabase.acquireAsset(EditAssetPopup.assetId);
+         %assetType = AssetDatabase.getAssetType(%assetDef.getAssetId());
+         %this.callAssetTypeFunc(%assetType, "onEdit", %assetDef);
       }
-      else
+      else if(%this.popupMenu.objectType !$= "" && %this.popupMenu.objectData !$= "")
       {
-         //if it's not a valid asset at all, then it's probably a folder
-         %folder = strreplace(EditAssetPopup.assetId, ":", "/");
-         if(isDirectory(%folder))
-         {
-            AssetBrowser.navigateTo(%folder);
-         }
-         else
-         {
-            %object = getToken(EditAssetPopup.assetId, ":", 1);
-            if(isObject(%object))
-            {
-               if(%object.isMemberOfClass("SimDatablock"))
-               {
-                  DatablockEditorPlugin.openDatablock( %object );
-               }
-            }
-         }
+         %this.callAssetTypeFunc(%this.popupMenu.objectType, "onEdit", %this.popupMenu.objectData);
       }
    }
-   else if(AssetDatabase.isDeclaredAsset(%assetDef))
-   {
-      //Turns out we were passed an assetid, not an asset definition. 
-      //Grab the asset def from that  
-      %assetDef = AssetDatabase.acquireAsset(%assetDef);
-   }
-      
-   if(%assetDef !$= "")
-   {
-      %assetType = %assetDef.getClassName();
-      
-      //Build out the edit command
-      %buildCommand = %this @ ".edit" @ %assetType @ "(" @ %assetDef @ ");";
-      eval(%buildCommand);
-   }*/
 }
 
 function AssetBrowser::appendSubLevel(%this)

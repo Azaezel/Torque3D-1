@@ -249,7 +249,7 @@ function CreateNewAsset()
 		return;
 	}
 	
-	%assetFilePath = AssetBrowers.callAssetTypeFunc(%assetType, "onCreateNew");
+	%assetFilePath = AssetBrowser.callAssetTypeFunc(%assetType, "onCreateNew");
 	
 	Canvas.popDialog(AssetBrowser_newAsset);
 	

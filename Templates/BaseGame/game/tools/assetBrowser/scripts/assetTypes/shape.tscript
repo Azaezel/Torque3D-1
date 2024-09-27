@@ -2,9 +2,16 @@ AssetBrowser::registerAssetType("ShapeAsset", "Shapes");
 
 function ShapeAsset::onEdit(%this)
 {
-   $CurrentAssetBrowser.hideDialog();
-   EditorGui.setEditor( ShapeEditorPlugin );
-   ShapeEditorPlugin.openShapeAsset(%this);    
+   if(EditorSettings.value("Assets/Browser/doubleClickAction", "Edit Asset") $= "Edit Asset")
+   {
+      $CurrentAssetBrowser.hideDialog();
+      EditorGui.setEditor( ShapeEditorPlugin );
+      ShapeEditorPlugin.openShapeAsset(%this); 
+   }
+   else
+   {
+      %this.onWorldEditorDropped();
+   } 
 }
 
 function ShapeAsset::onShowActionMenu(%assetDef)

@@ -10,12 +10,12 @@ function CppAsset::onCreateNew()
    
    %assetPath = NewAssetTargetAddress.getText() @ "/";     
    
-   //%tamlpath = %assetPath @ %assetName @ ".asset.taml";
+   %tamlpath = %assetPath @ %assetName @ ".asset.taml";
    %codePath = %assetPath @ %assetName @ ".cpp";
    %headerPath = %assetPath @ %assetName @ ".h";
    
    //Do the work here
-   /*%assetType = AssetBrowser.newAssetSettings.assetType;
+   //%assetType = $CurrentAssetBrowser.newAssetSettings.assetType;
    
    %asset = new CppAsset()
    {
@@ -25,7 +25,7 @@ function CppAsset::onCreateNew()
       headerFile = %headerPath;
    };
    
-   TamlWrite(%asset, %tamlpath);*/
+   TamlWrite(%asset, %tamlpath);
    
    %tamlpath = %assetPath @ %assetName @ ".asset.taml";
 
@@ -78,7 +78,6 @@ function CppAsset::onCreateNew()
          %line = strreplace( %line, "@", %assetName );
          
          %file.writeline(%line);
-         //echo(%line);
       }
       
       %file.close();
@@ -111,7 +110,7 @@ function CppAsset::onCreateNew()
       %file.close();
       %templateFile.close();
       
-      warnf("CreateNewCppAsset - Something went wrong and we couldn't write the C++ header file!");
+      warn("CreateNewCppAsset - Something went wrong and we couldn't write the C++ header file!");
    }
 	
 	//Last, check that we have a C++ Module definition. If not, make one so anything important can be initialized on startup there
@@ -140,7 +139,7 @@ function CppAsset::onCreateNew()
          %file.close();
          %templateFile.close();
          
-         warnf("CreateNewCppAsset - Something went wrong and we couldn't write the C++ module file!");
+         warn("CreateNewCppAsset - Something went wrong and we couldn't write the C++ module file!");
       }
 	}
    
@@ -163,17 +162,50 @@ function CppAsset::buildBrowserElement(%this, %previewData)
 function CppAsset::onEditCodeFile(%this, %filePath)
 {
    if(isFunction("systemCommand"))
-      eval("systemCommand(\"start \\\"\\\" \\\"" @ %this.fileName @ "\\\"\");");
+      eval("systemCommand(\"start \\\"\\\" \\\"" @ %this.getCodeFile() @ "\\\"\");");
    else  
-      warnf("ScriptAsset::onEdit() - systemCommand function disabled in this build. Unable to launch application to edit file.");
+      warn("CppAsset::onEditCodeFile() - systemCommand function disabled in this build. Unable to launch application to edit file.");
 }
 
 function CppAsset::onEditHeaderFile(%this, %filePath)
 {
    if(isFunction("systemCommand"))
-      eval("systemCommand(\"start \\\"\\\" \\\"" @ %this.fileName @ "\\\"\");");
+      eval("systemCommand(\"start \\\"\\\" \\\"" @ %this.getHeaderFile() @ "\\\"\");");
    else  
-      warnf("ScriptAsset::onEdit() - systemCommand function disabled in this build. Unable to launch application to edit file.");
+      warn("CppAsset::onEditHeaderFile() - systemCommand function disabled in this build. Unable to launch application to edit file.");
+}
+
+function CppAsset::onShowActionMenu(%this)
+{
+   GenericAsset::onShowActionMenu(%this);
+   
+   if( !isObject( EditCPPFilesSubmenuPopup ) )
+   {
+      new PopupMenu( EditCPPFilesSubmenuPopup )
+      {
+         superClass = "MenuBuilder";
+         class = "EditorWorldMenu";
+
+         jumpFileName = "";
+         jumpLineNumber = "";
+      };
+   }
+   
+   //Regen the menu so we're fully up and current with options and references
+   EditCPPFilesSubmenuPopup.clearItems();
+   
+   EditCPPFilesSubmenuPopup.item[ 0 ] = "Code file" TAB "" TAB %this @ ".onEditCodeFile();";
+   EditCPPFilesSubmenuPopup.item[ 1 ] = "Header file" TAB "" TAB %this @ ".onEditHeaderFile();";
+
+   EditCPPFilesSubmenuPopup.reloadItems();
+   
+   EditAssetPopup.item[ 0 ] = "Edit C++ Files" TAB EditCPPFilesSubmenuPopup;
+   
+   EditAssetPopup.reloadItems();
+   
+   EditAssetPopup.showPopup(Canvas); 
+   
+   $CurrentAssetBrowser.popupMenu = EditAssetPopup;
 }
 //==============================================================================
 function CPPFileType::buildBrowserElement(%filePath, %previewData)

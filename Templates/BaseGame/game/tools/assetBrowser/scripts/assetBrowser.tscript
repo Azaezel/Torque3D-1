@@ -194,7 +194,14 @@ function AssetBrowser::callAssetTypeFunc(%this, %type, %function, %param0, %para
    
    if(%command $= "")
    {
-      if(isMethod("GenericAsset", %function))
+      //check in case it's a purely static type call with no usual incoming vars. 
+      //Usually only relevent for create functions
+      if($paramCache0 $= "" && $paramCache1 $= "" && isMethod(%type, %function))
+      {
+         %command = %type @ "::" @ %function @ "(";
+         %isStaticCall = true;
+      }
+      else if(isMethod("GenericAsset", %function))
       {
          %command = "GenericAsset::" @ %function @ "(";
          %isStaticCall = true;
@@ -251,11 +258,11 @@ function AssetBrowser::initialize(%this)
 
    if(!isObject(%this.dirHandler))
    {
-      %this.dirHandler = makedirectoryHandler(AssetBrowser-->filterTree, "cache,shaderCache", ""); 
+      %this.dirHandler = makedirectoryHandler(%this-->filterTree, "cache,shaderCache", ""); 
       %this.dirHandler.currentAddress = "data/";
    }
       
-   AssetBrowser-->filterTree.buildIconTable( ":tools/classIcons/Prefab:tools/classIcons/Prefab" @
+   %this-->filterTree.buildIconTable( ":tools/classIcons/Prefab:tools/classIcons/Prefab" @
                                              ":tools/classIcons/SimSet:tools/classIcons/SimSet");
       
    %this.isReImportingAsset = false;
@@ -272,9 +279,11 @@ function AssetBrowser::initialize(%this)
    //First, build our our list of active modules
    %modulesList = ModuleDatabase.findModules(true);
    
-   AssetBrowser-->previewSlider.setValue(EditorSettings.value("Assets/Browser/previewTileSize", "1.0"));
+   %this-->previewSlider.setValue(EditorSettings.value("Assets/Browser/previewTileSize", "1.0"));
    
-   AssetBrowser-->filterAssetsButton.setActive(true); 
+   %this-->filterAssetsButton.setActive(true); 
+   
+   %this.toggleAssetTypeFilter(0);
 }
 
 function AssetBrowser::onAdd(%this)
@@ -466,15 +475,14 @@ function AssetBrowser::toggleShowingEmptyFolders(%this)
 
 function AssetBrowser::toggleAssetTypeFilter(%this, %assetTypeIdx)
 {
-   echo("CLICKED FILTER NUMBER: " @ %assetTypeIdx);
    %isChecked = AssetTypeListPopup.isItemChecked(%assetTypeIdx);
    
    //Clear existing filters
    if(%assetTypeIdx == 0)
    {
-      for(%i=0; %i < AssetFilterTypeList.Count() + 1; %i++)
+      for(%i=0; %i < ABAssetTypesList.Count(); %i++)
       {
-         AssetTypeListPopup.checkItem(%i, false);  
+         AssetTypeListPopup.checkItem(%i+2, false);  
       }
       
       AssetTypeListPopup.checkItem(0, true);
@@ -484,12 +492,12 @@ function AssetBrowser::toggleAssetTypeFilter(%this, %assetTypeIdx)
       if(%isChecked)
       {
          %anyOtherFilters = false;
-         for(%i=1; %i < AssetFilterTypeList.Count() + 1; %i++)
+         for(%i=0; %i < ABAssetTypesList.Count(); %i++)
          {
-            if(%assetTypeIdx == %i)
+            if(%assetTypeIdx == %i+2)
                continue;
                
-            if(AssetTypeListPopup.isItemChecked(%i))
+            if(AssetTypeListPopup.isItemChecked(%i+1))
             {
                %anyOtherFilters = true;
                break;  
@@ -499,9 +507,9 @@ function AssetBrowser::toggleAssetTypeFilter(%this, %assetTypeIdx)
       
       if(%isChecked && !%anyOtherFilters)
       {
-         for(%i=0; %i < AssetFilterTypeList.Count() + 1; %i++)
+         for(%i=0; %i < ABAssetTypesList.Count(); %i++)
          {
-            AssetTypeListPopup.checkItem(%i, false);  
+            AssetTypeListPopup.checkItem(%i+2, false);  
          }
       
          AssetTypeListPopup.checkItem(0, true);
@@ -525,21 +533,26 @@ function AssetBrowser::toggleAssetTypeFilter(%this, %assetTypeIdx)
          %i--;
       }
    }
-   
-   //Update our search terms
-   %newSearchPhrase = "";
-   for(%i=0; %i < AssetFilterTypeList.Count() + 1; %i++)
+
+   for(%i=2; %i < AssetTypeListPopup.getItemCount(); %i++)
    {
       %isChecked = AssetTypeListPopup.isItemChecked(%i);
-      
       if(!%isChecked)
          continue;
-      
-      %itemText = AssetTypeListPopup.getItemText(%i);
-      if(%itemText $= "All")
-         continue;
          
-      AssetSearchTerms.add("type", %itemText);
+      %typeListText = AssetTypeListPopup.getItemText(%i);
+         
+      for(%t=0; %t < ABAssetTypesList.Count(); %t++)
+      {
+         %typeData = ABAssetTypesList.getValue(%t);
+         %typeName = getField(%typeData, 1);
+         
+         if(%typeListText $= %typeName)
+         {
+            AssetSearchTerms.add("type", getField(%typeData, 0));
+            break;
+         }
+      }
    }
    
    %this.updateSearchTextFromFilter();
@@ -1767,13 +1780,13 @@ function AssetBrowser::doRebuildAssetArray(%this)
                   {
                      %fltr = getWord(AssetBrowser.assetTypeFilter, %fltrIdx);
                      if(%fltr $= %assetType)
-                  {
-                     $AssetBrowser::AssetArray.add( %moduleName, %assetId );
-                     
-                     if(%assetType !$= "FolderObjectType")
-                        %finalAssetCount++;
+                     {
+                        $AssetBrowser::AssetArray.add( %moduleName, %assetId );
+                        
+                        if(%assetType !$= "FolderObjectType")
+                           %finalAssetCount++;
+                     }
                   }
-               }
                }
                else
                {
@@ -1812,52 +1825,45 @@ function AssetBrowser::doRebuildAssetArray(%this)
             %typeGroup = ABAssetTypesList.getKey(%t);
             //echo("      checking %typeGroup: " @ %typeGroup);
             
+            %typeEntryName = getField(ABAssetTypesList.getValue(%t), 0);
+            %filterDataList = getField(ABAssetTypesList.getValue(%t), 2);
+            
             if(%typeGroup $= "Asset")
             {
-               %assetTypeEntry = getField(ABAssetTypesList.getValue(%t), 0);
-               
-               %classNameList = getField(ABAssetTypesList.getValue(%t), 2);
-               %classNameCount = getTokenCount(%classNameList, ";");
+               %classNameCount = getTokenCount(%filterDataList, ";");
                
                for(%e=0; %e < %classNameCount; %e++)
                {
-                  %className = getToken(%classNameList, ";", %e);
+                  %className = getToken(%filterDataList, ";", %e);
                   
                   //echo("         checking asset className: " @ %className);
                   if(%className $= %looseFileExt)
                   {
-                     //echo("         FOUND!");  
-                     $AssetBrowser::AssetArray.add( %looseFilePath, %assetTypeEntry TAB %looseFileName );
+                     if(matchesSearch(%looseFileName, %typeEntryName))
+                        $AssetBrowser::AssetArray.add( %looseFilePath, %typeEntryName TAB %looseFileName );
                   }
                }
             }
             else if(%typeGroup $= "File")
             {
-               %fileTypeEntry = getField(ABAssetTypesList.getValue(%t), 0);
-               //echo("      checking fileType: " @ %fileTypeEntry);
-               
-               %extensionsList = getField(ABAssetTypesList.getValue(%t), 2);
-               %extensionsCount = getTokenCount(%extensionsList, ";");
+               %extensionsCount = getTokenCount(%filterDataList, ";");
                
                for(%e=0; %e < %extensionsCount; %e++)
                {
-                  %extension = getToken(%extensionsList, ";", %e);
+                  %extension = getToken(%filterDataList, ";", %e);
                   
                   //echo("         checking extension: " @ %extension);
                   if(%extension $= %looseFileExt)
                   {
                      //echo("         FOUND!");  
-                     $AssetBrowser::AssetArray.add( %looseFilePath, %fileTypeEntry TAB %looseFileName );
+                     if(matchesSearch(%looseFileName, %typeEntryName))
+                        $AssetBrowser::AssetArray.add( %looseFilePath, %typeEntryName TAB %looseFileName );
                   }
                }
             }
             else if(%typeGroup $= "Object")
             {
-               %objTypeEntry = getField(ABAssetTypesList.getValue(%t), 0);
-               //echo("      checking objectType: " @ %objTypeEntry);
-               
-               %classNameList = getField(ABAssetTypesList.getValue(%t), 2);
-               %classNameCount = getTokenCount(%classNameList, ";");
+               %classNameCount = getTokenCount(%filterDataList, ";");
                
                //echo("         checking RootGroup-----");
                //now we iterate over the root group to find any and all objects that match to class
@@ -1870,14 +1876,15 @@ function AssetBrowser::doRebuildAssetArray(%this)
                   
                   for(%c=0; %c < %classNameCount; %c++)
                   {
-                     %className = getToken(%classNameList, ";", %c);
+                     %className = getToken(%filterDataList, ";", %c);
 
                      //echo("         checking looking for class names: " @ %className);
                      //echo("            object name: " @ %rootGroupObj.getName());
                      if(%rootGroupObj.isMemberOfClass(%className))
                      {
                         //echo("         FOUND!");
-                        $AssetBrowser::AssetArray.add( %rootGroupObj, %objTypeEntry TAB %className );
+                        if(matchesSearch(%className, %typeEntryName))
+                           $AssetBrowser::AssetArray.add( %rootGroupObj, %typeEntryName TAB %className );
                      }
                   }
                }
@@ -1893,7 +1900,7 @@ function AssetBrowser::doRebuildAssetArray(%this)
                   
                   for(%c=0; %c < %classNameCount; %c++)
                   {
-                     %className = getToken(%classNameList, ";", %c);
+                     %className = getToken(%filterDataList, ";", %c);
 
                      //echo("         checking looking for class names: " @ %className);
                      //echo("            object name: " @ %dbGroupObject.getName());
@@ -1901,7 +1908,8 @@ function AssetBrowser::doRebuildAssetArray(%this)
                      {
                         //echo("         FOUND!");
                         //echo("           - data being added to array: " @ %dbGroupObject @ ", " @ %objTypeEntry TAB %className);
-                        $AssetBrowser::AssetArray.add( %dbGroupObject, %objTypeEntry TAB %className );
+                        if(matchesSearch(%className, %typeEntryName))
+                           $AssetBrowser::AssetArray.add( %dbGroupObject, %typeEntryName TAB %className );
                      }
                   }
                }
@@ -1927,27 +1935,27 @@ function AssetBrowser::doRebuildAssetArray(%this)
          {
             %group = %this.creatorClassArray.getKey( %i );
 
-               //Do some filter logic do skip out of groups if we're in the wrong editor mode for it
-               %creatorEditorFilter = "WorldEditor";
-               if(GuiEditorIsActive())
-               {
-                  %creatorEditorFilter = "GuiEditor";
-               }
-               
-               %creatorGroupIndex = AssetBrowserCreatorGroupsList.getIndexFromValue(%group);
-               %creatorGroupKey = AssetBrowserCreatorGroupsList.getKey(%creatorGroupIndex);
-               
-               if ( %group $= %creatorGroup && %creatorGroupKey $= %creatorEditorFilter )
+            //Do some filter logic do skip out of groups if we're in the wrong editor mode for it
+            %creatorEditorFilter = "WorldEditor";
+            if(GuiEditorIsActive())
+            {
+               %creatorEditorFilter = "GuiEditor";
+            }
+            
+            %creatorGroupIndex = AssetBrowserCreatorGroupsList.getIndexFromValue(%group);
+            %creatorGroupKey = AssetBrowserCreatorGroupsList.getKey(%creatorGroupIndex);
+            
+            if ( %group $= %creatorGroup && %creatorGroupKey $= %creatorEditorFilter )
             {
                %creatorObj = %this.creatorClassArray.getValue( %i );
                %class = %creatorObj.val[0];
                %name = %creatorObj.val[1];
                %func = %creatorObj.val[2];
                
-                  %searchActive = AssetSearchTerms.count() != 0;
-                  if(%searchActive && !matchesSearch(%name, "Creator"))
-                     continue;
-                        
+               %searchActive = AssetSearchTerms.count() != 0;
+               if(%searchActive && !matchesSearch(%name, "Creator"))
+                  continue;
+
                $AssetBrowser::AssetArray.add( %name, "Creator" TAB %creatorObj );
             }               
          }   
@@ -1967,13 +1975,15 @@ function AssetBrowser::doRebuildAssetArray(%this)
    {
       if(!AssetTypeListPopup.isItemChecked(0))
       {
-         for(%f=1; %f < AssetFilterTypeList.Count(); %f++)
+         for(%f=0; %f < ABAssetTypesList.Count(); %f++)
          {
-            %isChecked = AssetTypeListPopup.isItemChecked(%f+1);  
+            %isChecked = AssetTypeListPopup.isItemChecked(%f+2);  
             
             if(%isChecked)
             {
-               %filterTypeName = AssetFilterTypeList.getKey(%f);
+               %filterTypeData = ABAssetTypesList.getKey(%f);
+               
+               %filterTypeName = getField(%filterTypeData, 0);
                
                if(%activeTypeFilterList $= "")
                   %activeTypeFilterList = %filterTypeName;

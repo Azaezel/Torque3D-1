@@ -2,9 +2,16 @@ AssetBrowser::registerObjectType("DatablockObjectType", "Datablock Objects", "Ga
 
 function DatablockObjectType::onEdit(%this, %className)
 {
-   $CurrentAssetBrowser.hideDialog();
+   if(EditorSettings.value("Assets/Browser/doubleClickAction", "Edit Asset") $= "Edit Asset")
+   {
+      $CurrentAssetBrowser.hideDialog();
    
-   DatablockEditorPlugin.openDatablock(%this);
+      DatablockEditorPlugin.openDatablock(%this);
+   }
+   else
+   {
+      %this.onWorldEditorDropped();
+   } 
 }
 
 function DatablockObjectType::buildBrowserElement(%this, %className, %previewData)
@@ -75,8 +82,8 @@ function spawnDatablockObject(%datablock)
    return eval(%createCmd);//eval("showImportDialog( \"" @ %shapePath @ "\", \"" @ %createCmd @ "\" );");
 }
 
-function DatablockObjectType::onWorldEditorDropped(%datablockObj, %position)
+function DatablockObjectType::onWorldEditorDropped(%this, %position)
 {
-   %newObj = spawnDatablockObject(%datablockObj);
+   %newObj = spawnDatablockObject(%this);
    %newObj.position = %position;
 }
