@@ -260,6 +260,8 @@ set(TORQUE_SOURCE_FILES "")
 foreach (TORQUE_MODULE_PATH ${TORQUE_MODULE_PATHS})
 	# First find simple cmake scripts, mostly used for in-engine modules
 	file(GLOB MODULE_SCRIPTS "${TORQUE_MODULE_PATH}/*.cmake")
+	file(GLOB BIND_SCRIPTS "${TORQUE_MODULE_PATH}/*/source/T3D/*.cmake")
+    set(MODULE_SCRIPTS ${MODULE_SCRIPTS} ${BIND_SCRIPTS})
 	foreach (TORQUE_MODULE_SCRIPT ${MODULE_SCRIPTS})
 		include(${TORQUE_MODULE_SCRIPT})
 
