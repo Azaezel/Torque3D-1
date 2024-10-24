@@ -22,7 +22,7 @@ function MaterialEditorPlugin::BuildEditorUI(%this)
    
    %inspector.groupFilters = "-Internal -Ungrouped -Editing -Object -Persistence -Dynamic Fields";
    
-   $MaterialEditor::currentMaterial = Cheetah_Main;
+   $MaterialEditor::currentMaterial = DetailBlue;
    
    NuMaterialEdPropInspector.refreshMaterial();
 
