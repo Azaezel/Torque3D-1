@@ -628,6 +628,7 @@ function EditorGui::updateSideBar(%this)
 {   
    if(GuiEditorIsActive())
    {
+      // Update the Asset Browser's size
       if(isObject(AssetBrowserWindow) && isObject(GuiEditorSidebar))
       {
          if(AssetBrowserWindow.docked == true)
@@ -637,6 +638,19 @@ function EditorGui::updateSideBar(%this)
             %browserHeight = AssetBrowserWindow.extent.y;
             %browserPosY = Canvas.extent.y - AssetBrowserWindow.extent.y - 33;
             AssetBrowserWindow.resize(0, %browserPosY, %browserWidth, %browserHeight);
+         }
+      }
+      
+      // Update the Windowed Console's size
+      if(isObject(windowConsoleControl) && isObject(GuiEditorSidebar))
+      {
+         if(windowConsoleControl.docked == true)
+         {
+            // The width is relative to the sidepanel
+            %consoleWidth = Canvas.extent.x - GuiEditorSidebar.extent.x;
+            %consoleHeight = windowConsoleControl.extent.y;
+            %consolePosY = Canvas.extent.y - windowConsoleControl.extent.y - 33;
+            windowConsoleControl.resize(0, %consolePosY, %consoleWidth, %consoleHeight);
          }
       }
       return;
@@ -1018,6 +1032,10 @@ function WorldEditorPlugin::onActivated( %this )
    {
       ETransformSelection.setVisible(true);
    }
+   
+   EWorldEditor.UseGridSnap = EditorSettings.value("WorldEditor/Tools/UseGridSnap");
+   ESnapOptions-->GridSnapButton.setStateOn( EWorldEditor.UseGridSnap );
+   SnapToBar-->objectGridSnapBtn.setStateOn( EWorldEditor.UseGridSnap );
    
    Parent::onActivated(%this);
 }
@@ -1616,9 +1634,10 @@ function EWorldEditor::maxSize(%this, %window)
       
       %fixedWindow = EWTreeWindow;
       %fluidWindow = EWInspectorWindow;
-      %top = EditorGuiToolbar.extent.y + 6;
-      %bottom = %top + 65 - 6;
-      %maxHeight = Canvas.extent.y - %top - %bottom;
+      %offset = 25; // tweak the vertical offset so that it aligns neatly
+      %top = EditorGuiToolbar.extent.y + %offset;
+      %bottom = %top + 59;
+      %maxHeight = Canvas.extent.y - %top - %bottom + 12;
       
       // --- Fixed window (top) ------------------------------------------------
       // put it back if it moved
@@ -2487,7 +2506,8 @@ function EWorldEditor::syncGui( %this )
    ESnapOptions-->SnapSize.setText( EWorldEditor.getSoftSnapSize() );
    ESnapOptions-->GridSize.setText( EWorldEditor.getGridSize() );
    
-   ESnapOptions-->GridSnapButton.setStateOn( %this.getGridSnap() );
+   %this.UseGridSnap = EditorSettings.value("WorldEditor/Tools/UseGridSnap");
+   ESnapOptions-->GridSnapButton.setStateOn( %this.UseGridSnap );
    
    %this.UseGroupCenter = EditorSettings.value("WorldEditor/Tools/UseGroupCenter");
    
@@ -2761,7 +2781,9 @@ function toggleSnappingOptions( %var )
    }
    else if( %var $= "grid" )
    {
-      EWorldEditor.setGridSnap( !EWorldEditor.getGridSnap() );
+ 	   EWorldEditor.UseGridSnap = !EWorldEditor.UseGridSnap;
+	   EditorSettings.setValue("WorldEditor/Tools/UseGridSnap", EWorldEditor.UseGridSnap );
+      EWorldEditor.setGridSnap( EWorldEditor.UseGridSnap );
    }
    else if( %var $= "byGroup" )
    {

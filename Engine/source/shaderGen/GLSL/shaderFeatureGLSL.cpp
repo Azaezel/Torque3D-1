@@ -438,29 +438,18 @@ Var* ShaderFeatureGLSL::getInColor( const char *name,
 Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
                                     Vector<ShaderComponent*> &componentList )
 {
-   /*
-   // Nothing to do if we're on SM 3.0... we use the real vpos.
-   if ( GFX->getPixelShaderVersion() >= 3.0f )
-      return NULL;
-      */
-
-   // For SM 2.x we need to generate the vpos in the vertex shader
-   // and pass it as a texture coord to the pixel shader.
-
    Var *outVpos = (Var*)LangElement::find( "outVpos" );
    if ( !outVpos )
    {
-      ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
-
-      outVpos = connectComp->getElement( RT_TEXCOORD );
-      outVpos->setName( "outVpos" );
-      outVpos->setStructName( "OUT" );
-      outVpos->setType( "vec4" );
+      ShaderConnector* connectComp = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
+      outVpos = connectComp->getElement(RT_TEXCOORD);
+      outVpos->setName("outVpos");
+      outVpos->setStructName("OUT");
+      outVpos->setType("vec4");
 
       Var *outPosition = (Var*) LangElement::find( "gl_Position" );
-      AssertFatal( outPosition, "ShaderFeatureGLSL::addOutVpos - Didn't find the output position." );
-
-      meta->addStatement( new GenOp( "   @ = @;\r\n", outVpos, outPosition ) );
+      AssertFatal( outPosition, "ShaderFeatureGLSL::addOutVpos - gl_Position somehow undefined?." );
+      meta->addStatement(new GenOp("   @ = @;\r\n", outVpos, outPosition));
    }
 
    return outVpos;
@@ -469,15 +458,34 @@ Var* ShaderFeatureGLSL::addOutVpos( MultiLine *meta,
 Var* ShaderFeatureGLSL::getInVpos(  MultiLine *meta,
                                     Vector<ShaderComponent*> &componentList )
 {
-   Var *inVpos = (Var*)LangElement::find( "vpos" );
-   if ( inVpos )
+   Var* inVpos = (Var*)LangElement::find("inVpos");
+   if (inVpos)
       return inVpos;
 
-   ShaderConnector *connectComp = dynamic_cast<ShaderConnector*>( componentList[C_CONNECTOR] );
-   inVpos = connectComp->getElement( RT_TEXCOORD );
-   inVpos->setName( "inVpos" );
-   inVpos->setStructName( "IN" );
-   inVpos->setType( "vec4" );
+   ShaderConnector* connectComp = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
+   inVpos = connectComp->getElement(RT_TEXCOORD);
+   inVpos->setName("inVpos");
+   inVpos->setStructName("IN");
+   inVpos->setType("vec4");
+
+   Var* targetSize = (Var*)LangElement::find("targetSize");
+   if (!targetSize)
+   {
+      targetSize = new Var();
+      targetSize->setType("vec2");
+      targetSize->setName("targetSize");
+      targetSize->uniform = true;
+      targetSize->constSortPos = cspPotentialPrimitive;
+   }
+
+   // transform projection space to screen space, needs to be done per-pixel. D3D automatically does this with SV_POSITION semantic types (note GLSL doesn't have semantics, even though Torque still uses the RT_ enums for them for some shaderconnector business)
+   // optional: OGL provides this data as gl_FragCoord automatically
+   // Note: for 100% parity with gl_FragCoord (but NOT with vpos in D3D) set .w = 1/.w
+   meta->addStatement(new GenOp("   @.xyz = @.xyz / @.w;\r\n", inVpos, inVpos, inVpos));
+   meta->addStatement(new GenOp("   @.w = @.w;\r\n", inVpos, inVpos)); // for parity w/ gl_FragCoord set: meta->addStatement(new GenOp("    @.w = 1.0 / @.w;\r\n", inVpos, inVpos));
+   meta->addStatement(new GenOp("   @.xy = @.xy * 0.5 + vec2(0.5,0.5);\r\n", inVpos, inVpos)); // get the screen coord to 0 to 1
+   meta->addStatement(new GenOp("   @.y = 1.0 - @.y;\r\n", inVpos, inVpos)); // flip the y axis 
+   meta->addStatement(new GenOp("   @.xy *= @;\r\n", inVpos, targetSize)); // scale to monitor
    return inVpos;
 }
 
@@ -1914,9 +1922,9 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
    Var *roughness = (Var*)LangElement::find("roughness");
    if (roughness) //try to grab roughness directly
-      texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*@ + 1.0, @))", cubeMap, reflectVec, roughness, cubeMips, cubeMips);
+      texCube = new GenOp("textureLod(  @, @, min(@*@ + 1.0, @))", cubeMap, reflectVec, roughness, cubeMips, cubeMips);
    else if (glossColor) //failing that, try and find color data
-      texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*@ + 1.0, @))", cubeMap, reflectVec, glossColor, cubeMips, cubeMips);
+      texCube = new GenOp("textureLod( @, @, min(@.b*@ + 1.0, @))", cubeMap, reflectVec, glossColor, cubeMips, cubeMips);
    else //failing *that*, just draw the cubemap
       texCube = new GenOp("texture( @, @)", cubeMap, reflectVec);
       
@@ -2429,15 +2437,15 @@ void VisibilityFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    else
    {
       visibility = (Var*)LangElement::find( "visibility" );
-      
-	if ( !visibility )
-	{
-		visibility = new Var();
-		visibility->setType( "float" );
-		visibility->setName( "visibility" );
-		visibility->uniform = true;
-		visibility->constSortPos = cspPotentialPrimitive;  
-	}
+
+      if (!visibility)
+      {
+         visibility = new Var();
+         visibility->setType("float");
+         visibility->setName("visibility");
+         visibility->uniform = true;
+         visibility->constSortPos = cspPotentialPrimitive;
+      }
    }
 
 	MultiLine* meta = new MultiLine;      
@@ -2511,22 +2519,21 @@ void AlphaTestGLSL::processPix(  Vector<ShaderComponent*> &componentList,
 //****************************************************************************
 // GlowMask
 //****************************************************************************
-
 void GlowMaskGLSL::processPix(   Vector<ShaderComponent*> &componentList,
                                  const MaterialFeatureData &fd )
 {
-   output = NULL;
-
-   // Get the output color... and make it black to mask out 
-   // glow passes rendered before us.
-   //
-   // The shader compiler will optimize out all the other
-   // code above that doesn't contribute to the alpha mask.
-   Var *color = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-   if ( color )
-      output = new GenOp( "   @.rgb = vec3(0);\r\n", color );
+   //determine output target
+   ShaderFeature::OutputTarget inTarg, outTarg;
+   inTarg = outTarg = ShaderFeature::DefaultTarget;
+   if (fd.features[MFT_isDeferred])
+   {
+      inTarg = ShaderFeature::RenderTarget1;
+      outTarg = ShaderFeature::RenderTarget3;
+   }
+   Var* inCol = (Var*)LangElement::find(getOutputTargetVarName(inTarg));
+   Var* outCol = (Var*)LangElement::find(getOutputTargetVarName(outTarg));
+   output = new GenOp("   @.rgb += @.rgb*10;\r\n", outCol, inCol);
 }
-
 
 //****************************************************************************
 // RenderTargetZero

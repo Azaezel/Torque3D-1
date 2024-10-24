@@ -409,7 +409,7 @@ void GBitmap::allocateBitmapWithMips(const U32 in_width, const U32 in_height, co
 
          mNumMipLevels++;
          allocPixels += currWidth * currHeight * mBytesPerPixel;
-      } while (currWidth != 1 || currHeight != 1 && mNumMipLevels != in_numMips);
+      } while ((currWidth != 1 || currHeight != 1) && (mNumMipLevels != in_numMips));
    }
    AssertFatal(mNumMipLevels <= c_maxMipLevels, "GBitmap::allocateBitmap: too many miplevels");
 
@@ -779,6 +779,7 @@ bool GBitmap::getColor(const U32 x, const U32 y, ColorI& rColor) const
       break;
 	 case GFXFormatL16:
 		 rColor.set(U8(U16((pLoc[0] << 8) + pLoc[1])), 0, 0, 0);
+       break;
      case GFXFormatR8G8B8:
      case GFXFormatR8G8B8X8:
         rColor.set( pLoc[0], pLoc[1], pLoc[2], 255 );
@@ -1279,9 +1280,14 @@ template<> void *Resource<GBitmap>::create(const Torque::Path &path)
    const String extension = path.getExtension();
    if( !bmp->readBitmap( extension, path ) )
    {
-      Con::errorf( "Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str() );
-      delete bmp;
-      bmp = NULL;
+      // we can only get here if the stream was successful, so attempt to read the stream.
+      Con::warnf("Was unable to load as file, going to try the stream instead.");
+      if (!bmp->readBitmapStream(extension, stream, stream.getStreamSize()))
+      {
+         Con::errorf("Resource<GBitmap>::create - error reading '%s'", path.getFullPath().c_str());
+         delete bmp;
+         bmp = NULL;
+      }
    }
 
    return bmp;
