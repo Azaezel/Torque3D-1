@@ -33,7 +33,9 @@ endmacro()
 
 function(installTemplate templateName)
   message("Prepare Template(${templateName}) install...")
-
+  
+  file(COPY "${CMAKE_SOURCE_DIR}/Templates/${templateName}/" DESTINATION "${TORQUE_APP_ROOT_DIRECTORY}" FILES_MATCHING PATTERN "*.in")
+  file(COPY "${CMAKE_SOURCE_DIR}/Templates/${templateName}/" DESTINATION "${TORQUE_APP_ROOT_DIRECTORY}" FILES_MATCHING PATTERN "*.cmake")
   add_subdirectory("${CMAKE_SOURCE_DIR}/Templates/${templateName}")
 endfunction()
 
