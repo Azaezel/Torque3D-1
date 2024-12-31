@@ -59,8 +59,6 @@
 #include <assimp/config.h>
 #include <exception>
 
-#include <assimp/Importer.hpp>
-
 MODULE_BEGIN( AssimpShapeLoader )
    MODULE_INIT_AFTER( ShapeLoader )
    MODULE_INIT
@@ -124,7 +122,58 @@ AssimpShapeLoader::~AssimpShapeLoader()
 
 void AssimpShapeLoader::releaseImport()
 {
-   aiReleaseImport(mScene);
+}
+
+void applyTransformation(aiNode* node, const aiMatrix4x4& transform) {
+   node->mTransformation = transform * node->mTransformation; // Apply transformation to the node
+}
+
+void scaleScene(const aiScene* scene, F32 scaleFactor) {
+   aiMatrix4x4 scaleMatrix;
+   scaleMatrix = aiMatrix4x4::Scaling(aiVector3D(scaleFactor, scaleFactor, scaleFactor), scaleMatrix);
+   applyTransformation(scene->mRootNode, scaleMatrix);
+}
+
+void debugSceneMetaData(const aiScene* scene) {
+   if (!scene->mMetaData) {
+      Con::printf("[ASSIMP] No metadata available.");
+      return;
+   }
+
+   for (U32 i = 0; i < scene->mMetaData->mNumProperties; ++i) {
+      const char* key = scene->mMetaData->mKeys[i].C_Str();
+      aiMetadataType type = scene->mMetaData->mValues[i].mType;
+      Con::printf("[ASSIMP] Metadata key: %s", key);
+
+      switch (type) {
+      case AI_BOOL:
+         Con::printf("  Value: %d (bool)", *(bool*)scene->mMetaData->mValues[i].mData);
+         break;
+      case AI_INT32:
+         Con::printf("  Value: %d (int)", *(S32*)scene->mMetaData->mValues[i].mData);
+         break;
+      case AI_UINT64:
+         Con::printf("  Value: %llu (uint64)", *(U64*)scene->mMetaData->mValues[i].mData);
+         break;
+      case AI_FLOAT:
+         Con::printf("  Value: %f (float)", *(F32*)scene->mMetaData->mValues[i].mData);
+         break;
+      case AI_DOUBLE:
+         Con::printf("  Value: %f (double)", *(F64*)scene->mMetaData->mValues[i].mData);
+         break;
+      case AI_AISTRING:
+         Con::printf("  Value: %s (string)", ((aiString*)scene->mMetaData->mValues[i].mData)->C_Str());
+         break;
+      case AI_AIVECTOR3D:
+      {
+         aiVector3D* vec = (aiVector3D*)scene->mMetaData->mValues[i].mData;
+         Con::printf("  Value: (%f, %f, %f) (vector3d)", vec->x, vec->y, vec->z);
+      }
+      break;
+      default:
+         Con::printf("  Unknown metadata type.");
+      }
+   }
 }
 
 void AssimpShapeLoader::enumerateScene()
@@ -132,31 +181,26 @@ void AssimpShapeLoader::enumerateScene()
    TSShapeLoader::updateProgress(TSShapeLoader::Load_ReadFile, "Reading File");
    Con::printf("[ASSIMP] Attempting to load file: %s", shapePath.getFullPath().c_str());
 
-   // Post-Processing
-   unsigned int ppsteps = 
-      (ColladaUtils::getOptions().convertLeftHanded ? aiProcess_MakeLeftHanded : 0) |
-      (ColladaUtils::getOptions().reverseWindingOrder ? aiProcess_FlipWindingOrder : 0) |
-      (ColladaUtils::getOptions().calcTangentSpace ? aiProcess_CalcTangentSpace : 0) |
-      (ColladaUtils::getOptions().joinIdenticalVerts ? aiProcess_JoinIdenticalVertices : 0) |
-      (ColladaUtils::getOptions().removeRedundantMats ? aiProcess_RemoveRedundantMaterials : 0) |
-      (ColladaUtils::getOptions().genUVCoords ? aiProcess_GenUVCoords : 0) |
-      (ColladaUtils::getOptions().transformUVCoords ? aiProcess_TransformUVCoords : 0) |
-      (ColladaUtils::getOptions().flipUVCoords ? aiProcess_FlipUVs : 0) |
-      (ColladaUtils::getOptions().findInstances ? aiProcess_FindInstances : 0) |
-      (ColladaUtils::getOptions().limitBoneWeights ? aiProcess_LimitBoneWeights : 0);
+   // Define post-processing steps
+   U32 ppsteps = aiProcess_Triangulate | /*aiProcess_PreTransformVertices |*/ aiProcess_ConvertToLeftHanded & ~aiProcess_MakeLeftHanded;
 
-   if (Con::getBoolVariable("$Assimp::OptimizeMeshes", false))
+   const auto& options = ColladaUtils::getOptions();
+   if (options.calcTangentSpace) ppsteps |= aiProcess_CalcTangentSpace;
+   if (options.joinIdenticalVerts) ppsteps |= aiProcess_JoinIdenticalVertices;
+   if (options.removeRedundantMats) ppsteps |= aiProcess_RemoveRedundantMaterials;
+   if (options.genUVCoords) ppsteps |= aiProcess_GenUVCoords;
+   if (options.transformUVCoords) ppsteps |= aiProcess_TransformUVCoords;
+   if (options.findInstances) ppsteps |= aiProcess_FindInstances;
+   if (options.limitBoneWeights) ppsteps |= aiProcess_LimitBoneWeights;
+
+   if (Con::getBoolVariable("$Assimp::OptimizeMeshes", false)) {
       ppsteps |= aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph;
-
-   if (Con::getBoolVariable("$Assimp::SplitLargeMeshes", false))
+   }
+   if (Con::getBoolVariable("$Assimp::SplitLargeMeshes", false)) {
       ppsteps |= aiProcess_SplitLargeMeshes;
+   }
 
-   // Mandatory options
-   //ppsteps |= aiProcess_ValidateDataStructure | aiProcess_Triangulate | aiProcess_ImproveCacheLocality;
-   ppsteps |= aiProcess_Triangulate;
-   //aiProcess_SortByPType              | // make 'clean' meshes which consist of a single typ of primitives
-
-   aiPropertyStore* props = aiCreatePropertyStore();
+   ppsteps |= aiProcess_ValidateDataStructure;
 
    struct aiLogStream shapeLog = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, NULL);
    shapeLog.callback = assimpLogCallback;
@@ -166,91 +210,145 @@ void AssimpShapeLoader::enumerateScene()
    aiEnableVerboseLogging(true);
 #endif
 
-   mScene = (aiScene*)aiImportFileExWithProperties(shapePath.getFullPath().c_str(), ppsteps, NULL, props);
+   /*mImporter.SetPropertyInteger(AI_CONFIG_PP_PTV_KEEP_HIERARCHY, 1);
+   mImporter.SetPropertyInteger(AI_CONFIG_PP_PTV_ADD_ROOT_TRANSFORMATION, 1);
+   mImporter.SetPropertyMatrix(AI_CONFIG_PP_PTV_ROOT_TRANSFORMATION, aiMatrix4x4(1, 0, 0, 0,
+                                                                                 0, 0, -1, 0,
+                                                                                 0, 1, 0, 0,
+                                                                                 0, 0, 0, 1));*/
 
-   aiReleasePropertyStore(props);
+   // Read the file
+   mScene = mImporter.ReadFile(shapePath.getFullPath().c_str(), ppsteps);
 
-   if ( mScene )
-   {
-      Con::printf("[ASSIMP] Mesh Count: %d", mScene->mNumMeshes);
-      Con::printf("[ASSIMP] Material Count: %d", mScene->mNumMaterials);
-
-      // Setup default units for shape format
-      String importFormat;
-
-      String fileExt = String::ToLower(shapePath.getExtension());
-      const aiImporterDesc* importerDescription = aiGetImporterDesc(fileExt.c_str());
-      if (importerDescription && StringTable->insert(importerDescription->mName) == StringTable->insert("Autodesk FBX Importer"))
-      {
-         ColladaUtils::getOptions().formatScaleFactor = 0.01f;
-      }
-
-      // Set import options (if they are not set to override)
-      if (ColladaUtils::getOptions().unit <= 0.0f)
-      {
-         F64 unit;
-         if (!getMetaDouble("UnitScaleFactor", unit))
-         {
-            F32 floatVal;
-            S32 intVal;
-            if (getMetaFloat("UnitScaleFactor", floatVal))
-               unit = (F64)floatVal;
-            else if (getMetaInt("UnitScaleFactor", intVal))
-               unit = (F64)intVal;
-            else
-               unit = 1.0;
-         }
-         ColladaUtils::getOptions().unit = (F32)unit;
-      }
-
-      if (ColladaUtils::getOptions().upAxis == UPAXISTYPE_COUNT)
-      {
-         S32 upAxis;
-         if (!getMetaInt("UpAxis", upAxis))
-            upAxis = UPAXISTYPE_Z_UP;
-         ColladaUtils::getOptions().upAxis = (domUpAxisType) upAxis;
-      }
-
-      // Extract embedded textures
-      for (U32 i = 0; i < mScene->mNumTextures; ++i)
-         extractTexture(i, mScene->mTextures[i]);
-
-      // Load all the materials.
-      AssimpAppMaterial::sDefaultMatNumber = 0;
-      for ( U32 i = 0; i < mScene->mNumMaterials; i++ )
-         AppMesh::appMaterials.push_back(new AssimpAppMaterial(mScene->mMaterials[i]));
-
-      // Setup LOD checks
-      detectDetails();
-
-      // Define the root node, and process down the chain.
-      AssimpAppNode* node = new AssimpAppNode(mScene, mScene->mRootNode, 0);
-      
-      if (!processNode(node))
-         delete node;
-
-      // add bounds node.
-      if (!boundsNode)
-      {
-         aiNode* req[1];
-         req[0] = new aiNode("bounds");
-         mScene->mRootNode->addChildren(1, req);
-
-         AssimpAppNode* appBounds = new AssimpAppNode(mScene, req[0]);
-         if (!processNode(appBounds))
-            delete appBounds;
-      }
-
-      // Check for animations and process those.
-      processAnimations();
-   } 
-   else 
-   {
+   if (!mScene || (mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !mScene->mRootNode) {
+      Con::errorf("[ASSIMP] ERROR: Could not load file: %s", shapePath.getFullPath().c_str());
+      Con::errorf("[ASSIMP] Importer error: %s", mImporter.GetErrorString());
       TSShapeLoader::updateProgress(TSShapeLoader::Load_Complete, "Import failed");
-      Con::printf("[ASSIMP] Import Error: %s", aiGetErrorString());
+      return;
    }
 
+   Con::printf("[ASSIMP] Mesh Count: %d", mScene->mNumMeshes);
+   Con::printf("[ASSIMP] Material Count: %d", mScene->mNumMaterials);
+
+#ifdef TORQUE_DEBUG
+   debugSceneMetaData(mScene);
+#endif
+
+   ColladaUtils::getOptions().upAxis = UPAXISTYPE_Y_UP; // default to Y up for assimp.
+   // Handle scaling
+   configureImportUnits();
+
+   // Format-specific adjustments
+   String fileExt = String::ToLower(shapePath.getExtension());
+   const aiImporterDesc* importerDescription = aiGetImporterDesc(fileExt.c_str());
+   if (importerDescription && dStrcmp(importerDescription->mName, "Autodesk FBX Importer") == 0) {
+      Con::printf("[ASSIMP] Detected FBX format, checking unit scale...");
+      F32 scaleFactor = ColladaUtils::getOptions().unit;
+      if (scaleFactor != 1.0f) {
+         Con::printf("[ASSIMP] Applying FBX scale factor: %f", scaleFactor);
+         scaleScene(mScene, scaleFactor);
+      }
+      else
+      {
+         scaleScene(mScene, 0.01f);
+      }
+   }
+
+   for (U32 i = 0; i < mScene->mNumTextures; ++i) {
+      extractTexture(i, mScene->mTextures[i]);
+   }
+
+   // Load all materials
+   AssimpAppMaterial::sDefaultMatNumber = 0;
+   for (U32 i = 0; i < mScene->mNumMaterials; ++i) {
+      AppMesh::appMaterials.push_back(new AssimpAppMaterial(mScene->mMaterials[i]));
+   }
+
+   // Setup LOD checks
+   detectDetails();
+
+   aiMatrix4x4 sceneRoot = aiMatrix4x4(1, 0, 0, 0,
+      0, 0, -1, 0,
+      0, 1, 0, 0,
+      0, 0, 0, 1);
+
+   applyTransformation(mScene->mRootNode, sceneRoot);
+
+   // Process the scene graph
+   AssimpAppNode* rootNode = new AssimpAppNode(mScene, mScene->mRootNode, 0);
+   if (!processNode(rootNode)) {
+      delete rootNode;
+   }
+
+   processAssimpNode(mScene->mRootNode, mScene, rootNode);
+
+   // Add a bounds node if none exists
+   if (!boundsNode) {
+      aiNode* reqNode = new aiNode("bounds");
+      mScene->mRootNode->addChildren(1, &reqNode);
+      reqNode->mTransformation = aiMatrix4x4();// *sceneRoot;
+      AssimpAppNode* appBoundsNode = new AssimpAppNode(mScene, reqNode);
+      if (!processNode(appBoundsNode)) {
+         delete appBoundsNode;
+      }
+   }
+
+   // Process animations if available
+   processAnimations();
+
+   // Clean up log stream
    aiDetachLogStream(&shapeLog);
+}
+
+void AssimpShapeLoader::configureImportUnits() {
+   auto& options = ColladaUtils::getOptions();
+
+   // Configure unit scaling
+   if (options.unit <= 0.0f) {
+      F64 unitScaleFactor = 1.0;
+      if (!getMetaDouble("UnitScaleFactor", unitScaleFactor)) {
+         F32 floatVal;
+         S32 intVal;
+         if (getMetaFloat("UnitScaleFactor", floatVal)) {
+            unitScaleFactor = static_cast<F64>(floatVal);
+         }
+         else if (getMetaInt("UnitScaleFactor", intVal)) {
+            unitScaleFactor = static_cast<F64>(intVal);
+         }
+      }
+      options.unit = static_cast<F32>(unitScaleFactor);
+   }
+}
+
+void AssimpShapeLoader::processAssimpNode(const aiNode* node, const aiScene* scene, AssimpAppNode* parentNode)
+{
+   AssimpAppNode* currNode;
+   if (node == scene->mRootNode)
+   {
+      currNode = parentNode;
+   }
+   else
+   {
+      currNode = new AssimpAppNode(scene, node, parentNode);
+
+      if (parentNode)
+      {
+         parentNode->addChild(currNode);
+      }
+
+      for (U32 i = 0; i < node->mNumMeshes; i++)
+      {
+         U32 meshIdx = node->mMeshes[i];
+         const aiMesh* mesh = scene->mMeshes[meshIdx];
+         AssimpAppMesh* curMesh = new AssimpAppMesh(mesh, currNode);
+         currNode->addMesh(curMesh);
+      }
+   }
+   // Recursively process child nodes
+   for (U32 i = 0; i < node->mNumChildren; i++)
+   {
+      processAssimpNode(node->mChildren[i], scene, currNode);
+   }
 }
 
 void AssimpShapeLoader::processAnimations()
@@ -261,11 +359,16 @@ void AssimpShapeLoader::processAnimations()
 
    Vector<aiNodeAnim*> ambientChannels;
    F32 duration = 0.0f;
+   F32 ticks = 0.0f;
    if (mScene->mNumAnimations > 0)
    {
       for (U32 i = 0; i < mScene->mNumAnimations; ++i)
       {
          aiAnimation* anim = mScene->mAnimations[i];
+
+         ticks = anim->mTicksPerSecond;
+
+         duration = 0.0f;
          for (U32 j = 0; j < anim->mNumChannels; j++)
          {
             aiNodeAnim* nodeAnim = anim->mChannels[j];
@@ -290,7 +393,7 @@ void AssimpShapeLoader::processAnimations()
       ambientSeq->mNumChannels = ambientChannels.size();
       ambientSeq->mChannels = ambientChannels.address();
       ambientSeq->mDuration = duration;
-      ambientSeq->mTicksPerSecond = 24.0;
+      ambientSeq->mTicksPerSecond = ticks;
 
       AssimpAppSequence* defaultAssimpSeq = new AssimpAppSequence(ambientSeq);
       appSequences.push_back(defaultAssimpSeq);

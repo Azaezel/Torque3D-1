@@ -41,8 +41,8 @@ class AppNode
    // the reason these are tracked by AppNode is that
    // AppNode is responsible for deleting all it's children
    // and attached meshes.
-   virtual void buildMeshList() = 0;
-   virtual void buildChildList() = 0;
+   virtual void buildMeshList() {};
+   virtual void buildChildList() {};
 
 protected:
 

@@ -371,6 +371,12 @@ void Prefab::_loadFile( bool addFileNotify )
       return;
    }
 
+   SimObjectPtr<Scene> rootScene = Scene::getRootScene();
+   if(rootScene.isValid())
+   {
+      rootScene->addDynamicObject(group);
+   }
+
    if ( addFileNotify )
       Torque::FS::AddChangeNotification( mFilename, this, &Prefab::_onFileChanged );
 

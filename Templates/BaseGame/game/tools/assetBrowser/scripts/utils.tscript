@@ -1,0 +1,253 @@
+function testRpl()
+{
+   ToolUtilityScripts::appendLineToFunction("data/prototyping/prototyping.tscript", "Prototyping", "onDestroyGameServer", "//AAAAAAAAAAAAAAAAAAAAA");
+}
+
+function Tools::appendLineToFunction(%file, %nameSpace, %functionName, %appendLine)
+{
+   %fileOutput = new ArrayObject(){};
+   %fileObj = new FileObject(){};
+   
+   %insideFunction = false;
+   %scopeDepth = 0;
+   
+   if ( %fileObj.openForRead( %file ) ) 
+   {
+      while ( !%fileObj.isEOF() ) 
+      {
+         %line = %fileObj.readLine();
+         
+         if(strIsMatchExpr("*function *(*)*", %line))
+         {
+            %fileOutput.add(%line);
+            
+            %start = strpos(%line, "function ");
+            %end = strpos(%line, "(", %start);
+            
+            %scannedFunctionName = "";
+
+            if(%start != -1 && %end != -1)
+            {
+               %scannedFunctionName = getSubStr(%line, %start + 9, %end-%start-9);
+            }
+            
+            %matchesFunctionSig = false;
+            if(%nameSpace !$= "")
+            {
+               if(%scannedFunctionName $= (%nameSpace @ "::" @ %functionName))
+                  %matchesFunctionSig = true;
+            }  
+            else
+            {
+               if(%scannedFunctionName $= %functionName)
+                  %matchesFunctionSig = true;
+            }
+            
+            if(!%matchesFunctionSig)
+               continue;
+               
+            %insideFunction = true;
+               
+            if(strIsMatchExpr("*{*", %line))
+            {
+               %scopeDepth++;
+            }
+            if(strIsMatchExpr("*}*", %line))
+            {
+               %scopeDepth--;
+            }
+         }
+         else
+         {
+            if(%insideFunction && strIsMatchExpr("*{*", %line))
+            {
+               %scopeDepth++;
+            }
+            if(%insideFunction && strIsMatchExpr("*}*", %line))
+            {
+               %scopeDepth--;
+               
+               if(%scopeDepth == 0) //we've fully backed out of the function scope, so resolve back to the parent
+               {
+                  %insideFunction = false;
+
+                  %fileOutput.add(%appendLine);
+               }
+            }
+            
+            %fileOutput.add(%line);
+         }
+      }
+      %fileObj.close();
+   }
+   
+   if ( %fileObj.openForWrite( %file ) )
+   {
+      for(%i=0; %i < %fileOutput.count(); %i++)
+      {
+         %line = %fileOutput.getKey(%i);
+         
+         %fileObj.writeLine(%line);  
+      }
+      %fileObj.close();
+   }
+}
+
+function Tools::findInFile(%file, %findText, %startingLineId)
+{
+   if(%startingLineId $= "")
+      %startingLineId = 0;
+      
+   %fileObj = new FileObject(){};
+      
+   if ( %fileObj.openForRead( %file ) ) 
+   {
+      %lineId = 0;
+      while ( !%fileObj.isEOF() ) 
+      {
+         if(%lineId >= %startingLineId)
+         {
+            %line = %fileObj.readLine();
+            
+            if(strIsMatchExpr(%findText, %line))
+            {
+               return %lineId;
+            }
+         }
+         
+         %lineId++;
+      }
+      %fileObj.close();
+   }
+   
+   return -1;
+}
+
+function Tools::findInFunction(%file, %nameSpace, %functionName, %findText)
+{
+   %fileObj = new FileObject(){};
+   
+   %insideFunction = false;
+   %scopeDepth = 0;
+   
+   if ( %fileObj.openForRead( %file ) ) 
+   {
+      %lineId = -1;
+      while ( !%fileObj.isEOF() ) 
+      {
+         %line = %fileObj.readLine();
+         %lineId++;
+         
+         if(strIsMatchExpr("*function *(*)*", %line))
+         {
+            %start = strpos(%line, "function ");
+            %end = strpos(%line, "(", %start);
+            
+            %scannedFunctionName = "";
+
+            if(%start != -1 && %end != -1)
+            {
+               %scannedFunctionName = getSubStr(%line, %start + 9, %end-%start-9);
+            }
+            
+            %matchesFunctionSig = false;
+            if(%nameSpace !$= "")
+            {
+               if(%scannedFunctionName $= (%nameSpace @ "::" @ %functionName))
+                  %matchesFunctionSig = true;
+            }  
+            else
+            {
+               if(%scannedFunctionName $= %functionName)
+                  %matchesFunctionSig = true;
+            }
+            
+            if(!%matchesFunctionSig)
+               continue;
+               
+            %insideFunction = true;
+               
+            if(strIsMatchExpr("*{*", %line))
+            {
+               %scopeDepth++;
+            }
+            if(strIsMatchExpr("*}*", %line))
+            {
+               %scopeDepth--;
+            }
+         }
+         else
+         {
+            if(%insideFunction && strIsMatchExpr("*{*", %line))
+            {
+               %scopeDepth++;
+            }
+            if(%insideFunction && strIsMatchExpr("*}*", %line))
+            {
+               %scopeDepth--;
+               
+               if(%scopeDepth == 0) //we've fully backed out of the function scope, so resolve back to the parent
+               {
+                  %insideFunction = false;
+                  break;
+               }
+            }
+            
+            if(%insideFunction && strIsMatchExpr(%findText, %line))
+            {
+               break;
+            }
+         }
+      }
+      %fileObj.close();
+   }
+   
+   return %lineId;
+}
+
+function Tools::insertInFile(%file, %insertLineId, %insertText, %insertBefore)
+{
+   %fileOutput = new ArrayObject(){};
+   %fileObj = new FileObject(){};
+
+   if ( %fileObj.openForRead( %file ) ) 
+   {
+      %lineId = 0;
+      while ( !%fileObj.isEOF() ) 
+      {
+         %line = %fileObj.readLine();
+         
+         if(%insertLineId == %lineId)
+         {
+            if(!%insertBefore || %insertBefore $= "")
+            {
+               %fileOutput.add(%line);
+               %fileOutput.add(%insertText);
+            }
+            else
+            {
+               %fileOutput.add(%insertText);
+               %fileOutput.add(%line);
+            }
+         }
+         else
+         {
+            %fileOutput.add(%line);
+         }
+         
+         %lineId++;
+      }
+      %fileObj.close();
+   }
+   
+   if ( %fileObj.openForWrite( %file ) )
+   {
+      for(%i=0; %i < %fileOutput.count(); %i++)
+      {
+         %line = %fileOutput.getKey(%i);
+         
+         %fileObj.writeLine(%line);  
+      }
+      %fileObj.close();
+   }
+}

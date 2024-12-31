@@ -1069,11 +1069,13 @@ function WorldEditorInspectorPlugin::onWorldEditorStartup( %this )
    //connect editor windows
    GuiWindowCtrl::attach( EWInspectorWindow, EWTreeWindow);
    
-   %map = new ActionMap();   
+   %map = new ActionMap(); 
+   
+   /*   
    %map.bindCmd( keyboard, "1", "EWorldEditorNoneModeBtn.performClick();", "" );  // Select
    %map.bindCmd( keyboard, "2", "EWorldEditorMoveModeBtn.performClick();", "" );  // Move
    %map.bindCmd( keyboard, "3", "EWorldEditorRotateModeBtn.performClick();", "" );  // Rotate
-   %map.bindCmd( keyboard, "4", "EWorldEditorScaleModeBtn.performClick();", "" );  // Scale
+   %map.bindCmd( keyboard, "4", "EWorldEditorScaleModeBtn.performClick();", "" );  // Scale*/
    %map.bindCmd( keyboard, "f", "FitToSelectionBtn.performClick();", "" );// Fit Camera to Selection
    %map.bindCmd( keyboard, "z", "EditorGuiStatusBar.setCamera(\"Standard Camera\");", "" );// Free camera
    %map.bindCmd( keyboard, "n", "ToggleNodeBar->renderHandleBtn.performClick();", "" );// Render Node
@@ -1093,21 +1095,38 @@ function WorldEditorInspectorPlugin::onWorldEditorStartup( %this )
 function WorldEditorInspectorPlugin::onActivated( %this )
 {   
    Parent::onActivated( %this );
+   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "EWorldEditorNoneModeBtn::onClick();", "", "Select Arrow", "1");
+   EWToolsPaletteWindow.addButton("Move", "ToolsModule:translate_n_image", "EWorldEditorMoveModeBtn::onClick();", "", "Move Selection", "2");
+   EWToolsPaletteWindow.addButton("Rotate", "ToolsModule:rotate_n_image", "EWorldEditorRotateModeBtn::onClick();", "", "Rotate Selection", "3");
+   EWToolsPaletteWindow.addButton("Scale", "ToolsModule:Scale_n_image", "EWorldEditorScaleModeBtn::onClick();", "", "Scale Selection", "4");
+   
+   EWToolsPaletteWindow.refresh();
 
    EditorGui-->InspectorWindow.setVisible( true );   
    EditorGui-->TreeWindow.setVisible( true );
    EditorGui-->WorldEditorToolbar.setVisible( true );
-   %this.map.push();
+   //%this.map.push();
 }
 
 function WorldEditorInspectorPlugin::onDeactivated( %this )
 {   
    Parent::onDeactivated( %this );
+   
+   EWToolsPaletteWindow.popActionMap();
 
    EditorGui-->InspectorWindow.setVisible( false );  
    EditorGui-->TreeWindow.setVisible( false ); 
    EditorGui-->WorldEditorToolbar.setVisible( false );
-   %this.map.pop();
+   //%this.map.pop();
 }
 
 function WorldEditorInspectorPlugin::onEditMenuSelect( %this, %editMenu )
@@ -1398,6 +1417,8 @@ function TerrainPainterPlugin::syncBrushInfo( %this )
    PaintBrushSizeTextEditContainer-->textEdit.text = getWord(ETerrainEditor.getBrushSize(), 0);
    PaintBrushSlopeControl-->SlopeMinAngle.text = ETerrainEditor.getSlopeLimitMinAngle();
    PaintBrushSlopeControl-->SlopeMaxAngle.text = ETerrainEditor.getSlopeLimitMaxAngle();
+   PaintBrushSlopeControlTE-->SlopeMinAngle.text = ETerrainEditor.getSlopeLimitMinAngle();
+   PaintBrushSlopeControlTE-->SlopeMaxAngle.text = ETerrainEditor.getSlopeLimitMaxAngle();
    PaintBrushPressureTextEditContainer-->textEdit.text = ETerrainEditor.getBrushPressure()*100;
    %brushType = ETerrainEditor.getBrushType();
    eval( "EWTerrainPainterToolbar-->" @ %brushType @ ".setStateOn(1);" );
@@ -1419,12 +1440,28 @@ function TerrainPainterPlugin::validateSlopeMaxAngle( %this )
 {
    %maxval = ETerrainEditor.getSlopeLimitMaxAngle();
    PaintBrushSlopeControl-->SlopeMaxAngle.setText(%maxval); 
+   PaintBrushSlopeControlTE-->SlopeMaxAngle.setText(%maxval); 
 }
 
 function TerrainPainterPlugin::validateSlopeMinAngle( %this )
 {
    %minval = ETerrainEditor.getSlopeLimitMinAngle();
-   PaintBrushSlopeControl-->SlopeMinAngle.setText(%minval);  
+   PaintBrushSlopeControl-->SlopeMinAngle.setText(%minval); 
+   PaintBrushSlopeControlTE-->SlopeMinAngle.setText(%minval);  
+}
+
+function TerrainPainterPlugin::validateTileMinHeight( %this )
+{
+   %maxval = ETerrainEditor.getTileLimitMinHeight();
+   PaintBrushSlopeControl-->tileMinHeight.setText(%maxval); 
+   PaintBrushSlopeControlTE-->tileMinHeight.setText(%maxval); 
+}
+
+function TerrainPainterPlugin::validateTileMaxHeight( %this )
+{
+   %minval = ETerrainEditor.getTileLimitMaxHeight();
+   PaintBrushSlopeControl-->tileMaxHeight.setText(%minval); 
+   PaintBrushSlopeControlTE-->tileMaxHeight.setText(%minval);  
 }
 
 function TerrainPainterPlugin::keyboardModifyBrushSize( %this, %amt)
@@ -2026,7 +2063,7 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
       %popup.item[ 0 ] = "Delete" TAB "" TAB "EditorMenuEditDelete();";
       %popup.item[ 1 ] = "Group" TAB "" TAB "EWorldEditor.addSimGroup( true );";
       %popup.item[ 2 ] = "-";
-      %popup.item[ 3 ] = "Make select a Sub-Level" TAB "" TAB "MakeSelectionASublevel();";
+      %popup.item[ 3 ] = "Make selected a Sub-Level" TAB "" TAB "MakeSelectionASublevel();";
    }
    else
    {
@@ -2122,6 +2159,14 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
                   %popup.enableItem(15, true);
                }
             }
+            else if(%obj.getClassName() $= "SimGroup" || 
+                    %obj.getClassName() $= "SceneGroup")
+            {
+               //if it's ACTUALLY a SimGroup or SceneGroup, have the ability to
+               //upconvert to SubScene  
+               %popup.item[ 12 ] = "-";
+               %popup.item[ 13 ] = "Convert to SubScene" TAB "" TAB "EWorldEditor.createSelectedAsSubScene( " @ %popup.object @ " );";
+            }
          }  
       }
    }
@@ -2161,7 +2206,7 @@ function EditorTree::isValidDragTarget( %this, %id, %obj )
    if( %obj.name $= "CameraBookmarks" )
       return EWorldEditor.areAllSelectedObjectsOfType( "CameraBookmark" );
    else
-      return ( %obj.getClassName() $= "SimGroup" || %obj.isMemberOfClass("Scene"));
+      return ( %obj.getClassName() $= "SimGroup" || %obj.isMemberOfClass("Scene") || %obj.isMemberOfClass("SceneGroup"));
 }
 
 function EditorTree::onBeginReparenting( %this )
@@ -2602,6 +2647,77 @@ function EWorldEditor::addSimGroup( %this, %groupCurrentSelection )
    %this.syncGui();
 }
 
+function EWorldEditor::addSceneGroup( %this, %groupCurrentSelection )
+{
+   %activeSelection = %this.getActiveSelection();
+   if ( %groupCurrentSelection && %activeSelection.getObjectIndex( getScene(0) ) != -1 )
+   {
+      toolsMessageBoxOK( "Error", "Cannot add Scene to a new SceneGroup" );
+      return;
+   }
+
+   // Find our parent.
+
+   %parent = getScene(0);
+   if( !%groupCurrentSelection && isObject( %activeSelection ) && %activeSelection.getCount() > 0 )
+   {
+      %firstSelectedObject = %activeSelection.getObject( 0 );
+      if( %firstSelectedObject.isMemberOfClass( "SimGroup" ) )
+         %parent = %firstSelectedObject;
+      else if( %firstSelectedObject.getId() != getScene(0).getId() )
+         %parent = %firstSelectedObject.parentGroup;
+   }
+   
+   // If we are about to do a group-selected as well,
+   // starting recording an undo compound.
+   
+   if( %groupCurrentSelection )
+      Editor.getUndoManager().pushCompound( "Group Selected" );
+   
+   // Create the SimGroup.
+   
+   %object = new SceneGroup()
+   {
+      parentGroup = %parent;
+   };
+   MECreateUndoAction::submit( %object );
+   
+   // Put selected objects into the group, if requested.
+   
+   if( %groupCurrentSelection && isObject( %activeSelection ) )
+   {
+      %undo = UndoActionReparentObjects::create( EditorTree );
+      
+      %numObjects = %activeSelection.getCount();
+      for( %i = 0; %i < %numObjects; %i ++ )
+      {
+         %sel = %activeSelection.getObject( %i );
+         %undo.add( %sel, %sel.parentGroup, %object );
+         %object.add( %sel );
+      }
+      
+      %undo.addToManager( Editor.getUndoManager() );
+   }
+      
+   // Stop recording for group-selected.
+   
+   if( %groupCurrentSelection )
+      Editor.getUndoManager().popCompound();
+   
+   // When not grouping selection, make the newly created SimGroup the
+   // current selection.
+   
+   if( !%groupCurrentSelection )
+   {
+      EWorldEditor.clearSelection();
+      EWorldEditor.selectObject( %object );
+   }
+
+   // Refresh the Gui.
+   
+   %this.syncGui();
+}
+
 function EWorldEditor::toggleLockChildren( %this, %simGroup )
 {
    foreach( %child in %simGroup )
@@ -2869,6 +2985,16 @@ function EWAddSimGroupButton::onCtrlClick( %this )
    EWorldEditor.addSimGroup( true );
 }
 
+function EWAddSceneGroupButton::onDefaultClick( %this )
+{
+   EWorldEditor.addSceneGroup();
+}
+
+function EWAddSceneGroupButton::onCtrlClick( %this )
+{
+   EWorldEditor.addSceneGroup( true );
+}
+
 //------------------------------------------------------------------------------
 
 function EWToolsToolbar::reset( %this )
@@ -3105,6 +3231,8 @@ function EWorldEditorStatusBarCamera::onSelect( %this, %id, %text )
 function softSnapSizeSliderCtrlContainer::onWake(%this)
 {
    %this-->slider.setValue(EWorldEditorToolbar-->softSnapSizeTextEdit.getValue());
+   %pos = EWorldEditorToolbar-->softSnapSizeTextEdit.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 function softSnapSizeSliderCtrlContainer::onSliderChanged(%this)
 {
@@ -3117,16 +3245,22 @@ function PaintBrushSizeSliderCtrlContainer::onWake(%this)
 {
    %this-->slider.range = "1" SPC getWord(ETerrainEditor.maxBrushSize, 0);
    %this-->slider.setValue(PaintBrushSizeTextEditContainer-->textEdit.getValue());
+   %pos = PaintBrushSizeTextEditContainer.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 
 function PaintBrushPressureSliderCtrlContainer::onWake(%this)
 {
    %this-->slider.setValue(PaintBrushPressureTextEditContainer-->textEdit.getValue() / 100);
+   %pos = PaintBrushPressureTextEditContainer.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 
 function PaintBrushSoftnessSliderCtrlContainer::onWake(%this)
 {
    %this-->slider.setValue(PaintBrushSoftnessTextEditContainer-->textEdit.getValue() / 100);
+   %pos = PaintBrushSoftnessTextEditContainer.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 
 //------------------------------------------------------------------------------------
@@ -3135,26 +3269,37 @@ function TerrainBrushSizeSliderCtrlContainer::onWake(%this)
 {
    %this-->slider.range = "1" SPC getWord(ETerrainEditor.maxBrushSize, 0);
    %this-->slider.setValue(TerrainBrushSizeTextEditContainer-->textEdit.getValue());
+   %pos = TerrainBrushSizeTextEditContainer.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 
 function TerrainBrushPressureSliderCtrlContainer::onWake(%this)
 {
    %this-->slider.setValue(TerrainBrushPressureTextEditContainer-->textEdit.getValue() / 100.0);
+   %pos = TerrainBrushPressureTextEditContainer.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 
 function TerrainBrushSoftnessSliderCtrlContainer::onWake(%this)
 {
    %this-->slider.setValue(TerrainBrushSoftnessTextEditContainer-->textEdit.getValue() / 100.0);
+   %pos = TerrainBrushSoftnessTextEditContainer.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 
 function TerrainSetHeightSliderCtrlContainer::onWake(%this)
 {
    %this-->slider.setValue(TerrainSetHeightTextEditContainer-->textEdit.getValue());
+   %pos = TerrainSetHeightTextEditContainer.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
+
 //------------------------------------------------------------------------------------
 function CameraSpeedDropdownCtrlContainer::onWake(%this)
 {
    %this-->slider.setValue(CameraSpeedDropdownContainer-->textEdit.getText());
+   %pos = CameraSpeedDropdownContainer.getGlobalPosition();
+   %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 
 //------------------------------------------------------------------------------------

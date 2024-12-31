@@ -530,6 +530,9 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       void setDataFieldType(const U32 fieldTypeId, StringTableEntry slotName, const char *array);
       void setDataFieldType(const char *typeName, StringTableEntry slotName, const char *array);
 
+      virtual U32 getSpecialFieldSize(StringTableEntry fieldName) { return 0; }
+      virtual const char* getSpecialFieldOut(StringTableEntry fieldName, const U32& index) { return NULL; }
+
       /// Get reference to the dictionary containing dynamic fields.
       ///
       /// See @ref simobject_console "here" for a detailed discussion of what this
@@ -579,6 +582,7 @@ class SimObject: public ConsoleObject, public TamlCallbacks
 
       /// Save object as a TorqueScript File.
       virtual bool save( const char* pcFilePath, bool bOnlySelected = false, const char *preappend = NULL );
+      virtual bool saveAppend(const char* pcFilePath, bool bOnlySelected = false, const char* preappend = NULL);
 
       /// Check if a method exists in the objects current namespace.
       virtual bool isMethod( const char* methodName );
@@ -981,6 +985,8 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       
       DECLARE_CONOBJECT( SimObject );
       DECLARE_CALLBACK(void, onInspectPostApply, (SimObject* obj));
+      DECLARE_CALLBACK(void, onSelected, (SimObject* obj));
+      DECLARE_CALLBACK(void, onUnselected, (SimObject* obj));
       
       static SimObject* __findObject( const char* id ) { return Sim::findObject( id ); }
       static const char* __getObjectId( ConsoleObject* object )

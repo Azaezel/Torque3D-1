@@ -208,49 +208,51 @@ public:
    //-----------------------------------------------------------------------
    // Data
    //-----------------------------------------------------------------------
-   DECLARE_IMAGEASSET_ARRAY(Material, DiffuseMap, MAX_STAGES);
+   void onImageAssetChanged();
+
+   DECLARE_IMAGEASSET_ARRAY(Material, DiffuseMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, DiffuseMap);
 
    bool     mDiffuseMapSRGB[MAX_STAGES];   // SRGB diffuse
-   DECLARE_IMAGEASSET_ARRAY(Material, OverlayMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, OverlayMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, OverlayMap);
 
-   DECLARE_IMAGEASSET_ARRAY(Material, LightMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, LightMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, LightMap);
 
-   DECLARE_IMAGEASSET_ARRAY(Material, ToneMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, ToneMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, ToneMap);
 
-   DECLARE_IMAGEASSET_ARRAY(Material, DetailMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, DetailMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, DetailMap);
 
-   DECLARE_IMAGEASSET_ARRAY(Material, NormalMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, NormalMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, NormalMap);
 
-   DECLARE_IMAGEASSET_ARRAY(Material, ORMConfigMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, ORMConfigMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, ORMConfigMap);
 
    bool     mIsSRGb[MAX_STAGES];
-   DECLARE_IMAGEASSET_ARRAY(Material, AOMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, AOMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, AOMap);
    F32      mAOChan[MAX_STAGES];
 
-   DECLARE_IMAGEASSET_ARRAY(Material, RoughMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, RoughMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, RoughMap);
    bool     mInvertRoughness[MAX_STAGES];
    F32      mRoughnessChan[MAX_STAGES];
 
-   DECLARE_IMAGEASSET_ARRAY(Material, MetalMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, MetalMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, MetalMap);
 
    F32      mMetalChan[MAX_STAGES];
-   DECLARE_IMAGEASSET_ARRAY(Material, GlowMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, GlowMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, GlowMap);
 
    F32      mGlowMul[MAX_STAGES];
    /// A second normal map which repeats at the detail map
    /// scale and blended with the base normal map.
-   DECLARE_IMAGEASSET_ARRAY(Material, DetailNormalMap, MAX_STAGES);
+   DECLARE_IMAGEASSET_ARRAY(Material, DetailNormalMap, MAX_STAGES, onImageAssetChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(Material, DetailNormalMap);
 
    /// The strength scalar for the detail normal map.

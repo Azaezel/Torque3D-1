@@ -1,20 +1,26 @@
 #include "Scene.h"
 #include "T3D/assets/LevelAsset.h"
+#include "T3D/gameBase/gameConnection.h"
+#include "T3D/gameMode.h"
 
 Scene * Scene::smRootScene = nullptr;
 Vector<Scene*> Scene::smSceneList;
 
+IMPLEMENT_CALLBACK(Scene, onSaving, void, (const char* fileName), (fileName),
+   "@brief Called when a scene is saved to allow scenes to special-handle prepwork for saving if required.\n\n"
+
+   "@param fileName The level file being saved\n");
+
 IMPLEMENT_CO_NETOBJECT_V1(Scene);
 
 Scene::Scene() : 
-   mIsSubScene(false),
    mParentScene(nullptr),
    mSceneId(-1),
    mIsEditing(false),
    mIsDirty(false),
    mEditPostFX(0)
 {
-   mGameModeName = StringTable->EmptyString();
+   mGameModesNames = StringTable->EmptyString();
 }
 
 Scene::~Scene()
@@ -28,13 +34,12 @@ void Scene::initPersistFields()
    Parent::initPersistFields();
 
    addGroup("Internal");
-   addField("isSubscene", TypeBool, Offset(mIsSubScene, Scene), "", AbstractClassRep::FIELD_HideInInspectors);
    addField("isEditing", TypeBool, Offset(mIsEditing, Scene), "", AbstractClassRep::FIELD_HideInInspectors);
    addField("isDirty", TypeBool, Offset(mIsDirty, Scene), "", AbstractClassRep::FIELD_HideInInspectors);
    endGroup("Internal");
 
    addGroup("Gameplay");
-   addField("gameModeName", TypeString, Offset(mGameModeName, Scene), "The name of the gamemode that this scene utilizes");
+   addField("gameModes", TypeGameModeList, Offset(mGameModesNames, Scene), "The game modes that this Scene is associated with.");
    endGroup("Gameplay");
 
    addGroup("PostFX");
@@ -51,48 +56,33 @@ bool Scene::onAdd()
    smSceneList.push_back(this);
    mSceneId = smSceneList.size() - 1;
 
-   /*if (smRootScene == nullptr)
-   {
-      //we're the first scene, so we're the root. woo!
-      smRootScene = this;
-   }
-   else
-   {
-      mIsSubScene = true;
-      smRootScene->mSubScenes.push_back(this);
-   }*/
+   GameMode::findGameModes(mGameModesNames, &mGameModesList);
 
    return true;
 }
 
 void Scene::onRemove()
 {
+   for (U32 i = 0; i < mGameModesList.size(); i++)
+   {
+      mGameModesList[i]->onSceneUnloaded_callback();
+   }
+
    Parent::onRemove();
 
    smSceneList.remove(this);
    mSceneId = -1;
-
-   /*if (smRootScene == this)
-   {
-      for (U32 i = 0; i < mSubScenes.size(); i++)
-      {
-         mSubScenes[i]->deleteObject();
-      }
-   }
-   else if (smRootScene != nullptr)
-   {
-      for (U32 i = 0; i < mSubScenes.size(); i++)
-      {
-         if(mSubScenes[i]->getId() == getId())
-            smRootScene->mSubScenes.erase(i);
-      }
-   }*/
 }
 
 void Scene::onPostAdd()
 {
    if (isMethod("onPostAdd"))
       Con::executef(this, "onPostAdd");
+
+   for (U32 i = 0; i < mGameModesList.size(); i++)
+   {
+      mGameModesList[i]->onSceneLoaded_callback();
+   }
 }
 
 bool Scene::_editPostEffects(void* object, const char* index, const char* data)
@@ -110,11 +100,12 @@ bool Scene::_editPostEffects(void* object, const char* index, const char* data)
 void Scene::addObject(SimObject* object)
 {
    //Child scene
-   Scene* scene = dynamic_cast<Scene*>(object);
+   SubScene* scene = dynamic_cast<SubScene*>(object);
    if (scene)
    {
       //We'll keep these principly separate so they don't get saved into each other
       mSubScenes.push_back(scene);
+      Parent::addObject(object);
       return;
    }
 
@@ -135,7 +126,7 @@ void Scene::addObject(SimObject* object)
 void Scene::removeObject(SimObject* object)
 {
    //Child scene
-   Scene* scene = dynamic_cast<Scene*>(object);
+   SubScene* scene = dynamic_cast<SubScene*>(object);
    if (scene)
    {
       //We'll keep these principly separate so they don't get saved into each other
@@ -157,30 +148,88 @@ void Scene::removeObject(SimObject* object)
    Parent::removeObject(object);
 }
 
-void Scene::addDynamicObject(SceneObject* object)
+void Scene::addDynamicObject(SimObject* object)
 {
    mDynamicObjects.push_back(object);
 
+   SimGroup* cleanupGroup;
+   if(Sim::findObject("MissionCleanup", cleanupGroup))
+   {
+      cleanupGroup->addObject(object);
+   }
+
    //Do it like regular, though we should probably bail if we're trying to add non-scene objects to the scene?
-   Parent::addObject(object);
+   //Parent::addObject(object);
 }
 
-void Scene::removeDynamicObject(SceneObject* object)
+void Scene::removeDynamicObject(SimObject* object)
 {
    mDynamicObjects.remove(object);
 
+   SimGroup* cleanupGroup;
+   if (Sim::findObject("MissionCleanup", cleanupGroup))
+   {
+      cleanupGroup->removeObject(object);
+   }
+
    //Do it like regular, though we should probably bail if we're trying to add non-scene objects to the scene?
-   Parent::removeObject(object);
+   //Parent::removeObject(object);
 }
 
 void Scene::interpolateTick(F32 delta)
 {
-
 }
 
 void Scene::processTick()
 {
+   if (!isServerObject())
+      return;
 
+   //iterate over our subscenes to update their status of loaded or unloaded based on if any control objects intersect their bounds
+   for (U32 i = 0; i < mSubScenes.size(); i++)
+   {
+      bool hasClients = false;
+
+      SimGroup* pClientGroup = Sim::getClientGroup();
+      for (SimGroup::iterator itr = pClientGroup->begin(); itr != pClientGroup->end(); itr++)
+      {
+         GameConnection* gc = dynamic_cast<GameConnection*>(*itr);
+         if (gc)
+         {
+            GameBase* controlObj = gc->getControlObject();
+            if (controlObj == nullptr)
+            {
+               controlObj = gc->getCameraObject();
+            }
+
+            if (controlObj != nullptr)
+            {
+               if (mSubScenes[i]->testBox(controlObj->getWorldBox()))
+               {
+                  //we have a client controlling object in the bounds, so we ensure the contents are loaded
+                  hasClients = true;
+                  break;
+               }
+            }
+         }
+      }
+
+      if (hasClients)
+      {
+         mSubScenes[i]->setUnloadTimeMS(-1);
+         mSubScenes[i]->load();
+      }
+      else
+      {
+         if (mSubScenes[i]->isLoaded() && mSubScenes[i]->getUnloadTimsMS() == -1)
+         {
+            mSubScenes[i]->setUnloadTimeMS(Sim::getCurrentTime());
+         }
+
+         if (Sim::getCurrentTime() - mSubScenes[i]->getUnloadTimsMS() > 5000)
+            mSubScenes[i]->unload();
+      }
+   }
 }
 
 void Scene::advanceTime(F32 timeDelta)
@@ -205,7 +254,7 @@ void Scene::dumpUtilizedAssets()
    Con::printf("Dumping utilized assets in scene!");
 
    Vector<StringTableEntry> utilizedAssetsList;
-   for (U32 i = 0; i < mPermanentObjects.size(); i++)
+   /*for (U32 i = 0; i < mPermanentObjects.size(); i++)
    {
       mPermanentObjects[i]->getUtilizedAssets(&utilizedAssetsList);
    }
@@ -213,7 +262,7 @@ void Scene::dumpUtilizedAssets()
    for (U32 i = 0; i < mDynamicObjects.size(); i++)
    {
       mDynamicObjects[i]->getUtilizedAssets(&utilizedAssetsList);
-   }
+   }*/
 
    for (U32 i = 0; i < utilizedAssetsList.size(); i++)
    {
@@ -247,6 +296,9 @@ StringTableEntry Scene::getLevelAsset()
 
 bool Scene::saveScene(StringTableEntry fileName)
 {
+   if (!isServerObject())
+      return false;
+
    //So, we ultimately want to not only save out the level, but also collate all the assets utilized
    //by the static objects in the scene so we can have those before we parse the level file itself
    //Useful for preloading or stat tracking
@@ -255,6 +307,21 @@ bool Scene::saveScene(StringTableEntry fileName)
    if (fileName == StringTable->EmptyString())
    {
       fileName = getOriginatingFile();
+   }
+
+   for (SimGroupIterator itr(this); *itr; ++itr)
+   {
+      if((*itr)->isMethod("onSaving"))
+      {
+         Con::executef((*itr), "onSaving", fileName);
+      }
+   }
+
+   //Inform our subscenes we're saving so they can do any
+   //special work required as well
+   for (U32 i = 0; i < mSubScenes.size(); i++)
+   {
+      mSubScenes[i]->save();
    }
 
    bool saveSuccess = save(fileName);
@@ -286,9 +353,12 @@ bool Scene::saveScene(StringTableEntry fileName)
       dSprintf(depValue, sizeof(depValue), "%s=%s", ASSET_ID_SIGNATURE, utilizedAssetsList[i]);
 
       levelAssetDef->setDataField(StringTable->insert(depSlotName), NULL, StringTable->insert(depValue));
-
    }
 
+   //update the gamemode list as well
+   levelAssetDef->setDataField(StringTable->insert("gameModesNames"), NULL, StringTable->insert(mGameModesNames));
+
+   //Finally, save
    saveSuccess = levelAssetDef->saveAsset();
 
    return saveSuccess;
@@ -314,9 +384,24 @@ void Scene::getUtilizedAssetsFromSceneObject(SimObject* object, Vector<StringTab
 }
 
 //
-Vector<SceneObject*> Scene::getObjectsByClass(String className, bool checkSubscenes)
+Vector<SceneObject*> Scene::getObjectsByClass(String className)
 {
    return Vector<SceneObject*>();
+}
+
+void Scene::loadAtPosition(const Point3F& position)
+{
+   for (U32 i = 0; i < mSubScenes.size(); i++)
+   {
+      Box3F testBox = Box3F(0.5);
+      testBox.setCenter(position);
+
+      if (mSubScenes[i]->testBox(testBox))
+      {
+         mSubScenes[i]->setUnloadTimeMS(-1);
+         mSubScenes[i]->load();
+      }
+   }
 }
 
 DefineEngineFunction(getScene, Scene*, (U32 sceneId), (0),
@@ -413,9 +498,13 @@ DefineEngineMethod(Scene, getLevelAsset, const char*, (), ,
 DefineEngineMethod(Scene, save, bool, (const char* fileName), (""),
    "Save out the object to the given file.\n"
    "@param fileName The name of the file to save to."
-   "@param selectedOnly If true, only objects marked as selected will be saved out.\n"
-   "@param preAppendString Text which will be preprended directly to the object serialization.\n"
    "@param True on success, false on failure.")
 {
    return object->saveScene(StringTable->insert(fileName));
+}
+
+DefineEngineMethod(Scene, loadAtPosition, void, (Point3F position), (Point3F::Zero),
+   "Loads any subscenes at a given point by force.\n")
+{
+   object->loadAtPosition(position);
 }

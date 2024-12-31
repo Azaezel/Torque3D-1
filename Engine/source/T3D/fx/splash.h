@@ -122,8 +122,9 @@ public:
    F32               times[ NUM_TIME_KEYS ];
    LinearColorF            colors[ NUM_TIME_KEYS ];
 
-   DECLARE_IMAGEASSET_ARRAY(SplashData, Texture, NUM_TEX);
+   DECLARE_IMAGEASSET_ARRAY(SplashData, Texture, NUM_TEX, onTextureChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(SplashData, Texture)
+   void onTextureChanged() {}
 
    ExplosionData*    explosion;
    S32               explosionId;

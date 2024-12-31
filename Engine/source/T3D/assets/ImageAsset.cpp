@@ -104,7 +104,7 @@ ConsoleSetType(TypeImageAssetId)
    }
 
    // Warn.
-   Con::warnf("(TypeAssetId) - Cannot set multiple args to a single asset.");
+   Con::warnf("(TypeImageAssetId) - Cannot set multiple args to a single asset.");
 }
 //-----------------------------------------------------------------------------
 
@@ -274,6 +274,20 @@ U32 ImageAsset::load()
    if (mLoadedState == AssetErrCode::Ok) return mLoadedState;
    if (mImagePath)
    {
+      // this is a target.
+      if (mImageFileName[0] == '$' || mImageFileName[0] == '#')
+      {
+         NamedTexTargetRef namedTarget = NamedTexTarget::find(mImageFileName + 1);
+         if (namedTarget) {
+            mLoadedState = Ok;
+            mIsValidImage = true;
+            return mLoadedState;
+         }
+         else
+         {
+            Con::errorf("ImageAsset::initializeAsset: Attempted find named target %s failed.", mImageFileName);
+         }
+      }
       if (!Torque::FS::IsFile(mImagePath))
       {
          Con::errorf("ImageAsset::initializeAsset: Attempted to load file %s but it was not valid!", mImageFileName);
@@ -295,12 +309,26 @@ void ImageAsset::initializeAsset()
 {
    ResourceManager::get().getChangedSignal().notify(this, &ImageAsset::_onResourceChanged);
 
-   mImagePath = getOwned() ? expandAssetFilePath(mImageFileName) : mImagePath;
+   if (mImageFileName[0] != '$' && mImageFileName[0] != '#')
+   {
+      mImagePath = getOwned() ? expandAssetFilePath(mImageFileName) : mImagePath;
+   }
+   else
+   {
+      mImagePath = mImageFileName;
+   }
 }
 
 void ImageAsset::onAssetRefresh()
 {
-   mImagePath = getOwned() ? expandAssetFilePath(mImageFileName) : mImagePath;
+   if (mImageFileName[0] != '$' && mImageFileName[0] != '#')
+   {
+      mImagePath = getOwned() ? expandAssetFilePath(mImageFileName) : mImagePath;
+   }
+   else
+   {
+      mImagePath = mImageFileName;
+   }
 
    AssetManager::typeAssetDependsOnHash::Iterator assetDependenciesItr = mpOwningAssetManager->getDependedOnAssets()->find(mpAssetDefinition->mAssetId);
    // Iterate all dependencies.
@@ -334,6 +362,7 @@ void ImageAsset::setImageFileName(const char* pScriptFile)
 
 GFXTexHandle ImageAsset::getTexture(GFXTextureProfile* requestedProfile)
 {
+   load();
    if (mResourceMap.contains(requestedProfile))
    {
       mLoadedState = Ok;
@@ -341,20 +370,34 @@ GFXTexHandle ImageAsset::getTexture(GFXTextureProfile* requestedProfile)
    }
    else
    {
-      //If we don't have an existing map case to the requested format, we'll just create it and insert it in
-      GFXTexHandle newTex = TEXMGR->createTexture(mImagePath, requestedProfile);
-      if (newTex)
+      // this is a target.
+      if (mImageFileName[0] == '$' || mImageFileName[0] == '#')
       {
-         mResourceMap.insert(requestedProfile, newTex);
          mLoadedState = Ok;
-         return newTex;
+         NamedTexTargetRef namedTarget = NamedTexTarget::find(mImageFileName + 1);
+         if (namedTarget.isValid() && namedTarget->getTexture())
+         {
+            mNamedTarget = namedTarget;
+            mIsValidImage = true;
+            mResourceMap.insert(requestedProfile, mNamedTarget->getTexture());
+            mChangeSignal.trigger();
+            return mNamedTarget->getTexture();
+         }
       }
       else
-         mLoadedState = BadFileReference;
+      {
+         //If we don't have an existing map case to the requested format, we'll just create it and insert it in
+         GFXTexHandle newTex = TEXMGR->createTexture(mImagePath, requestedProfile);
+         if (newTex)
+         {
+            mResourceMap.insert(requestedProfile, newTex);
+            mLoadedState = Ok;
+            return newTex;
+         }
+         else
+            mLoadedState = BadFileReference;
+      }
    }
-
-   //if (mTexture.isValid())
-   //   return mTexture;
 
    return nullptr;
 }
@@ -748,7 +791,7 @@ void GuiInspectorTypeImageAssetPtr::setPreviewImage(StringTableEntry assetId)
 IMPLEMENT_CONOBJECT(GuiInspectorTypeImageAssetId);
 
 ConsoleDocClass(GuiInspectorTypeImageAssetId,
-   "@brief Inspector field type for Shapes\n\n"
+   "@brief Inspector field type for Images\n\n"
    "Editor use only.\n\n"
    "@internal"
 );

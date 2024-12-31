@@ -27,11 +27,14 @@ class AssimpAppSequence : public AppSequence
    F32      seqEnd;
    F32      mTimeMultiplier; // The factor needed to convert the sequence data timestamp to seconds
 
+   void determineTimeMultiplier(aiAnimation* a);
+   void calculateSequenceEnd(aiAnimation* a);
+
 public:
 
    AssimpAppSequence(aiAnimation *a);
    ~AssimpAppSequence();
-
+   
    aiAnimation *mAnim;
 
    void setActive(bool active) override;

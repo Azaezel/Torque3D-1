@@ -101,6 +101,8 @@ SimObjectId SimObject::smForcedId = 0;
 bool SimObject::preventNameChanging = false;
 
 IMPLEMENT_CALLBACK(SimObject, onInspectPostApply, void, (SimObject* obj), (obj), "Generic callback for when an object is edited");
+IMPLEMENT_CALLBACK(SimObject, onSelected, void, (SimObject* obj), (obj), "Generic callback for when an object is selected");
+IMPLEMENT_CALLBACK(SimObject, onUnselected, void, (SimObject* obj), (obj), "Generic callback for when an object is un-selected");
 
 namespace Sim
 {
@@ -522,6 +524,14 @@ bool SimObject::save(const char *pcFileName, bool bOnlySelected, const char *pre
    Con::setVariable("$ModRoot", NULL);
 
    delete stream;
+
+   return true;
+
+}
+
+bool SimObject::saveAppend(const char* pcFileName, bool bOnlySelected, const char* preappend)
+{
+   
 
    return true;
 
@@ -2207,11 +2217,13 @@ void SimObject::setSelected( bool sel )
    {
       mFlags.set( Selected );
       _onSelected();
+      onSelected_callback(this);
    }
    else
    {
       mFlags.clear( Selected );
       _onUnselected();
+      onUnselected_callback(this);
    }
 }
 

@@ -322,7 +322,7 @@ void DecalRoad::initPersistFields()
    addGroup( "Internal" );
 
       addProtectedField( "node", TypeString, 0, &addNodeFromField, &emptyStringProtectedGetFn,
-         "Do not modify, for internal use." );
+         "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors | AbstractClassRep::FIELD_SpecialtyArrayField);
 
    endGroup( "Internal" );
 
@@ -472,6 +472,36 @@ bool DecalRoad::writeField( StringTableEntry fieldname, const char *value )
 
    return Parent::writeField( fieldname, value );
 }
+
+U32 DecalRoad::getSpecialFieldSize(StringTableEntry fieldName)
+{
+   if (fieldName == StringTable->insert("node"))
+   {
+      return mNodes.size();
+   }
+
+   return 0;
+}
+
+const char* DecalRoad::getSpecialFieldOut(StringTableEntry fieldName, const U32& index)
+{
+   if (fieldName == StringTable->insert("node"))
+   {
+      if (index >= mNodes.size())
+         return NULL;
+
+      const RoadNode& node = mNodes[index];
+
+      char buffer[1024];
+      dMemset(buffer, 0, 1024);
+      dSprintf(buffer, 1024, "%f %f %f %f", node.point.x, node.point.y, node.point.z, node.width);
+
+      return StringTable->insert(buffer);
+   }
+
+   return NULL;
+}
+
 
 void DecalRoad::onEditorEnable()
 {

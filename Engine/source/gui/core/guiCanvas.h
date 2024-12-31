@@ -84,6 +84,7 @@
 /// you need to add your control to the dirty areas of the canvas.
 ///
 class guiCanvas;
+class Point2I;
 typedef Signal<void(GuiCanvas* canvas)> CanvasSizeChangeSignal;
 class GuiCanvas : public GuiControl, public IProcessInput
 {
@@ -212,7 +213,7 @@ protected:
 
    GuiControl *mMenuBarCtrl;
    GuiControl* mMenuBackground;
-
+   bool mConstrainMouse;
 public:
    DECLARE_CONOBJECT(GuiCanvas);
    DECLARE_CATEGORY( "Gui Core" );
@@ -233,11 +234,14 @@ public:
    /// @name Rendering methods
    ///
    /// @{
+   void constrainMouse(bool constrained) { mConstrainMouse = constrained; };
+   void constrainMouseCoords(Point2I mousePoint);
 
    /// Repaints the dirty regions of the canvas
    /// @param   preRenderOnly   If set to true, only the onPreRender methods of all the GuiControls will be called
    /// @param   bufferSwap      If set to true, it will swap buffers at the end. This is to support canvas-subclassing.
    virtual void renderFrame(bool preRenderOnly, bool bufferSwap = true);
+
 
    /// Repaints the canvas by calling the platform window display event.
    virtual void paint();

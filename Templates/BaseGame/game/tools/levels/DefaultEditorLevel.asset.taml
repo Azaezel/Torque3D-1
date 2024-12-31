@@ -2,6 +2,7 @@
     AssetName="DefaultEditorLevel"
     LevelFile="@assetFile=DefaultEditorLevel.mis"
     LevelName="DefaultEditorLevel"
+    PostFXPresetFile="@assetFile=tools/levels/DefaultEditorLevel.postfxpreset.tscript"
     description="An empty room"
     previewImageAsset0="@asset=ToolsModule:DefaultEditorLevel_preview_image"
     previewImageAsset1="@asset=ToolsModule:DefaultEditorLevel_preview_image"

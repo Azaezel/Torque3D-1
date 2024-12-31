@@ -301,6 +301,10 @@ function ESettingsWindow::getGeneralSettings(%this)
    SettingsInspector.addSettingsField("WorldEditor/AutosaveInterval", "Autosave Interval(in minutes)", "int", "");
    SettingsInspector.endGroup();
    
+   SettingsInspector.startGroup("SubScenes");
+   SettingsInspector.addSettingsField("WorldEditor/subSceneCreateScalar", "SubScene Creation Scalar", "float", "Amount to scale SubScene's bounds by when creating from scene objects.", "1.5");
+   SettingsInspector.endGroup();
+   
    SettingsInspector.startGroup("Paths");
    //SettingsInspector.addSettingsField("WorldEditor/torsionPath", "Torsion Path", "filename", "");
    SettingsInspector.endGroup();

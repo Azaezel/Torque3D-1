@@ -190,12 +190,12 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXCubemap *tex, U32
    // Mark state as dirty so device can know to update.
    invalidateState();
 
-   // Release what we had, it's definitely going to change.
    SAFE_RELEASE(mTargetViews[slot]);
    SAFE_RELEASE(mTargets[slot]);
    SAFE_RELEASE(mTargetSRViews[slot]);
 
    mResolveTargets[slot] = NULL;
+   mGenMips = false;
 
    // Cast the texture object to D3D...
    AssertFatal(!tex || static_cast<GFXD3D11Cubemap*>(tex), "GFXD3DTextureTarget::attachTexture - invalid cubemap object.");
@@ -214,14 +214,14 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXCubemap *tex, U32
    }
 
    GFXD3D11Cubemap *cube = static_cast<GFXD3D11Cubemap*>(tex);
-
+   // Grab the surface level.
    mTargets[slot] = cube->get2DTex();
    mTargets[slot]->AddRef();
    mTargetViews[slot] = cube->getRTView(face);
    mTargetViews[slot]->AddRef();
-   mTargetSRViews[slot] = cube->getSRView();
-   mTargetSRViews[slot]->AddRef();
-   
+   /*mTargetSRViews[slot] = cube->getSRView();
+   mTargetSRViews[slot]->AddRef();*/
+
    // Update surface size
    if(slot == Color0)
    {

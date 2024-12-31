@@ -1,0 +1,54 @@
+function SubScene::onSelected(%this)
+{
+   EWToolsPaletteWindow.clearButtons();
+
+   //Adds a button to the pallete stack
+   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "EWorldEditorNoneModeBtn::onClick();", "", "Select Arrow", "1");
+   EWToolsPaletteWindow.addButton("Move", "ToolsModule:translate_n_image", "SubSceneMoveModeBtn::onClick();", "", "Move Selection", "2");
+   EWToolsPaletteWindow.addButton("Rotate", "ToolsModule:rotate_n_image", "SubSceneRotateModeBtn::onClick();", "", "Rotate Selection", "3");
+   EWToolsPaletteWindow.addButton("Scale", "ToolsModule:Scale_n_image", "EWorldEditorScaleModeBtn::onClick();", "", "Scale Selection", "4");
+   
+   EWToolsPaletteWindow.addButton("SubSceneMove", "ToolsModule:translate_n_image", "SubSceneChildMoveModeBtn::onClick();", "", "Move SubScene + Children", "5");
+   EWToolsPaletteWindow.addButton("SubSceneRotate", "ToolsModule:rotate_n_image", "SubSceneChildRotateModeBtn::onClick();", "", "Rotate SubScene + Children", "6");
+   
+   EWToolsPaletteWindow.refresh();
+}
+
+function SubScene::onUnselected(%this)
+{
+   EWToolsPaletteWindow.clearButtons();
+
+   //Adds a button to the pallete stack
+   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "EWorldEditorNoneModeBtn::onClick();", "", "Select Arrow", "1");
+   EWToolsPaletteWindow.addButton("Move", "ToolsModule:translate_n_image", "EWorldEditorMoveModeBtn::onClick();", "", "Move Selection", "2");
+   EWToolsPaletteWindow.addButton("Rotate", "ToolsModule:rotate_n_image", "EWorldEditorRotateModeBtn::onClick();", "", "Rotate Selection", "3");
+   EWToolsPaletteWindow.addButton("Scale", "ToolsModule:Scale_n_image", "EWorldEditorScaleModeBtn::onClick();", "", "Scale Selection", "4");
+   
+   $SubScene::transformChildren = false;
+   
+   EWToolsPaletteWindow.refresh();
+}
+
+function SubSceneMoveModeBtn::onClick(%this)
+{
+   EWorldEditorMoveModeBtn::onClick();
+   $SubScene::transformChildren = false;
+}
+
+function SubSceneRotateModeBtn::onClick(%this)
+{
+   EWorldEditorRotateModeBtn::onClick();
+   $SubScene::transformChildren = false;
+}
+
+function SubSceneChildMoveModeBtn::onClick()
+{
+   EWorldEditorMoveModeBtn::onClick();
+   $SubScene::transformChildren = true;
+}
+
+function SubSceneChildRotateModeBtn::onClick()
+{
+   EWorldEditorRotateModeBtn::onClick();
+   $SubScene::transformChildren = true;
+}

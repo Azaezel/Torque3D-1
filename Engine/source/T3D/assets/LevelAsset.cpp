@@ -42,12 +42,14 @@
 
 // Debug Profiling.
 #include "platform/profiler.h"
+#include "gfx/gfxDrawUtil.h"
+
 
 //-----------------------------------------------------------------------------
 
 IMPLEMENT_CONOBJECT(LevelAsset);
 
-ConsoleType(LevelAssetPtr, TypeLevelAssetPtr, const char*, ASSET_ID_FIELD_PREFIX)
+ConsoleType(LevelAssetPtr, TypeLevelAssetPtr, const char*, "")
 
 //-----------------------------------------------------------------------------
 
@@ -75,6 +77,28 @@ ConsoleSetType(TypeLevelAssetPtr)
 }
 
 //-----------------------------------------------------------------------------
+ConsoleType(assetIdString, TypeLevelAssetId, const char*, "")
+
+ConsoleGetType(TypeLevelAssetId)
+{
+   // Fetch asset Id.
+   return *((const char**)(dptr));
+}
+
+ConsoleSetType(TypeLevelAssetId)
+{
+   // Was a single argument specified?
+   if (argc == 1)
+   {
+      *((const char**)dptr) = StringTable->insert(argv[0]);
+
+      return;
+   }
+
+   // Warn.
+   Con::warnf("(TypeLevelAssetId) - Cannot set multiple args to a single asset.");
+}
+//-----------------------------------------------------------------------------
 
 LevelAsset::LevelAsset() : AssetBase(), mIsSubLevel(false)
 {
@@ -91,7 +115,7 @@ LevelAsset::LevelAsset() : AssetBase(), mIsSubLevel(false)
    mForestPath = StringTable->EmptyString();
    mNavmeshPath = StringTable->EmptyString();
 
-   mGamemodeName = StringTable->EmptyString();
+   mGameModesNames = StringTable->EmptyString();
    mMainLevelAsset = StringTable->EmptyString();
 
    mEditorFile = StringTable->EmptyString();
@@ -134,7 +158,7 @@ void LevelAsset::initPersistFields()
       &setBakedSceneFile, &getBakedSceneFile, "Path to the level file with the objects generated as part of the baking process");
 
    addField("isSubScene", TypeBool, Offset(mIsSubLevel, LevelAsset), "Is this a sublevel to another Scene");
-   addField("gameModeName", TypeString, Offset(mGamemodeName, LevelAsset), "Name of the Game Mode to be used with this level");
+   addField("gameModesNames", TypeString, Offset(mGameModesNames, LevelAsset), "Name of the Game Mode to be used with this level");
 }
 
 //------------------------------------------------------------------------------
@@ -357,7 +381,7 @@ void LevelAsset::unloadDependencies()
    }
 }
 
-DefineEngineMethod(LevelAsset, getLevelPath, const char*, (),,
+DefineEngineMethod(LevelAsset, getLevelPath, const char*, (), ,
    "Gets the full path of the asset's defined level file.\n"
    "@return The string result of the level path")
 {
@@ -416,4 +440,100 @@ DefineEngineMethod(LevelAsset, unloadDependencies, void, (), ,
    "Initiates the unloading of previously loaded asset dependencies for this level.")
 {
    return object->unloadDependencies();
+}
+
+//-----------------------------------------------------------------------------
+// GuiInspectorTypeAssetId
+//-----------------------------------------------------------------------------
+
+IMPLEMENT_CONOBJECT(GuiInspectorTypeLevelAssetPtr);
+
+ConsoleDocClass(GuiInspectorTypeLevelAssetPtr,
+   "@brief Inspector field type for Shapes\n\n"
+   "Editor use only.\n\n"
+   "@internal"
+);
+
+void GuiInspectorTypeLevelAssetPtr::consoleInit()
+{
+   Parent::consoleInit();
+
+   ConsoleBaseType::getType(TypeLevelAssetPtr)->setInspectorFieldType("GuiInspectorTypeLevelAssetPtr");
+}
+
+GuiControl* GuiInspectorTypeLevelAssetPtr::constructEditControl()
+{
+   // Create base filename edit controls
+   GuiControl* retCtrl = Parent::constructEditControl();
+   if (retCtrl == NULL)
+      return retCtrl;
+
+   // Change filespec
+   char szBuffer[512];
+   dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"LevelAsset\", \"AssetBrowser.changeAsset\", %s, \"\");",
+      getIdString());
+   mBrowseButton->setField("Command", szBuffer);
+
+   setDataField(StringTable->insert("targetObject"), NULL, mInspector->getInspectObject()->getIdString());
+
+   // Create "Open in Editor" button
+   mEditButton = new GuiBitmapButtonCtrl();
+
+   dSprintf(szBuffer, sizeof(szBuffer), "$createAndAssignField = %s; AssetBrowser.setupCreateNewAsset(\"LevelAsset\", AssetBrowser.selectedModule, \"createAndAssignLevelAsset\");",
+      getIdString());
+   mEditButton->setField("Command", szBuffer);
+
+   char bitmapName[512] = "ToolsModule:iconAdd_image";
+   mEditButton->setBitmap(StringTable->insert(bitmapName));
+
+   mEditButton->setDataField(StringTable->insert("Profile"), NULL, "GuiButtonProfile");
+   mEditButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
+   mEditButton->setDataField(StringTable->insert("hovertime"), NULL, "1000");
+   mEditButton->setDataField(StringTable->insert("tooltip"), NULL, "Test play this sound");
+
+   mEditButton->registerObject();
+   addObject(mEditButton);
+
+   return retCtrl;
+}
+
+bool GuiInspectorTypeLevelAssetPtr::updateRects()
+{
+   S32 dividerPos, dividerMargin;
+   mInspector->getDivider(dividerPos, dividerMargin);
+   Point2I fieldExtent = getExtent();
+   Point2I fieldPos = getPosition();
+
+   mCaptionRect.set(0, 0, fieldExtent.x - dividerPos - dividerMargin, fieldExtent.y);
+   mEditCtrlRect.set(fieldExtent.x - dividerPos + dividerMargin, 1, dividerPos - dividerMargin - 34, fieldExtent.y);
+
+   bool resized = mEdit->resize(mEditCtrlRect.point, mEditCtrlRect.extent);
+   if (mBrowseButton != NULL)
+   {
+      mBrowseRect.set(fieldExtent.x - 32, 2, 14, fieldExtent.y - 4);
+      resized |= mBrowseButton->resize(mBrowseRect.point, mBrowseRect.extent);
+   }
+
+   if (mEditButton != NULL)
+   {
+      RectI shapeEdRect(fieldExtent.x - 16, 2, 14, fieldExtent.y - 4);
+      resized |= mEditButton->resize(shapeEdRect.point, shapeEdRect.extent);
+   }
+
+   return resized;
+}
+
+IMPLEMENT_CONOBJECT(GuiInspectorTypeLevelAssetId);
+
+ConsoleDocClass(GuiInspectorTypeLevelAssetId,
+   "@brief Inspector field type for Levels\n\n"
+   "Editor use only.\n\n"
+   "@internal"
+);
+
+void GuiInspectorTypeLevelAssetId::consoleInit()
+{
+   Parent::consoleInit();
+
+   ConsoleBaseType::getType(TypeLevelAssetId)->setInspectorFieldType("GuiInspectorTypeLevelAssetId");
 }

@@ -8,4 +8,5 @@
     ForestFile="@assetFile=ExampleLevel.forest"
     NavmeshFile="@assetFile=ExampleLevel.nav"
     staticObjectAssetDependency0="@asset=Prototyping:FloorGray"
+    gameModesNames="ExampleGameMode;"
     VersionId="1"/>

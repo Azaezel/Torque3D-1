@@ -50,6 +50,11 @@
 #include "assetMacroHelpers.h"
 
 #include "gfx/gfxDevice.h"
+
+#ifndef _MATTEXTURETARGET_H_
+#include "materials/matTextureTarget.h"
+#endif
+
 //-----------------------------------------------------------------------------
 class ImageAsset : public AssetBase
 {
@@ -95,6 +100,7 @@ public:
 protected:
    StringTableEntry mImageFileName;
    StringTableEntry mImagePath;
+   NamedTexTargetRef mNamedTarget;
 
    bool mIsValidImage;
    bool mUseMips;
@@ -205,7 +211,7 @@ public: \
          }\
          else if(_in[0] == '$' || _in[0] == '#')\
          {\
-            m##name##Name = _in;\
+            m##name##Name =  _in;\
             m##name##AssetId = StringTable->EmptyString();\
             m##name##Asset = NULL;\
             m##name.free();\
@@ -250,7 +256,9 @@ public: \
             m##name##Asset->getChangedSignal().notify(this, &className::changeFunc);\
          }\
          \
-         m##name.set(get##name(), m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
+         if (get##name()[0] != '$' && get##name()[0] != '#') {\
+            m##name.set(get##name(), m##name##Profile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
+         }\
       }\
       else\
       {\
@@ -278,7 +286,10 @@ public: \
    const StringTableEntry get##name() const\
    {\
       if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
-         return  Platform::makeRelativePathName(m##name##Asset->getImagePath(), Platform::getMainDotCsDir());\
+         if (m##name##Asset->getImageFileName()[0] == '#' || m##name##Asset->getImageFileName()[0] == '$')\
+            return m##name##Asset->getImageFileName();\
+         else\
+            return  Platform::makeRelativePathName(m##name##Asset->getImagePath(), Platform::getMainDotCsDir());\
       else if (m##name##AssetId != StringTable->EmptyString())\
          return m##name##AssetId;\
       else if (m##name##Name != StringTable->EmptyString())\
@@ -288,6 +299,8 @@ public: \
    }\
    GFXTexHandle get##name##Resource() \
    {\
+      if (m##name##Asset && (m##name##Asset->getImageFileName() != StringTable->EmptyString()))\
+         return m##name##Asset->getTexture(m##name##Profile);\
       return m##name;\
    }\
    bool name##Valid() {return (get##name() != StringTable->EmptyString() && m##name##Asset->getStatus() == AssetBase::Ok); }
@@ -323,7 +336,7 @@ if (m##name##AssetId != StringTable->EmptyString())\
 #pragma region Arrayed Asset Macros
 
 //Arrayed Assets
-#define DECLARE_IMAGEASSET_ARRAY(className, name, max) public: \
+#define DECLARE_IMAGEASSET_ARRAY(className, name, max, changeFunc) public: \
    static const U32 sm##name##Count = max;\
    GFXTexHandle m##name[max];\
    StringTableEntry m##name##Name[max]; \
@@ -353,7 +366,7 @@ public: \
          }\
          else if(_in[0] == '$' || _in[0] == '#')\
          {\
-            m##name##Name[index] = _in;\
+            m##name##Name[index] =  _in;\
             m##name##AssetId[index] = StringTable->EmptyString();\
             m##name##Asset[index] = NULL;\
             m##name[index].free();\
@@ -393,7 +406,9 @@ public: \
       }\
       if (get##name(index) != StringTable->EmptyString() && m##name##Name[index] != StringTable->insert("texhandle"))\
       {\
-         m##name[index].set(get##name(index), m##name##Profile[index], avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
+         m##name##Asset[index]->getChangedSignal().notify(this, &className::changeFunc);\
+         if (get##name(index)[0] != '$' && get##name(index)[0] != '#')\
+            m##name[index].set(get##name(index), m##name##Profile[index], avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));\
       }\
       else\
       {\
@@ -421,7 +436,10 @@ public: \
    const StringTableEntry get##name(const U32& index) const\
    {\
       if (m##name##Asset[index] && (m##name##Asset[index]->getImageFileName() != StringTable->EmptyString()))\
-         return  Platform::makeRelativePathName(m##name##Asset[index]->getImagePath(), Platform::getMainDotCsDir());\
+         if (m##name##Asset[index]->getImageFileName()[0] == '#' || m##name##Asset[index]->getImageFileName()[0] == '$')\
+            return m##name##Asset[index]->getImageFileName();\
+         else\
+            return  Platform::makeRelativePathName(m##name##Asset[index]->getImagePath(), Platform::getMainDotCsDir());\
       else if (m##name##AssetId[index] != StringTable->EmptyString())\
          return m##name##AssetId[index];\
       else if (m##name##Name[index] != StringTable->EmptyString())\
@@ -438,6 +456,8 @@ public: \
    {\
       if(index >= sm##name##Count || index < 0)\
          return nullptr;\
+      if (m##name##Asset[index] && (m##name##Asset[index]->getImageFileName() != StringTable->EmptyString()))\
+         return m##name##Asset[index]->getTexture(m##name##Profile[index]);\
       return m##name[index];\
    }\
    bool name##Valid(const U32& id) {return (get##name(id) != StringTable->EmptyString() && m##name##Asset[id]->getStatus() == AssetBase::Ok); }

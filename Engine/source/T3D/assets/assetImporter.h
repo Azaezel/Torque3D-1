@@ -119,6 +119,11 @@ public:
    String AlwaysImportedNodes;
 
    /// <summary>
+   /// what lod value to use if all submeshes are set to the same detail level
+   /// </summary>
+   S32 singleDetailSize;
+
+   /// <summary>
    /// A list of what nodes should be guaranteed to not be imported if found in the model file. Separated by either , or ;
    /// </summary>
    String AlwaysIgnoreNodes;

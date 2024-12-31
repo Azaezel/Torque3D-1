@@ -372,6 +372,13 @@ class GuiControl : public SimGroup
       
       inline const S32        getHorizSizing() const { return mHorizSizing; }
       inline const S32        getVertSizing() const { return mVertSizing; }
+
+      void        setHorizSizing(horizSizingOptions horizSizing) {
+         mHorizSizing = horizSizing;
+      }
+      void        setVertSizing(vertSizingOptions vertSizing) {
+         mVertSizing = vertSizing;
+      }
       
       /// @}
       

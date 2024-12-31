@@ -75,7 +75,7 @@ protected:
    Point2I     mLastMousePoint;
 
    LightInfo*  mFakeSun;
-
+   void renderSunDirection() const;
 public:
    bool onWake() override;
 

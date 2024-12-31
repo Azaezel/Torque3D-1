@@ -35,6 +35,7 @@
 #include "scene/sceneRenderState.h"
 #include "renderInstance/renderProbeMgr.h"
 #include "T3D/lighting/skylight.h"
+#include "gfx/gfxDrawUtil.h"
 
 // GuiMaterialPreview
 GuiMaterialPreview::GuiMaterialPreview()
@@ -114,20 +115,20 @@ void GuiMaterialPreview::setLightTranslate(S32 modifier, F32 xstep, F32 ystep)
 	F32 _lighttransstep = (modifier & SI_SHIFT ? mLightTransStep : (mLightTransStep*mLightTranMult));
 
 	Point3F relativeLightDirection = GuiMaterialPreview::mFakeSun->getDirection();
-	// May be able to get rid of this. For now, it helps to fix the position of the light if i gets messed up.
-	if (modifier & SI_PRIMARY_CTRL)
-	{
-		relativeLightDirection.x += ( xstep * _lighttransstep * -1 );//need to invert this for some reason. Otherwise, it's backwards.
-		relativeLightDirection.y += ( ystep * _lighttransstep );
-		GuiMaterialPreview::mFakeSun->setDirection(relativeLightDirection);
-	}
-	// Default action taken by mouse wheel clicking.
-	else
-	{
-		relativeLightDirection.x += ( xstep * _lighttransstep * -1 ); //need to invert this for some reason. Otherwise, it's backwards.
-		relativeLightDirection.z += ( ystep * _lighttransstep );
-		GuiMaterialPreview::mFakeSun->setDirection(relativeLightDirection);
-	}
+
+   F32 azimuth = mAtan2(relativeLightDirection.y, relativeLightDirection.x);
+   F32 elevation = mAsin(relativeLightDirection.z);
+
+   // Modify azimuth and elevation based on input
+   azimuth += xstep * _lighttransstep;
+   elevation = mClampF(elevation + ystep * _lighttransstep, -M_2PI_F, M_2PI_F);
+
+   // Convert back to Cartesian coordinates
+   relativeLightDirection.x = mCos(elevation) * mCos(azimuth);
+   relativeLightDirection.y = mCos(elevation) * mSin(azimuth);
+   relativeLightDirection.z = mSin(elevation);
+
+   GuiMaterialPreview::mFakeSun->setDirection(relativeLightDirection);
 }
 
 // This is for panning the viewport camera.
@@ -369,7 +370,10 @@ void GuiMaterialPreview::renderWorld(const RectI &updateRect)
    F32 left, right, top, bottom, nearPlane, farPlane;
    bool isOrtho;
    GFX->getFrustum( &left, &right, &bottom, &top, &nearPlane, &farPlane, &isOrtho);
-   Frustum frust( isOrtho, left, right, bottom, top, nearPlane, farPlane, MatrixF::Identity );
+   mSaveFrustum = Frustum( isOrtho, left, right, bottom, top, nearPlane, farPlane, MatrixF::Identity );
+
+   mSaveProjection = GFX->getProjectionMatrix();
+   mSaveWorldToScreenScale = GFX->getWorldToScreenScale();
 
    FogData savedFogData = gClientSceneGraph->getFogData();
    gClientSceneGraph->setFogData( FogData() );  // no fog in preview window
@@ -382,7 +386,7 @@ void GuiMaterialPreview::renderWorld(const RectI &updateRect)
    (
       gClientSceneGraph,
       SPT_Diffuse,
-      SceneCameraState( GFX->getViewport(), frust, GFX->getWorldMatrix(), GFX->getProjectionMatrix() ),
+      SceneCameraState( GFX->getViewport(), mSaveFrustum, GFX->getWorldMatrix(), GFX->getProjectionMatrix() ),
       renderPass,
       true
    );
@@ -422,10 +426,41 @@ void GuiMaterialPreview::renderWorld(const RectI &updateRect)
 
    renderPass->renderPass( &state );
 
+   if (mMouseState == MovingLight)
+   {
+      renderSunDirection();
+   }
+
    gClientSceneGraph->setFogData( savedFogData );         // restore fog setting
 
    // Make sure to remove our fake sun
    LIGHTMGR->unregisterAllLights();
+}
+
+void GuiMaterialPreview::renderSunDirection() const
+{
+   // Render four arrows aiming in the direction of the sun's light
+   ColorI color = LinearColorF(mFakeSun->getColor()).toColorI();
+   F32 length = mModel->getShape()->mBounds.len() * 0.8f;
+
+   // Get the sun's vectors
+   Point3F fwd = mFakeSun->getTransform().getForwardVector();
+   Point3F up = mFakeSun->getTransform().getUpVector() * length / 8;
+   Point3F right = mFakeSun->getTransform().getRightVector() * length / 8;
+
+   // Calculate the start and end points of the first arrow (bottom left)
+   Point3F start = mModel->getShape()->center - fwd * length - up / 2 - right / 2;
+   Point3F end = mModel->getShape()->center - fwd * length / 3 - up / 2 - right / 2;
+
+   GFXStateBlockDesc desc;
+   desc.setZReadWrite(true, true);
+
+   GFXDrawUtil* drawUtil = GFX->getDrawUtil();
+
+   drawUtil->drawArrow(desc, start, end, color);
+   drawUtil->drawArrow(desc, start + up, end + up, color);
+   drawUtil->drawArrow(desc, start + right, end + right, color);
+   drawUtil->drawArrow(desc, start + up + right, end + up + right, color);
 }
 
 // Make sure the orbit distance is within the acceptable range.

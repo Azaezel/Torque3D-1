@@ -81,6 +81,7 @@ Frustum::Frustum( bool isOrtho,
 
    mProjectionOffset.zero();
    mProjectionOffsetMatrix.identity();
+   mDirty = true;
 }
 
 //-----------------------------------------------------------------------------

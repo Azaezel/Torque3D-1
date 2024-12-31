@@ -1,0 +1,35 @@
+AssetBrowser::registerObjectType("GameModeType", "Gamemode Objects", "Gamemode");
+
+function GameModeType::setupCreateNew()
+{
+   
+}
+
+function GameModeType::onCreateNew()
+{
+   
+}
+
+function GameModeType::buildBrowserElement(%this, %className, %previewData)
+{
+   //echo("DatablockObjectType::buildBrowserElement() - " @ %datablock @ ", " @ %name @ ", " @ %previewData);
+   %previewData.assetName = %this.getName();
+   %previewData.assetPath = %this.getFileName();
+   
+   %previewData.previewImage = "ToolsModule:genericAssetIcon_image";
+   
+   //Lets see if we have a icon for specifically for this datablock type
+   %dataClass = %this.getClassName();
+   %dataClass = strreplace(%dataClass, "Data", "");
+   
+   %previewImage = "tools/classIcons/" @ %dataClass @ ".png";
+   if(isFile(%previewImage))
+   {
+      %previewData.previewImage = %previewImage;
+   }
+   
+   //%previewData.assetFriendlyName = %assetDef.assetName;
+   %previewData.assetDesc = %this;
+   %previewData.tooltip =  "\nGameMode Name: " @ %previewData.assetName @ 
+                           "\nPath: " @ %previewData.assetPath;
+}

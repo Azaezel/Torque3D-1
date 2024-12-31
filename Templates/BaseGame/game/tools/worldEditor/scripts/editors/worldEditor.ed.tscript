@@ -554,3 +554,142 @@ function simGroup::onInspectPostApply(%this)
     %this.callOnChildren("setHidden",%this.hidden);
     %this.callOnChildren("setLocked",%this.locked);    
 }
+
+function simGroup::SelectFiteredObjects(%this, %min, %max)
+{
+    EWorldEditor.clearSelection();
+    %this.callOnChildren("filteredSelect", %min, %max );
+}
+
+function SceneObject::filteredSelect(%this, %min, %max)
+{
+   echo("SceneObject::filteredSelect() - min: " @ %min @ " max: " @ %max);
+    %box = %this.getWorldBox();
+    %xlength = mAbs(getWord(%box,0) - getWord(%box,3));
+    %ylength = mAbs(getWord(%box,1) - getWord(%box,4));
+    %Zlength = mAbs(getWord(%box,2) - getWord(%box,5));
+    %diagSq = mPow(%xlength,2)+mPow(%ylength,2)+mPow(%Zlength,2);
+    if (%diagSq > mPow(%min,2) && %diagSq < mPow(%max,2))
+    {
+        EWorldEditor.selectObject(%this);
+    }
+}
+
+function simGroup::onInspect(%obj, %inspector)
+{
+   //Find the 'Editing' group in the inspector
+   %group = %inspector.findExistentGroup("Editing");
+   if(isObject(%group))
+   {
+      //We add a field of the type 'SimGroupSelectionButton'. This isn't a 'real' type, so when the inspector group tries to add it
+      //it will route down through GuiInspectorGroup(the namespace of %group) and call onConstructField in an attemp to see if there's any
+      //script defined functions that can build a field of that type.
+      //We happen to define the required 'build @ <fieldTypeName> @ Field()' function below, allowing us to build out the custom field type
+      %group.addField("Select Objects", "SimGroupSelectionButton", "Select filtered objects");
+    }
+}
+
+function GuiInspectorGroup::buildSimGroupSelectionButtonField(%this, %fieldName, %fieldLabel, %fieldDesc,
+                                 %fieldDefaultVal, %fieldDataVals, %callback, %ownerObj)
+{
+   
+   //Set defaults if needbe
+   if(%ownerObj.minSize $= "")
+      %ownerObj.minSize = 0.1;
+   if(%ownerObj.maxSize $= "")
+      %ownerObj.maxSize = 1;
+      
+   %container = new GuiControl() {
+      canSaveDynamicFields = "0";
+      Profile = "EditorContainerProfile";
+      HorizSizing = "right";
+      VertSizing = "bottom";
+      Position = "0 0";
+      Extent = "300 80";
+      MinExtent = "8 2";
+      canSave = "0";
+      Visible = "1";
+      hovertime = "100";
+      tooltip = "";// %tooltip;
+      tooltipProfile = "EditorToolTipProfile";
+      
+      new GuiTextCtrl() {
+         profile = GuiInspectorFieldProfile;
+         text = %fieldLabel;
+         Position = "16 2";
+         Extent = "300 18";
+         HorizSizing = "right";
+         VertSizing = "bottom";
+      };
+      
+      new GuiControl() {
+         Position = "40 20";
+         Extent = "270 18";
+         HorizSizing = "right";
+         VertSizing = "bottom";
+         
+         new GuiTextCtrl() {
+            profile = GuiInspectorFieldProfile;
+            text = "Minimum Size:";
+            Position = "0 2";
+            Extent = "150 18";
+            HorizSizing = "right";
+            VertSizing = "bottom";
+         };
+         
+         new GuiTextEditCtrl() {
+            profile = GuiInspectorTextEditProfile;
+            variable =  %ownerObj @ ".minSize";
+            Position = "150 2";
+            Extent = "150 18";
+            HorizSizing = "left";
+            VertSizing = "bottom";
+         };
+      };
+      
+      new GuiControl() {
+         Position = "40 40";
+         Extent = "270 18";
+         HorizSizing = "right";
+         VertSizing = "bottom";
+         
+         new GuiTextCtrl() {
+            profile = GuiInspectorFieldProfile;
+            text = "Maximum Size:";
+            Position = "0 2";
+            Extent = "150 18";
+            HorizSizing = "right";
+            VertSizing = "bottom";
+         };
+         
+         new GuiTextEditCtrl() {
+            profile = GuiInspectorTextEditProfile;
+            variable = %ownerObj @ ".maxSize";
+            Position = "150 2";
+            Extent = "150 18";
+            HorizSizing = "left";
+            VertSizing = "bottom";
+         };
+      };
+      
+      new GuiButtonCtrl() {
+         canSaveDynamicFields = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "right";
+         VertSizing = "bottom";
+         Position = "40 60";
+         Extent = "265 18";
+         MinExtent = "8 2";
+         canSave = "0";
+         Visible = "1";
+         hovertime = "100";
+         tooltip = ""; //%tooltip;
+         tooltipProfile = "EditorToolTipProfile";
+         text = "Select";
+         maxLength = "1024";
+         command = %ownerObj @ ".SelectFiteredObjects("@ %ownerObj.minSize @","@ %ownerObj.maxSize @");";
+      };
+   };
+   
+   %this-->stack.add(%container);
+}

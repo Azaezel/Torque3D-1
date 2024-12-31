@@ -42,7 +42,7 @@ $guiContent = new GuiControl() {
       minSize = "50 50";
       EdgeSnap = false;
       text = "";
-      class = "EWToolsPaletteWindowClass";
+      class = "ButtonPalette"; 
       
       new GuiDynamicCtrlArrayControl(ToolsPaletteArray) {
          canSaveDynamicFields = "0";

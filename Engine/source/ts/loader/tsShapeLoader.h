@@ -123,7 +123,7 @@ protected:
 
    // Collect the nodes, objects and sequences for the scene
    virtual void enumerateScene() = 0;
-   bool processNode(AppNode* node);
+   virtual bool processNode(AppNode* node);
    virtual bool ignoreNode(const String& name) { return false; }
    virtual bool ignoreMesh(const String& name) { return false; }
 

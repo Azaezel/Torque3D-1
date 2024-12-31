@@ -320,24 +320,38 @@ void CubeReflector::updateReflection( const ReflectParams &params, Point3F expli
          mCubemap->getFormat() != reflectFormat )
    {
       mCubemap = GFX->createCubemap();
-      mCubemap->initDynamic( texDim, reflectFormat );
+      mCubemap->initDynamic( texDim, reflectFormat);
    }
-   
-   mDepthBuff = LightShadowMap::_getDepthTarget( texDim, texDim );
 
    if ( mRenderTarget.isNull() )
       mRenderTarget = GFX->allocRenderToTextureTarget();   
 
    GFX->pushActiveRenderTarget();
-   mRenderTarget->attachTexture( GFXTextureTarget::DepthStencil, mDepthBuff );
-
-  
+   mDepthBuff = LightShadowMap::_getDepthTarget(texDim, texDim);
+   mRenderTarget->attachTexture(GFXTextureTarget::DepthStencil, mDepthBuff);
    F32 oldVisibleDist = gClientSceneGraph->getVisibleDistance();
    gClientSceneGraph->setVisibleDistance( mDesc->farDist );   
 
+   // store current matrices
+   GFXTransformSaver saver;
 
-   for ( U32 i = 0; i < 6; i++ )
-      updateFace( params, i, explicitPostion);
+   F32 detailAdjustBackup = TSShapeInstance::smDetailAdjust;
+   TSShapeInstance::smDetailAdjust *= mDesc->detailAdjust;
+
+   // set projection to 90 degrees vertical and horizontal
+   F32 left, right, top, bottom;
+   MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, mDesc->nearDist);
+   GFX->setFrustum(left, right, bottom, top, mDesc->nearDist, mDesc->farDist);
+
+   // We don't use a special clipping projection, but still need to initialize 
+   // this for objects like SkyBox which will use it during a reflect pass.
+   gClientSceneGraph->setNonClipProjection(GFX->getProjectionMatrix());
+
+   for (S32 i = 5; i >= 0; i--) {
+      updateFace(params, i, explicitPostion);
+   }
+
+   TSShapeInstance::smDetailAdjust = detailAdjustBackup;
 
    mCubemap->generateMipMaps();
 
@@ -353,76 +367,59 @@ void CubeReflector::updateFace( const ReflectParams &params, U32 faceidx, Point3
 {
    GFXDEBUGEVENT_SCOPE( CubeReflector_UpdateFace, ColorI::WHITE );
 
-   // store current matrices
-   GFXTransformSaver saver;   
-
-   F32 detailAdjustBackup = TSShapeInstance::smDetailAdjust;
-   TSShapeInstance::smDetailAdjust *= mDesc->detailAdjust;
-
-   // set projection to 90 degrees vertical and horizontal
-   F32 left, right, top, bottom;
-   MathUtils::makeFrustum( &left, &right, &top, &bottom, M_HALFPI_F, 1.0f, mDesc->nearDist );
-   GFX->setFrustum( left, right, bottom, top, mDesc->nearDist, mDesc->farDist );
-
-   // We don't use a special clipping projection, but still need to initialize 
-   // this for objects like SkyBox which will use it during a reflect pass.
-   gClientSceneGraph->setNonClipProjection( GFX->getProjectionMatrix() );
-
    // Standard view that will be overridden below.
-   VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
+   VectorF target = VectorF::Zero;
+   VectorF eye = VectorF::Zero;
+   if (explicitPostion == Point3F::Max)
+   {
+      eye = mObject->getPosition();
+   }
+   else
+   {
+      eye = explicitPostion;
+   }
+
+   VectorF vUpVec(0.0f, 0.0f, 0.0f);
 
    switch( faceidx )
    {
    case 0 : // D3DCUBEMAP_FACE_POSITIVE_X:
-      vLookatPt = VectorF( 1.0f, 0.0f, 0.0f );
+      target    = eye + VectorF( 1.0f, 0.0f, 0.0f );
       vUpVec    = VectorF( 0.0f, 1.0f, 0.0f );
       break;
    case 1 : // D3DCUBEMAP_FACE_NEGATIVE_X:
-      vLookatPt = VectorF( -1.0f, 0.0f, 0.0f );
+      target    = eye + VectorF( -1.0f, 0.0f, 0.0f );
       vUpVec    = VectorF( 0.0f, 1.0f, 0.0f );
       break;
    case 2 : // D3DCUBEMAP_FACE_POSITIVE_Y:
-      vLookatPt = VectorF( 0.0f, 1.0f, 0.0f );
+      target    = eye + VectorF( 0.0f, 1.0f, 0.0f );
       vUpVec    = VectorF( 0.0f, 0.0f,-1.0f );
       break;
    case 3 : // D3DCUBEMAP_FACE_NEGATIVE_Y:
-      vLookatPt = VectorF( 0.0f, -1.0f, 0.0f );
+      target    = eye + VectorF( 0.0f, -1.0f, 0.0f );
       vUpVec    = VectorF( 0.0f, 0.0f, 1.0f );
       break;
    case 4 : // D3DCUBEMAP_FACE_POSITIVE_Z:
-      vLookatPt = VectorF( 0.0f, 0.0f, 1.0f );
+      target    = eye + VectorF( 0.0f, 0.0f, 1.0f );
       vUpVec    = VectorF( 0.0f, 1.0f, 0.0f );
       break;
    case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
-      vLookatPt = VectorF( 0.0f, 0.0f, -1.0f );
+      target    = eye + VectorF( 0.0f, 0.0f, -1.0f );
       vUpVec    = VectorF( 0.0f, 1.0f, 0.0f );
       break;
    }
 
    // create camera matrix
-   VectorF cross = mCross( vUpVec, vLookatPt );
-   cross.normalizeSafe();
-
    MatrixF matView(true);
-   matView.setColumn( 0, cross );
-   matView.setColumn( 1, vLookatPt );
-   matView.setColumn( 2, vUpVec );
-
-   if (explicitPostion == Point3F::Max)
-   {
-      matView.setPosition(mObject->getPosition());
-   }
-   else
-   {
-      matView.setPosition(explicitPostion);
-   }
+   matView.LookAt(eye, target, vUpVec);
    matView.inverse();
 
    GFX->setWorldMatrix(matView);
    GFX->clearTextureStateImmediate(0);
    mRenderTarget->attachTexture( GFXTextureTarget::Color0, mCubemap, faceidx );
+   
    GFX->setActiveRenderTarget(mRenderTarget);
-   GFX->clear( GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 0.0f, 0 );
+   GFX->clear( GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 0.0f, 0);
 
    SceneRenderState reflectRenderState
    (
@@ -441,7 +438,6 @@ void CubeReflector::updateFace( const ReflectParams &params, U32 faceidx, Point3
 
    // Clean up.
    mRenderTarget->resolve();
-   TSShapeInstance::smDetailAdjust = detailAdjustBackup;
 }
 
 F32 CubeReflector::calcFaceScore( const ReflectParams &params, U32 faceidx )

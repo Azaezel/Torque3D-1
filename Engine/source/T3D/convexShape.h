@@ -83,7 +83,7 @@ class ConvexShape : public SceneObject
    typedef SceneObject Parent;
    friend class GuiConvexEditorCtrl;
    friend class GuiConvexEditorUndoAction;
-	friend class ConvexShapeCollisionConvex;
+   friend class ConvexShapeCollisionConvex;
 
 public:
 
@@ -113,10 +113,10 @@ public:
       U32 p1;
       U32 p2;
 
-      U32 operator []( U32 index ) const
+      U32 operator [](U32 index) const
       {
-         AssertFatal( index >= 0 && index <= 2, "index out of range" );
-         return *( (&p0) + index );
+         AssertFatal(index >= 0 && index <= 2, "index out of range");
+         return *((&p0) + index);
       }
    };
 
@@ -126,23 +126,23 @@ public:
       Vector< U32 > points;
       Vector< U32 > winding;
       Vector< Point2F > texcoords;
-      Vector< Triangle > triangles;			
+      Vector< Triangle > triangles;
       Point3F tangent;
       Point3F normal;
       Point3F centroid;
       F32 area;
       S32 id;
-   }; 
+   };
 
    struct surfaceMaterial
    {
       // The name of the Material we will use for rendering
       DECLARE_MATERIALASSET(surfaceMaterial, Material);
-      
+
       DECLARE_ASSET_SETGET(surfaceMaterial, Material);
 
       // The actual Material instance
-      BaseMatInstance*  materialInst;
+      BaseMatInstance* materialInst;
 
       surfaceMaterial()
       {
@@ -174,26 +174,26 @@ public:
       U32 mPrimCount;
    };
 
-	struct Geometry
-	{  
-      void generate(const Vector< PlaneF > &planes, const Vector< Point3F > &tangents, const Vector< surfaceMaterial > surfaceTextures, const Vector< Point2F > texOffset, const Vector< Point2F > texScale, const Vector< bool > horzFlip, const Vector< bool > vertFlip);
+   struct Geometry
+   {
+      void generate(const Vector< PlaneF >& planes, const Vector< Point3F >& tangents, const Vector< surfaceMaterial > surfaceTextures, const Vector< Point2F > texOffset, const Vector< Point2F > texScale, const Vector< bool > horzFlip, const Vector< bool > vertFlip);
 
-		Vector< Point3F > points;      
-		Vector< Face > faces;
-	};
+      Vector< Point3F > points;
+      Vector< Face > faces;
+   };
 
-   static bool smRenderEdges;   
+   static bool smRenderEdges;
 
    // To prevent bitpack overflows.
    // This is only indirectly enforced by trucation when serializing.
    static const S32 smMaxSurfaces = 100;
 
 public:
-   
+
    ConvexShape();
    virtual ~ConvexShape();
 
-   DECLARE_CONOBJECT( ConvexShape );
+   DECLARE_CONOBJECT(ConvexShape);
    DECLARE_CATEGORY("Object \t Simple");
 
    // ConsoleObject
@@ -203,73 +203,76 @@ public:
    void inspectPostApply() override;
    bool onAdd() override;
    void onRemove() override;
-   void writeFields(Stream &stream, U32 tabStop) override;
-   bool writeField( StringTableEntry fieldname, const char *value ) override;
+   void writeFields(Stream& stream, U32 tabStop) override;
+   bool writeField(StringTableEntry fieldname, const char* value) override;
+
+   U32 getSpecialFieldSize(StringTableEntry fieldName) override;
+   const char* getSpecialFieldOut(StringTableEntry fieldName, const U32& index) override;
 
    // NetObject
-   U32 packUpdate( NetConnection *conn, U32 mask, BitStream *stream ) override;
-   void unpackUpdate( NetConnection *conn, BitStream *stream ) override;
+   U32 packUpdate(NetConnection* conn, U32 mask, BitStream* stream) override;
+   void unpackUpdate(NetConnection* conn, BitStream* stream) override;
 
    // SceneObject
    void onScaleChanged() override;
-   void setTransform( const MatrixF &mat ) override;   
-   void prepRenderImage( SceneRenderState *state ) override;
-   void buildConvex( const Box3F &box, Convex *convex ) override;
-   bool buildPolyList( PolyListContext context, AbstractPolyList *polyList, const Box3F &box, const SphereF &sphere ) override;
-   bool buildExportPolyList(ColladaUtils::ExportData* exportData, const Box3F &box, const SphereF &) override;
-   bool castRay( const Point3F &start, const Point3F &end, RayInfo *info ) override;
-   bool collideBox( const Point3F &start, const Point3F &end, RayInfo *info ) override;
+   void setTransform(const MatrixF& mat) override;
+   void prepRenderImage(SceneRenderState* state) override;
+   void buildConvex(const Box3F& box, Convex* convex) override;
+   bool buildPolyList(PolyListContext context, AbstractPolyList* polyList, const Box3F& box, const SphereF& sphere) override;
+   bool buildExportPolyList(ColladaUtils::ExportData* exportData, const Box3F& box, const SphereF&) override;
+   bool castRay(const Point3F& start, const Point3F& end, RayInfo* info) override;
+   bool collideBox(const Point3F& start, const Point3F& end, RayInfo* info) override;
 
 
-   void updateBounds( bool recenter );
+   void updateBounds(bool recenter);
    void recenter();
 
    /// Geometry access.
    /// @{
-         
-      MatrixF getSurfaceWorldMat( S32 faceid, bool scaled = false ) const;
-      void cullEmptyPlanes( Vector< U32 > *removedPlanes );
-		void exportToCollada();
-      void resizePlanes( const Point3F &size );
-      void getSurfaceLineList( S32 surfId, Vector< Point3F > &lineList );
-      Geometry& getGeometry() { return mGeometry; }
-      Vector<MatrixF>& getSurfaces() { return mSurfaces; }
-      void getSurfaceTriangles( S32 surfId, Vector< Point3F > *outPoints, Vector< Point2F > *outCoords, bool worldSpace );
+
+   MatrixF getSurfaceWorldMat(S32 faceid, bool scaled = false) const;
+   void cullEmptyPlanes(Vector< U32 >* removedPlanes);
+   void exportToCollada();
+   void resizePlanes(const Point3F& size);
+   void getSurfaceLineList(S32 surfId, Vector< Point3F >& lineList);
+   Geometry& getGeometry() { return mGeometry; }
+   Vector<MatrixF>& getSurfaces() { return mSurfaces; }
+   void getSurfaceTriangles(S32 surfId, Vector< Point3F >* outPoints, Vector< Point2F >* outCoords, bool worldSpace);
 
    /// @}
 
    /// Geometry Visualization.
    /// @{
 
-      void renderFaceEdges( S32 faceid, const ColorI &color = ColorI::WHITE, F32 lineWidth = 1.0f );
+   void renderFaceEdges(S32 faceid, const ColorI& color = ColorI::WHITE, F32 lineWidth = 1.0f);
 
    /// @}
 
-      String getMaterialName() { return mMaterialName; }
+   String getMaterialName() { return mMaterialName; }
 
 protected:
 
    void _updateMaterial();
-   void _updateGeometry( bool updateCollision = false );
+   void _updateGeometry(bool updateCollision = false);
    void _updateCollision();
-   void _export( OptimizedPolyList *plist, const Box3F &box, const SphereF &sphere );
+   void _export(OptimizedPolyList* plist, const Box3F& box, const SphereF& sphere);
 
-   void _renderDebug( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *mat );
+   void _renderDebug(ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* mat);
 
-   static S32 QSORT_CALLBACK _comparePlaneDist( const void *a, const void *b );
+   static S32 QSORT_CALLBACK _comparePlaneDist(const void* a, const void* b);
 
-   static bool protectedSetSurface( void *object, const char *index, const char *data );
+   static bool protectedSetSurface(void* object, const char* index, const char* data);
 
-   static bool protectedSetSurfaceTexture( void *object, const char *index, const char *data );
-   static bool protectedSetSurfaceUV(void *object, const char *index, const char *data);
-  
+   static bool protectedSetSurfaceTexture(void* object, const char* index, const char* data);
+   static bool protectedSetSurfaceUV(void* object, const char* index, const char* data);
+
 protected:
-   
+
    DECLARE_MATERIALASSET(ConvexShape, Material);
    DECLARE_ASSET_SETGET(ConvexShape, Material);
 
    // The actual Material instance
-   BaseMatInstance*  mMaterialInst;
+   BaseMatInstance* mMaterialInst;
 
    // The GFX vertex and primitive buffers
    /*GFXVertexBufferHandle< VertexType > mVertexBuffer;
@@ -278,7 +281,7 @@ protected:
    U32 mVertCount;
    U32 mPrimCount;*/
 
-   Geometry mGeometry;  
+   Geometry mGeometry;
 
    Vector< PlaneF > mPlanes;
 
@@ -291,14 +294,14 @@ protected:
    Vector< surfaceUV > mSurfaceUVs;
    Vector< surfaceBuffers > mSurfaceBuffers;
 
-   Convex *mConvexList;
+   Convex* mConvexList;
 
-   PhysicsBody *mPhysicsRep; 
+   PhysicsBody* mPhysicsRep;
 
    /// Geometry visualization
    /// @{      
 
-      F32 mNormalLength;   
+   F32 mNormalLength;
 
    /// @}
 

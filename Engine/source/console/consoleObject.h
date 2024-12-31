@@ -498,6 +498,7 @@ public:
       FIELD_ComponentInspectors = BIT(1),       ///< Custom fields used by components. They are likely to be non-standard size/configuration, so 
                                                 ///< They are handled specially
       FIELD_CustomInspectors = BIT(2),          ///< Display as a button in inspectors.
+      FIELD_SpecialtyArrayField = BIT(3)
    };
 
    struct Field

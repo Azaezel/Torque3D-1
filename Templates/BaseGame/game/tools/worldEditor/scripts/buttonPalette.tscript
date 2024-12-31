@@ -1,0 +1,160 @@
+function ButtonPalette::setStackCtrl(%this, %ctrl)
+{
+   %this.stackCtrl = %ctrl;
+}
+
+function ButtonPalette::getStackCtrl(%this)
+{
+   if(isObject(%this.stackCtrl))
+      return %this.stackCtrl;
+   else
+      return %this;
+}
+
+function ButtonPalette::setActionMap(%this, %actionMap)
+{
+   %this.actionMap = %actionMap;
+   %this.actionMap.push();
+}
+
+function ButtonPalette::getActionMap(%this)
+{
+   return %this.actionMap;
+}
+
+function ButtonPalette::popActionMap(%this, %actionMap)
+{
+   %this.actionMap.pop();
+}
+
+function ButtonPalette::clearButtons(%this)
+{
+   %stackCtrl = %this.getStackCtrl();
+   %stackCtrl.clear();
+   
+   for(%i=0; %i < %this.numButtons; %i++)
+   {
+      if(isObject(%this.actionMap))
+      {
+         %this.actionMap.unbind("keyboard", getField(%this.buttons[%i], 5));
+      }
+      
+      %this.buttons[%i] = "";
+   }
+   
+   %this.numButtons = 0;
+}
+
+ //Name, Icon, Click Command, Variable, Tooltip text, Keybind
+function ButtonPalette::addButton(%this, %name, %iconAsset, %command, %syncVariable, %toolTip, %keybind)
+{    
+   if(%this.numButtons $= "")
+      %this.numButtons = 0;
+      
+   for(%i=0; %i < %this.numButtons; %i++)
+   {
+      %buttonInfo = %this.buttons[%i];
+      
+      //echo("Testing button info: " @ getField(%buttonInfo, 0) @ " against new button name: " @ %name);
+      if(getField(%buttonInfo, 0) $= %name) //no duplicates
+         return;
+   }
+      
+   %this.buttons[%this.numButtons] = %name TAB %iconAsset TAB %command TAB %syncVariable TAB %toolTip TAB %keybind;
+
+   %this.numButtons++;
+}
+
+function ButtonPalette::removeButton(%this, %name)
+{
+   %found = false;
+   for(%i=0; %i < %this.numButtons; %i++)
+   {
+      if(getField(%this.buttons[%i], 0) $= %name)
+      {
+         %found = true;
+         
+         if(isObject(%this.actionMap))
+         {
+            %this.actionMap.unbind("keyboard", getField(%this.buttons[%i], 5));
+         }
+      }
+      
+      if(%found)
+      {
+         %this.buttons[%i] = %this.buttons[%i+1];
+      }
+   }
+   
+   if(%found)
+      %this.numButtons--;
+      
+   return %found;
+}
+
+function ButtonPalette::findButton(%this, %name)
+{
+   %stackCtrl = %this.getStackCtrl();
+   for(%i=0; %i < %stackCtrl.getCount(); %i++)
+   {
+      %btnObj = %stackCtrl.getObject(%i);
+      
+      if(%btnObj.buttonName $= %name)
+         return %btnObj; 
+   }
+   
+   return 0;
+}
+
+function ButtonPalette::refresh(%this)
+{
+   %stackCtrl = %this.getStackCtrl();
+   %stackCtrl.clear();
+   
+   %this.visible = true;
+   %extents = "25 25";
+   
+   if(%this.numButtons == 0)
+   {
+      %this.visible = false;
+      return;  
+   }
+   
+   for(%i=0; %i < %this.numButtons; %i++)
+   {
+      %buttonInfo = %this.buttons[%i];
+      
+      %paletteButton = new GuiBitmapButtonCtrl() {
+         canSaveDynamicFields = "0";
+         internalName = getField(%buttonInfo, 0) @ "_paletteButton";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "right";
+         VertSizing = "bottom";
+         Position = "0 0";
+         Extent = "25 19";
+         MinExtent = "8 2";
+         canSave = "1";
+         Visible = "1";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = getField(%buttonInfo, 4) SPC "(" @ getField(%buttonInfo, 5) @ ")";
+         hovertime = "1000";
+         bitmapAsset = getField(%buttonInfo, 1);
+         buttonType = "RadioButton";
+         useMouseEvents = "0";
+         buttonName = getField(%buttonInfo, 0);
+         command = getField(%buttonInfo, 2);
+         variable = getField(%buttonInfo, 3);
+      };
+      
+      %extents.y += 23;
+      
+      if(isObject(%this.actionMap))
+         %this.actionMap.bindCmd( keyboard, getField(%buttonInfo, 5), %paletteButton @ ".performClick();", "" ); 
+      
+      %stackCtrl.add(%paletteButton);
+   }
+   
+   %this.extent.y = %extents.y;
+}

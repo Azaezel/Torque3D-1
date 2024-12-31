@@ -173,7 +173,7 @@ float4 main(PFXVertToPix IN) : SV_TARGET
       if (contrib > 0.0f)
       {
          int cubemapIdx = probeConfigData[i].a;
-         float3 dir = boxProject(surface.P, surface.R, worldToObjArray[i], refScaleArray[i].xyz, refPosArray[i].xyz);
+         float3 dir = boxProject(surface.P-refPosArray[i].xyz, surface.R, worldToObjArray[i], refScaleArray[i].xyz, probePosArray[i].xyz);
 
          irradiance += TORQUE_TEXCUBEARRAYLOD(irradianceCubemapAR, dir, cubemapIdx, 0).xyz * contrib;
          specular += TORQUE_TEXCUBEARRAYLOD(specularCubemapAR, dir, cubemapIdx, lod).xyz * contrib;

@@ -159,6 +159,7 @@ void AssetImportConfig::initPersistFields()
       addField("AdjustFloor", TypeBool, Offset(AdjustFloor, AssetImportConfig), "Indicates if the floor height of the model file should be automatically zero'd");
       addField("CollapseSubmeshes", TypeBool, Offset(CollapseSubmeshes, AssetImportConfig), "Indicates if submeshes should be collapsed down into a single main mesh");
       addField("LODType", TypeRealString, Offset(LODType, AssetImportConfig), "Indicates what LOD mode the model file should utilize to process out LODs. Options are TrailingNumber, DetectDTS, SingleSize");
+      addField("singleDetailSize", TypeS32, Offset(singleDetailSize, AssetImportConfig), "what lod value to use if all submeshes are set to the same detail level");
       addField("AlwaysImportedNodes", TypeRealString, Offset(AlwaysImportedNodes, AssetImportConfig), " A list of what nodes should be guaranteed to be imported if found in the model file. Separated by either , or ;");
       addField("AlwaysIgnoreNodes", TypeRealString, Offset(AlwaysIgnoreNodes, AssetImportConfig), "A list of what nodes should be guaranteed to not be imported if found in the model file. Separated by either , or ;");
       addField("AlwaysImportMeshes", TypeRealString, Offset(AlwaysImportMeshes, AssetImportConfig), "A list of what mesh objects should be guaranteed to be imported if found in the model file. Separated by either , or ;");
@@ -258,6 +259,7 @@ void AssetImportConfig::loadImportConfig(Settings* configSettings, String config
    AdjustFloor = dAtob(configSettings->value(String(configName + "/Meshes/AdjustFloor").c_str()));
    CollapseSubmeshes = dAtob(configSettings->value(String(configName + "/Meshes/CollapseSubmeshes").c_str()));
    LODType = configSettings->value(String(configName + "/Meshes/LODType").c_str());
+   singleDetailSize = dAtoi(configSettings->value(String(configName + "/Meshes/singleDetailSize").c_str()));
    AlwaysImportedNodes = configSettings->value(String(configName + "/Meshes/AlwaysImportedNodes").c_str());
    AlwaysIgnoreNodes = configSettings->value(String(configName + "/Meshes/AlwaysIgnoreNodes").c_str());
    AlwaysImportMeshes = configSettings->value(String(configName + "/Meshes/AlwaysImportMeshes").c_str());
@@ -352,6 +354,7 @@ void AssetImportConfig::CopyTo(AssetImportConfig* target) const
    target->AdjustFloor = AdjustFloor;
    target->CollapseSubmeshes = CollapseSubmeshes;
    target->LODType = LODType;
+   target->singleDetailSize = singleDetailSize;
    target->AlwaysImportedNodes = AlwaysImportedNodes;
    target->AlwaysIgnoreNodes = AlwaysIgnoreNodes;
    target->AlwaysImportMeshes = AlwaysImportMeshes;
@@ -812,7 +815,7 @@ String AssetImporter::getAssetTypeByFile(Torque::Path filePath)
 
    if (fileExt == String("png") || fileExt == String("jpg") || fileExt == String("jpeg") || fileExt == String("dds"))
       return "ImageAsset";
-   else if (fileExt == String("dae") || fileExt == String("fbx") || fileExt == String("blend") || fileExt == String("obj") || fileExt == String("dts") || fileExt == String("gltf") || fileExt == String("gltb"))
+   else if (fileExt == String("dae") || fileExt == String("fbx") || fileExt == String("blend") || fileExt == String("obj") || fileExt == String("dts") || fileExt == String("gltf") || fileExt == String("glb"))
       return "ShapeAsset";
    else if (fileExt == String("dsq"))
       return "ShapeAnimationAsset";
@@ -1474,6 +1477,8 @@ void AssetImportConfig::loadSISFile(Torque::Path filePath)
          CollapseSubmeshes = dAtob(value.c_str());
       else if (key.compare("LODType", 0U, String::NoCase) == 0)
          LODType = value.c_str();
+      else if (key.compare("singleDetailSize", 0U, String::NoCase) == 0)
+         singleDetailSize = dAtoi(value.c_str());
       else if (key.compare("AlwaysImportedNodes", 0U, String::NoCase) == 0)
          AlwaysImportedNodes = value.c_str();
       else if (key.compare("AlwaysIgnoreNodes", 0U, String::NoCase) == 0)
@@ -3276,7 +3281,7 @@ Torque::Path AssetImporter::importShapeAsset(AssetImportObject* assetItem)
          lodType = ColladaUtils::ImportOptions::eLodType::DetectDTS;
       constructor->mOptions.lodType = (ColladaUtils::ImportOptions::eLodType)lodType;
 
-      constructor->mOptions.singleDetailSize = activeImportConfig->convertLeftHanded;
+      constructor->mOptions.singleDetailSize = activeImportConfig->singleDetailSize;
       constructor->mOptions.alwaysImport = activeImportConfig->AlwaysImportedNodes;
       constructor->mOptions.neverImport = activeImportConfig->AlwaysIgnoreNodes;
       constructor->mOptions.alwaysImportMesh = activeImportConfig->AlwaysImportMeshes;

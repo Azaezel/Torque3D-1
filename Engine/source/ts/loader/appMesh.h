@@ -74,11 +74,11 @@ public:
    AppMesh();
    virtual ~AppMesh();
 
-   void computeBounds(Box3F& bounds);
+   virtual void computeBounds(Box3F& bounds);
    void computeNormals();
 
    // Create a TSMesh object
-   TSMesh* constructTSMesh();
+   virtual TSMesh* constructTSMesh();
 
    virtual const char * getName(bool allowFixed=true) = 0;
 

@@ -40,6 +40,11 @@
 #endif
 #include "T3D/assets/ImageAsset.h"
 
+#ifndef _GUI_INSPECTOR_TYPES_H_
+#include "gui/editor/guiInspectorTypes.h"
+#endif
+#include <gui/controls/guiBitmapCtrl.h>
+
 //-----------------------------------------------------------------------------
 class LevelAsset : public AssetBase
 {
@@ -64,7 +69,7 @@ class LevelAsset : public AssetBase
    bool                    mIsSubLevel;
    StringTableEntry        mMainLevelAsset;
 
-   StringTableEntry        mGamemodeName;
+   StringTableEntry        mGameModesNames;
 
    Vector<AssetBase*>      mAssetDependencies;
 
@@ -114,7 +119,7 @@ public:
    U32 load() override { return Ok; };
 
 protected:
-   static bool setLevelFile(void *obj, const char *index, const char *data) { static_cast<LevelAsset*>(obj)->setLevelFile(data); return false; }
+   static bool setLevelFile(void* obj, const char* index, const char* data) { static_cast<LevelAsset*>(obj)->setLevelFile(data); return false; }
    static const char* getLevelFile(void* obj, const char* data) { return static_cast<LevelAsset*>(obj)->getLevelFile(); }
 
    static bool setEditorFile(void* obj, const char* index, const char* data) { static_cast<LevelAsset*>(obj)->setEditorFile(data); return false; }
@@ -135,10 +140,96 @@ protected:
 
    void            initializeAsset(void) override;
    void            onAssetRefresh(void) override;
-   void                    loadAsset();
+   void            loadAsset();
+
+   typedef Signal<void()> LevelAssetChanged;
+   LevelAssetChanged mChangeSignal;
+
+public:
+   LevelAssetChanged& getChangedSignal() { return mChangeSignal; }
 };
 
+#ifdef TORQUE_TOOLS
+class GuiInspectorTypeLevelAssetPtr : public GuiInspectorTypeFileName
+{
+   typedef GuiInspectorTypeFileName Parent;
+public:
+
+   GuiBitmapButtonCtrl* mEditButton;
+
+   DECLARE_CONOBJECT(GuiInspectorTypeLevelAssetPtr);
+   static void consoleInit();
+
+   GuiControl* constructEditControl() override;
+   bool updateRects() override;
+};
+
+class GuiInspectorTypeLevelAssetId : public GuiInspectorTypeLevelAssetPtr
+{
+   typedef GuiInspectorTypeLevelAssetPtr Parent;
+public:
+
+   DECLARE_CONOBJECT(GuiInspectorTypeLevelAssetId);
+   static void consoleInit();
+};
+#endif
+
+
 DefineConsoleType(TypeLevelAssetPtr, LevelAsset)
+DefineConsoleType(TypeLevelAssetId, String)
+
+#pragma region Singular Asset Macros
+
+//Singular assets
+/// <Summary>
+/// Declares an level asset
+/// This establishes the assetId, asset and legacy filepath fields, along with supplemental getter and setter functions
+/// </Summary>
+#define DECLARE_LEVELASSET(className, name, changeFunc) public: \
+   StringTableEntry m##name##AssetId;\
+   AssetPtr<LevelAsset>  m##name##Asset;\
+public: \
+   const AssetPtr<LevelAsset> & get##name##Asset() const { return m##name##Asset; }\
+   void set##name##Asset(const AssetPtr<LevelAsset> &_in) { m##name##Asset = _in;}\
+   \
+   bool _set##name(StringTableEntry _in)\
+   {\
+      if(m##name##AssetId != _in)\
+      {\
+         if (m##name##Asset.notNull())\
+         {\
+            m##name##Asset->getChangedSignal().remove(this, &className::changeFunc);\
+         }\
+         if (_in == NULL || _in == StringTable->EmptyString())\
+         {\
+            m##name##AssetId = StringTable->EmptyString();\
+            m##name##Asset = NULL;\
+            return true;\
+         }\
+         if (AssetDatabase.isDeclaredAsset(_in))\
+         {\
+            m##name##AssetId = _in;\
+            m##name##Asset = _in;\
+            return true;\
+         }\
+      }\
+      \
+      if(get##name() == StringTable->EmptyString())\
+         return true;\
+      \
+      return false;\
+   }\
+   \
+   const StringTableEntry get##name() const\
+   {\
+      return m##name##AssetId;\
+   }\
+   bool name##Valid() {return (get##name() != StringTable->EmptyString() && m##name##Asset->getStatus() == AssetBase::Ok); }
+
+#define INITPERSISTFIELD_LEVELASSET(name, consoleClass, docs) \
+   addProtectedField(assetText(name, Asset), TypeLevelAssetId, Offset(m##name##AssetId, consoleClass), _set##name##Data, &defaultProtectedGetFn, assetDoc(name, asset docs.));
+
+#pragma endregion
 
 #endif // _ASSET_BASE_H_
 

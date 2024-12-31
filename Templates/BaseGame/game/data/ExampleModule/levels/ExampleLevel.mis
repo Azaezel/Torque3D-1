@@ -1,7 +1,7 @@
 //--- OBJECT WRITE BEGIN ---
 new Scene(ExampleLevel) {
    Enabled = "1";
-   gameModeName="ExampleGameMode";
+   gameModes="ExampleGameMode";
 
    new LevelInfo(theLevelInfo) {
       fogColor = "0.6 0.6 0.7 1";

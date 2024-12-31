@@ -176,6 +176,31 @@ function AssetBrowser::performRenameAsset(%this, %originalAssetName, %newName)
             %buildCommand = %this @ ".rename" @ EditAssetPopup.assetType @ "(" @ %assetDef @ "," @ %newName @ ");";
             eval(%buildCommand);
          }
+         else
+         {
+            //do generic action here
+            %oldAssetId = %moduleName @ ":" @ %originalAssetName;
+            %assetDef = AssetDatabase.acquireAsset(%oldAssetId);
+            
+            %assetFileName = fileName(%assetDef.getFileName());
+            %assetFilePath = filePath(%assetDef.getFileName());
+            
+            %pattern = %assetFilePath @ "/" @ %assetFileName @ ".*";
+            
+            echo("Searching for matches of asset files following pattern: " @ %pattern);
+            
+            //get list of files that match the name in the same dir
+            //do a rename on them
+            for (%file = findFirstFileMultiExpr(%pattern); %file !$= ""; %file = findNextFileMultiExpr(%pattern))
+            {
+               if(%file !$= %assetFileName)
+                  renameAssetLooseFile(%file, %newName);
+            }
+            
+            //update the assetDef
+            replaceInFile(%assetDef.getFileName(), %originalAssetName, %newName);
+            renameAssetFile(%assetDef, %newName);
+         }
       }
       else
       {

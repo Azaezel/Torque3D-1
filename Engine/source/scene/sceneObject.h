@@ -913,6 +913,8 @@ class SceneObject : public NetObject, public ProcessObject
    DECLARE_CALLBACK(void, onLostChild, (SceneObject *subObject));
 // PATHSHAPE END
 
+   DECLARE_CALLBACK(void, onSaving, (const char* fileName));
+
    virtual void getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList) {}
 };
 

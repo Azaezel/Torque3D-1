@@ -231,7 +231,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat, U32 mipLeve
       miscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
    }
 
-   D3D11_TEXTURE2D_DESC desc;
+   D3D11_TEXTURE2D_DESC desc = {};
 
    desc.Width = mTexSize;
    desc.Height = mTexSize;
@@ -248,7 +248,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat, U32 mipLeve
 
    HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, NULL, &mTexture);
 
-   D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc;
+   D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc = {};
    SMViewDesc.Format = GFXD3D11TextureFormat[mFaceFormat];
    SMViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
    SMViewDesc.TextureCube.MipLevels = -1;
@@ -272,13 +272,13 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat, U32 mipLeve
       AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateTexture2D call failure");
    }
 
-   D3D11_RENDER_TARGET_VIEW_DESC viewDesc;
-   viewDesc.Format = desc.Format;
-   viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-   viewDesc.Texture2DArray.ArraySize = 1;
-   viewDesc.Texture2DArray.MipSlice = 0;
    for (U32 i = 0; i < CubeFaces; i++)
    {
+      D3D11_RENDER_TARGET_VIEW_DESC viewDesc = {};
+      viewDesc.Format = desc.Format;
+      viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+      viewDesc.Texture2DArray.ArraySize = 1;
+      viewDesc.Texture2DArray.MipSlice = 0;
       viewDesc.Texture2DArray.FirstArraySlice = i;
       hr = D3D11DEVICE->CreateRenderTargetView(mTexture, &viewDesc, &mRTView[i]);
 

@@ -87,6 +87,7 @@ function initializeAssetBrowser()
    exec("./scripts/looseFileAudit." @ $TorqueScriptFileExtension);
    exec("./scripts/creator." @ $TorqueScriptFileExtension);
    exec("./scripts/setAssetTarget." @ $TorqueScriptFileExtension);
+   exec("./scripts/utils." @ $TorqueScriptFileExtension);
    
    //Processing for the different asset types
    exec("./scripts/assetTypes/component." @ $TorqueScriptFileExtension); 
@@ -110,6 +111,7 @@ function initializeAssetBrowser()
    exec("./scripts/assetTypes/looseFiles." @ $TorqueScriptFileExtension); 
    exec("./scripts/assetTypes/prefab." @ $TorqueScriptFileExtension); 
    exec("./scripts/assetTypes/creatorObj." @ $TorqueScriptFileExtension); 
+   exec("./scripts/assetTypes/gameMode." @ $TorqueScriptFileExtension); 
    
    new ScriptObject( AssetBrowserPlugin )
    {

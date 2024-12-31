@@ -57,9 +57,7 @@ IMPLEMENT_CALLBACK(TSShapeConstructor, onUnload, void, (), (),
 ImplementEnumType(TSShapeConstructorUpAxis,
    "Axis to use for upwards direction when importing from Collada.\n\n"
    "@ingroup TSShapeConstructor")
-{
-UPAXISTYPE_X_UP, "X_AXIS"
-},
+{ UPAXISTYPE_X_UP, "X_AXIS" },
 { UPAXISTYPE_Y_UP,   "Y_AXIS" },
 { UPAXISTYPE_Z_UP,   "Z_AXIS" },
 { UPAXISTYPE_COUNT,  "DEFAULT" }
@@ -68,9 +66,7 @@ EndImplementEnumType;
 ImplementEnumType(TSShapeConstructorLodType,
    "\n\n"
    "@ingroup TSShapeConstructor")
-{
-   ColladaUtils::ImportOptions::DetectDTS, "DetectDTS"
-},
+{ ColladaUtils::ImportOptions::DetectDTS, "DetectDTS" },
 { ColladaUtils::ImportOptions::SingleSize,      "SingleSize" },
 { ColladaUtils::ImportOptions::TrailingNumber,  "TrailingNumber" },
    EndImplementEnumType;
@@ -78,9 +74,7 @@ ImplementEnumType(TSShapeConstructorLodType,
 ImplementEnumType(TSShapeConstructorAnimType,
    "\n\n"
    "@ingroup TSShapeConstructor")
-{
-   ColladaUtils::ImportOptions::FrameCount, "Frames"
-},
+{ ColladaUtils::ImportOptions::FrameCount, "Frames" },
 { ColladaUtils::ImportOptions::Seconds,         "Seconds" },
 { ColladaUtils::ImportOptions::Milliseconds,    "Milliseconds" },
    EndImplementEnumType;

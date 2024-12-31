@@ -325,6 +325,8 @@ function replaceInFile(%fileName, %fromWord, %toWord)
    //Go through our scriptfile and replace the old namespace with the new
    %editedFileContents = "";
    
+   %lineArray = new ArrayObject(){};
+   
    %file = new FileObject();
    if ( %file.openForRead( %fileName ) ) 
    {
@@ -334,6 +336,8 @@ function replaceInFile(%fileName, %fromWord, %toWord)
          %line = trim( %line );
          
          %editedFileContents = %editedFileContents @ strreplace(%line, %fromWord, %toWord) @ "\n";
+         
+         %lineArray.add(strreplace(%line, %fromWord, %toWord));
       }
       
       %file.close();
@@ -341,12 +345,18 @@ function replaceInFile(%fileName, %fromWord, %toWord)
    
    if(%editedFileContents !$= "")
    {
-      %file.openForWrite(%fileName);
-      
-      %file.writeline(%editedFileContents);
-      
-      %file.close();
+      if( %file.openForWrite(%fileName) )
+      {
+         for(%i=0; %i < %lineArray.getCount(); %i++)
+         {
+            %file.writeline(%lineArray.getKey(%i));
+         }
+         
+         %file.close();
+      }
    }
+   
+   %lineArray.delete();
 }
 
 //------------------------------------------------------------------------------

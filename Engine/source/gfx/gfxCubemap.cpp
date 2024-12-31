@@ -45,19 +45,7 @@ GFXCubemap::~GFXCubemap()
 
 U32 GFXCubemap::zUpFaceIndex(const U32 index)
 {
-   switch (index)
-   {
-   case 2:
-      return 4;
-   case 3:
-      return 5;
-   case 4:
-      return 2;
-   case 5:
-      return 3;
-   default:
-      return index;
-   };
+   return index;
 }
 
 void GFXCubemap::initNormalize( U32 size )

@@ -173,7 +173,7 @@ Trigger::Trigger()
    mPhysicsRep = NULL;
    mTripOnce = false;
    mTrippedBy = 0xFFFFFFFF;
-   mTripCondition = "";
+   mTripIf = "";
 
    //Default up a basic square
    Point3F vecs[3] = { Point3F(1.0, 0.0, 0.0),
@@ -379,7 +379,7 @@ void Trigger::initPersistFields()
       "representing the edges extending from the corner.\n");
 
    addField("TripOnce", TypeBool, Offset(mTripOnce, Trigger),"Do we trigger callacks just the once?");
-   addField("TripCondition", TypeRealString, Offset(mTripCondition, Trigger),"evaluation condition to trip callbacks (true/false)");
+   addField("tripIf", TypeRealString, Offset(mTripIf, Trigger),"evaluation condition to trip callbacks (true/false)");
    addField("TrippedBy", TypeGameTypeMasksType, Offset(mTrippedBy, Trigger), "typemask filter");
    addProtectedField("enterCommand", TypeCommand, Offset(mEnterCommand, Trigger), &setEnterCmd, &defaultProtectedGetFn,
       "The command to execute when an object enters this trigger. Object id stored in %%obj. Maximum 1023 characters." );
@@ -697,13 +697,13 @@ bool Trigger::testTrippable()
 
 bool Trigger::testCondition()
 {
-   if (mTripCondition.isEmpty())
+   if (mTripIf.isEmpty())
       return true; //we've got no tests to run so just do it
 
    //test the mapper plugged in condition line
    String resVar = getIdString() + String(".result");
    Con::setBoolVariable(resVar.c_str(), false);
-   String command = resVar + "=" + mTripCondition + ";";
+   String command = resVar + "=" + mTripIf + ";";
    Con::evaluatef(command.c_str());
    if (Con::getBoolVariable(resVar.c_str()) == 1)
    {

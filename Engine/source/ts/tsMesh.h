@@ -252,7 +252,7 @@ public:
 protected:
 
    U32 mMeshType;
-   Box3F mBounds;
+   
    Point3F mCenter;
    F32 mRadius;
    F32 mVisibility;
@@ -272,7 +272,7 @@ public:
    S32 numFrames;
    S32 numMatFrames;
    S32 vertsPerFrame;
-
+   Box3F mBounds;
    U32 mVertOffset;
    U32 mVertSize;
 

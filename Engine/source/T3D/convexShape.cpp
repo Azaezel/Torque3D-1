@@ -317,10 +317,10 @@ void ConvexShape::initPersistFields()
    addGroup( "Internal" );
 
       addProtectedField( "surface", TypeRealString, 0, &protectedSetSurface, &defaultProtectedGetFn,
-         "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors );
+         "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors | AbstractClassRep::FIELD_SpecialtyArrayField);
 
 	  addProtectedField( "surfaceTexture", TypeRealString, 0, &protectedSetSurfaceTexture, &defaultProtectedGetFn,
-         "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors );
+         "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors | AbstractClassRep::FIELD_SpecialtyArrayField);
 
    endGroup( "Internal" );
 
@@ -496,6 +496,57 @@ bool ConvexShape::writeField( StringTableEntry fieldname, const char *value )
       return false;
 
    return Parent::writeField( fieldname, value );
+}
+
+U32 ConvexShape::getSpecialFieldSize(StringTableEntry fieldName)
+{
+   if (fieldName == StringTable->insert("surface") || fieldName == StringTable->insert("surfaceTexture"))
+   {
+      return mSurfaces.size();
+   }
+
+   return 0;
+}
+
+const char* ConvexShape::getSpecialFieldOut(StringTableEntry fieldName, const U32& index)
+{
+   if (index >= smMaxSurfaces)
+      return NULL;
+
+   if (fieldName == StringTable->insert("surface"))
+   {
+      if(index >= mSurfaces.size())
+         return NULL;
+
+      const MatrixF& mat = mSurfaces[index];
+
+      QuatF quat(mat);
+      Point3F pos(mat.getPosition());
+
+      char buffer[1024];
+      dMemset(buffer, 0, 1024);
+
+      dSprintf(buffer, 1024, "%g %g %g %g %g %g %g %i %g %g %g %g %g %i %i",
+         quat.x, quat.y, quat.z, quat.w, pos.x, pos.y, pos.z, mSurfaceUVs[index].matID,
+         mSurfaceUVs[index].offset.x, mSurfaceUVs[index].offset.y, mSurfaceUVs[index].scale.x,
+         mSurfaceUVs[index].scale.y, mSurfaceUVs[index].zRot, mSurfaceUVs[index].horzFlip, mSurfaceUVs[index].vertFlip);
+
+      return StringTable->insert(buffer);
+   }
+   else if (fieldName == StringTable->insert("surfaceTexture"))
+   {
+      if (index >= mSurfaceTextures.size())
+         return NULL;
+
+      char buffer[1024];
+      dMemset(buffer, 0, 1024);
+
+      dSprintf(buffer, 1024, "%s", mSurfaceTextures[index].getMaterial());
+
+      return StringTable->insert(buffer);
+   }
+
+   return NULL;
 }
 
 void ConvexShape::onScaleChanged()

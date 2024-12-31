@@ -394,6 +394,9 @@ public:
    void writeFields(Stream &stream, U32 tabStop) override;
    bool writeField( StringTableEntry fieldname, const char *value ) override;
 
+   U32 getSpecialFieldSize(StringTableEntry fieldName) override;
+   const char* getSpecialFieldOut(StringTableEntry fieldName, const U32& index) override;
+
    // NetObject
    U32 packUpdate(NetConnection *, U32, BitStream *) override;
    void unpackUpdate(NetConnection *, BitStream *) override;

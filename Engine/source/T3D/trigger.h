@@ -87,7 +87,7 @@ class Trigger : public GameBase
    bool              mTripped;
    S32               mTrippedBy;
 
-   String            mTripCondition;
+   String            mTripIf;
    String            mEnterCommand;
    String            mLeaveCommand;
    String            mTickCommand;

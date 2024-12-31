@@ -533,7 +533,7 @@ float4 computeForwardProbes(Surface surface,
       if (contrib > 0.0f)
       {
          int cubemapIdx = inProbeConfigData[i].a;
-         float3 dir = boxProject(surface.P, surface.R, inWorldToObjArray[i], inRefScaleArray[i].xyz, inRefPosArray[i].xyz);
+         float3 dir = boxProject(surface.P-inRefPosArray[i].xyz, surface.R, inWorldToObjArray[i], inRefScaleArray[i].xyz, inProbePosArray[i].xyz);
 
          irradiance += TORQUE_TEXCUBEARRAYLOD(irradianceCubemapAR, dir, cubemapIdx, 0).xyz * contrib;
          specular += TORQUE_TEXCUBEARRAYLOD(specularCubemapAR, dir, cubemapIdx, lod).xyz * contrib;
@@ -685,7 +685,7 @@ float4 debugVizForwardProbes(Surface surface,
       if (contrib > 0.0f)
       {
          int cubemapIdx = inProbeConfigData[i].a;
-         float3 dir = boxProject(surface.P, surface.R, inWorldToObjArray[i], inRefScaleArray[i].xyz, inRefPosArray[i].xyz);
+         float3 dir = boxProject(surface.P-inRefPosArray[i].xyz, surface.R, inWorldToObjArray[i], inRefScaleArray[i].xyz, inProbePosArray[i].xyz);
 
          irradiance += TORQUE_TEXCUBEARRAYLOD(irradianceCubemapAR, dir, cubemapIdx, 0).xyz * contrib;
          specular += TORQUE_TEXCUBEARRAYLOD(specularCubemapAR, dir, cubemapIdx, lod).xyz * contrib;

@@ -135,65 +135,68 @@ void PSSMLightShadowMap::_calcSplitPos(const Frustum& currFrustum)
 
 Box3F PSSMLightShadowMap::_calcClipSpaceAABB(const Frustum& f, const MatrixF& transform, F32 farDist)
 {
-   // Calculate frustum center
-   Point3F center(0,0,0);
-   for (U32 i = 0; i < 8; i++)   
-   {
-      const Point3F& pt = f.getPoints()[i];      
-      center += pt;
+   PROFILE_SCOPE(PSSMLightShadowMap_calcClipSpaceAABB);
+
+   // Transform frustum corners to light space.
+   Point3F transformedPoints[8];
+   const Point3F* frustumPoints = f.getPoints();
+   for (U32 i = 0; i < 8; i++) {
+      transformedPoints[i] = frustumPoints[i];
+      transform.mulP(transformedPoints[i]);
    }
-   center /= 8;
 
-   // Calculate frustum bounding sphere radius
-   F32 radius = 0.0f;
-   for (U32 i = 0; i < 8; i++)      
-      radius = getMax(radius, (f.getPoints()[i] - center).lenSquared());
-   radius = mFloor( mSqrt(radius) );
-      
-   // Now build box for sphere
+   // Compute the AABB for the transformed points.
    Box3F result;
-   Point3F radiusBox(radius, radius, radius);
-   result.minExtents = center - radiusBox;
-   result.maxExtents = center + radiusBox;
+   result.minExtents.set(F32_MAX, F32_MAX, F32_MAX);
+   result.maxExtents.set(-F32_MAX, -F32_MAX, -F32_MAX);
 
-   // Transform to light projection space
-   transform.mul(result);
-   
-   return result;   
+   for (U32 i = 0; i < 8; i++) {
+      result.minExtents.setMin(transformedPoints[i]);
+      result.maxExtents.setMax(transformedPoints[i]);
+   }
+
+   // Clamp Z to within near and far distances to avoid over-extension.
+   result.minExtents.z = getMax(result.minExtents.z, 0.0f); // Z must be non-negative in light space.
+   result.maxExtents.z = getMin(result.maxExtents.z, farDist);
+
+   return result;
 }
 
 // This "rounds" the projection matrix to remove subtexel movement during shadow map
 // rasterization.  This is here to reduce shadow shimmering.
 void PSSMLightShadowMap::_roundProjection(const MatrixF& lightMat, const MatrixF& cropMatrix, Point3F &offset, U32 splitNum)
 {
-   // Round to the nearest shadowmap texel, this helps reduce shimmering
-   MatrixF currentProj = GFX->getProjectionMatrix();
-   currentProj.reverseProjection();
-   currentProj = cropMatrix * currentProj * lightMat;
+   // Combine the matrices to transform into light projection space.
+   MatrixF lightProjection = cropMatrix * lightMat;
 
-   // Project origin to screen.
-   Point4F originShadow4F(0,0,0,1);
-   currentProj.mul(originShadow4F);
-   Point2F originShadow(originShadow4F.x / originShadow4F.w, originShadow4F.y / originShadow4F.w);   
+   // Project origin to screen space.
+   Point4F origin(0, 0, 0, 1);
+   lightProjection.mul(origin);
+   origin /= origin.w;
 
-   // Convert to texture space (0..shadowMapSize)
-   F32 t = mNumSplits < 4 ? mShadowMapTex->getWidth() / mNumSplits : mShadowMapTex->getWidth() / 2;
-   Point2F texelsToTexture(t / 2.0f, mShadowMapTex->getHeight() / 2.0f);
-   if (mNumSplits >= 4) texelsToTexture.y *= 0.5f;
-   originShadow.convolve(texelsToTexture);
+   // Convert to texture space (based on shadow map resolution).
+   F32 texelWidth = mShadowMapTex->getWidth() / (mNumSplits < 4 ? mNumSplits : 2);
+   Point2F texelScale(texelWidth * 0.5f, mShadowMapTex->getHeight() * 0.5f);
 
-   // Clamp to texel boundary
-   Point2F originRounded;
-   originRounded.x = mFloor(originShadow.x + 0.5f);
-   originRounded.y = mFloor(originShadow.y + 0.5f);
+   // Adjust origin to align to nearest texel.
+   Point2F originTexelSpace(origin.x * texelScale.x, origin.y * texelScale.y);
+   Point2F roundedOriginTexelSpace(mFloor(originTexelSpace.x + 0.5f), mFloor(originTexelSpace.y + 0.5f));
+   Point2F texelOffset = (roundedOriginTexelSpace - originTexelSpace) / texelScale;
 
-   // Subtract origin to get an offset to recenter everything on texel boundaries
-   originRounded -= originShadow;
+   // Apply the offset back to the projection matrix.
+   offset.x += texelOffset.x;
+   offset.y += texelOffset.y;
+}
 
-   // Convert back to texels (0..1) and offset
-   originRounded.convolveInverse(texelsToTexture);
-   offset.x += originRounded.x;
-   offset.y += originRounded.y;
+void PSSMLightShadowMap::_adjustScaleAndOffset(Box3F& clipAABB, Point3F& scale, Point3F& offset) {
+   scale.x = 2.0f / (clipAABB.maxExtents.x - clipAABB.minExtents.x);
+   scale.y = 2.0f / (clipAABB.maxExtents.y - clipAABB.minExtents.y);
+   scale.z = 1.0f;
+
+   // Center the offset to tightly align the projection.
+   offset.x = -0.5f * (clipAABB.maxExtents.x + clipAABB.minExtents.x) * scale.x;
+   offset.y = -0.5f * (clipAABB.maxExtents.y + clipAABB.minExtents.y) * scale.y;
+   offset.z = 0.0f;
 }
 
 void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
@@ -271,24 +274,11 @@ void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
       Box3F clipAABB = _calcClipSpaceAABB(subFrustum, lightViewProj, fullFrustum.getFarDist());
  
       // Calculate our crop matrix
-      Point3F scale(2.0f / (clipAABB.maxExtents.x - clipAABB.minExtents.x),
-         2.0f / (clipAABB.maxExtents.y - clipAABB.minExtents.y),
-         1.0f);
+      Point3F scale;
 
-      // TODO: This seems to produce less "pops" of the
-      // shadow resolution as the camera spins around and
-      // it should produce pixels that are closer to being
-      // square.
-      //
-      // Still is it the right thing to do?
-      //
-      scale.y = scale.x = ( getMin( scale.x, scale.y ) ); 
-      //scale.x = mFloor(scale.x); 
-      //scale.y = mFloor(scale.y); 
+      Point3F offset;
 
-      Point3F offset(   -0.5f * (clipAABB.maxExtents.x + clipAABB.minExtents.x) * scale.x,
-                        -0.5f * (clipAABB.maxExtents.y + clipAABB.minExtents.y) * scale.y,
-                        0.0f );
+      _adjustScaleAndOffset(clipAABB, scale, offset);
 
       MatrixF cropMatrix(true);
       cropMatrix.scale(scale);
@@ -323,9 +313,7 @@ void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
 
       // Crop matrix multiply needs to be post-projection.
       MatrixF alightProj = GFX->getProjectionMatrix();
-      alightProj.reverseProjection();
       alightProj = cropMatrix * alightProj;
-      alightProj.reverseProjection();
 
       // Set our new projection
       GFX->setProjectionMatrix(alightProj);

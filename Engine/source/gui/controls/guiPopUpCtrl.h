@@ -126,9 +126,9 @@ protected:
       NumBitmapModes = 2
    };
 
-   DECLARE_IMAGEASSET_ARRAY(GuiPopUpMenuCtrl, Bitmap, NumBitmapModes);
+   DECLARE_IMAGEASSET_ARRAY(GuiPopUpMenuCtrl, Bitmap, NumBitmapModes, onBitmapChanged);
    DECLARE_IMAGEASSET_ARRAY_SETGET(GuiPopUpMenuCtrl, Bitmap);
-
+   void onBitmapChanged() {}
    Point2I mBitmapBounds; //  Added
 	S32 mIdMax;
 

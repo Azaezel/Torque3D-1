@@ -116,11 +116,7 @@ public:
    /// Returns the signal used to notify systems that the 
    /// procedural shaders have been flushed.
    FlushSignal& getFlushSignal() { return mFlushSignal; }
-
-   /// Flushes all the procedural shaders and re-initializes all
-   /// the active materials instances immediately.
    void flushAndReInitInstances();
-
    // Flush the instance
    void flushInstance( BaseMaterialDefinition *target );
 
@@ -133,7 +129,14 @@ protected:
    friend class MatInstance;
    void _track(MatInstance*);
    void _untrack(MatInstance*);
+   /// Flushes all the procedural shaders and re-initializes all
+   /// the active materials instances immediately.
+   void _flushAndReInitInstances();
+   // Flush the instance
+   void _flushInstance(BaseMaterialDefinition* target);
 
+   /// Re-initializes the material instances for a specific target material.   
+   void _reInitInstance(BaseMaterialDefinition* target);
    /// @see LightManager::smActivateSignal
    void _onLMActivate( const char *lm, bool activate );
 
@@ -155,6 +158,8 @@ protected:
    /// If set we flush and reinitialize all materials at the
    /// start of the next rendered frame.
    bool mFlushAndReInit;
+   bool mMatDefShouldReload;
+   bool mMatDefShouldFlush;
 
    // material map
    typedef Map<String, String> MaterialMap;
@@ -169,6 +174,8 @@ protected:
    F32 mDampness;
 
    BaseMatInstance* mWarningInst;
+   BaseMaterialDefinition* mMatDefToFlush;
+   BaseMaterialDefinition* mMatDefToReload;
 
    /// The default max anisotropy used in texture filtering.
    S32 mDefaultAnisotropy;

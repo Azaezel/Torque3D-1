@@ -1724,7 +1724,7 @@ void SceneObject::updateRenderChangesByParent(){
 		MatrixF offset;
 		offset.mul(renderXform, xform);
 
-   	    MatrixF mat;
+      MatrixF mat;
 		
 		//add the "offset" caused by the parents change, and add it to it's own
 		// This is needed by objects that update their own render transform thru interpolate tick
@@ -2013,3 +2013,8 @@ void SceneObject::onNewParent(SceneObject *newParent) { if (isServerObject()) on
 void SceneObject::onLostParent(SceneObject *oldParent) { if (isServerObject()) onLostParent_callback(oldParent); }
 void SceneObject::onNewChild(SceneObject *newKid) { if (isServerObject()) onNewChild_callback(newKid); }
 void SceneObject::onLostChild(SceneObject *lostKid) { if (isServerObject()) onLostChild_callback(lostKid); }
+
+IMPLEMENT_CALLBACK(SceneObject, onSaving, void, (const char* fileName), (fileName),
+   "@brief Called when a saving is occuring to allow objects to special-handle prepwork for saving if required.\n\n"
+
+   "@param fileName The level file being saved\n");

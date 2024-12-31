@@ -329,9 +329,6 @@ function EditorSaveMission()
 
    if(EWorldEditor.isDirty || ETerrainEditor.isMissionDirty)
    {
-      //Inform objects a save is happening, in case there is any special pre-save behavior a class needs to do
-      getScene(0).callOnChildren("onSaving", $Server::MissionFile);
-   
       getScene(0).save($Server::MissionFile);
       
    }
@@ -604,18 +601,20 @@ function EditorOpenSceneAppend(%levelAsset)
 
 function MakeSelectionASublevel()
 {
-   /*%size = EWorldEditor.getSelectionSize();
+   %size = EWorldEditor.getSelectionSize();
    if ( %size == 0 )
       return;
       
-   //Make a new Scene object
-      
+   //Make a group for the objects to go into to be processed as into a
+   //subscene
+   %group = new SimGroup();
    for(%i=0; %i < %size; %i++)
    {
-      
+      %group.add(EWorldEditor.getSelectedObject(%i));
    }
-   %a = EWorldEditor.getSelectedObject(0);
-   %b = EWorldEditor.getSelectedObject(1);*/
+   
+   //Now that we have a group, process it into a subscene
+   EWorldEditor.createSelectedAsSubScene(%group);
 }
 
 function updateEditorRecentLevelsList(%levelAssetId)

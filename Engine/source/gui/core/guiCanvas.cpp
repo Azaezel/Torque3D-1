@@ -163,7 +163,8 @@ GuiCanvas::GuiCanvas(): GuiControl(),
                         mPlatformWindow(NULL),
                         mDisplayWindow(true),
                         mMenuBarCtrl(nullptr),
-                        mMenuBackground(nullptr)
+                        mMenuBackground(nullptr),
+                        mConstrainMouse(false)
 {
    setBounds(0, 0, 640, 480);
    mAwake = true;
@@ -1749,6 +1750,36 @@ void GuiCanvas::setupFences()
    mNextFenceIdx = 0;
 }
 
+void GuiCanvas::constrainMouseCoords(Point2I mousePoint)
+{
+   if (mConstrainMouse == false) return;
+   Point2I windowPos = getPlatformWindow()->getPosition();//this is the offset
+   Point2I winSize = getWindowSize();//window size too!
+
+   S32 newDisplay = Con::getIntVariable("pref::Video::deviceId", 0);
+   SDL_DisplayMode displayM;
+   if (0 == SDL_GetDesktopDisplayMode(newDisplay, &displayM))
+   {
+      S32 width = displayM.w;
+      S32 height = displayM.h;
+
+      if (winSize.x < width || winSize.y < height)
+      {
+         //we must be windowed
+         //find the diference and half it
+         S32 offX = (width - winSize.x) * 0.5f;
+         S32 offY = (height - winSize.y) * 0.5f;
+         S32 maxX = winSize.x + offX;
+         S32 maxY = winSize.y + offY;
+
+         Point2I newPos; //using 8px as a safety margin
+         newPos.x = mClamp(mousePoint.x, 0, maxX);
+         newPos.y = mClamp(mousePoint.y, 0, maxY);
+         setCursorPos(windowPos + newPos);
+      }
+   }
+}
+
 void GuiCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = true */)
 {
    AssertISV(mPlatformWindow, "GuiCanvas::renderFrame - no window present!");
@@ -1874,6 +1905,7 @@ void GuiCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = true */)
 
       addUpdateRegion(pos - Point2I(2, 2), Point2I(cext.x + 4, cext.y + 4));
    }
+   constrainMouseCoords(cursorPos);
 
    mLastCursorEnabled = cursorVisible;
    mLastCursor = mouseCursor;
@@ -2954,6 +2986,11 @@ DefineEngineMethod(GuiCanvas, cursorClick, void, (S32 buttonId, bool isDown), , 
 DefineEngineMethod(GuiCanvas, cursorNudge, void, (F32 x, F32 y), , "")
 {
    object->cursorNudge(x, y);
+}
+
+DefineEngineMethod(GuiCanvas, constrainMouse, void, (bool constrained), , "constrain Mouse to the window")
+{
+   object->constrainMouse(constrained);
 }
 
 // This function allows resetting of the video-mode from script. It was motivated by

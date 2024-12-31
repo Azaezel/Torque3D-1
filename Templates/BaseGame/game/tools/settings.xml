@@ -376,6 +376,8 @@
         <Setting
             name="startupMode">Blank Level</Setting>
         <Setting
+            name="subSceneCreateScalar">2</Setting>
+        <Setting
             name="torsionPath">AssetWork_Debug.exe</Setting>
         <Setting
             name="undoLimit">40</Setting>
