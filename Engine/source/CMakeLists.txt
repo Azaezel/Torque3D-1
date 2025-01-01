@@ -283,7 +283,7 @@ foreach (TORQUE_MODULE_PATH ${TORQUE_MODULE_PATHS})
 
             set(TORQUE_SOURCE_FILES_TEMPORARY ${TORQUE_SOURCE_FILES_TEMPORARY} ${TORQUE_SOURCE_FILES})
             set(TORQUE_SOURCE_FILES "")
-        elseif(NOT EXISTS "${POSSIBLE_PROJECT_ABSOLUTEPATH}/source/*.cmake")
+        elseif(NOT EXISTS "${POSSIBLE_PROJECT_ABSOLUTEPATH}/source/*.cmake" AND NOT EXISTS "${POSSIBLE_PROJECT_ABSOLUTEPATH}/source/libs/*.cmake")
             file(GLOB_RECURSE MODULE_SOURCE "${POSSIBLE_PROJECT_ABSOLUTEPATH}/source/*.h" "${POSSIBLE_PROJECT_ABSOLUTEPATH}/source/*.cpp")
             #message(STATUS "MODULE_SOURCE:${MODULE_SOURCE}")
             source_group(TREE "${POSSIBLE_PROJECT_ABSOLUTEPATH}" PREFIX "Modules/${POSSIBLE_PROJECT}/" FILES ${MODULE_SOURCE})
@@ -317,7 +317,7 @@ if (EXISTS "${TORQUE_LIBRARY_BASE_PATH}")
     # List all immediate subdirectories of the base path for debugging
     file(GLOB MODULE_SUBDIRS "${TORQUE_LIBRARY_BASE_PATH}/*")
     foreach (MODULE_SUBDIR ${MODULE_SUBDIRS})
-        if (EXISTS "${MODULE_SUBDIR}/libs/libs.cmake")
+        if (EXISTS "${MODULE_SUBDIR}/source/libs/libs.cmake")
             message(STATUS "Adding subdirectory: ${MODULE_SUBDIR}/libs")
             # Handle spaces in paths (if needed)
             string(REPLACE " " "_" MODULE_BINARY_SUBDIR "${MODULE_SUBDIR}/libs")
@@ -479,7 +479,7 @@ foreach (TORQUE_LIBRARY ${TORQUE_LINK_LIBRARIES})
   set_target_properties(${TORQUE_LIBRARY} PROPERTIES
   FOLDER "Libraries")
   # remove warnings from 3rd parties.
-  target_compile_options(${TORQUE_LIBRARY} PRIVATE "-w")
+  #target_compile_options(${TORQUE_LIBRARY} PRIVATE "-w")
 endforeach()
 
 target_compile_definitions(${TORQUE_APP_NAME} PUBLIC ${TORQUE_COMPILE_DEFINITIONS})
