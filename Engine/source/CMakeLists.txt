@@ -252,6 +252,29 @@ if (NOT "${TORQUE_MODULE_USER_PATH}" STREQUAL "")
 	list(APPEND TORQUE_MODULE_PATHS "${TORQUE_MODULE_USER_PATH}")
 endif()
 
+################# MODULE LIBRARIES ###################
+set(TORQUE_LIBRARY_BASE_PATH "${TORQUE_APP_GAME_DIRECTORY}/data")
+message(STATUS "Checking base path: ${TORQUE_LIBRARY_BASE_PATH}")
+set(MODULE_SUBDIRS_INCLUDED "")
+if (EXISTS "${TORQUE_LIBRARY_BASE_PATH}")
+    # List all immediate subdirectories of the base path for debugging
+    file(GLOB MODULE_SUBDIRS "${TORQUE_LIBRARY_BASE_PATH}/*")
+    foreach (MODULE_SUBDIR ${MODULE_SUBDIRS})
+        if (EXISTS "${MODULE_SUBDIR}/source/libs/libs.cmake")
+            message(STATUS "Adding subdirectory: ${MODULE_SUBDIR}/libs")
+            # Handle spaces in paths (if needed)
+            string(REPLACE " " "_" MODULE_BINARY_SUBDIR "${MODULE_SUBDIR}/libs")
+            
+            # Explicitly specify source and binary directories
+            include("${MODULE_SUBDIR}/source/libs/libs.cmake")
+            cmake_path(GET MODULE_SUBDIR STEM LAST_ONLY LAST_DIR_WORD)
+            set(MODULE_SUBDIRS_INCLUDED ${MODULE_SUBDIRS_INCLUDED} ${LAST_DIR_WORD})
+        endif()
+    endforeach()
+else()
+    message(WARNING "Base path ${TORQUE_LIBRARY_BASE_PATH} does not exist.")
+endif()
+
 # Before doing module scanning, store away the engine sources - we do this so that modules
 # can be placed into the proper filters
 set(TORQUE_SOURCE_FILES_TEMPORARY ${TORQUE_SOURCE_FILES} ${TORQUE_APP_GAME_SOURCES})
@@ -272,7 +295,12 @@ foreach (TORQUE_MODULE_PATH ${TORQUE_MODULE_PATHS})
 
 	# Next find sub projects, these can introduce new source files
 	SUBDIRLIST(POSSIBLE_PROJECTS "${TORQUE_MODULE_PATH}")
-	foreach (POSSIBLE_PROJECT ${POSSIBLE_PROJECTS})
+    set(FILTERED_PROJECTS ${POSSIBLE_PROJECTS})
+	foreach (MODULE_INCLUDED ${MODULE_SUBDIRS_INCLUDED})
+        list(FILTER FILTERED_PROJECTS EXCLUDE REGEX ${MODULE_INCLUDED})
+	endforeach()
+    
+	foreach (POSSIBLE_PROJECT ${FILTERED_PROJECTS})
 		# Retrieve the absolute path of this possible project
 		get_filename_component(POSSIBLE_PROJECT_ABSOLUTEPATH "${POSSIBLE_PROJECT}"
 							   REALPATH BASE_DIR "${TORQUE_MODULE_PATH}")
@@ -289,10 +317,23 @@ foreach (TORQUE_MODULE_PATH ${TORQUE_MODULE_PATHS})
             source_group(TREE "${POSSIBLE_PROJECT_ABSOLUTEPATH}" PREFIX "Modules/${POSSIBLE_PROJECT}/" FILES ${MODULE_SOURCE})
             set(TORQUE_SOURCE_FILES_TEMPORARY ${TORQUE_SOURCE_FILES_TEMPORARY} ${MODULE_SOURCE})
 		endif()
-	endforeach()
+	endforeach()    
+    
 endforeach()
 
-set(TORQUE_SOURCE_FILES ${TORQUE_SOURCE_FILES_TEMPORARY})
+foreach (MODULE_INCLUDED ${MODULE_SUBDIRS_INCLUDED})
+    set(WRAPPER_DIR ${TORQUE_LIBRARY_BASE_PATH}/${MODULE_INCLUDED}/source/wrappers)
+    if (EXISTS ${WRAPPER_DIR})
+        message("including ${WRAPPER_DIR}")        
+            file(GLOB_RECURSE WRAPPER_SOURCE "${WRAPPER_DIR}/*.h" "${WRAPPER_DIR}/*.cpp")
+            source_group(TREE "${WRAPPER_DIR}" PREFIX "Modules/${MODULE_INCLUDED}/" FILES ${WRAPPER_SOURCE})
+            set(WRAPPER_FILES ${WRAPPER_FILES} ${WRAPPER_SOURCE})
+        message("including ${WRAPPER_FILES}")    
+    endif()
+endforeach()
+
+set(TORQUE_SOURCE_FILES ${TORQUE_SOURCE_FILES_TEMPORARY} ${WRAPPER_FILES})
+
 
 ################# Library Post-build Handling ###################
 set(TORQUE_LIBRARY_PATHS "${CMAKE_SOURCE_DIR}/Engine/lib")
@@ -309,26 +350,6 @@ foreach (TORQUE_LIBRARY_PATH ${TORQUE_LIBRARY_PATHS})
 	endforeach()
 endforeach()
 
-################# MODULE LIBRARIES ###################
-set(TORQUE_LIBRARY_BASE_PATH "${TORQUE_APP_GAME_DIRECTORY}/data")
-message(STATUS "Checking base path: ${TORQUE_LIBRARY_BASE_PATH}")
-
-if (EXISTS "${TORQUE_LIBRARY_BASE_PATH}")
-    # List all immediate subdirectories of the base path for debugging
-    file(GLOB MODULE_SUBDIRS "${TORQUE_LIBRARY_BASE_PATH}/*")
-    foreach (MODULE_SUBDIR ${MODULE_SUBDIRS})
-        if (EXISTS "${MODULE_SUBDIR}/source/libs/libs.cmake")
-            message(STATUS "Adding subdirectory: ${MODULE_SUBDIR}/libs")
-            # Handle spaces in paths (if needed)
-            string(REPLACE " " "_" MODULE_BINARY_SUBDIR "${MODULE_SUBDIR}/libs")
-            
-            # Explicitly specify source and binary directories
-            include("${MODULE_SUBDIR}/source/libs/libs.cmake")
-        endif()
-    endforeach()
-else()
-    message(WARNING "Base path ${TORQUE_LIBRARY_BASE_PATH} does not exist.")
-endif()
 ################# Dynamic File Configuration ###################
 
 # Prepare Windows RC file
