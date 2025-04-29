@@ -68,6 +68,10 @@ function initializeAssetBrowser()
    exec("./scripts/setAssetTarget." @ $TorqueScriptFileExtension);
    exec("./scripts/utils." @ $TorqueScriptFileExtension);
    
+   exec("./scripts/utils");
+   
+   exec("./scripts/projectImporter." @ $TorqueScriptFileExtension);
+   
    //Processing for the different asset types
    exec("./scripts/assetTypes/genericAsset." @ $TorqueScriptFileExtension); 
    

@@ -20,6 +20,100 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+
+function ObjectCreator::init( %this )
+{
+   // Just so we can recall this method for testing changes
+   // without restarting.
+   if ( isObject( %this.array ) )
+      %this.array.delete();
+      
+   %this.array = new ArrayObject();
+   %this.array.caseSensitive = true; 
+   %this.setListView( true );
+   
+   %this.beginGroup( "Environment" );
+   
+      // Removed Prefab as there doesn't really seem to be a point in creating a blank one
+      //%this.registerMissionObject( "Prefab",              "Prefab" );
+      %this.registerMissionObject( "SkyBox",              "Sky Box" );
+      %this.registerMissionObject( "CloudLayer",          "Cloud Layer" );
+      %this.registerMissionObject( "BasicClouds",         "Basic Clouds" );
+      %this.registerMissionObject( "ScatterSky",          "Scatter Sky" );
+      %this.registerMissionObject( "Sun",                 "Basic Sun" );
+      %this.registerMissionObject( "Lightning" );
+      %this.registerMissionObject( "WaterBlock",          "Water Block" );
+      %this.registerMissionObject( "SFXEmitter",          "Sound Emitter" );
+      %this.registerMissionObject( "Precipitation" );
+      %this.registerMissionObject( "ParticleEmitterNode", "Particle Emitter" );
+      %this.registerMissionObject( "VolumetricFog", "Volumetric Fog" );
+      %this.registerMissionObject( "RibbonNode", "Ribbon" );
+      
+      // Legacy features. Users should use Ground Cover and the Forest Editor.   
+      //%this.registerMissionObject( "fxShapeReplicator",   "Shape Replicator" );
+      //%this.registerMissionObject( "fxFoliageReplicator", "Foliage Replicator" );
+      
+      %this.registerMissionObject( "PointLight",          "Point Light" );
+      %this.registerMissionObject( "SpotLight",           "Spot Light" );
+      
+      %this.registerMissionObject( "BoxEnvironmentProbe",       "Box Environment Probe" );
+      %this.registerMissionObject( "SphereEnvironmentProbe",    "Sphere Environment Probe" );
+      %this.registerMissionObject( "Skylight",       "Skylight" );
+      
+      %this.registerMissionObject( "GroundCover",         "Ground Cover" );
+      %this.registerMissionObject( "TerrainBlock",        "Terrain Block" );
+      %this.registerMissionObject( "GroundPlane",         "Ground Plane" );
+      %this.registerMissionObject( "WaterPlane",          "Water Plane" );
+      %this.registerMissionObject( "PxCloth",             "Cloth" );
+      %this.registerMissionObject( "ForestWindEmitter",   "Wind Emitter" );
+               
+      %this.registerMissionObject( "DustEmitter", "Dust Emitter" );
+      %this.registerMissionObject( "DustSimulation", "Dust Simulation" );
+      %this.registerMissionObject( "DustEffecter", "Dust Effecter" );
+      
+   %this.endGroup();
+
+   %this.beginGroup( "Level" );
+   
+      %this.registerMissionObject( "MissionArea",  "Mission Area" );
+      %this.registerMissionObject( "Path" );
+      %this.registerMissionObject( "Marker",       "Path Node" );
+      %this.registerMissionObject( "Trigger" );
+      %this.registerMissionObject( "CameraTrigger" );
+      %this.registerMissionObject( "PhysicalZone", "Physical Zone" );
+      %this.registerMissionObject( "Camera" );
+      %this.registerMissionObject( "LevelInfo",    "Level Info" );
+      %this.registerMissionObject( "TimeOfDay",    "Time of Day" );
+      %this.registerMissionObject( "Zone",         "Zone" );
+      %this.registerMissionObject( "Portal",       "Zone Portal" );
+      %this.registerMissionObject( "SpawnSphere",  "Player Spawn Sphere", "PlayerDropPoint" );
+      %this.registerMissionObject( "SpawnSphere",  "Observer Spawn Sphere", "ObserverDropPoint" );
+      %this.registerMissionObject( "SpawnSphere",  "General Spawn Sphere", "GeneralDropPoint" );
+      %this.registerMissionObject( "SFXSpace",      "Sound Space" );
+      %this.registerMissionObject( "OcclusionVolume", "Occlusion Volume" );
+      %this.registerMissionObject( "AccumulationVolume", "Accumulation Volume" );
+      %this.registerMissionObject("NavMesh", "Navigation mesh");
+      %this.registerMissionObject("NavPath", "Path");
+      %this.registerMissionObject( "Entity",       "Entity" );
+      %this.registerMissionObject( "NotesObject",       "Note" );
+      
+   %this.endGroup();
+   
+   %this.beginGroup( "System" );
+   
+      %this.registerMissionObject( "SimGroup" );
+      
+   %this.endGroup();  
+
+   %this.beginGroup( "ExampleObjects" );
+   
+      %this.registerMissionObject( "RenderObjectExample" );
+      %this.registerMissionObject( "RenderMeshExample" );
+      %this.registerMissionObject( "RenderShapeExample" );
+      
+   %this.endGroup(); 
+}
+
 function ObjectCreator::onWake( %this )
 {
 }
