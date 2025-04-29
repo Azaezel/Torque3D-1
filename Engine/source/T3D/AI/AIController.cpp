@@ -110,8 +110,6 @@ void AIController::setAim(SimObjectPtr<SceneObject> objIn, F32 rad, Point3F offs
    mAimTarget->mAimOffset = offset;
 }
 
-#ifdef TORQUE_NAVIGATION_ENABLED
-
 bool AIController::getAIMove(Move* movePtr)
 {
    *movePtr = NullMove;
@@ -145,9 +143,9 @@ bool AIController::getAIMove(Move* movePtr)
       }
    }
 
-#ifdef TORQUE_NAVIGATION_ENABLED
    if (sbo->getDamageState() == ShapeBase::Enabled && getGoal())
    {
+#ifdef TORQUE_NAVIGATION_ENABLED
       if (mMovement.mMoveState != ModeStop)
          getNav()->updateNavMesh();
 
@@ -202,8 +200,41 @@ bool AIController::getAIMove(Move* movePtr)
             else getGoal()->mInFiringRange = false;
          }
       }
-   }
+#else
+      if (getGoal()->getDist() > mControllerData->mFollowTolerance)
+      {
+         if (getGoal()->mObj.isValid())
+            getNav()->followObject(getGoal()->mObj, mControllerData->mFollowTolerance);
+         else if (getGoal()->mPosSet)
+            getNav()->setPathDestination(getGoal()->getPosition(true));
+
+         getGoal()->mInRange = false;
+      }
+      if (getGoal()->getDist() < mControllerData->mFollowTolerance)
+      {
+         mMovement.mMoveState = ModeStop;
+
+         if (!getGoal()->mInRange)
+         {
+            getGoal()->mInRange = true;
+            throwCallback("onTargetInRange");
+         }
+         else getGoal()->mInRange = false;
+      }
+      else
+      {
+         if (getGoal()->getDist() < mControllerData->mAttackRadius)
+         {
+            if (!getGoal()->mInFiringRange)
+            {
+               getGoal()->mInFiringRange = true;
+               throwCallback("onTargetInFiringRange");
+            }
+         }
+         else getGoal()->mInFiringRange = false;
+      }
 #endif // TORQUE_NAVIGATION_ENABLED
+   }
    // Orient towards the aim point, aim object, or towards
    // our destination.
    if (getAim() || mMovement.mMoveState != ModeStop)
@@ -486,18 +517,45 @@ void AIControllerData::resolveStuck(AIController* obj)
 AIControllerData::AIControllerData()
 {
    mMoveTolerance = 0.25f;
-   mFollowTolerance = 1.0f;
    mAttackRadius = 2.0f;
    mMoveStuckTolerance = 0.01f;
    mMoveStuckTestDelay = 30;
+   mHeightTolerance = 0.001f;
+   mFollowTolerance = 1.0f;
+
+#ifdef TORQUE_NAVIGATION_ENABLED
    mLinkTypes = LinkData(AllFlags);
    mNavSize = AINavigation::Regular;
-   mHeightTolerance = 0.001f;
-
    mFlocking.mChance = 90;
    mFlocking.mMin = 1.0f;
    mFlocking.mMax = 3.0f;
    mFlocking.mSideStep = 0.01f;
+#endif
+   resolveYawPtr.bind(this, &AIControllerData::resolveYaw);
+   resolvePitchPtr.bind(this, &AIControllerData::resolvePitch);
+   resolveRollPtr.bind(this, &AIControllerData::resolveRoll);
+   resolveSpeedPtr.bind(this, &AIControllerData::resolveSpeed);
+   resolveTriggerStatePtr.bind(this, &AIControllerData::resolveTriggerState);
+   resolveStuckPtr.bind(this, &AIControllerData::resolveStuck);
+}
+
+AIControllerData::AIControllerData(const AIControllerData& other, bool temp_clone) : SimDataBlock(other, temp_clone)
+{
+   mMoveTolerance = other.mMoveTolerance;
+   mAttackRadius = other.mAttackRadius;
+   mMoveStuckTolerance = other.mMoveStuckTolerance;
+   mMoveStuckTestDelay = other.mMoveStuckTestDelay;
+   mHeightTolerance = other.mHeightTolerance;
+   mFollowTolerance = other.mFollowTolerance;
+
+#ifdef TORQUE_NAVIGATION_ENABLED
+   mLinkTypes = other.mLinkTypes;
+   mNavSize = other.mNavSize;
+   mFlocking.mChance = other.mFlocking.mChance;
+   mFlocking.mMin = other.mFlocking.mMin;
+   mFlocking.mMax = other.mFlocking.mMax;
+   mFlocking.mSideStep = other.mFlocking.mSideStep;
+#endif
 
    resolveYawPtr.bind(this, &AIControllerData::resolveYaw);
    resolvePitchPtr.bind(this, &AIControllerData::resolvePitch);
@@ -526,6 +584,9 @@ void AIControllerData::initPersistFields()
       "it helps the AIController controlled object from never reaching its destination due to minor obstacles, "
       "rounding errors on its position calculation, etc.  By default it is set to 0.25.\n");
 
+   addFieldV("AttackRadius", TypeRangedF32, Offset(mAttackRadius, AIControllerData), &CommonValidators::PositiveFloat,
+      "@brief Distance considered in firing range for callback purposes.");
+
    addFieldV("moveStuckTolerance", TypeRangedF32, Offset(mMoveStuckTolerance, AIControllerData), &CommonValidators::PositiveFloat,
       "@brief Distance tolerance on stuck check.\n\n"
       "When the AIController controlled object controlled object is moving to a given destination, if it ever moves less than "
@@ -545,10 +606,10 @@ void AIControllerData::initPersistFields()
       "before the AIController controlled object starts to check if it is stuck.  This delay allows the AIController controlled object "
       "to accelerate to full speed without its initial slow start being considered as stuck.\n"
       "@note Set to zero to have the stuck test start immediately.\n");
+   endGroup("AI");
 
-   addFieldV("AttackRadius", TypeRangedF32, Offset(mAttackRadius, AIControllerData), &CommonValidators::PositiveFloat,
-      "@brief Distance considered in firing range for callback purposes.");
-
+#ifdef TORQUE_NAVIGATION_ENABLED
+   addGroup("Pathfinding");
    addFieldV("FlockChance", TypeRangedS32, Offset(mFlocking.mChance, AIControllerData), &CommonValidators::S32Percent,
       "@brief chance of flocking.");
    addFieldV("FlockMin", TypeRangedF32, Offset(mFlocking.mMin, AIControllerData), &CommonValidators::PositiveFloat,
@@ -557,10 +618,6 @@ void AIControllerData::initPersistFields()
       "@brief max flocking clustering distance.");
    addFieldV("FlockSideStep", TypeRangedF32, Offset(mFlocking.mSideStep, AIControllerData), &CommonValidators::PositiveFloat,
       "@brief Distance from destination before we stop moving out of the way.");
-   endGroup("AI");
-
-#ifdef TORQUE_NAVIGATION_ENABLED
-   addGroup("Pathfinding");
 
    addField("allowWalk", TypeBool, Offset(mLinkTypes.walk, AIControllerData),
       "Allow the character to walk on dry land.");
@@ -583,6 +640,54 @@ void AIControllerData::initPersistFields()
    Parent::initPersistFields();
 }
 
+void AIControllerData::packData(BitStream* stream)
+{
+   Parent::packData(stream);
+   stream->write(mMoveTolerance);
+   stream->write(mAttackRadius);
+   stream->write(mMoveStuckTolerance);
+   stream->write(mMoveStuckTestDelay);
+   stream->write(mHeightTolerance);
+   stream->write(mFollowTolerance);
+
+#ifdef TORQUE_NAVIGATION_ENABLED
+   //enums
+   stream->write(mLinkTypes.getFlags());
+   stream->write((U32)mNavSize);
+   // end enums
+   stream->write(mFlocking.mChance);
+   stream->write(mFlocking.mMin);
+   stream->write(mFlocking.mMax);
+   stream->write(mFlocking.mSideStep);
+#endif // TORQUE_NAVIGATION_ENABLED
+};
+
+void AIControllerData::unpackData(BitStream* stream)
+{
+   Parent::unpackData(stream);
+
+   stream->read(&mMoveTolerance);
+   stream->read(&mAttackRadius);
+   stream->read(&mMoveStuckTolerance);
+   stream->read(&mMoveStuckTestDelay);
+   stream->read(&mHeightTolerance);
+   stream->read(&mFollowTolerance);
+
+#ifdef TORQUE_NAVIGATION_ENABLED
+   //enums
+   U16 linkFlags;
+   stream->read(&linkFlags);
+   mLinkTypes = LinkData(linkFlags);
+   U32 navSize;
+   stream->read(&navSize);
+   mNavSize = (AINavigation::NavSize)(navSize);   
+   // end enums
+   stream->read(&(mFlocking.mChance));
+   stream->read(&(mFlocking.mMin));
+   stream->read(&(mFlocking.mMax));
+   stream->read(&(mFlocking.mSideStep));
+#endif // TORQUE_NAVIGATION_ENABLED
+};
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 IMPLEMENT_CO_DATABLOCK_V1(AIPlayerControllerData);
@@ -718,15 +823,24 @@ void AIFlyingVehicleControllerData::initPersistFields()
    docsURL;
    addGroup("AI");
 
-   addFieldV("FlightFloor", TypeRangedF32, Offset(mFlightFloor, AIFlyingVehicleControllerData), &CommonValidators::PositiveFloat,
-      "@brief Max height we can target.");
+   addFieldV("FlightFloor", TypeRangedF32, Offset(mFlightFloor, AIFlyingVehicleControllerData), &CommonValidators::F32Range,
+      "@brief Min height we can target.");
 
-   addFieldV("FlightCeiling", TypeRangedF32, Offset(mFlightCeiling, AIFlyingVehicleControllerData), &CommonValidators::PositiveFloat,
+   addFieldV("FlightCeiling", TypeRangedF32, Offset(mFlightCeiling, AIFlyingVehicleControllerData), &CommonValidators::F32Range,
       "@brief Max height we can target.");
 
    endGroup("AI");
 
    Parent::initPersistFields();
+}
+
+AIFlyingVehicleControllerData::AIFlyingVehicleControllerData(const AIFlyingVehicleControllerData& other, bool temp_clone) : AIControllerData(other, temp_clone)
+{
+   mFlightCeiling = other.mFlightCeiling;
+   mFlightFloor = other.mFlightFloor;
+   resolveYawPtr.bind(this, &AIFlyingVehicleControllerData::resolveYaw);
+   resolvePitchPtr.bind(this, &AIFlyingVehicleControllerData::resolvePitch);
+   resolveSpeedPtr.bind(this, &AIFlyingVehicleControllerData::resolveSpeed);
 }
 
 void AIFlyingVehicleControllerData::resolveYaw(AIController* obj, Point3F location, Move* movePtr)
@@ -743,15 +857,15 @@ void AIFlyingVehicleControllerData::resolveYaw(AIController* obj, Point3F locati
 
    Point3F right = fvo->getTransform().getRightVector();
    right.normalize();
-   Point3F aimLoc = obj->mMovement.mAimLocation;
 
    // Get the Target to AI vector and normalize it.
+   Point3F aimLoc = obj->mMovement.mAimLocation;
+   aimLoc.z = mClampF(aimLoc.z, mFlightFloor, mFlightCeiling);
    Point3F toTarg = (location + fvo->getVelocity() * TickSec) - aimLoc;
    toTarg.normalize();
 
-   F32 dotYaw = -mDot(right, toTarg);
    movePtr->yaw = 0;
-
+   F32 dotYaw = -mDot(right, toTarg);
    if (mFabs(dotYaw) > 0.05f)
       movePtr->yaw = dotYaw;
 };
@@ -770,25 +884,18 @@ void AIFlyingVehicleControllerData::resolvePitch(AIController* obj, Point3F loca
 
    Point3F up = fvo->getTransform().getUpVector();
    up.normalize();
-   Point3F aimLoc = obj->mMovement.mAimLocation;
-   aimLoc.z = mClampF(aimLoc.z, mFlightFloor, mFlightCeiling);
+
 
    // Get the Target to AI vector and normalize it.
+   Point3F aimLoc = obj->mMovement.mAimLocation;
+   aimLoc.z = mClampF(aimLoc.z, mFlightFloor, mFlightCeiling);
    Point3F toTarg = (location + fvo->getVelocity() * TickSec) - aimLoc;
    toTarg.normalize();
-   F32 lastPitch = fvo->getSteering().y;
 
    movePtr->pitch = 0.0f;
    F32 dotPitch = mDot(up, toTarg);
-
-   FlyingVehicleData* db = static_cast<FlyingVehicleData*>(fvo->getDataBlock());
-
-   F32 rollAmt = mFabs(fvo->getThrottle()* movePtr->yaw / (db->steeringRollForce+1.0));
-   dotPitch *= 1.0-(mClampF(rollAmt, 0.0,1.0)); // reduce pitch by how much we're rolling
-   dotPitch *= M_2PI_F;
-
    if (mFabs(dotPitch) > 0.05f)
-         movePtr->pitch = dotPitch;
+         movePtr->pitch = dotPitch * M_2PI_F;
          
 }
 
@@ -807,4 +914,3 @@ void AIFlyingVehicleControllerData::resolveSpeed(AIController* obj, Point3F loca
    movePtr->x = 0;
    movePtr->y = obj->mMovement.mMoveSpeed;
 }
-#endif //_AICONTROLLER_H_

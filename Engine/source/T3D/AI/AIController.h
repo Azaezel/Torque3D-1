@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 #ifndef _AICONTROLLER_H_
 #define _AICONTROLLER_H_
-#ifdef TORQUE_NAVIGATION_ENABLED
 #include "navigation/coverPoint.h"
 #include "AIInfo.h"
 #include "AIGoal.h"
@@ -146,18 +145,20 @@ class AIControllerData : public SimDataBlock {
 public:
 
    AIControllerData();
+   AIControllerData(const AIControllerData&, bool = false);
    ~AIControllerData() {};
-   void packData(BitStream* stream) override { Parent::packData(stream); };
-   void unpackData(BitStream* stream) override { Parent::unpackData(stream); };
+   void packData(BitStream* stream) override;
+   void unpackData(BitStream* stream) override;
    static void initPersistFields();
    DECLARE_CONOBJECT(AIControllerData);
 
    F32 mMoveTolerance;                 // Distance from destination point before we stop
    F32 mFollowTolerance;               // Distance from destination object before we stop
    F32 mAttackRadius;                  // Distance to trigger weaponry calcs
-   F32 mMoveStuckTolerance;            // Distance tolerance on stuck check
    S32 mMoveStuckTestDelay;            // The number of ticks to wait before checking if the AI is stuck
+   F32 mMoveStuckTolerance;            // Distance tolerance on stuck check
    F32 mHeightTolerance;               // how high above the navmesh are we before we stop trying to repath
+#ifdef TORQUE_NAVIGATION_ENABLED
    struct Flocking {
       U32 mChance;                     // chance of flocking
       F32 mMin;                        // min flocking separation distance
@@ -168,6 +169,7 @@ public:
    /// Types of link we can use.
    LinkData mLinkTypes;
    AINavigation::NavSize mNavSize;
+#endif
    Delegate<void(AIController* obj, Point3F location, Move* movePtr)> resolveYawPtr;
    void resolveYaw(AIController* obj, Point3F location, Move* movePtr);
 
@@ -234,6 +236,7 @@ public:
       mFlightCeiling = 200.0f;
       mFlightFloor = 1.0;
    }
+   AIFlyingVehicleControllerData(const AIFlyingVehicleControllerData&, bool = false);
    static void initPersistFields();
    void resolveYaw(AIController* obj, Point3F location, Move* movePtr);
    void resolveSpeed(AIController* obj, Point3F location, Move* movePtr);
@@ -241,5 +244,4 @@ public:
 
    DECLARE_CONOBJECT(AIFlyingVehicleControllerData);
 };
-#endif // TORQUE_NAVIGATION_ENABLED
 #endif //_AICONTROLLER_H_
