@@ -20,6 +20,8 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include <torqueConfig.h>
+
 #ifdef TORQUE_SHARED
 
 #ifdef WIN32
@@ -223,6 +225,11 @@ extern "C" { int AmdPowerXpressRequestHighPerformance = 1; }
 // will need to merge against future changes to the SML code if you do this.
 S32 TorqueMain(S32 argc, const char **argv)
 {
+#ifdef LEAKCHECK
+   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+   _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_WNDW);
+#endif // LEAKCHECK
+
    // Some handy debugging code:
    //   if (argc == 1) {
    //      static const char* argvFake[] = { "dtest.exe", "-jload", "test.jrn" };
@@ -253,7 +260,7 @@ S32 TorqueMain(S32 argc, const char **argv)
    // Do we need to restart?
    if( StandardMainLoop::requiresRestart() )
       Platform::restartInstance();
-
+   _CrtDumpMemoryLeaks();
    // Return.
    return StandardMainLoop::getReturnStatus();
 }
