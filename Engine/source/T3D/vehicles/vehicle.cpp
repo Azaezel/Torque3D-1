@@ -1045,7 +1045,7 @@ void Vehicle::mountObject(SceneObject *obj, S32 node, const MatrixF &xfm )
       {
          CollisionWorkingList* cl = itr;
          itr = itr->wLink.mPrev;
-         cl->free();
+         cl->dFree();
       }
    }
 }
