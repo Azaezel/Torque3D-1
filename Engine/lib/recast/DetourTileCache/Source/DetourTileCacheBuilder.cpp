@@ -32,7 +32,7 @@ template<class T> class dtFixedArray
 	inline void operator=(dtFixedArray<T>& p);
 public:
 	inline dtFixedArray(dtTileCacheAlloc* a, const int s) : m_alloc(a), m_ptr((T*)a->alloc(sizeof(T)*s)), m_size(s) {}
-	inline ~dtFixedArray() { if (m_alloc) m_alloc->free(m_ptr); }
+	inline ~dtFixedArray() { if (m_alloc) m_alloc->dFree(m_ptr); }
 	inline operator T*() { return m_ptr; }
 	inline int size() const { return m_size; }
 };
@@ -69,9 +69,9 @@ void dtFreeTileCacheContourSet(dtTileCacheAlloc* alloc, dtTileCacheContourSet* c
 
 	if (!cset) return;
 	for (int i = 0; i < cset->nconts; ++i)
-		alloc->free(cset->conts[i].verts);
-	alloc->free(cset->conts);
-	alloc->free(cset);
+		alloc->dFree(cset->conts[i].verts);
+	alloc->dFree(cset->conts);
+	alloc->dFree(cset);
 }
 
 dtTileCachePolyMesh* dtAllocTileCachePolyMesh(dtTileCacheAlloc* alloc)
@@ -88,11 +88,11 @@ void dtFreeTileCachePolyMesh(dtTileCacheAlloc* alloc, dtTileCachePolyMesh* lmesh
 	dtAssert(alloc);
 	
 	if (!lmesh) return;
-	alloc->free(lmesh->verts);
-	alloc->free(lmesh->polys);
-	alloc->free(lmesh->flags);
-	alloc->free(lmesh->areas);
-	alloc->free(lmesh);
+	alloc->dFree(lmesh->verts);
+	alloc->dFree(lmesh->polys);
+	alloc->dFree(lmesh->flags);
+	alloc->dFree(lmesh->areas);
+	alloc->dFree(lmesh);
 }
 
 
@@ -2150,7 +2150,7 @@ void dtFreeTileCacheLayer(dtTileCacheAlloc* alloc, dtTileCacheLayer* layer)
 {
 	dtAssert(alloc);
 	// The layer is allocated as one conitguous blob of data.
-	alloc->free(layer);
+	alloc->dFree(layer);
 }
 
 dtStatus dtDecompressTileCacheLayer(dtTileCacheAlloc* alloc, dtTileCacheCompressor* comp,

@@ -87,7 +87,7 @@ struct dtTileCacheAlloc
 		return dtAlloc(size, DT_ALLOC_TEMP);
 	}
 	
-	virtual void free(void* ptr)
+	virtual void dFree(void* ptr)
 	{
 		dtFree(ptr);
 	}
