@@ -1,0 +1,822 @@
+function UIBuilder::FrameSet(%extent)
+{
+   if(%extent $= "")
+      %extent = "800 500";
+      
+   %container = new GuiControl() {
+      position = "0 0";
+      extent = %extent;
+      internalName = "container";
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   
+   %layout = new GuiFrameSetCtrl()
+   {
+      profile = ToolsGuiDefaultProfile;
+      class = UIBuilderFrameset;
+      position = "0 0";
+      extent = %extent;
+      internalName = "frameSet";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+   };
+   
+   %container.add(%layout);
+   
+   %book = new GuiTabBookCtrl()
+   {
+      superClass = GuiFormBuilder;
+      class = UIBuilderLayoutTabbook;
+      profile = ToolsGuiTabBookProfile;
+      position = "0 0";
+      extent = %extent;
+      internalName = "tabbook";  
+      horizSizing = "width";
+      vertSizing = "height";
+      allowReorder = true;
+   };
+   
+   %layout.add(%book);
+   
+   UIBuilderStack.push_back(%book);
+   
+   return %container;
+}
+
+function GuiFormBuilder::createLayoutDockTargets(%ownerCtrl)
+{
+   %targetsCtrl = new GuiContainer() {
+      class = "CustomLayoutDockTargets";
+      profile = "ToolsGuiDefaultProfile";
+      horizScaling = "width";
+      vertScaling = "height";
+      ownerTargetCtrl = %ownerCtrl;
+   };
+   
+   %ownerCtrl.targetsOverlayCtrl = %targetsCtrl;
+   
+   %ownerCtrl.getParent().add(%targetsCtrl);
+   %targetsCtrl.position = %ownerCtrl.position;
+   %targetsCtrl.extent = %ownerCtrl.extent;
+   
+   %zoneCtrl = new GuiBitmapCtrl() { 
+      internalName = "zoneViz";
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockZoneViz";
+      position = "-10 -10";
+      extent = "5 5";
+   };
+   %targetsCtrl.add(%zoneCtrl);
+   
+   %buttonPad = 10;
+   
+   %topButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsTop_image";
+      position = %targetsCtrl.extent.x / 2 SPC (%targetsCtrl.extent.y / 2) - 64 - (%buttonPad * 2);
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Bottom";
+      class = "DockTargetCtrl";
+      mode = "top";
+   };
+   %targetsCtrl.add(%topButton);
+   
+   %upperUpDownButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsUpDown_image";
+      position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2 - 32 - %buttonPad;
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Bottom";
+      class = "DockTargetCtrl";
+      mode = "upperUpDown";
+   };
+   %targetsCtrl.add(%upperUpDownButton);
+   
+   %tabButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsTab_image";
+      position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+      mode = "tab";
+   };
+   %targetsCtrl.add(%tabButton);
+   
+   //
+   %bottomButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsBottom_image";
+      position = %targetsCtrl.extent.x / 2 SPC (%targetsCtrl.extent.y / 2) + 64 + (%buttonPad * 2);
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Bottom";
+      class = "DockTargetCtrl";
+      mode = "bottom";
+   };
+   %targetsCtrl.add(%bottomButton);
+   
+   %lowerUpDownButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsUpDown_image";
+      position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2 + 32 + %buttonPad;
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Bottom";
+      class = "DockTargetCtrl";
+      mode = "lowerUpDown";
+   };
+   %targetsCtrl.add(%lowerUpDownButton);
+   
+   //
+   %leftButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsFarLeft_image";
+      position = (%targetsCtrl.extent.x / 2) - 64 - (%buttonPad * 2) SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "right";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+   };
+   %targetsCtrl.add(%leftButton);
+   
+   %leftLeftRightButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsLeftRight_image";
+      position = %targetsCtrl.extent.x / 2 - 32 - %buttonPad SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "Right";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+   };
+   %targetsCtrl.add(%leftLeftRightButton);
+   
+   //
+   %rightButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsFarRight_image";
+      position = (%targetsCtrl.extent.x / 2) + 64 + (%buttonPad * 2) SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "Left";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+   };
+   %targetsCtrl.add(%rightButton);
+   
+   %rightLeftRightButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsLeftRight_image";
+      position = %targetsCtrl.extent.x / 2 + 32 + %buttonPad SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "Left";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+   };
+   %targetsCtrl.add(%rightLeftRightButton);
+   
+   return %targetsCtrl;
+}
+
+function GuiFormBuilderCustomLayoutTabBook::onDraggedTabOutOfBook(%this, %tabCtrl)
+{
+   echo("GuiFormBuilderCustomLayoutTabBook::onDraggedTabOutOfBook() - tab: " @ %tabCtrl);
+   
+   if(!isObject(EditorDragAndDropLayer))
+   {
+      new GuiControl(EditorDragAndDropLayer)
+      {
+         position = "0 0";
+         extent = Canvas.extent;
+      };
+   }
+   
+   %cursorpos = Canvas.getCursorPos();
+   %xPos = getWord( %cursorpos, 0 );
+   %yPos = getWord( %cursorpos, 1 );
+   
+   // Create the drag control.
+   %ctrl = new GuiDragAndDropControl()
+   {
+      canSaveDynamicFields    = "0";
+      Profile                 = "GuiSolidDefaultProfile";
+      HorizSizing             = "right";
+      VertSizing              = "bottom";
+      Position                = %xPos SPC %yPos;
+      extent                  = %tabCtrl.extent;
+      MinExtent               = "4 4";
+      canSave                 = "1";
+      Visible                 = "1";
+      hovertime               = "1000";
+
+      // Let the GuiDragAndDropControl delete itself on mouse-up.  When the drag is aborted,
+      // this not only deletes the drag control but also our payload.
+      deleteOnMouseUp         = true;
+      
+      useWholeCanvas = true;
+
+      // To differentiate drags, use the namespace hierarchy to classify them.
+      // This will allow a color swatch drag to tell itself apart from a file drag, for example.
+      class                   = "GuiFormBuilderCustomLayoutDrop";
+   };
+   
+   // Add the temporary color swatch to the drag control as the payload.
+   %ctrl.add( %tabCtrl );
+   
+   // Start drag by adding the drag control to the canvas and then calling startDragging().
+   //Canvas.getContent().add( %ctrl );
+   EditorDragAndDropLayer.add(%ctrl);
+   Canvas.pushDialog(EditorDragAndDropLayer);
+   
+   %ctrl.startDragging( 0, 0);
+   
+   Canvas.repaint();
+}
+
+function GuiFormBuilderCustomLayoutTabBook::onControlDragEnter(%this, %payload, %point)
+{
+   %targetsCtrl = new GuiContainer() {
+      class = "CustomLayoutDockTargets";
+      profile = "ToolsGuiDefaultProfile";
+      horizScaling = "width";
+      vertScaling = "height";
+      ownerTargetCtrl = %this;
+   };
+   
+   %this.targetsOverlayCtrl = %targetsCtrl;
+   
+   %this.getParent().add(%targetsCtrl);
+   %targetsCtrl.position = %this.position;
+   %targetsCtrl.extent = %this.extent;
+   
+   %zoneViz = new GuiBitmapCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockZoneViz_image";
+      position = "-10 -10";
+      extent = "5 5";
+      horizSizing = "width";
+      vertSizing = "height";
+      internalName = "zoneViz";
+   };
+   %targetsCtrl.add(%zoneViz);
+   
+   %buttonPad = 10;
+   
+   %topButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsTop_image";
+      position = %targetsCtrl.extent.x / 2 SPC (%targetsCtrl.extent.y / 2) - 64 - (%buttonPad * 2);
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Bottom";
+      class = "DockTargetCtrl";
+      mode = "top";
+   };
+   %targetsCtrl.add(%topButton);
+   
+   %upperUpDownButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsUpDown_image";
+      position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2 - 32 - %buttonPad;
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Bottom";
+      class = "DockTargetCtrl";
+      mode = "upperUpDown";
+   };
+   %targetsCtrl.add(%upperUpDownButton);
+   
+   %tabButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsTab_image";
+      position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+      mode = "tab";
+   };
+   %targetsCtrl.add(%tabButton);
+   
+   //
+   %bottomButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsBottom_image";
+      position = %targetsCtrl.extent.x / 2 SPC (%targetsCtrl.extent.y / 2) + 64 + (%buttonPad * 2);
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Bottom";
+      class = "DockTargetCtrl";
+      mode = "bottom";
+   };
+   %targetsCtrl.add(%bottomButton);
+   
+   %lowerUpDownButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsUpDown_image";
+      position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2 + 32 + %buttonPad;
+      extent = 32 SPC 32;
+      horizSizing = "Center";
+      vertSizing = "Bottom";
+      class = "DockTargetCtrl";
+      mode = "lowerUpDown";
+   };
+   %targetsCtrl.add(%lowerUpDownButton);
+   
+   //
+   %leftButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsFarLeft_image";
+      position = (%targetsCtrl.extent.x / 2) - 64 - (%buttonPad * 2) SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "right";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+      mode = "farLeft";
+   };
+   %targetsCtrl.add(%leftButton);
+   
+   %leftLeftRightButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsLeftRight_image";
+      position = %targetsCtrl.extent.x / 2 - 32 - %buttonPad SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "Right";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+      mode = "left";
+   };
+   %targetsCtrl.add(%leftLeftRightButton);
+   
+   //
+   %rightButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsFarRight_image";
+      position = (%targetsCtrl.extent.x / 2) + 64 + (%buttonPad * 2) SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "Left";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+      mode = "farRight";
+   };
+   %targetsCtrl.add(%rightButton);
+   
+   %rightLeftRightButton = new GuiBitmapButtonCtrl() {
+      profile = "ToolsGuiDefaultNonModalProfile";
+      bitmapAsset = "editorCore:dockAsLeftRight_image";
+      position = %targetsCtrl.extent.x / 2 + 32 + %buttonPad SPC %targetsCtrl.extent.y / 2;
+      extent = 32 SPC 32;
+      horizSizing = "Left";
+      vertSizing = "Center";
+      class = "DockTargetCtrl";
+      mode = "right";
+   };
+   %targetsCtrl.add(%rightLeftRightButton);
+}
+
+function GuiFormBuilderCustomLayoutTabBook::onControlDragExit(%this, %payload, %point)
+{
+   
+}
+
+function GuiFormBuilderCustomLayoutTabBook::onControlDragged(%this, %payload, %point)
+{
+}
+
+function CustomLayoutDockTargets::onControlDropped(%this, %payload, %point)
+{
+   %cursorPos = Canvas.getCursorPos();
+   
+   %foundDockTarget = false;
+   for(%i=0; %i < %this.getCount(); %i++)
+   {
+      %hit = %this.getObject(%i);
+
+      if(isObject(%hit))
+      {
+         if(%hit.internalName $= "zoneViz")
+            continue;
+            
+         %globalPos = %this.getGlobalPosition();
+         %offset = %cursorPos.x - %globalPos.x SPC %cursorPos.y - %globalPos.y;
+         if(%hit.pointInControl(%offset.x, %offset.y))
+         {
+            if(%hit.mode $= "tab")
+            {
+               %tab = new GuiTabPageCtrl() {
+                   text = %payload.text;
+                   horizScaling = "width";
+                  vertScaling = "height";
+               };
+               
+               %this.ownerTargetCtrl.add(%tab);
+               
+               %tab.add(%payload);
+               %tab.extent = %this.ownerTargetCtrl.extent;
+               
+               %payload.showHeader(false);
+               %payload.position = "0 0";
+               %payload.extent = %this.ownerTargetCtrl.extent;
+               %payload.oldHorizSizing = %payload.horizSizing;
+               %payload.horizSizing = "width";
+               %payload.oldVertSizing = %payload.vertSizing;
+               %payload.vertSizing = "height";
+               
+               %tab.fitBook = true;
+               
+               %this.schedule(32, "delete");
+               %this.ownerTargetCtrl.targetsOverlayCtrl = "";
+            }
+            
+            return;
+         }
+      }
+   }
+}
+
+function DockTargetCtrl::onControlDropped(%this, %payload, %point)
+{
+   if(%this.mode $= "tab")
+   {
+      
+   }
+}
+
+function CustomLayoutDockTargets::onControlDragged(%this, %payload, %point)
+{
+   %cursorPos = Canvas.getCursorPos();
+   
+   %foundDockTarget = false;
+   for(%i=0; %i < %this.getCount(); %i++)
+   {
+      %hit = %this.getObject(%i);
+
+      if(isObject(%hit))
+      {
+         if(%hit.internalName $= "zoneViz")
+            continue;
+            
+         %globalPos = %this.getGlobalPosition();
+         %offset = %cursorPos.x - %globalPos.x SPC %cursorPos.y - %globalPos.y;
+         if(%hit.pointInControl(%offset.x, %offset.y))
+         {
+            %foundDockTarget = %hit;
+               
+            if(%hit.mode $= "tab")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent;
+            }
+            else if(%hit.mode $= "top")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent.x SPC %this.extent.y / 2;
+            }
+            else if(%hit.mode $= "upperUpDown")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent.x SPC %this.extent.y / 2;
+            }
+            else if(%hit.mode $= "bottom")
+            {
+               %this-->zoneViz.position = 0 SPC %this.extent.y / 2;
+               %this-->zoneViz.extent = %this.extent.x SPC %this.extent.y / 2;
+            }
+            else if(%hit.mode $= "lowerUpDown")
+            {
+               %this-->zoneViz.position = 0 SPC %this.extent.y / 2;
+               %this-->zoneViz.extent = %this.extent.x SPC %this.extent.y / 2;
+            }
+            else if(%hit.mode $= "farLeft")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent.x / 3 SPC %this.extent.y;
+            }
+            else if(%hit.mode $= "left")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent.x / 2 SPC %this.extent.y;
+            }
+            else if(%hit.mode $= "farRight")
+            {
+               %this-->zoneViz.position = %this.extent.x * 0.6 SPC 0;
+               %this-->zoneViz.extent = %this.extent.x / 3 SPC %this.extent.y;
+            }
+            else if(%hit.mode $= "right")
+            {
+               %this-->zoneViz.position = %this.extent.x / 2 SPC 0;
+               %this-->zoneViz.extent = %this.extent.x / 2 SPC %this.extent.y;
+            }
+            
+            break;
+         }
+      }
+   }
+   
+   if(!%foundDockTarget)
+   {
+      %this-->zoneViz.position = "-10 -10";
+      %this-->zoneViz.extent = "5 5";
+   }
+}
+
+function CustomLayoutDockTargets::onControlDragExit(%this, %payload, %point)
+{
+   if(isObject(%this.targetsOverlayCtrl))
+   {
+      %this.targetsOverlayCtrl.delete();
+      %this.targetsOverlayCtrl = "";
+   }
+}
+
+//
+//
+//
+//
+function UIBuilderFrameset::onControlDragEnter(%this, %payload, %point)
+{
+   if(!isObject($UIBuilder::dragTargetsCtrl))
+   {
+      %targetsCtrl = new GuiContainer() {
+         class = "UIBuilderDockTargets";
+         profile = "ToolsGuiDefaultProfile";
+         horizScaling = "width";
+         vertScaling = "height";
+      };
+      
+      $UIBuilder::dragTargetsCtrl = %targetsCtrl;
+
+      %zoneViz = new GuiBitmapCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockZoneViz_image";
+         position = "-10 -10";
+         extent = "5 5";
+         horizSizing = "width";
+         vertSizing = "height";
+         internalName = "zoneViz";
+      };
+      %targetsCtrl.add(%zoneViz);
+      
+      %buttonPad = 10;
+      
+      %topButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsTop_image";
+         position = %targetsCtrl.extent.x / 2 SPC (%targetsCtrl.extent.y / 2) - 64 - (%buttonPad * 2);
+         extent = 32 SPC 32;
+         horizSizing = "Center";
+         vertSizing = "Bottom";
+         class = "DockTargetCtrl";
+         mode = "top";
+      };
+      %targetsCtrl.add(%topButton);
+      
+      %upperUpDownButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsUpDown_image";
+         position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2 - 32 - %buttonPad;
+         extent = 32 SPC 32;
+         horizSizing = "Center";
+         vertSizing = "Bottom";
+         class = "DockTargetCtrl";
+         mode = "upperUpDown";
+      };
+      %targetsCtrl.add(%upperUpDownButton);
+      
+      %tabButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsTab_image";
+         position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2;
+         extent = 32 SPC 32;
+         horizSizing = "Center";
+         vertSizing = "Center";
+         class = "DockTargetCtrl";
+         mode = "tab";
+      };
+      %targetsCtrl.add(%tabButton);
+      
+      //
+      %bottomButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsBottom_image";
+         position = %targetsCtrl.extent.x / 2 SPC (%targetsCtrl.extent.y / 2) + 64 + (%buttonPad * 2);
+         extent = 32 SPC 32;
+         horizSizing = "Center";
+         vertSizing = "Bottom";
+         class = "DockTargetCtrl";
+         mode = "bottom";
+      };
+      %targetsCtrl.add(%bottomButton);
+      
+      %lowerUpDownButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsUpDown_image";
+         position = %targetsCtrl.extent.x / 2 SPC %targetsCtrl.extent.y / 2 + 32 + %buttonPad;
+         extent = 32 SPC 32;
+         horizSizing = "Center";
+         vertSizing = "Bottom";
+         class = "DockTargetCtrl";
+         mode = "lowerUpDown";
+      };
+      %targetsCtrl.add(%lowerUpDownButton);
+      
+      //
+      %leftButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsFarLeft_image";
+         position = (%targetsCtrl.extent.x / 2) - 64 - (%buttonPad * 2) SPC %targetsCtrl.extent.y / 2;
+         extent = 32 SPC 32;
+         horizSizing = "right";
+         vertSizing = "Center";
+         class = "DockTargetCtrl";
+         mode = "farLeft";
+      };
+      %targetsCtrl.add(%leftButton);
+      
+      %leftLeftRightButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsLeftRight_image";
+         position = %targetsCtrl.extent.x / 2 - 32 - %buttonPad SPC %targetsCtrl.extent.y / 2;
+         extent = 32 SPC 32;
+         horizSizing = "Right";
+         vertSizing = "Center";
+         class = "DockTargetCtrl";
+         mode = "left";
+      };
+      %targetsCtrl.add(%leftLeftRightButton);
+      
+      //
+      %rightButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsFarRight_image";
+         position = (%targetsCtrl.extent.x / 2) + 64 + (%buttonPad * 2) SPC %targetsCtrl.extent.y / 2;
+         extent = 32 SPC 32;
+         horizSizing = "Left";
+         vertSizing = "Center";
+         class = "DockTargetCtrl";
+         mode = "farRight";
+      };
+      %targetsCtrl.add(%rightButton);
+      
+      %rightLeftRightButton = new GuiBitmapButtonCtrl() {
+         profile = "ToolsGuiDefaultNonModalProfile";
+         bitmapAsset = "Core_GUI:dockAsLeftRight_image";
+         position = %targetsCtrl.extent.x / 2 + 32 + %buttonPad SPC %targetsCtrl.extent.y / 2;
+         extent = 32 SPC 32;
+         horizSizing = "Left";
+         vertSizing = "Center";
+         class = "DockTargetCtrl";
+         mode = "right";
+      };
+      %targetsCtrl.add(%rightLeftRightButton);
+   }
+   
+   $UIBuilder::dragTargetsCtrl.ownerTargetCtrl = %this;
+
+   %this.targetsOverlayCtrl = $UIBuilder::dragTargetsCtrl;
+
+   %this.getParent().add($UIBuilder::dragTargetsCtrl);
+   $UIBuilder::dragTargetsCtrl.resize(%this.position.x, %this.position.y, %this.extent.x, %this.extent.y);
+}
+
+function UIBuilderDockTargets::onControlDragged(%this, %payload, %point)
+{
+   %cursorPos = Canvas.getCursorPos();
+   
+   %foundDockTarget = false;
+   for(%i=0; %i < %this.getCount(); %i++)
+   {
+      %hit = %this.getObject(%i);
+
+      if(isObject(%hit))
+      {
+         if(%hit.internalName $= "zoneViz")
+            continue;
+            
+         %globalPos = %this.getGlobalPosition();
+         %offset = %cursorPos.x - %globalPos.x SPC %cursorPos.y - %globalPos.y;
+         if(%hit.pointInControl(%offset.x, %offset.y))
+         {
+            %foundDockTarget = %hit;
+               
+            if(%hit.mode $= "tab")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent;
+            }
+            else if(%hit.mode $= "top")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent.x SPC %this.extent.y / 2;
+            }
+            else if(%hit.mode $= "upperUpDown")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent.x SPC %this.extent.y / 2;
+            }
+            else if(%hit.mode $= "bottom")
+            {
+               %this-->zoneViz.position = 0 SPC %this.extent.y / 2;
+               %this-->zoneViz.extent = %this.extent.x SPC %this.extent.y / 2;
+            }
+            else if(%hit.mode $= "lowerUpDown")
+            {
+               %this-->zoneViz.position = 0 SPC %this.extent.y / 2;
+               %this-->zoneViz.extent = %this.extent.x SPC %this.extent.y / 2;
+            }
+            else if(%hit.mode $= "farLeft")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent.x / 3 SPC %this.extent.y;
+            }
+            else if(%hit.mode $= "left")
+            {
+               %this-->zoneViz.position = "0 0";
+               %this-->zoneViz.extent = %this.extent.x / 2 SPC %this.extent.y;
+            }
+            else if(%hit.mode $= "farRight")
+            {
+               %this-->zoneViz.position = %this.extent.x * 0.6 SPC 0;
+               %this-->zoneViz.extent = %this.extent.x / 3 SPC %this.extent.y;
+            }
+            else if(%hit.mode $= "right")
+            {
+               %this-->zoneViz.position = %this.extent.x / 2 SPC 0;
+               %this-->zoneViz.extent = %this.extent.x / 2 SPC %this.extent.y;
+            }
+            
+            break;
+         }
+      }
+   }
+   
+   if(!%foundDockTarget)
+   {
+      %this-->zoneViz.position = "-10 -10";
+      %this-->zoneViz.extent = "5 5";
+   }
+}
+
+function UIBuilderDockTargets::onControlDragExit(%this, %payload, %point)
+{
+   if(isObject(%this.targetsOverlayCtrl))
+   {
+      %this.targetsOverlayCtrl.delete();
+      %this.targetsOverlayCtrl = "";
+   }
+}
+
+function UIBuilderDockTargets::onControlDropped(%this, %payload, %point)
+{
+   %cursorPos = Canvas.getCursorPos();
+   
+   %foundDockTarget = false;
+   for(%i=0; %i < %this.getCount(); %i++)
+   {
+      %hit = %this.getObject(%i);
+
+      if(isObject(%hit))
+      {
+         if(%hit.internalName $= "zoneViz")
+         {
+            %window = %payload;
+   
+            %window.position = %cursorPos;
+            %window.extent = %payload.extent;
+            
+            echo("UIBuilderDockTargets::onControlDropped() - dropped control: " @ %window);
+            echo("UIBuilderDockTargets::onControlDropped() - dropped position: " @ %window.position);
+            echo("UIBuilderDockTargets::onControlDropped() - dropped position: " @ %window.extent);
+            
+            Canvas.getContent().add(%window);
+            Canvas.popDialog(EditorDragAndDropLayer);
+            
+            %this.schedule(32, "delete");
+            %this.ownerTargetCtrl.targetsOverlayCtrl = "";
+            return;
+         }
+            
+         %globalPos = %this.getGlobalPosition();
+         %offset = %cursorPos.x - %globalPos.x SPC %cursorPos.y - %globalPos.y;
+         if(%hit.pointInControl(%offset.x, %offset.y))
+         {
+            if(%hit.mode $= "tab")
+            {
+               echo("UIBuilderDockTargets::onControlDropped() - target control: " @ %this.ownerTargetCtrl @ " " @ %this.ownerTargetCtrl.getClassName());
+               UIBuilder::dockWindow(%this.ownerTargetCtrl, %payload);
+               
+               %this.schedule(32, "delete");
+               %this.ownerTargetCtrl.targetsOverlayCtrl = "";
+            }
+            
+            return;
+         }
+      }
+   }
+}
+
+//

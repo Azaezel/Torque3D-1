@@ -1,0 +1,56 @@
+function UIBuilder::TabBook(%allowReorder, %doActionButton)
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::TabBook() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   echo("UIBuilder::TabBook() - baseCtrl: " @ %baseCtrl.getClassName());
+   echo("    extent: " @ %baseCtrl.extent);
+   
+   %book = new GuiTabBookCtrl()
+   {
+      class = UIBuilderTabBook;
+      profile = ToolsGuiTabBookProfile;
+      position = "0 0";
+      extent = %baseCtrl.extent;
+      internalName = "book";  
+      horizSizing = "width";
+      vertSizing = "height";
+      allowReorder = %allowReorder;
+   };
+
+   UIBuilderStack.push_back(%book);
+   
+   %baseCtrl.add(%book);
+   
+   if(%doActionButton $= "")
+      %doActionButton = false;
+   
+   if(%doActionButton)
+   {
+      %button = new GuiBitmapButtonCtrl(){
+         bitmapAsset = "Core_GUI:optionsButton_image";
+         position = %baseCtrl.extent.x - 20 SPC 0;
+         extent = "20 20";
+         horizSizing = "left";
+         vertSizing = "bottom";
+         command = %book @ ".onTabAction();";
+      };
+      
+      %baseCtrl.add(%button);
+      
+      %book.actionButton = %button;
+   }
+
+   
+   return %book;
+}
+
+function UIBuilderTabBook::setAllowReorder(%this, %canReorder)
+{
+   %this.allowReorder = %canReorder;
+}

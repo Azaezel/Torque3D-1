@@ -1,0 +1,27 @@
+function UIBuilder::Panel()
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::TabPage() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   %panel = new GuiPanel()
+   {
+      profile = ToolsGuiPaneProfile;
+      position = "0 0";
+      extent = %baseCtrl.extent.x SPC %baseCtrl.extent.y;
+      internalName = "panel";  
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad SPC $UIBuilder::edgePad;
+   };
+   
+   UIBuilderStack.push_back(%panel);
+   
+   %baseCtrl.add(%panel);
+   
+   return %panel;  
+}

@@ -1,0 +1,253 @@
+function UIBuilder::Window(%title, %pos, %ext, %dockable)
+{
+   if(%pos $= "")
+      %pos = "25 25";
+   
+   if(%ext $= "")
+      %ext = "200 400";
+      
+   if(%dockable $= "")
+      %dockable = false;
+   
+   %window = new GuiWindowCtrl()
+   {
+      class = UIBuilderWindow;
+      profile = ToolsGuiWindowCollapseProfile;
+      text = %title;
+      position = %pos;
+      extent = %ext;
+      internalName = "GBFB_" @ %title;  
+      isDockable = %dockable;
+      isDocked = false;
+   };
+
+   %scroll = new GuiScrollCtrl()
+   {
+      profile = ToolsGuiScrollProfile;
+      position = $UIBuilder::edgePad SPC 20;
+      extent = (%window.extent.x - ($UIBuilder::edgePad * 2)) SPC (%window.extent.y - 20 - $UIBuilder::edgePad);
+      internalName = "scroll";  
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   %window.add(%scroll);
+   
+   %content = new GuiStackControl()
+   {
+      profile = ToolsGuiStackControl;
+      position = "1 0";
+      extent = %scroll.extent.x - 14 SPC %scroll.extent.y; // -10 for the v scroll bar
+      horizSizing = "width";
+      vertSizing = "height";
+   };
+   %scroll.add(%content);
+   
+   if(%dockable)
+   {
+      %layoutButton = new GuiBitmapButtonCtrl() {
+         canSaveDynamicFields = "0";
+         internalName = "";
+         Enabled = "1";
+         isContainer = "0";
+         Profile = "ToolsGuiButtonProfile";
+         HorizSizing = "left";
+         VertSizing = "bottom";
+         Position = %ext.x - 75 SPC 1;
+         Extent = "18 18";
+         MinExtent = "8 8";
+         canSave = "1";
+         Visible = "1";
+         Command = "$ThisControl.getParent().doDockingAction();";
+         tooltipprofile = "ToolsGuiToolTipProfile";
+         ToolTip = "Detach Panel";
+         hovertime = "1000";
+         bitmapAsset = "ToolsModule:panel_undock_n_image";
+         text = "";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "0";
+      };
+      
+      %window.add(%layoutButton);
+   }
+   
+   UIBuilderStack.push_back(%content);
+   
+   return %window;
+}
+
+function UIBuilder::dockWindow(%targetWindow, %window)
+{
+   if(!%targetWindow.isDockable || !%window.isDockable)
+      return;
+      
+   %windowContent = %window-->scroll;
+   
+   %tab = new GuiTabPageCtrl() {
+       profile = ToolsGuiTabPageProfile;
+       position = "0 0";
+       text = %window.text @ "     ";
+       horizScaling = "width";
+       vertScaling = "height";
+       fitBook=true;
+       originalWindow = %window;
+   };
+   
+   %targetBook = %targetWindow-->tabbook;
+   if(!isObject(%targetBook))
+   {
+      %frameSet = UIBuilder::FrameSet(%targetWindow.extent.x SPC %targetWindow.extent.y - 20);
+      
+      %frameSet.position = "0 20";
+      
+      %targetWindow.add(%frameSet);
+      
+      %targetWindowTab = new GuiTabPageCtrl() {
+          profile = ToolsGuiTabPageProfile;
+          text = %targetWindow.text @ "     ";
+          horizScaling = "width";
+          vertScaling = "height";
+          fitBook=true;
+          originalWindow = %targetWindow;
+      };
+      
+      %targetWindowTab.add(%targetWindow-->scroll);
+      
+      %frameSet-->tabbook.add(%targetWindowTab);
+      
+      %targetBook = %frameSet-->tabbook;
+   }
+   
+   %targetBook.add(%tab);
+   
+   %tab.add(%windowContent);
+   
+   //store and hide the original window so we can just recover it later
+   %tab.add(%window);
+   %window.pos = "-20 -20";
+   %window.extent = "5 5";
+   %window.containerTab = %tab;
+   
+   %tab.extent = %targetBook.extent;
+}
+
+function UIBuilder::undockWindow(%tab)
+{
+   %originalWindow = %tab.originalWindow;
+   if(!isObject(%originalWindow))
+   {
+      error("UIBuilder::undockWindow() - attempting to undock a tab that doesn't have an original window.");
+      return;
+   }
+
+   %tab.remove(%originalWindow);
+   
+   %originalWindow.position = Canvas.getCursorPos();
+   %originalWindow.extent = %tab.extent;
+   %windowContent = %tab.getObject(0);
+   %originalWindow.add(%windowContent);
+   %windowContent.extent = %originalWindow.extent;
+   %windowContent.position = "0 20";
+   
+   %originalWindow.text = trim(%tab.text);
+   %originalWindow.showHeader(true);
+   
+   %originalTabbook = %tab.getParent();
+   %originalTabbook.remove(%tab);
+   
+   if(%originalTabbook.getCount() == 1)
+   {
+      //if we're now down to one, convert the original window back to a window rather than a tabbook for only one tab
+      %parentWindow = %originalTabbook.getParent();
+      %parentWindowTab =  %originalTabbook.getObject(0);
+      %parentWindowContent = %parentWindowTab.getObject(0);
+      %parentWindow.add(%parentWindowContent);
+      
+      %parentWindowContent.extent = %parentWindowTab.extent;
+      %parentWindowContent.position = "0 20";
+      
+      %parentWindow.text = trim(%parentWindowTab.text);
+      %parentWindow.showHeader(true);
+      
+      %originalTabbook.delete();
+   }
+   
+   %tab.delete();
+   
+   %originalWindow.onMouseDragged();
+}
+
+function UIBuilder::doDockingAction(%this)
+{
+   if(%this.isDocked)
+   {
+      
+   }
+   else
+   {
+      
+   }   
+}
+function UIBuilderWindow::onMouseDragged(%this)
+{
+   if(!%this.isDockable)
+      return;
+      
+   //container it in a dnd control
+   echo("UIBuilderWindow::onMouseDragged()");
+   
+   UIBuilder::makeLayoutDragNDropLayer();
+   
+   %cursorpos = Canvas.getCursorPos();
+   %xPos = getWord( %cursorpos, 0 );
+   %yPos = getWord( %cursorpos, 1 );
+   
+   // Create the drag control.
+   %ctrl = new GuiDragAndDropControl()
+   {
+      canSaveDynamicFields    = "0";
+      Profile                 = "GuiSolidDefaultProfile";
+      HorizSizing             = "right";
+      VertSizing              = "bottom";
+      Position                = %xPos SPC %yPos;
+      extent                  = %this.extent;
+      MinExtent               = "4 4";
+      canSave                 = "1";
+      Visible                 = "1";
+      hovertime               = "1000";
+
+      // Let the GuiDragAndDropControl delete itself on mouse-up.  When the drag is aborted,
+      // this not only deletes the drag control but also our payload.
+      deleteOnMouseUp         = true;
+      
+      useWholeCanvas = true;
+
+      // To differentiate drags, use the namespace hierarchy to classify them.
+      // This will allow a color swatch drag to tell itself apart from a file drag, for example.
+      class                   = "UIBuilderDockableWindowDrop";
+   };
+   
+   // Add the temporary color swatch to the drag control as the payload.
+   %ctrl.add( %this );
+   
+   %this.position = "0 0";
+   
+   // Start drag by adding the drag control to the canvas and then calling startDragging().
+   //Canvas.getContent().add( %ctrl );
+   EditorDragAndDropLayer.add(%ctrl);
+   Canvas.pushDialog(EditorDragAndDropLayer);
+   
+   %ctrl.startDragging( 0, 0);
+
+   Canvas.repaint();
+}
+
+function UIBuilderDockableWindowDrop::onControlDragCancelled(%this)
+{
+   %window = %this.getObject(0);
+   
+   %window.position = %this.position;
+   
+   Canvas.getContent().add(%window);
+   Canvas.popDialog(EditorDragAndDropLayer);
+}

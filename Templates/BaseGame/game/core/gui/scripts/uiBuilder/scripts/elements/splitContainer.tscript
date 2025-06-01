@@ -1,0 +1,77 @@
+function UIBuilder::SplitContainer(%orientation, %splitPoint)
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::SplitContainer() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   if(%orientation $= "")
+      %orientation = "Horizontal";
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   %split = new GuiSplitContainer()
+   {
+      profile = GuiMenuPanelProfile;
+      position = "0 0";
+      extent = %baseCtrl.extent;
+      internalName = "splitContainer";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+      orientation = %orientation;
+      splitPoint = %splitPoint;
+      
+      new GuiPanel() {
+         docking = "Client";
+         margin = "0 0 0 0";
+         padding = "0 0 0 0";
+         anchorTop = "1";
+         anchorBottom = "0";
+         anchorLeft = "1";
+         anchorRight = "0";
+         position = "0 0";
+         extent = "188 532";
+         minExtent = "0 0";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         profile = "ToolsGuiSolidDefaultProfile";
+         visible = "1";
+         active = "1";
+         tooltipProfile = "GuiToolTipProfile";
+         hovertime = "1000";
+         isContainer = "1";
+         internalName = "Panel1";
+         canSave = "1";
+         canSaveDynamicFields = "0";
+      };
+      new GuiPanel() {
+         docking = "Client";
+         margin = "0 0 0 0";
+         padding = "0 0 0 0";
+         anchorTop = "1";
+         anchorBottom = "0";
+         anchorLeft = "1";
+         anchorRight = "0";
+         position = "0 0";
+         extent = "188 532";
+         minExtent = "0 0";
+         horizSizing = "right";
+         vertSizing = "bottom";
+         profile = "ToolsGuiSolidDefaultProfile";
+         visible = "1";
+         active = "1";
+         tooltipProfile = "GuiToolTipProfile";
+         hovertime = "1000";
+         isContainer = "1";
+         internalName = "Panel2";
+         canSave = "1";
+         canSaveDynamicFields = "0";
+      };
+   };
+
+   %baseCtrl.add(%split);
+   
+   return %split;
+}

@@ -35,6 +35,8 @@ function initializeMaterialEditor()
    //Material Instance viewer
    exec("~/materialEditor/gui/materialInstancesView.ed.gui");
    
+   exec("./scripts/nuMaterialEditor.tscript");
+   
    // Load Client Scripts.
    exec("./scripts/materialEditor.ed." @ $TorqueScriptFileExtension);
    exec("./scripts/materialEditorUndo.ed." @ $TorqueScriptFileExtension);
@@ -143,6 +145,8 @@ function MaterialEditorPlugin::onActivated( %this )
    // Do resize the windows at start
    MaterialEditorGui.onWake();
    
+   MaterialEditorPlugin.BuildEditorUI();
+   
    Parent::onActivated(%this);
 }
 
@@ -157,6 +161,8 @@ function MaterialEditorPlugin::onDeactivated( %this )
       $gfx::wireframe = true;
       
    WorldEditorPlugin.onDeactivated();
+   
+   MaterialEditorPlugin.CloseEditorUI();
 
    MaterialEditorGui.quit();
    

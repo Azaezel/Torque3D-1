@@ -1,0 +1,25 @@
+function UIBuilder::Inspector(%Name)
+{
+   if(UIBuilderStack.count() == 0)
+   {
+      error("UIBuilder::Inspector() - attempting to create element, but we have no containing control to add it to!");
+      return false;
+   }
+   
+   %baseCtrl = UIBuilderStack.getKey(UIBuilderStack.count()-1);
+   
+   %inspector = new GuiInspector(%Name)
+   {
+      profile = GuiInspectorProfile;
+      position = "0 0";
+      extent = %baseCtrl.extent;
+      internalName = "content";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+   };
+
+   %baseCtrl.add(%inspector);
+   
+   return %inspector;  
+}

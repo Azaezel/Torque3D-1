@@ -1,0 +1,18 @@
+function GuiFormBuilder::createFrameSet(%base)
+{
+   %stack = new GuiFrameSetCtrl()
+   {
+      profile = ToolsGuiDefaultProfile;
+      superClass = GuiFormBuilder;
+      position = "0 0";
+      extent = %base.extent;
+      internalName = "content";
+      horizSizing = "width";
+      vertSizing = "height";
+      margin = "2 2 2 2";
+   };
+
+   %base.add(%stack);
+   
+   return %stack;
+}

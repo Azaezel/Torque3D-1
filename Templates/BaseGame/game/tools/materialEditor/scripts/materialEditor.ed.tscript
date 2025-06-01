@@ -774,6 +774,7 @@ function MaterialEditorGui::setActiveMaterial( %this, %material )
    MaterialEditorGui.currentMaterial.reload();
       
    MaterialEditorGui.setMaterialNotDirty();
+   NuMaterialEdPropInspector.refreshMaterial();
 }
 
 function MaterialEditorGui::isMatEditorMaterial(%this, %material)
@@ -2454,6 +2455,7 @@ function MaterialEditorGui::refreshMaterial(%this)
    }
    
    MaterialEditorGui.setMaterialNotDirty();
+   NuMaterialEdPropInspector.refreshMaterial();
 }
 
 //==============================================================================

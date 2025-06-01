@@ -34,6 +34,7 @@ function initializeParticleEditor()
    exec( "./particleEditorUndo.ed." @ $TorqueScriptFileExtension );   
    exec( "./particleEmitterEditor.ed." @ $TorqueScriptFileExtension );
    exec( "./particleParticleEditor.ed." @ $TorqueScriptFileExtension );
+   exec( "./nuParticleEditor.ed." @ $TorqueScriptFileExtension);
    
    PE_Window.setVisible( false );
    MainSceneTabPanel.add( PE_Window );
@@ -105,6 +106,8 @@ function ParticleEditorPlugin::onActivated( %this )
    // Set the status bar here
    EditorGuiStatusBar.setInfo( "Particle editor." );
    EditorGuiStatusBar.setSelection( "" );
+   
+   %this.BuildEditorUI();
    
    Parent::onActivated( %this );
 }
