@@ -402,6 +402,7 @@ function PE_ParticleEditor::loadNewParticle( %this, %particle )
 
    PE_ParticleEditor.guiSync();
    PE_ParticleEditor.setParticleNotDirty();
+   ParticleEditorPlugin.selectPart(%particle);
 }
 
 //---------------------------------------------------------------------------------------------

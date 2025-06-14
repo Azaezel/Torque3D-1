@@ -489,6 +489,7 @@ function PE_EmitterEditor::loadNewEmitter( %this, %emitter )
    ParticleEditor.updateEmitterNode();
    
    PE_EmitterEditor-->PEE_infiniteLoop.setStateOn( %current.lifetimeMS == 0 );
+   ParticleEditorPlugin.selectEM(%current);
 }
    
 //---------------------------------------------------------------------------------------------

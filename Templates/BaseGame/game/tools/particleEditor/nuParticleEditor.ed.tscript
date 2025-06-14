@@ -10,16 +10,20 @@ function ParticleEditorPlugin::BuildEditorUI(%this)
       UIBuilder::TabBook();
          UIBuilder::TabPage("Emitter");
             UIBuilder::Stack();
+               UIBuilder::SameLine();
+                  ParticleEditorPlugin.EmitterSelector = UIBuilder::Dropdown("", %this.selectedEM, "ParticleEditorPlugin.selectEM($ThisControl.getText());");
+                  ParticleEditorPlugin.EmitterSelector.setCanSearch(true);                
+                  %this.PopulateEmitterList();
+               UIBuilder::End();
                %inspector = UIBuilder::Inspector("NuParticleEmitterEdInspector");
             UIBuilder::End();
          UIBuilder::End();
          UIBuilder::TabPage("Particle");
             UIBuilder::Stack();
                UIBuilder::SameLine();
-                  %particlesListCtrl = UIBuilder::Dropdown();
-                  %particlesListCtrl.setCanSearch(true);
-                  %particlesListCtrl.addCategory("Example Module");
-                  %particlesListCtrl.add("A Test Particle");
+                  ParticleEditorPlugin.ParticleSelector = UIBuilder::Dropdown("", %this.selectedPart, "ParticleEditorPlugin.selectPart($ThisControl.getText());");
+                  ParticleEditorPlugin.ParticleSelector.setCanSearch(true);               
+                  %this.PopulateParticleList();
                UIBuilder::End();
                %inspector = UIBuilder::Inspector("NuParticleEdInspector");
             UIBuilder::End();
@@ -40,30 +44,153 @@ function ParticleEditorPlugin::BuildEditorUI(%this)
    EWorldEditor.add(%peWindow);
 }
 
+function ParticleEditorPlugin::PopulateEmitterList()
+{
+    ParticleEditorPlugin.EmitterSelector.add("new ParticleEmitterData");
+    foreach( %obj in DatablockGroup )
+    {
+        if( %obj.isMemberOfClass( "ParticleEmitterData" ) )
+        {
+         %name = %obj.getName();
+         %fileLoc = %obj.getId().getFileName();
+         %fileLoc = strreplace(%fileLoc, "/", " ");
+         %moduleName = getword(%fileLoc,1);
+         ParticleEditorPlugin.EmitterSelector.addCategory(%moduleName);
+         ParticleEditorPlugin.EmitterSelector.add(%name);
+        }
+    }
+}
+
+function ParticleEditorPlugin::PopulateParticleList()
+{
+    if (!isObject(ParticleEditorPlugin.ParticleSelector)) return;
+    
+    ParticleEditorPlugin.ParticleSelector.clear();
+    ParticleEditorPlugin.ParticleSelector.add("new ParticleData");
+    
+    %partCount = 0;
+    %partList = "";
+    
+    if (isObject(ParticleEditorPlugin.curEM))
+    {
+        %partList = ParticleEditorPlugin.curEM.particles;
+        %partCount = getWordCount(%partList);
+    }
+    if (%partCount>0)
+    {
+        for (%i=0; %i<%partCount; %i++)
+        {
+            %obj = getword(%partList, %i);
+            %name = %obj.getName();
+            %fileLoc = %obj.getId().getFileName();
+            %fileLoc = strreplace(%fileLoc, "/", " ");
+            %moduleName = getword(%fileLoc,1);
+            ParticleEditorPlugin.ParticleSelector.addCategory(%moduleName);
+            ParticleEditorPlugin.ParticleSelector.add(%name);
+        }
+    }
+    
+    foreach( %obj in DatablockGroup )
+    {
+        if( %obj.isMemberOfClass( "ParticleData" ) )
+        {            
+            %name = %obj.getName();
+            %fileLoc = %obj.getId().getFileName();
+            %fileLoc = strreplace(%fileLoc, "/", " ");
+            %moduleName = getword(%fileLoc,1);
+            ParticleEditorPlugin.ParticleSelector.addCategory(%moduleName);
+            if (%partCount>0)
+            {
+                %basePart = getword(%partList, 0);
+                if (%basePart.textureAsset !$= %obj.textureAsset) continue;
+            }            
+            ParticleEditorPlugin.ParticleSelector.add(%name);
+        }
+    }
+}
+
 function NuParticleEdInspector::inspectCurrentTargets(%this)
 {
-   %this.inspect(GunFireSmoke);
+   
+   %part = GunFireSmoke;
+   if (EWorldEditor.getSelectionSize()>0)
+   {
+        %obj = EWorldEditor.getSelectedObject(0);
+        if (%obj.isMemberOfClass("ParticleEmitterNode"))
+            $ParticleEditor::emitterNode.sethidden(true);
+        %em = %obj.emitter;
+        %part = getword(%em.particles,0);
+   }
+      
+   %this.inspect(%part);
+   
+   //Remove some groups that aren't particularly relevent to our needs
+   //%this.removeGroup("Internal");
+   //%this.removeGroup("Ungrouped");
+   //%this.removeGroup("Editing");
+   //%this.removeGroup("Object");
+   //%this.removeGroup("Persistence");
+   //%this.removeGroup("Dynamic Fields");
+}
+
+function NuParticleEmitterEdInspector::inspectCurrentTargets(%this)
+{
+   %em = GunFireSmokeEmitter;
+   if (EWorldEditor.getSelectionSize()>0)
+   {
+        %obj = EWorldEditor.getSelectedObject(0);
+        if (%obj.isMemberOfClass("ParticleEmitterNode"))
+            $ParticleEditor::emitterNode.sethidden(true);
+        %em = %obj.emitter;
+   }
+      
+   %this.inspect(%em);
    
    //Remove some groups that aren't particularly relevent to our needs
    %this.removeGroup("Internal");
-   %this.removeGroup("Ungrouped");
+   //%this.removeGroup("Ungrouped");
    %this.removeGroup("Editing");
    %this.removeGroup("Object");
    %this.removeGroup("Persistence");
    %this.removeGroup("Dynamic Fields");
 }
 
-function NuParticleEmitterEdInspector::inspectCurrentTargets(%this)
+function ParticleEditorPlugin::selectEM(%this, %em)
 {
-   %this.inspect(GunFireSmokeEmitter);
+   if (%em $= "new ParticleEmitterData")
+   {
+        PE_EmitterEditor::showNewDialog();
+        return;
+   }
+      
+   if (ParticleEditorPlugin.curEM !$= %em && isObject(%em))
+   {
+      $ParticleEditor::emitterNode.setEmitterDataBlock(%em);
+      ParticleEditorPlugin.curEM = %em;
+      %this.PopulateParticleList();
+      if (isObject(NuParticleEdInspector))
+            NuParticleEmitterEdInspector.inspect(%em);
+   }
    
-   //Remove some groups that aren't particularly relevent to our needs
-   %this.removeGroup("Internal");
-   %this.removeGroup("Ungrouped");
-   %this.removeGroup("Editing");
-   %this.removeGroup("Object");
-   %this.removeGroup("Persistence");
-   %this.removeGroup("Dynamic Fields");
+   //this is stupid. refactor
+   %altID = PEE_EmitterSelector.findText(%em);
+   PEE_EmitterSelector.setSelected(%altID);
+}
+
+function ParticleEditorPlugin::selectPart(%this, %part)
+{
+   if (%part $= "new ParticleData")
+   {
+        PE_ParticleEditor::showNewDialog();
+        return;
+   }
+   
+   if (isObject(NuParticleEdInspector) && isObject(%part))
+      NuParticleEdInspector.inspect(%part);
+   
+   //this is stupid. refactor
+   %altID = PEP_ParticleSelector.findText(%part);
+   PEP_ParticleSelector.setSelected(%altID);
 }
 
 function NuParticleExplosionEdInspector::inspectCurrentTargets(%this)
