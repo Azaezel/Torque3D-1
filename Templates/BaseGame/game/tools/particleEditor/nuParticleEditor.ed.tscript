@@ -155,11 +155,46 @@ function NuParticleEmitterEdInspector::inspectCurrentTargets(%this)
    %this.removeGroup("Dynamic Fields");
 }
 
+// Create Functionality
+function ParticleEditorPlugin::showNewEmitterDialog( %this )
+{
+   //FIXME: disregards particle tab dirty state
+
+   // Open a dialog if the current emitter is dirty.
+   
+   if( PE_ParticleEditor.dirty )
+   {         
+      toolsMessageBoxYesNo("Save Existing Particle?", 
+         "Do you want to save changes to <br><br>" @ PE_ParticleEditor.currParticle.getName(), 
+         "PE_ParticleEditor.saveParticle(" @ PE_ParticleEditor.currParticle @ ");"
+      );
+   }   
+   
+   if( PE_EmitterEditor.dirty )
+   {
+      toolsMessageBoxYesNoCancel("Save Emitter Changes?", 
+         "Do you wish to save the changes made to the <br>current emitter before changing the emitter?", 
+         "PE_EmitterEditor.saveEmitter( " @ PE_EmitterEditor.currEmitter.getName() @ " ); PE_EmitterEditor.createEmitter();", 
+         "PE_EmitterEditor.saveEmitterDialogDontSave( " @ PE_EmitterEditor.currEmitter.getName() @ " ); PE_EmitterEditor.createEmitter();"
+      );
+   }
+   else
+   {
+     %this.createEmitter();
+   }
+}
+
+function ParticleEditorPlugin::createEmitter( %this )
+{
+   AssetBrowser_SelectModule.showDialog("PE_EmitterEditor.pickedNewEmitterTargetModule");
+   AssetBrowser_SelectModuleWindow.selectWindow();
+}
+
 function ParticleEditorPlugin::selectEM(%this, %em)
 {
    if (%em $= "new ParticleEmitterData")
    {
-        PE_EmitterEditor::showNewDialog();
+        %this.showNewEmitterDialog();
         return;
    }
       
@@ -177,11 +212,98 @@ function ParticleEditorPlugin::selectEM(%this, %em)
    PEE_EmitterSelector.setSelected(%altID);
 }
 
+function ParticleEditorPlugin::showNewParticleDialog( %this, %replaceSlot )
+{
+   // Open a dialog if the current Particle is dirty
+   if( PE_ParticleEditor.dirty ) 
+   {
+      toolsMessageBoxYesNoCancel("Save Particle Changes?", 
+         "Do you wish to save the changes made to the <br>current particle before changing the particle?", 
+         "PE_ParticleEditor.saveParticle( " @ PE_ParticleEditor.currParticle.getName() @ " ); ParticleEditorPlugin.createParticle( " @ %replaceSlot @ " );", 
+         "PE_ParticleEditor.saveParticleDialogDontSave( " @ PE_ParticleEditor.currParticle.getName() @ " ); ParticleEditorPlugin.createParticle( " @ %replaceSlot @ " );"
+      );
+   }
+   else
+   {
+      %this.createParticle( %replaceSlot );
+   }
+}
+
+function ParticleEditorPlugin::createParticle( %this, %replaceSlot )
+{
+   // Make sure we have a spare slot on the current emitter.
+   
+   if( !%replaceSlot )
+   {
+      %numExistingParticles = getWordCount( PE_EmitterEditor.currEmitter.particles );
+      if( %numExistingParticles > 3 )
+      {
+         toolsMessageBoxOK( "Error", "An emitter cannot have more than 4 particles assigned to it." );
+         return;
+      }
+      
+      %particleIndex = %numExistingParticles;
+   }
+   else
+      %particleIndex = %replaceSlot - 1;
+   
+   PE_ParticleEditor.newParticleSlot = %particleIndex;
+   
+   if(%replaceSlot $= "" || %replaceSlot != 0)
+   {
+      AssetBrowser_SelectModule.showDialog("ParticleEditorPlugin.pickedNewParticleTargetModule");
+      AssetBrowser_SelectModuleWindow.selectWindow();
+   }
+   else
+   {
+      %this.pickedNewParticleTargetModule(PE_EmitterEditor.targetModule);
+   }
+}
+
+function ParticleEditorPlugin::pickedNewParticleTargetModule(%this, %module)
+{
+   %moduleDef = ModuleDatabase.findModule(%module);
+   $PE_PARTICLEEDITOR_DEFAULT_FILENAME = %moduleDef.ModulePath @ "/scripts/managedData/managedParticleData." @ $TorqueScriptFileExtension;
+   
+   if(!isDirectory(filePath($PE_PARTICLEEDITOR_DEFAULT_FILENAME)))
+   {
+      AssetBrowser.dirHandler.createFolder(filePath($PE_PARTICLEEDITOR_DEFAULT_FILENAME));
+   }
+   
+   // Create the particle datablock and add to the emitter.
+   
+   %newParticle = getUniqueName( "newParticle" );
+   
+   datablock ParticleData( %newParticle : DefaultParticle )
+   {
+   };
+         
+   // Submit undo.
+   
+   %action = ParticleEditor.createUndo( ActionCreateNewParticle, "Create New Particle" );
+   %action.particle = %newParticle.getId();
+   %action.particleIndex = PE_ParticleEditor.newParticleSlot;
+   %action.prevParticle = ( "PEE_EmitterParticleSelector" @ ( PE_ParticleEditor.newParticleSlot + 1 ) ).getSelected();
+   %action.emitter = PE_EmitterEditor.currEmitter;
+   
+   if ((ParticleEditorPlugin.curEM.particles $= "") || (ParticleEditorPlugin.curEM.particles $= "DefaultParticle"))
+      ParticleEditorPlugin.curEM.particles = %newParticle.getName();
+   else
+      ParticleEditorPlugin.curEM.particles = ParticleEditorPlugin.curEM.particles SPC %newParticle.getName();
+      
+   NuParticleEmitterEdInspector.inspect(ParticleEditorPlugin.curEM);
+   ParticleEditor.submitUndo( %action );
+   
+   // Execute action.
+   
+   %action.redo();
+}
+
 function ParticleEditorPlugin::selectPart(%this, %part)
 {
    if (%part $= "new ParticleData")
    {
-        PE_ParticleEditor::showNewDialog();
+        %this.showNewParticleDialog();
         return;
    }
    
