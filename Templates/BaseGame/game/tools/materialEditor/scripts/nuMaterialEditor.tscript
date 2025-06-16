@@ -117,7 +117,7 @@ function MaterialEditorPlugin::BuildEditorUI(%this)
    
    %inspector.groupFilters = "-Internal -Ungrouped -Editing -Object -Persistence -Dynamic Fields";
    
-   $MaterialEditor::currentMaterial = materialEd_previewMaterial;//DetailBlue;
+   MaterialEditorGui.currentMaterial = materialEd_previewMaterial;//DetailBlue;
    
    NuMaterialEdPropInspector.refreshMaterial();
 
@@ -144,41 +144,41 @@ function NuMaterialEdPropInspector::refreshMaterial(%this)
    %this.setForcedArrayIndex($MaterialEditor::currentLayer);   
    //
    //%this.getScrollbar().setExtent(%ext.x, %ext.y);
-   cancel(NuMaterialEdPropInspector.refreshing);
-   NuMaterialEdPropInspector.refreshing = NuMaterialEdPropInspector.schedule(64,"renew");
    NuMaterialEditorWindow.syncGUI();
    %this.onPostInspectObject(%this.getInspectObject());
 }
 
 function NuMaterialEdPropInspector::onPostInspectorFieldModified(%this, %obj, %inspecting)
 {
-   cancel(NuMaterialEdPropInspector.refreshing);
-   NuMaterialEdPropInspector.refreshing = NuMaterialEdPropInspector.schedule(64,"renew");
    NuMaterialEditorWindow.syncGUI();
 }
 
 function NuMaterialEditorWindow::syncGUI(%this)
 {
    //do some presentation adjustments
-   %ormMapPresent = $MaterialEditor::currentMaterial.ORMConfigMapAsset[$MaterialEditor::currentLayer] !$= "";
+   %ormMapPresent = MaterialEditorGui.currentMaterial.ORMConfigMapAsset[$MaterialEditor::currentLayer] !$= "";
    
    %hideORMSliders = %ormMapPresent;
    if (!%hideORMSliders)
-      %hideORMSliders = $MaterialEditor::currentMaterial.AOMapAsset[$MaterialEditor::currentLayer] !$= "";
+      %hideORMSliders = MaterialEditorGui.currentMaterial.AOMapAsset[$MaterialEditor::currentLayer] !$= "";
    if (!%hideORMSliders)
-      %hideORMSliders = $MaterialEditor::currentMaterial.RoughMapAsset[$MaterialEditor::currentLayer] !$= "";
+      %hideORMSliders = MaterialEditorGui.currentMaterial.RoughMapAsset[$MaterialEditor::currentLayer] !$= "";
    if (!%hideORMSliders)
-      %hideORMSliders = $MaterialEditor::currentMaterial.MetalMapAsset[$MaterialEditor::currentLayer] !$= "";
+      %hideORMSliders = MaterialEditorGui.currentMaterial.MetalMapAsset[$MaterialEditor::currentLayer] !$= "";
         
    if(%ormMapPresent)
    {
       %group = NuMaterialEdPropInspector.findExistentGroup("Light Influence Maps");
       %group.hideField("isSRGb",false);
-      %group.hideField("roughness");
-      %group.hideField("metalness");
       %group.hideField("AOMapAsset");
+      %group.hideField("aoChan");
       %group.hideField("RoughMapAsset");
+      %group.hideField("roughness");
+      %group.hideField("roughnessChan");
       %group.hideField("MetalMapAsset");
+      %group.hideField("metalness"); 
+      %group.hideField("metalChan");
+      %group.hideField("save");
    }
    else
    {
@@ -186,22 +186,30 @@ function NuMaterialEditorWindow::syncGUI(%this)
       %group.hideField("isSRGb");
       if (%hideORMSliders)
       {
+         %group.hideField("aoChan",false);
+         
          %group.hideField("roughness");
          %group.hideField("roughnessChan",false);
          
          %group.hideField("metalness");
          %group.hideField("metalChan",false);
+         %group.hideField("save",false);     
       }
       else
       {
+         %group.hideField("aoChan");
+         
          %group.hideField("roughness",false);
          %group.hideField("roughnessChan");
          
          %group.hideField("metalness",false);  
-         %group.hideField("metalChan");    
+         %group.hideField("metalChan");
+         %group.hideField("save");
       }
       %group.hideField("AOMapAsset",false);
       %group.hideField("RoughMapAsset",false);
       %group.hideField("MetalMapAsset",false);
    }
+   cancel(NuMaterialEdPropInspector.refreshing);
+   NuMaterialEdPropInspector.refreshing = NuMaterialEdPropInspector.schedule(64,"renew");
 }

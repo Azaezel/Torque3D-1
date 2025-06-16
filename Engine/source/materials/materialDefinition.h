@@ -222,6 +222,7 @@ public:
    DECLARE_IMAGEASSET_ARRAY(Material, GlowMap, GFXStaticTextureProfile, MAX_STAGES)
 
    bool     mDiffuseMapSRGB[MAX_STAGES];   // SRGB diffuse
+   bool     mSaveORM[MAX_STAGES];           // SRGB ORM
    bool     mIsSRGb[MAX_STAGES];           // SRGB ORM
    U32      mAOChan[MAX_STAGES];
    bool     mInvertRoughness[MAX_STAGES];
@@ -377,7 +378,7 @@ public:
    bool isLightmapped() const override;
    bool castsShadows() const override { return mCastShadows; }
    const String& getPath() const { return mPath; }
-
+   static bool _saveORM(void* object, const char* index, const char* data);
    void flush();
 
    /// Re-initializes all the material instances 
