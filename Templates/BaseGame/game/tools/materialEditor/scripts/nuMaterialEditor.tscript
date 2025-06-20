@@ -166,9 +166,9 @@ function NuMaterialEditorWindow::syncGUI(%this)
    if (!%hideORMSliders)
       %hideORMSliders = MaterialEditorGui.currentMaterial.MetalMapAsset[$MaterialEditor::currentLayer] !$= "";
         
+   %group = NuMaterialEdPropInspector.findExistentGroup("Light Influence Maps");
    if(%ormMapPresent)
    {
-      %group = NuMaterialEdPropInspector.findExistentGroup("Light Influence Maps");
       %group.hideField("isSRGb",false);
       %group.hideField("AOMapAsset");
       %group.hideField("aoChan");
@@ -182,7 +182,6 @@ function NuMaterialEditorWindow::syncGUI(%this)
    }
    else
    {
-      %group = NuMaterialEdPropInspector.findExistentGroup("Light Influence Maps");
       %group.hideField("isSRGb");
       if (%hideORMSliders)
       {
@@ -210,6 +209,39 @@ function NuMaterialEditorWindow::syncGUI(%this)
       %group.hideField("RoughMapAsset",false);
       %group.hideField("MetalMapAsset",false);
    }
+   
+   %animflags = MaterialEditorGui.currentMaterial.animFlags[$MaterialEditor::currentLayer];
+   %group = NuMaterialEdPropInspector.findExistentGroup("Animation Properties");
+   
+   %hideScroll = true;
+   if (strstr(%animflags, "Scroll")>=0)
+        %hideScroll = false;        
+   %group.hideField("scrollDir",%hideScroll);
+   %group.hideField("scrollSpeed",%hideScroll);
+   
+   %hideRotate = true;
+   if (strstr(%animflags, "Rotate")>=0)
+        %hideRotate = false;
+   %group.hideField("rotSpeed",%hideRotate);
+   %group.hideField("rotPivotOffset",%hideRotate);
+   
+   %hideWave = true;
+   if (strstr(%animflags, "Wave")>=0)
+        %hideWave = false;
+   %group.hideField("waveType",%hideWave);
+   %group.hideField("waveFreq",%hideWave);
+   %group.hideField("waveAmp",%hideWave);
+   
+   %showScale = false;
+   if (strstr(%animflags, "Scale")>=0)
+        %showScale = true;
+   
+   %hideSequence = true;
+   if (strstr(%animflags, "Sequence")>=0)
+        %hideSequence = false;
+   %group.hideField("sequenceFramePerSec",%hideSequence);
+   %group.hideField("sequenceSegmentSize",%hideSequence);
+   
    cancel(NuMaterialEdPropInspector.refreshing);
    NuMaterialEdPropInspector.refreshing = NuMaterialEdPropInspector.schedule(64,"renew");
 }
