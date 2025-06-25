@@ -49,6 +49,7 @@ protected:
    S32 mCurKnot;
 
    Filter mFilter;
+   Filter mKeys;
 
    bool mShowIdentity;
 
@@ -75,6 +76,11 @@ public:
    F32  getValue(S32 n);
    const Filter* get() { return &mFilter; }
    void set(const Filter &f);
+
+   F32  getKey(S32 n);
+   const Filter* getKeys() { return &mKeys; }
+   void setKeys(const Filter& k);
+
    S32  getNumControlPoints() {return mFilter.size(); }
    void identity();
 
@@ -96,4 +102,15 @@ inline void GuiFilterCtrl::set(const Filter &f)
    mFilter = f;
 }
 
+inline F32 GuiFilterCtrl::getKey(S32 n)
+{
+   S32 index = getMin(getMax(n, 0), (S32)mKeys.size() - 1);
+   return mKeys[index];
+}
+
+inline void GuiFilterCtrl::setKeys(const Filter& k)
+{
+   mControlPointRequest = k.size();
+   mKeys = k;
+}
 #endif

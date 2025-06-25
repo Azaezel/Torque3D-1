@@ -43,6 +43,7 @@ GuiFilterCtrl::GuiFilterCtrl()
 {
    mControlPointRequest = 7;
    mFilter.setSize(7);
+   mKeys.setSize(7);
    mShowIdentity = true;
    mIdentity.set( 0.0f, 1.0f );
    identity();
@@ -56,6 +57,8 @@ void GuiFilterCtrl::initPersistFields()
       "Total number of control points in the spline curve." );
    addField("filter", TypeF32Vector, Offset(mFilter, GuiFilterCtrl),
       "Vector of control points." );
+   addField("keys", TypeF32Vector, Offset(mKeys, GuiFilterCtrl),
+      "Vector of control points.");
    addField("showIdentity", TypeBool, Offset(mShowIdentity, GuiFilterCtrl), "@internal" );
    addField("identity", TypePoint2F, Offset(mIdentity, GuiFilterCtrl), "@internal");
 
@@ -73,7 +76,7 @@ DefineEngineMethod( GuiFilterCtrl, getValue, const char*, (), , "Return a tuple 
    {
       char value[32];
       dSprintf(value, 32, "%1.5f ", *(filter->begin()+i) );
-      dStrcat(buffer, value, 32);
+      dStrcat(buffer, value, 512);
    }
 
    return buffer;
@@ -91,6 +94,35 @@ DefineEngineStringlyVariadicMethod( GuiFilterCtrl, setValue, void, 3, 20, "(f1, 
 	object->set(filter);
 }
 
+DefineEngineMethod(GuiFilterCtrl, getKey, const char*, (), , "Return a tuple containing all the values in the filter."
+   "@internal")
+{
+   static char buffer[512];
+   const Filter* filter = object->getKeys();
+   *buffer = 0;
+
+   for (U32 i = 0; i < filter->size(); i++)
+   {
+      char value[32];
+      dSprintf(value, 32, "%1.5f ", *(filter->begin() + i));
+      dStrcat(buffer, value, 32);
+   }
+
+   return buffer;
+}
+
+DefineEngineStringlyVariadicMethod(GuiFilterCtrl, setKeys, void, 3, 20, "(f1, f2, ...)"
+   "Reset the filter to use the specified points, spread equidistantly across the domain."
+   "@internal")
+{
+   Filter filter;
+
+   ConsoleValueToStringArrayWrapper args(argc - 2, argv + 2);
+
+   filter.set(args.count(), args);
+   object->setKeys(filter);
+}
+
 DefineEngineMethod( GuiFilterCtrl, resetFiltering, void, (), , "Reset the filtering."
 			  "@internal")
 {
@@ -105,6 +137,7 @@ bool GuiFilterCtrl::onWake()
    if (U32(mControlPointRequest) != mFilter.size())
    {
       mFilter.setSize(mControlPointRequest);
+      mKeys.setSize(mControlPointRequest);
       identity();
    }
 
@@ -121,6 +154,7 @@ void GuiFilterCtrl::identity()
    {
       F32 step = (F32)i/(F32)size;
       mFilter[i] = mLerp( mIdentity.x, mIdentity.y, step );
+      mKeys[i] = mLerp(mIdentity.x, mIdentity.y, step);
    }
 }
 
@@ -135,6 +169,16 @@ void GuiFilterCtrl::onMouseDown(const GuiEvent &event)
    // determine which knot (offset same as in onRender)
    F32 w = F32(getWidth()-4) / F32(mFilter.size()-1);
    F32 val = (F32(p.x) + (w / 2.f)) / w;
+
+   F32 pct = F32(p.x) / F32(getWidth());
+   F32 px = 16.0 / getWidth();
+   for (S32 i = 0; i < mKeys.size(); i++)
+   {
+      if ((mKeys[i] > (pct - px)) && (mKeys[i] < (pct+ px)))
+      {
+         val = i;
+      }
+   }
    mCurKnot = S32(val);
 
    mFilter[mCurKnot] = 1.0f - F32(getMin(getMax(0, p.y), getHeight())/(F32)getHeight());
@@ -206,9 +250,9 @@ void GuiFilterCtrl::onRender(Point2I offset, const RectI &updateRect)
    for ( U32 i = 0; i < ext.x; i++)
    {
       F32 index = F32(i) * scale;
+      S32 x = (S32)(ext.x * mKeys.getValue(index));
       S32 y = (S32)(ext.y*(1.0f-mFilter.getValue(index)));
-
-      verts[i].point.set( (F32)(pos.x + i), (F32)(pos.y + y), 0.0f );
+      verts[i].point.set( (F32)(pos.x + x), (F32)(pos.y + y), 0.0f );
       verts[i].color = ColorI( 103, 103, 103 );
    }
 
@@ -221,7 +265,7 @@ void GuiFilterCtrl::onRender(Point2I offset, const RectI &updateRect)
    for (U32 k=0; k < mFilter.size(); k++)
    {
       RectI knotRect;
-	  knotRect.point.x = (S32)(((F32)ext.x/(F32)(mFilter.size()-1)*(F32)k));
+	  knotRect.point.x = (S32)((F32)ext.x * mKeys[k]);
 	  knotRect.point.y = (S32)(ext.y - ((F32)ext.y * mFilter[k]));
 	  knotRect.point += pos + Point2I(-2,-2);
 	  knotRect.extent = Point2I(5,5);
