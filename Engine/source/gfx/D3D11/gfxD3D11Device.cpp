@@ -871,6 +871,41 @@ void GFXD3D11Device::clearColorAttachment(const U32 attachment, const LinearColo
    mD3DDeviceContext->ClearRenderTargetView(rtView, clearColor);
 }
 
+void GFXD3D11Device::clearVolatileBuffers()
+{
+   // Release all the dynamic vertex buffer arrays
+   // Forcibly clean up the pools
+   for (U32 i = 0; i < mVolatileVBList.size(); i++)
+   {
+      SAFE_RELEASE(mVolatileVBList[i]->vb);
+      mVolatileVBList[i] = NULL;
+   }
+   mVolatileVBList.setSize(0);
+
+   // Set current VB to NULL and set state dirty
+   for (U32 i = 0; i < VERTEX_STREAM_COUNT; i++)
+   {
+      mCurrentVertexBuffer[i] = NULL;
+      mVertexBufferDirty[i] = true;
+      mVertexBufferFrequency[i] = 0;
+      mVertexBufferFrequencyDirty[i] = true;
+   }
+
+   // Release dynamic index buffer
+   if (mDynamicPB != NULL)
+   {
+      SAFE_RELEASE(mDynamicPB->ib);
+   }
+
+   // Set current PB/IB to NULL and set state dirty
+   mCurrentPrimitiveBuffer = NULL;
+   mCurrentPB = NULL;
+   mPrimitiveBufferDirty = true;
+
+   // Set global dirty state so the IB/PB and VB get reset
+   mStateDirty = true;
+}
+
 void GFXD3D11Device::endSceneInternal()
 {
    mCanCurrentlyRender = false;

@@ -149,6 +149,7 @@ public:
    void copyResource(GFXTextureObject *pDst, GFXCubemap *pSrc, const U32 face) override { };
    void clear( U32 flags, const LinearColorF& color, F32 z, U32 stencil ) override { };
    void clearColorAttachment(const U32 attachment, const LinearColorF& color) override { };
+   void clearVolatileBuffers() override {};
    bool beginSceneInternal() override { return true; };
    void endSceneInternal() override { };
 

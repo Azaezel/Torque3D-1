@@ -29,12 +29,6 @@
 
 #include "gfx/gl/gfxGLCircularVolatileBuffer.h"
 
-GLCircularVolatileBuffer* getCircularVolatileIndexBuffer()
-{
-   static GLCircularVolatileBuffer sCircularVolatileIndexBuffer(GL_ELEMENT_ARRAY_BUFFER);
-   return &sCircularVolatileIndexBuffer;
-}
-
 GFXGLPrimitiveBuffer::GFXGLPrimitiveBuffer(GFXDevice *device, U32 indexCount, U32 primitiveCount, GFXBufferType bufferType) :
    GFXPrimitiveBuffer(device, indexCount, primitiveCount, bufferType),
    mBufferOffset(0),
@@ -44,7 +38,7 @@ GFXGLPrimitiveBuffer::GFXGLPrimitiveBuffer(GFXDevice *device, U32 indexCount, U3
 {
    if( mBufferType == GFXBufferTypeVolatile )
    {
-      mBuffer = getCircularVolatileIndexBuffer()->getHandle();
+      mBuffer = CVB->getHandle();
       return;
    }
 
@@ -71,7 +65,7 @@ void GFXGLPrimitiveBuffer::lock(U32 indexStart, U32 indexEnd, void **indexPtr)
    if( mBufferType == GFXBufferTypeVolatile )
    {
       AssertFatal(indexStart == 0, "");
-      getCircularVolatileIndexBuffer()->lock( mIndexCount * sizeof(U16), 0, mBufferOffset, *indexPtr );
+      CVB->lock( mIndexCount * sizeof(U16), 0, mBufferOffset, *indexPtr );
    }
    else
    {
@@ -90,7 +84,7 @@ void GFXGLPrimitiveBuffer::unlock()
 
    if( mBufferType == GFXBufferTypeVolatile )
    {
-      getCircularVolatileIndexBuffer()->unlock();
+      CVB->unlock();
    }
    else
    {   
@@ -168,7 +162,7 @@ namespace
    bool onGFXDeviceSignal( GFXDevice::GFXDeviceEventType type )
    {
       if( GFX->getAdapterType() == OpenGL && GFXDevice::deEndOfFrame == type )
-         getCircularVolatileIndexBuffer()->protectUsedRange();
+         CVB->protectUsedRange();
 
       return true;
    }

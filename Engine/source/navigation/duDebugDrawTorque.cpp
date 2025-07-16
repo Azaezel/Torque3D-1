@@ -185,6 +185,9 @@ void duDebugDrawTorque::renderBuffer(Buffer &b)
    Vector<Instruction> &buf = b.buffer;
    for(U32 i = 0; i < buf.size(); i++)
    {
+      if ((i % GFX_MAX_DYNAMIC_INDICES) == 0)
+         GFX->clearVolatileBuffers();
+
       switch(buf[i].type)
       {
       case Instruction::POINT:
@@ -237,7 +240,9 @@ void duDebugDrawTorque::renderGroup(U32 group)
       rcCol(mOverrideColor, r, g, b, a);
       PrimBuild::color4i(r, g, b, a);
    }
-   for(U32 b = 0; b < mBuffers.size(); b++)
+   U32 size = mMin((U32)(GFX_MAX_DYNAMIC_INDICES), mBuffers.size());
+
+   for(U32 b = 0; b < size; b++)
    {
       if(mBuffers[b].group == group)
          renderBuffer(mBuffers[b]);

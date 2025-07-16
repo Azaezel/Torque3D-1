@@ -92,7 +92,7 @@ private:
    bool mQuadsMode;
 
    U32 mVertCount;
-   F32 mStore[3][3];
+   F32 mStore[4][3];
 
    U32 mGroup;
 

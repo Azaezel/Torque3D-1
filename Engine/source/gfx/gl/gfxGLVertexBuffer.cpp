@@ -30,12 +30,6 @@
 
 #include "gfx/gl/gfxGLCircularVolatileBuffer.h"
 
-GLCircularVolatileBuffer* getCircularVolatileVertexBuffer()
-{
-   static GLCircularVolatileBuffer sCircularVolatileVertexBuffer(GL_ARRAY_BUFFER);
-   return &sCircularVolatileVertexBuffer;
-}
-
 GFXGLVertexBuffer::GFXGLVertexBuffer(  GFXDevice *device, 
                                        U32 numVerts, 
                                        const GFXVertexFormat *vertexFormat, 
@@ -49,7 +43,7 @@ GFXGLVertexBuffer::GFXGLVertexBuffer(  GFXDevice *device,
 {
    if( mBufferType == GFXBufferTypeVolatile )
    {
-      mBuffer = getCircularVolatileVertexBuffer()->getHandle();
+      mBuffer = CVB->getHandle();
       return;
    }
 
@@ -81,11 +75,11 @@ void GFXGLVertexBuffer::lock( U32 vertexStart, U32 vertexEnd, void **vertexPtr )
       AssertFatal(vertexStart == 0, "");
       if( GFXGL->mCapabilities.vertexAttributeBinding )
       {
-         getCircularVolatileVertexBuffer()->lock( mNumVerts * mVertexSize, 0, mBufferOffset, *vertexPtr );
+         CVB->lock( mNumVerts * mVertexSize, 0, mBufferOffset, *vertexPtr );
       }
       else
       {
-         getCircularVolatileVertexBuffer()->lock( mNumVerts * mVertexSize, mVertexSize, mBufferOffset, *vertexPtr );
+         CVB->lock( mNumVerts * mVertexSize, mVertexSize, mBufferOffset, *vertexPtr );
          mBufferVertexOffset = mBufferOffset / mVertexSize;
       }
    }
@@ -107,7 +101,7 @@ void GFXGLVertexBuffer::unlock()
 
    if( mBufferType == GFXBufferTypeVolatile )
    {
-      getCircularVolatileVertexBuffer()->unlock();
+      CVB->unlock();
    }
    else
    {
@@ -188,7 +182,7 @@ namespace
    bool onGFXDeviceSignal( GFXDevice::GFXDeviceEventType type )
    {
       if( GFX->getAdapterType() == OpenGL && GFXDevice::deEndOfFrame == type )
-         getCircularVolatileVertexBuffer()->protectUsedRange();
+         CVB->protectUsedRange();
 
       return true;
    }

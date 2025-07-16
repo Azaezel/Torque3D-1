@@ -295,7 +295,13 @@ protected:
       U32 start, end;
    };
    Vector<UsedRange> mUsedRanges;
+
+public:
+   static GLCircularVolatileBuffer* get()
+   {
+      static GLCircularVolatileBuffer sCircularVolatileVertexBuffer(GL_ARRAY_BUFFER);
+      return &sCircularVolatileVertexBuffer;
+   }
 };
-
-
+#define CVB GLCircularVolatileBuffer::get() 
 #endif

@@ -56,6 +56,7 @@
 #elif defined(TORQUE_OS_LINUX)
 #include "gfx/gl/tGL/tXGL.h"
 #endif
+#include "gfx/gl/gfxGLCircularVolatileBuffer.h"
 
 GFXAdapter::CreateDeviceInstanceDelegate GFXGLDevice::mCreateDeviceInstance(GFXGLDevice::createInstance);
 
@@ -343,8 +344,7 @@ void GFXGLDevice::zombify()
    if(mCurrentPB)
          mCurrentPB->finish();
 
-   //mVolatileVBs.clear();
-   //mVolatilePBs.clear();
+   clearVolatileBuffers();
    GFXResource* walk = mResourceListHead;
    while(walk)
    {
@@ -506,8 +506,7 @@ void GFXGLDevice::endSceneInternal()
 {
    // nothing to do for opengl
    mCanCurrentlyRender = false;
-   mVolatileVBs.clear();
-   mVolatilePBs.clear();
+   clearVolatileBuffers();
 }
 
 void GFXGLDevice::copyResource(GFXTextureObject* pDst, GFXCubemap* pSrc, const U32 face)
@@ -623,6 +622,13 @@ void GFXGLDevice::clearColorAttachment(const U32 attachment, const LinearColorF&
    glClearBufferfv(GL_COLOR, attachment, clearColor);
 }
 
+void GFXGLDevice::clearVolatileBuffers()
+{
+   CVB->protectUsedRange();
+   mVolatileVBs.clear();
+   mVolatilePBs.clear();
+}
+
 // Given a primitive type and a number of primitives, return the number of indexes/vertexes used.
 inline GLsizei GFXGLDevice::primCountToIndexCount(GFXPrimitiveType primType, U32 primitiveCount)
 {
@@ -704,6 +710,7 @@ inline void GFXGLDevice::postDrawPrimitive(U32 primitiveCount)
 {
    mDeviceStatistics.mDrawCalls++;
    mDeviceStatistics.mPolyCount += primitiveCount;
+   clearVolatileBuffers();
 }
 
 void GFXGLDevice::drawPrimitive( GFXPrimitiveType primType, U32 vertexStart, U32 primitiveCount )
