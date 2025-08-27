@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "wrappers.h"
+#include "core/util/path.h"
 
 //general subsystem
 DefineEngineFunction(git_init, String, (), ,
@@ -131,7 +132,7 @@ void gitObject::processTick()
    {
       if (mCurPercent == 0)
          onStart_callback();
-      else if (mProgress_data.mPercent)
+      else if (mProgress_data.mPercent == 1.0f)
       {
          onComplete_callback();
          setProcessTicks(false);
@@ -185,8 +186,9 @@ DefineEngineMethod(gitObject, openRepo, String, (StringTableEntry localPath, Str
    "@param localPath location of hard drive directory\n\n"
    "@param URL location of remote directory\n\n")
 {
+   Torque::Path path = Torque::Path(*localPath ? localPath : object->mLocalPath);
 
-   S32 error = object->openRepo(*localPath ? localPath: object->mLocalPath, *url ? url : object->mUrl);
+   S32 error = object->openRepo(path.getFullPath(), *url ? url : object->mUrl);
    if (error < 0) {
       const git_error* e = git_error_last();
       return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
@@ -199,8 +201,9 @@ DefineEngineMethod(gitObject, cloneRepo, String, (StringTableEntry localPath, St
    "@param localPath location of hard drive directory\n\n"
    "@param URL location of remote directory\n\n")
 {
+   Torque::Path path = Torque::Path(*localPath ? localPath : object->mLocalPath);
 
-   S32 error = object->cloneRepo(*localPath ? localPath : object->mLocalPath, *url ? url : object->mUrl);
+   S32 error = object->cloneRepo(path.getFullPath(), *url ? url : object->mUrl);
    if (error < 0) {
       const git_error* e = git_error_last();
       return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
