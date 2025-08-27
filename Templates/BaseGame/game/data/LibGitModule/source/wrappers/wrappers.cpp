@@ -48,6 +48,25 @@ DefineEngineFunction(git_shutdown, String, (), ,
 	return "";
 }
 
+S32 fetch_progress(
+   const git_indexer_progress* stats,
+   void* payload)
+{
+   gitProgress* pd = (gitProgress*)payload;
+   pd->mPercent = stats->indexed_deltas / stats->total_deltas;
+   return (S32)(pd->mPercent * 100);
+}
+
+void checkout_progress(
+   const char* path,
+   size_t cur,
+   size_t tot,
+   void* payload)
+{
+   gitProgress* pd = (gitProgress*)payload;
+   pd->mSessionPtr->updateProgress(pd);
+}
+
 //session object
 IMPLEMENT_CONOBJECT(gitObject);
 
@@ -59,23 +78,40 @@ IMPLEMENT_CALLBACK(gitObject, onComplete, void, (), (),
    "Called when the child control has been scrolled in entirety.");
 
 gitObject::gitObject()
+   : mRepo(NULL),
+   mCurPercent(0),
+   mUrl(StringTable->EmptyString()),
+   mLocalPath(StringTable->EmptyString()),
+   mRepoDesc(StringTable->EmptyString())
 {
    mCallOnAdvanceTime = false;
    mProgress_data.mPercent = 0;
-   mCurPercent = 0;
    mProgress_data.mSessionPtr = this;
+
+   mClone_opts = GIT_CLONE_OPTIONS_INIT;
+   mClone_opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
+   mClone_opts.checkout_opts.progress_cb = checkout_progress;
+   mClone_opts.checkout_opts.progress_payload = &mProgress_data;
+   mClone_opts.fetch_opts.callbacks.transfer_progress = fetch_progress;
+   mClone_opts.fetch_opts.callbacks.payload = &mProgress_data;
 }
 
 bool gitObject::onAdd()
 {
    if (!Parent::onAdd())
       return false;
+
+   mRepo = NULL;
+   mProgress_data.mPercent = 0;
+   mCurPercent = 0;
+   mProgress_data.mSessionPtr = this;
    setProcessTicks(false);
    return true;
 }
 
 void gitObject::onRemove()
 {
+   closeRepo();
    Parent::onRemove();
 }
 
@@ -100,47 +136,23 @@ void gitObject::processTick()
 
 S32 gitObject::openRepo(StringTableEntry path, StringTableEntry url)
 {
-   git_repository* repo = NULL;
+   closeRepo();
    git_repository_init_options opts = GIT_REPOSITORY_INIT_OPTIONS_INIT;
 
    /* Customize options */
    opts.flags |= GIT_REPOSITORY_INIT_MKPATH; /* mkdir as needed to create repo */
    opts.origin_url = url;
-   return git_repository_init_ext(&repo, path, &opts);
-}
-
-S32 fetch_progress(
-   const git_indexer_progress* stats,
-   void* payload)
-{
-   gitProgress* pd = (gitProgress*)payload;
-   pd->mPercent = stats->indexed_deltas / stats->total_deltas;
-   return (S32)(pd->mPercent * 100);
-}
-
-void checkout_progress(
-   const char* path,
-   size_t cur,
-   size_t tot,
-   void* payload)
-{
-   gitProgress* pd = (gitProgress*)payload;
-   pd->mSessionPtr->updateProgress(pd);
+   S32 errCode = git_repository_init_ext(&mRepo, path, &opts);
+   return errCode;
 }
 
 S32 gitObject::cloneRepo(StringTableEntry path, StringTableEntry url)
 {
-   mProgress_data = { 0 };
-   git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
-
-   clone_opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
-   clone_opts.checkout_opts.progress_cb = checkout_progress;
-   clone_opts.checkout_opts.progress_payload = &mProgress_data;
-   clone_opts.fetch_opts.callbacks.transfer_progress = fetch_progress;
-   clone_opts.fetch_opts.callbacks.payload = &mProgress_data;
+   mProgress_data = { NULL };
 
    setProcessTicks(true);
-   return git_clone(&mRepo, url, path, &clone_opts);
+   S32 errCode = git_clone(&mRepo, url, path, &mClone_opts);
+   return errCode;
 }
 
 void gitObject::updateProgress(gitProgress* progress)
