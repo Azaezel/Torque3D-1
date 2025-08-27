@@ -1,8 +1,18 @@
-set(USE_BUNDLED_ZLIB OFF CACHE STRING "We already build zlib" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Shared Library (OFF for Static)" FORCE)
-set(BUILD_TESTS OFF CACHE BOOL "Build Tests using the Clar suite" FORCE)
-set(BUILD_CLI OFF CACHE BOOL "Build the command-line interface" FORCE)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/libgit2 ${TORQUE_LIB_TARG_DIRECTORY}/libgit2 EXCLUDE_FROM_ALL)
+include(FetchContent)
 
-set(TORQUE_LINK_LIBRARIES ${TORQUE_LINK_LIBRARIES} libgit2)
-set(TORQUE_INCLUDE_DIRECTORIES ${TORQUE_INCLUDE_DIRECTORIES} "${CMAKE_CURRENT_LIST_DIR}/libgit2/include" )
+FetchContent_Declare(
+    libgit2
+    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/libgit2
+    BINARY_DIR ${TORQUE_LIB_TARG_DIRECTORY}/libgit2
+)
+
+set(USE_BUNDLED_ZLIB OFF CACHE BOOL "")
+set(USE_BUNDLED_PCRE OFF CACHE BOOL "")
+SET(BUILD_CLI OFF CACHE BOOL "")
+set(BUILD_TESTS OFF CACHE BOOL "")
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+set(CMAKE_SKIP_INSTALL_RULES ON CACHE BOOL "Skip install rules")
+# Fetch libgit2 source
+FetchContent_MakeAvailable(libgit2)
+
+set(TORQUE_LINK_LIBRARIES ${TORQUE_LINK_LIBRARIES} libgit2package libgit2)
