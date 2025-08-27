@@ -20,14 +20,13 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "git2.h"
+#include "wrappers.h"
 
-#include "console/engineAPI.h"
-
+//general subsystem
 DefineEngineFunction(git_init, String, (), ,
         "@brief initialize libGit2.\n\n")
 {
-	int error = git_libgit2_init();
+   S32 error = git_libgit2_init();
 	if (error < 0) {
 		const git_error *e = git_error_last();
 		return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
@@ -41,10 +40,157 @@ DefineEngineFunction(git_shutdown, String, (), ,
         "@note By default, messages will appear white in the console.\n"
         "@ingroup Logging")
 {
-	int error = git_libgit2_shutdown();
+   S32 error = git_libgit2_shutdown();
 	if (error < 0) {
 		const git_error *e = git_error_last();
 		return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
 	}
 	return "";
+}
+
+//session object
+IMPLEMENT_CONOBJECT(gitObject);
+
+IMPLEMENT_CALLBACK(gitObject, onProgress, void, (), (),
+   "Called every 32ms on the control.");
+IMPLEMENT_CALLBACK(gitObject, onStart, void, (), (),
+   "Called when the control starts to scroll.");
+IMPLEMENT_CALLBACK(gitObject, onComplete, void, (), (),
+   "Called when the child control has been scrolled in entirety.");
+
+gitObject::gitObject()
+{
+   mCallOnAdvanceTime = false;
+   mProgress_data.mPercent = 0;
+   mCurPercent = 0;
+   mProgress_data.mSessionPtr = this;
+}
+
+bool gitObject::onAdd()
+{
+   if (!Parent::onAdd())
+      return false;
+   setProcessTicks(false);
+   return true;
+}
+
+void gitObject::onRemove()
+{
+   Parent::onRemove();
+}
+
+void gitObject::processTick()
+{
+   Parent::processTick();
+   S32 progress = checkProgress();
+   if (mCurPercent != mProgress_data.mPercent)
+   {
+      if (mCurPercent == 0)
+         onStart_callback();
+      else if (mProgress_data.mPercent)
+      {
+         onComplete_callback();
+         setProcessTicks(false);
+      }
+      else
+         onProgress_callback();
+
+      mCurPercent = mProgress_data.mPercent;
+   }
+}
+
+S32 gitObject::openRepo(StringTableEntry path, StringTableEntry url)
+{
+   git_repository* repo = NULL;
+   git_repository_init_options opts = GIT_REPOSITORY_INIT_OPTIONS_INIT;
+
+   /* Customize options */
+   opts.flags |= GIT_REPOSITORY_INIT_MKPATH; /* mkdir as needed to create repo */
+   opts.origin_url = url;
+   return git_repository_init_ext(&repo, path, &opts);
+}
+
+S32 fetch_progress(
+   const git_indexer_progress* stats,
+   void* payload)
+{
+   gitProgress* pd = (gitProgress*)payload;
+   pd->mPercent = stats->indexed_deltas / stats->total_deltas;
+   return (S32)(pd->mPercent * 100);
+}
+
+void checkout_progress(
+   const char* path,
+   size_t cur,
+   size_t tot,
+   void* payload)
+{
+   gitProgress* pd = (gitProgress*)payload;
+   pd->mSessionPtr->updateProgress(pd);
+}
+
+S32 gitObject::cloneRepo(StringTableEntry path, StringTableEntry url)
+{
+   mProgress_data = { 0 };
+   git_clone_options clone_opts = GIT_CLONE_OPTIONS_INIT;
+
+   clone_opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
+   clone_opts.checkout_opts.progress_cb = checkout_progress;
+   clone_opts.checkout_opts.progress_payload = &mProgress_data;
+   clone_opts.fetch_opts.callbacks.transfer_progress = fetch_progress;
+   clone_opts.fetch_opts.callbacks.payload = &mProgress_data;
+
+   setProcessTicks(true);
+   return git_clone(&mRepo, url, path, &clone_opts);
+}
+
+void gitObject::updateProgress(gitProgress* progress)
+{
+   mProgress_data.mPercent = progress->mPercent;
+}
+
+void gitObject::closeRepo()
+{
+   git_repository_free(mRepo);
+}
+
+void gitObject::initPersistFields()
+{
+   addField("localPath", TypeString, Offset(mLocalPath, gitObject), "repository URL");
+   addField("URL", TypeString, Offset(mUrl, gitObject), "repository URL");
+}
+
+DefineEngineMethod(gitObject, openRepo, String, (StringTableEntry localPath, StringTableEntry url),("", ""),
+   "@brief opens a repository\n\n"
+   "@param localPath location of hard drive directory\n\n"
+   "@param URL location of remote directory\n\n")
+{
+
+   S32 error = object->openRepo(*localPath ? localPath: object->mLocalPath, *url ? url : object->mUrl);
+   if (error < 0) {
+      const git_error* e = git_error_last();
+      return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
+   }
+   return "";
+}
+
+DefineEngineMethod(gitObject, cloneRepo, String, (StringTableEntry localPath, StringTableEntry url), ("", ""),
+   "@brief clones a repository\n\n"
+   "@param localPath location of hard drive directory\n\n"
+   "@param URL location of remote directory\n\n")
+{
+
+   S32 error = object->cloneRepo(*localPath ? localPath : object->mLocalPath, *url ? url : object->mUrl);
+   if (error < 0) {
+      const git_error* e = git_error_last();
+      return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
+   }
+   return "";
+}
+
+DefineEngineMethod(gitObject, closeRepo, void, ( ),,
+   "@brief closes the current repository\n\n")
+{
+
+   object->closeRepo();
 }
