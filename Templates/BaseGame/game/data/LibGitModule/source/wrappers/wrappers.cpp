@@ -82,7 +82,6 @@ void gitObject::onRemove()
 void gitObject::processTick()
 {
    Parent::processTick();
-   S32 progress = checkProgress();
    if (mCurPercent != mProgress_data.mPercent)
    {
       if (mCurPercent == 0)

@@ -41,7 +41,7 @@
 
 class gitObject;
 
-typedef struct gitProgress
+struct gitProgress
 {
    F32 mPercent;
    gitObject* mSessionPtr;
@@ -70,7 +70,6 @@ public:
    void processTick() override;
    void advanceTime(F32 timeDelta) override {};
    void updateProgress(gitProgress *progress);
-   S32 checkProgress();
 
    S32 openRepo(StringTableEntry path = NULL, StringTableEntry url = NULL);
    S32 cloneRepo(StringTableEntry path = NULL, StringTableEntry url = NULL);
