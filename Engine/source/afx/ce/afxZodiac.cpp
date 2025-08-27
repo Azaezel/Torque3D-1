@@ -78,8 +78,6 @@ bool afxZodiacData::sPreferDestinationGradients = false;
 
 afxZodiacData::afxZodiacData()
 {
-   INIT_ASSET(Texture);
-
   radius_xy = 1;
   vert_range.set(0.0f, 0.0f);
   start_ang = 0;
@@ -120,7 +118,7 @@ afxZodiacData::afxZodiacData()
 
 afxZodiacData::afxZodiacData(const afxZodiacData& other, bool temp_clone) : GameBaseData(other, temp_clone)
 {
-   CLONE_ASSET(Texture);
+   CLONE_ASSET_REFACTOR(Texture);
 
   radius_xy = other.radius_xy;
   vert_range = other.vert_range;
@@ -167,18 +165,18 @@ void afxZodiacData::initPersistFields()
     "Specifies if the zodiac's verticalRange should scale according to changes in the "
     "radius. When a zodiacs is used as an expanding shockwave, this value should be set "
     "to false, otherwise the zodiac can expand to cover an entire interior.");
-  addField("startAngle",            TypeF32,        Offset(start_ang,         afxZodiacData),
+  addFieldV("startAngle", TypeRangedF32,        Offset(start_ang,         afxZodiacData), &CommonValidators::DegreeRange,
     "The starting angle in degrees of the zodiac's rotation.");
-  addField("rotationRate",          TypeF32,        Offset(ang_per_sec,       afxZodiacData),
+  addFieldV("rotationRate", TypeRangedF32,        Offset(ang_per_sec,       afxZodiacData), &CommonValidators::DegreeRange,
     "The rate of rotation in degrees-per-second. Zodiacs with a positive rotationRate "
     "rotate clockwise, while those with negative values turn counter-clockwise.");
-  addField("growInTime",            TypeF32,        Offset(grow_in_time,      afxZodiacData),
+  addFieldV("growInTime", TypeRangedF32,        Offset(grow_in_time,      afxZodiacData), &CommonValidators::PositiveFloat,
     "A duration of time in seconds over which the zodiac grows from a zero size to its "
     "full size as specified by the radius.");
-  addField("shrinkOutTime",         TypeF32,        Offset(shrink_out_time,   afxZodiacData),
+  addFieldV("shrinkOutTime", TypeRangedF32,        Offset(shrink_out_time,   afxZodiacData), &CommonValidators::PositiveFloat,
     "A duration of time in seconds over which the zodiac shrinks from full size to "
     "invisible.");
-  addField("growthRate",            TypeF32,        Offset(growth_rate,       afxZodiacData),
+  addFieldV("growthRate", TypeRangedF32,        Offset(growth_rate,       afxZodiacData), &CommonValidators::F32Range,
     "A rate in meters-per-second at which the zodiac grows in size. A negative value will "
     "shrink the zodiac.");
   addField("color",                 TypeColorF,     Offset(color,             afxZodiacData),
@@ -215,20 +213,20 @@ void afxZodiacData::initPersistFields()
   addField("interiorIgnoreTransparent", TypeBool,   Offset(interior_transp_ignore, afxZodiacData),
     "");
 
-  addField("altitudeMax",           TypeF32,      Offset(altitude_max, afxZodiacData),
+  addFieldV("altitudeMax", TypeRangedF32,      Offset(altitude_max, afxZodiacData), &CommonValidators::F32Range,
     "The altitude at which zodiac becomes invisible as the result of fading out or "
     "becoming too small.");
-  addField("altitudeFalloff",       TypeF32,      Offset(altitude_falloff, afxZodiacData),
+  addFieldV("altitudeFalloff", TypeRangedF32,      Offset(altitude_falloff, afxZodiacData), &CommonValidators::F32Range,
     "The altitude at which zodiac begins to fade and/or shrink.");
   addField("altitudeShrinks",       TypeBool,     Offset(altitude_shrinks, afxZodiacData),
     "When true, zodiac becomes smaller as altitude increases.");
   addField("altitudeFades",         TypeBool,     Offset(altitude_fades, afxZodiacData),
     "When true, zodiac fades out as altitude increases.");
 
-  addField("distanceMax",           TypeF32,      Offset(distance_max, afxZodiacData),
+  addFieldV("distanceMax", TypeRangedF32,      Offset(distance_max, afxZodiacData), &CommonValidators::PositiveFloat,
     "The distance from camera at which the zodiac becomes invisible as the result of "
     "fading out.");
-  addField("distanceFalloff",       TypeF32,      Offset(distance_falloff, afxZodiacData),
+  addFieldV("distanceFalloff", TypeRangedF32,      Offset(distance_falloff, afxZodiacData), &CommonValidators::PositiveFloat,
     "The distance from camera at which the zodiac begins to fade out.");
 
   addField("useGradientRange",      TypeBool,     Offset(use_grade_range, afxZodiacData),
@@ -270,7 +268,7 @@ void afxZodiacData::packData(BitStream* stream)
 
   merge_zflags();
 
-  PACKDATA_ASSET(Texture);
+  PACKDATA_ASSET_REFACTOR(Texture);
   stream->write(radius_xy);
   stream->write(vert_range.x);
   stream->write(vert_range.y);
@@ -295,7 +293,7 @@ void afxZodiacData::unpackData(BitStream* stream)
 {
   Parent::unpackData(stream);
 
-  UNPACKDATA_ASSET(Texture);
+  UNPACKDATA_ASSET_REFACTOR(Texture);
   stream->read(&radius_xy);
   stream->read(&vert_range.x);
   stream->read(&vert_range.y);
@@ -326,6 +324,8 @@ bool afxZodiacData::preload(bool server, String &errorStr)
   if (vert_range.x == 0.0f && vert_range.y == 0.0f)
     vert_range.x = vert_range.y = radius_xy;
 
+  getTexture();
+
   return true;
 }
 
@@ -342,22 +342,7 @@ void afxZodiacData::onStaticModified(const char* slot, const char* newValue)
 
 void afxZodiacData::onPerformSubstitutions() 
 {
-   if (mTextureAssetId != StringTable->EmptyString())
-   {
-      mTextureAsset = mTextureAssetId;
-      if (mTextureAsset.notNull())
-      {
-         if (getTexture() != StringTable->EmptyString() && mTextureName != StringTable->insert("texhandle"))
-         {
-            if (mTextureAsset.notNull())
-            {
-               mTextureAsset->getChangedSignal().notify(this, &afxZodiacData::onImageChanged);
-            }
-               
-            mTexture.set(getTexture(), mTextureProfile, avar("%s() - mTextureObject (line %d)", __FUNCTION__, __LINE__));
-         }
-      }
-   }
+   getTexture();
 }
 
 F32 afxZodiacData::calcRotationAngle(F32 elapsed, F32 rate_factor)

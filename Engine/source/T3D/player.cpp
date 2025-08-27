@@ -297,7 +297,7 @@ PlayerData::PlayerData()
    imageAnimPrefixFP = StringTable->EmptyString();
    for (U32 i=0; i<ShapeBase::MaxMountedImages; ++i)
    {
-      INIT_ASSET_ARRAY(ShapeFP, i);
+      mShapeFPAsset[i].registerRefreshNotify(this);
       mCRCFP[i] = 0;
       mValidShapeFP[i] = false;
    }
@@ -460,7 +460,7 @@ PlayerData::PlayerData()
    jumpTowardsNormal = true;
 
    physicsPlayerType = StringTable->EmptyString();
-
+   mControlMap = StringTable->EmptyString();
    dMemset( actionList, 0, sizeof(actionList) );
 }
 
@@ -502,10 +502,10 @@ bool PlayerData::preload(bool server, String &errorStr)
 
    // If we don't have a shape don't crash out trying to
    // setup animations and sequences.
-   if ( mShape )
+   if (getShape())
    {
       // Go ahead a pre-load the player shape
-      TSShapeInstance* si = new TSShapeInstance(mShape, false);
+      TSShapeInstance* si = new TSShapeInstance(getShape(), false);
       TSThread* thread = si->addThread();
 
       // Extract ground transform velocity from animations
@@ -516,7 +516,7 @@ bool PlayerData::preload(bool server, String &errorStr)
          ActionAnimationDef *sp = &ActionAnimationList[i];
          dp->name          = sp->name;
          dp->dir.set(sp->dir.x,sp->dir.y,sp->dir.z);
-         dp->sequence      = mShape->findSequence(sp->name);
+         dp->sequence      = getShape()->findSequence(sp->name);
 
          // If this is a sprint action and is missing a sequence, attempt to use
          // the standard run ones.
@@ -524,7 +524,7 @@ bool PlayerData::preload(bool server, String &errorStr)
          {
             S32 offset = i-SprintRootAnim;
             ActionAnimationDef *standDef = &ActionAnimationList[RootAnim+offset];
-            dp->sequence = mShape->findSequence(standDef->name);
+            dp->sequence = getShape()->findSequence(standDef->name);
          }
 
          dp->velocityScale = true;
@@ -532,12 +532,12 @@ bool PlayerData::preload(bool server, String &errorStr)
          if (dp->sequence != -1)
             getGroundInfo(si,thread,dp);
       }
-      for (S32 b = 0; b < mShape->sequences.size(); b++)
+      for (S32 b = 0; b < getShape()->sequences.size(); b++)
       {
          if (!isTableSequence(b))
          {
             dp->sequence      = b;
-            dp->name          = mShape->getName(mShape->sequences[b].nameIndex);
+            dp->name          = getShape()->getName(getShape()->sequences[b].nameIndex);
             dp->velocityScale = false;
             getGroundInfo(si,thread,dp++);
          }
@@ -554,17 +554,17 @@ bool PlayerData::preload(bool server, String &errorStr)
             lookAction = c;
 
       // Resolve spine
-      spineNode[0] = mShape->findNode("Bip01 Pelvis");
-      spineNode[1] = mShape->findNode("Bip01 Spine");
-      spineNode[2] = mShape->findNode("Bip01 Spine1");
-      spineNode[3] = mShape->findNode("Bip01 Spine2");
-      spineNode[4] = mShape->findNode("Bip01 Neck");
-      spineNode[5] = mShape->findNode("Bip01 Head");
+      spineNode[0] = getShape()->findNode("Bip01 Pelvis");
+      spineNode[1] = getShape()->findNode("Bip01 Spine");
+      spineNode[2] = getShape()->findNode("Bip01 Spine1");
+      spineNode[3] = getShape()->findNode("Bip01 Spine2");
+      spineNode[4] = getShape()->findNode("Bip01 Neck");
+      spineNode[5] = getShape()->findNode("Bip01 Head");
 
       // Recoil animations
-      recoilSequence[0] = mShape->findSequence("light_recoil");
-      recoilSequence[1] = mShape->findSequence("medium_recoil");
-      recoilSequence[2] = mShape->findSequence("heavy_recoil");
+      recoilSequence[0] = getShape()->findSequence("light_recoil");
+      recoilSequence[1] = getShape()->findSequence("medium_recoil");
+      recoilSequence[2] = getShape()->findSequence("heavy_recoil");
    }
 
    // Convert pickupRadius to a delta of boundingBox
@@ -607,26 +607,26 @@ bool PlayerData::preload(bool server, String &errorStr)
    {
       bool shapeError = false;
 
-      if (mShapeFPAssetId[i] != StringTable->EmptyString())
+      if (mShapeFPAsset[i].notNull())
       {
-         if (!mShapeFP[i])
+         if (!getShapeFP(i))
          {
-            errorStr = String::ToString("PlayerData: Couldn't load mounted image %d shape \"%s\"", i, mShapeFPAssetId[i]);
+            errorStr = String::ToString("PlayerData: Couldn't load mounted image %d shape \"%s\"", i, _getShapeFPAssetId(i));
             return false;
          }
 
-         if (!server && !mShapeFP[i]->preloadMaterialList(mShapeFP[i].getPath()) && NetConnection::filesWereDownloaded())
+         if (!server && !getShapeFP(i)->preloadMaterialList(getShapeFPFile(i)) && NetConnection::filesWereDownloaded())
             shapeError = true;
 
          if (computeCRC)
          {
-            Con::printf("Validation required for mounted image %d shape: %s", i, mShapeFPAssetId[i]);
+            Con::printf("Validation required for mounted image %d shape: %s", i, _getShapeFPAssetId(i));
 
-            Torque::FS::FileNodeRef    fileRef = Torque::FS::GetFileNode(mShapeFP[i].getPath());
+            Torque::FS::FileNodeRef    fileRef = Torque::FS::GetFileNode(getShapeFPFile(i));
 
             if (!fileRef)
             {
-               errorStr = String::ToString("PlayerData: Mounted image %d loading failed, shape \"%s\" is not found.", i, mShapeFP[i].getPath().getFullPath().c_str());
+               errorStr = String::ToString("PlayerData: Mounted image %d loading failed, shape \"%s\" is not found.", i, getShapeFPFile(i));
                return false;
             }
 
@@ -634,7 +634,7 @@ bool PlayerData::preload(bool server, String &errorStr)
                mCRCFP[i] = fileRef->getChecksum();
             else if (mCRCFP[i] != fileRef->getChecksum())
             {
-               errorStr = String::ToString("PlayerData: Mounted image %d shape \"%s\" does not match version on server.", i, mShapeFPAssetId[i]);
+               errorStr = String::ToString("PlayerData: Mounted image %d shape \"%s\" does not match version on server.", i, _getShapeFPAssetId(i));
                return false;
             }
          }
@@ -699,19 +699,20 @@ bool PlayerData::isJumpAction(U32 action)
 {
    return (action == JumpAnim || action == StandJumpAnim);
 }
+IRangeValidator jumpDelayRange(0, 1 << PlayerData::JumpDelayBits);
 
 void PlayerData::initPersistFields()
 {
    docsURL;
    Parent::initPersistFields();
 
-   addField( "pickupRadius", TypeF32, Offset(pickupRadius, PlayerData),
+   addFieldV( "pickupRadius", TypeRangedF32, Offset(pickupRadius, PlayerData), &CommonValidators::PositiveFloat,
       "@brief Radius around the player to collide with Items in the scene (on server).\n\n"
       "Internally the pickupRadius is added to the larger side of the initial bounding box "
       "to determine the actual distance, to a maximum of 2 times the bounding box size.  The "
       "initial bounding box is that used for the root pose, and therefore doesn't take into "
       "account the change in pose.\n");
-   addField( "maxTimeScale", TypeF32, Offset(maxTimeScale, PlayerData),
+   addFieldV( "maxTimeScale", TypeRangedF32, Offset(maxTimeScale, PlayerData), &CommonValidators::PositiveFloat,
       "@brief Maximum time scale for action animations.\n\n"
       "If an action animation has a defined ground frame, it is automatically scaled to match the "
       "player's ground velocity.  This field limits the maximum time scale used even if "
@@ -725,86 +726,88 @@ void PlayerData::initPersistFields()
       addField( "firstPersonShadows", TypeBool, Offset(firstPersonShadows, PlayerData),
          "@brief Forces shadows to be rendered in first person when renderFirstPerson is disabled.  Defaults to false.\n\n" );
 
-      addField( "minLookAngle", TypeF32, Offset(minLookAngle, PlayerData),
+      addFieldV( "minLookAngle", TypeRangedF32, Offset(minLookAngle, PlayerData), &CommonValidators::DirFloatPi,
          "@brief Lowest angle (in radians) the player can look.\n\n"
          "@note An angle of zero is straight ahead, with positive up and negative down." );
-      addField( "maxLookAngle", TypeF32, Offset(maxLookAngle, PlayerData),
+      addFieldV( "maxLookAngle", TypeRangedF32, Offset(maxLookAngle, PlayerData), &CommonValidators::DirFloatPi,
          "@brief Highest angle (in radians) the player can look.\n\n"
          "@note An angle of zero is straight ahead, with positive up and negative down." );
-      addField( "maxFreelookAngle", TypeF32, Offset(maxFreelookAngle, PlayerData),
+      addFieldV( "maxFreelookAngle", TypeRangedF32, Offset(maxFreelookAngle, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Defines the maximum left and right angles (in radians) the player can "
          "look in freelook mode.\n\n" );
 
    endGroup( "Camera" );
 
    addGroup( "Movement" );
-
-      addField( "maxStepHeight", TypeF32, Offset(maxStepHeight, PlayerData),
+      addField("controlMap", TypeString, Offset(mControlMap, PlayerData),
+      "@brief movemap used by these types of objects.\n\n");
+   
+      addFieldV( "maxStepHeight", TypeRangedF32, Offset(maxStepHeight, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum height the player can step up.\n\n"
          "The player will automatically step onto changes in ground height less "
          "than maxStepHeight.  The player will collide with ground height changes "
          "greater than this." );
 
-      addField( "runForce", TypeF32, Offset(runForce, PlayerData),
+      addFieldV( "runForce", TypeRangedF32, Offset(runForce, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Force used to accelerate the player when running.\n\n" );
 
-      addField( "runEnergyDrain", TypeF32, Offset(runEnergyDrain, PlayerData),
+      addFieldV( "runEnergyDrain", TypeRangedF32, Offset(runEnergyDrain, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Energy value drained each tick that the player is moving.\n\n"
          "The player will not be able to move when his energy falls below "
          "minRunEnergy.\n"
          "@note Setting this to zero will disable any energy drain.\n"
          "@see minRunEnergy\n");
-      addField( "minRunEnergy", TypeF32, Offset(minRunEnergy, PlayerData),
+      addFieldV( "minRunEnergy", TypeRangedF32, Offset(minRunEnergy, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum energy level required to run or swim.\n\n"
          "@see runEnergyDrain\n");
 
-      addField( "maxForwardSpeed", TypeF32, Offset(maxForwardSpeed, PlayerData),
+      addFieldV( "maxForwardSpeed", TypeRangedF32, Offset(maxForwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum forward speed when running." );
-      addField( "maxBackwardSpeed", TypeF32, Offset(maxBackwardSpeed, PlayerData),
+      addFieldV( "maxBackwardSpeed", TypeRangedF32, Offset(maxBackwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum backward speed when running." );
-      addField( "maxSideSpeed", TypeF32, Offset(maxSideSpeed, PlayerData),
+      addFieldV( "maxSideSpeed", TypeRangedF32, Offset(maxSideSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum sideways speed when running." );
 
-      addField( "runSurfaceAngle", TypeF32, Offset(runSurfaceAngle, PlayerData),
+      addFieldV( "runSurfaceAngle", TypeRangedF32, Offset(runSurfaceAngle, PlayerData), &CommonValidators::PosDegreeRangeQuarter,
          "@brief Maximum angle from vertical (in degrees) the player can run up.\n\n" );
 
-      addField( "minImpactSpeed", TypeF32, Offset(minImpactSpeed, PlayerData),
+      addFieldV( "minImpactSpeed", TypeRangedF32, Offset(minImpactSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum impact speed to apply falling damage.\n\n"
          "This field also sets the minimum speed for the onImpact callback "
          "to be invoked.\n"
          "@see ShapeBaseData::onImpact()\n");
-      addField( "minLateralImpactSpeed", TypeF32, Offset(minLateralImpactSpeed, PlayerData),
+      addFieldV( "minLateralImpactSpeed", TypeRangedF32, Offset(minLateralImpactSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum impact speed to apply non-falling damage.\n\n"
          "This field also sets the minimum speed for the onLateralImpact callback "
          "to be invoked.\n"
          "@see ShapeBaseData::onLateralImpact()\n");
 
-      addField( "horizMaxSpeed", TypeF32, Offset(horizMaxSpeed, PlayerData),
+      addFieldV( "horizMaxSpeed", TypeRangedF32, Offset(horizMaxSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum horizontal speed.\n\n"
          "@note This limit is only enforced if the player's horizontal speed "
          "exceeds horizResistSpeed.\n"
          "@see horizResistSpeed\n"
          "@see horizResistFactor\n" );
-      addField( "horizResistSpeed", TypeF32, Offset(horizResistSpeed, PlayerData),
+      addFieldV( "horizResistSpeed", TypeRangedF32, Offset(horizResistSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Horizontal speed at which resistence will take place.\n\n"
          "@see horizMaxSpeed\n"
          "@see horizResistFactor\n" );
-      addField( "horizResistFactor", TypeF32, Offset(horizResistFactor, PlayerData),
+      addFieldV( "horizResistFactor", TypeRangedF32, Offset(horizResistFactor, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Factor of resistence once horizResistSpeed has been reached.\n\n"
          "@see horizMaxSpeed\n"
          "@see horizResistSpeed\n" );
 
-      addField( "upMaxSpeed", TypeF32, Offset(upMaxSpeed, PlayerData),
+      addFieldV( "upMaxSpeed", TypeRangedF32, Offset(upMaxSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum upwards speed.\n\n"
          "@note This limit is only enforced if the player's upward speed exceeds "
          "upResistSpeed.\n"
          "@see upResistSpeed\n"
          "@see upResistFactor\n" );
-      addField( "upResistSpeed", TypeF32, Offset(upResistSpeed, PlayerData),
+      addFieldV( "upResistSpeed", TypeRangedF32, Offset(upResistSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Upwards speed at which resistence will take place.\n\n"
          "@see upMaxSpeed\n"
          "@see upResistFactor\n" );
-      addField( "upResistFactor", TypeF32, Offset(upResistFactor, PlayerData),
+      addFieldV( "upResistFactor", TypeRangedF32, Offset(upResistFactor, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Factor of resistence once upResistSpeed has been reached.\n\n"
          "@see upMaxSpeed\n"
          "@see upResistSpeed\n" );
@@ -813,29 +816,29 @@ void PlayerData::initPersistFields()
    
    addGroup( "Movement: Jumping" );
 
-      addField( "jumpForce", TypeF32, Offset(jumpForce, PlayerData),
+      addFieldV( "jumpForce", TypeRangedF32, Offset(jumpForce, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Force used to accelerate the player when a jump is initiated.\n\n" );
 
-      addField( "jumpEnergyDrain", TypeF32, Offset(jumpEnergyDrain, PlayerData),
+      addFieldV( "jumpEnergyDrain", TypeRangedF32, Offset(jumpEnergyDrain, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Energy level drained each time the player jumps.\n\n"
          "@note Setting this to zero will disable any energy drain\n"
          "@see minJumpEnergy\n");
-      addField( "minJumpEnergy", TypeF32, Offset(minJumpEnergy, PlayerData),
+      addFieldV( "minJumpEnergy", TypeRangedF32, Offset(minJumpEnergy, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum energy level required to jump.\n\n"
          "@see jumpEnergyDrain\n");
 
-      addField( "minJumpSpeed", TypeF32, Offset(minJumpSpeed, PlayerData),
+      addFieldV( "minJumpSpeed", TypeRangedF32, Offset(minJumpSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum speed needed to jump.\n\n"
          "If the player's own z velocity is greater than this, then it is used to scale "
          "the jump speed, up to maxJumpSpeed.\n"
          "@see maxJumpSpeed\n");
-      addField( "maxJumpSpeed", TypeF32, Offset(maxJumpSpeed, PlayerData),
+      addFieldV( "maxJumpSpeed", TypeRangedF32, Offset(maxJumpSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum vertical speed before the player can no longer jump.\n\n" );
-      addField( "jumpSurfaceAngle", TypeF32, Offset(jumpSurfaceAngle, PlayerData),
+      addFieldV( "jumpSurfaceAngle", TypeRangedF32, Offset(jumpSurfaceAngle, PlayerData), &CommonValidators::PosDegreeRangeQuarter,
          "@brief Angle from vertical (in degrees) where the player can jump.\n\n" );
-      addField( "jumpDelay", TypeS32, Offset(jumpDelay, PlayerData),
+      addFieldV( "jumpDelay", TypeRangedS32, Offset(jumpDelay, PlayerData), &jumpDelayRange,
          "@brief Delay time in number of ticks ticks between jumps.\n\n" );
-      addField( "airControl", TypeF32, Offset(airControl, PlayerData),
+      addFieldV( "airControl", TypeRangedF32, Offset(airControl, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Amount of movement control the player has when in the air.\n\n"
          "This is applied as a multiplier to the player's x and y motion.\n");
       addField( "jumpTowardsNormal", TypeBool, Offset(jumpTowardsNormal, PlayerData),
@@ -849,31 +852,31 @@ void PlayerData::initPersistFields()
    
    addGroup( "Movement: Sprinting" );
 
-      addField( "sprintForce", TypeF32, Offset(sprintForce, PlayerData),
+      addFieldV( "sprintForce", TypeRangedF32, Offset(sprintForce, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Force used to accelerate the player when sprinting.\n\n" );
 
-      addField( "sprintEnergyDrain", TypeF32, Offset(sprintEnergyDrain, PlayerData),
+      addFieldV( "sprintEnergyDrain", TypeRangedF32, Offset(sprintEnergyDrain, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Energy value drained each tick that the player is sprinting.\n\n"
          "The player will not be able to move when his energy falls below "
          "sprintEnergyDrain.\n"
          "@note Setting this to zero will disable any energy drain.\n"
          "@see minSprintEnergy\n");
-      addField( "minSprintEnergy", TypeF32, Offset(minSprintEnergy, PlayerData),
+      addFieldV( "minSprintEnergy", TypeRangedF32, Offset(minSprintEnergy, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum energy level required to sprint.\n\n"
          "@see sprintEnergyDrain\n");
 
-      addField( "maxSprintForwardSpeed", TypeF32, Offset(maxSprintForwardSpeed, PlayerData),
+      addFieldV( "maxSprintForwardSpeed", TypeRangedF32, Offset(maxSprintForwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum forward speed when sprinting." );
-      addField( "maxSprintBackwardSpeed", TypeF32, Offset(maxSprintBackwardSpeed, PlayerData),
+      addFieldV( "maxSprintBackwardSpeed", TypeRangedF32, Offset(maxSprintBackwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum backward speed when sprinting." );
-      addField( "maxSprintSideSpeed", TypeF32, Offset(maxSprintSideSpeed, PlayerData),
+      addFieldV( "maxSprintSideSpeed", TypeRangedF32, Offset(maxSprintSideSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum sideways speed when sprinting." );
 
-      addField( "sprintStrafeScale", TypeF32, Offset(sprintStrafeScale, PlayerData),
+      addFieldV( "sprintStrafeScale", TypeRangedF32, Offset(sprintStrafeScale, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Amount to scale strafing motion vector while sprinting." );
-      addField( "sprintYawScale", TypeF32, Offset(sprintYawScale, PlayerData),
+      addFieldV( "sprintYawScale", TypeRangedF32, Offset(sprintYawScale, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Amount to scale yaw motion while sprinting." );
-      addField( "sprintPitchScale", TypeF32, Offset(sprintPitchScale, PlayerData),
+      addFieldV( "sprintPitchScale", TypeRangedF32, Offset(sprintPitchScale, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Amount to scale pitch motion while sprinting." );
 
       addField( "sprintCanJump", TypeBool, Offset(sprintCanJump, PlayerData),
@@ -883,82 +886,82 @@ void PlayerData::initPersistFields()
 
    addGroup( "Movement: Swimming" );
 
-      addField( "swimForce", TypeF32, Offset(swimForce, PlayerData),
+      addFieldV( "swimForce", TypeRangedF32, Offset(swimForce, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Force used to accelerate the player when swimming.\n\n" );
-      addField( "maxUnderwaterForwardSpeed", TypeF32, Offset(maxUnderwaterForwardSpeed, PlayerData),
+      addFieldV( "maxUnderwaterForwardSpeed", TypeRangedF32, Offset(maxUnderwaterForwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum forward speed when underwater.\n\n" );
-      addField( "maxUnderwaterBackwardSpeed", TypeF32, Offset(maxUnderwaterBackwardSpeed, PlayerData),
+      addFieldV( "maxUnderwaterBackwardSpeed", TypeRangedF32, Offset(maxUnderwaterBackwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum backward speed when underwater.\n\n" );
-      addField( "maxUnderwaterSideSpeed", TypeF32, Offset(maxUnderwaterSideSpeed, PlayerData),
+      addFieldV( "maxUnderwaterSideSpeed", TypeRangedF32, Offset(maxUnderwaterSideSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum sideways speed when underwater.\n\n" );
 
    endGroup( "Movement: Swimming" );
 
    addGroup( "Movement: Crouching" );
 
-      addField( "crouchForce", TypeF32, Offset(crouchForce, PlayerData),
+      addFieldV( "crouchForce", TypeRangedF32, Offset(crouchForce, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Force used to accelerate the player when crouching.\n\n" );
-      addField( "maxCrouchForwardSpeed", TypeF32, Offset(maxCrouchForwardSpeed, PlayerData),
+      addFieldV( "maxCrouchForwardSpeed", TypeRangedF32, Offset(maxCrouchForwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum forward speed when crouching.\n\n" );
-      addField( "maxCrouchBackwardSpeed", TypeF32, Offset(maxCrouchBackwardSpeed, PlayerData),
+      addFieldV( "maxCrouchBackwardSpeed", TypeRangedF32, Offset(maxCrouchBackwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum backward speed when crouching.\n\n" );
-      addField( "maxCrouchSideSpeed", TypeF32, Offset(maxCrouchSideSpeed, PlayerData),
+      addFieldV( "maxCrouchSideSpeed", TypeRangedF32, Offset(maxCrouchSideSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum sideways speed when crouching.\n\n" );
 
    endGroup( "Movement: Crouching" );
 
    addGroup( "Movement: Prone" );
 
-      addField( "proneForce", TypeF32, Offset(proneForce, PlayerData),
+      addFieldV( "proneForce", TypeRangedF32, Offset(proneForce, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Force used to accelerate the player when prone (laying down).\n\n" );
-      addField( "maxProneForwardSpeed", TypeF32, Offset(maxProneForwardSpeed, PlayerData),
+      addFieldV( "maxProneForwardSpeed", TypeRangedF32, Offset(maxProneForwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum forward speed when prone (laying down).\n\n" );
-      addField( "maxProneBackwardSpeed", TypeF32, Offset(maxProneBackwardSpeed, PlayerData),
+      addFieldV( "maxProneBackwardSpeed", TypeRangedF32, Offset(maxProneBackwardSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum backward speed when prone (laying down).\n\n" );
-      addField( "maxProneSideSpeed", TypeF32, Offset(maxProneSideSpeed, PlayerData),
+      addFieldV( "maxProneSideSpeed", TypeRangedF32, Offset(maxProneSideSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum sideways speed when prone (laying down).\n\n" );
 
    endGroup( "Movement: Prone" );
 
    addGroup( "Movement: Jetting" );
 
-      addField( "jetJumpForce", TypeF32, Offset(jetJumpForce, PlayerData),
+      addFieldV( "jetJumpForce", TypeRangedF32, Offset(jetJumpForce, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Force used to accelerate the player when a jet jump is initiated.\n\n" );
 
-      addField( "jetJumpEnergyDrain", TypeF32, Offset(jetJumpEnergyDrain, PlayerData),
+      addFieldV( "jetJumpEnergyDrain", TypeRangedF32, Offset(jetJumpEnergyDrain, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Energy level drained each time the player jet jumps.\n\n"
          "@note Setting this to zero will disable any energy drain\n"
          "@see jetMinJumpEnergy\n");
-      addField( "jetMinJumpEnergy", TypeF32, Offset(jetMinJumpEnergy, PlayerData),
+      addFieldV( "jetMinJumpEnergy", TypeRangedF32, Offset(jetMinJumpEnergy, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum energy level required to jet jump.\n\n"
          "@see jetJumpEnergyDrain\n");
 
-      addField( "jetMinJumpSpeed", TypeF32, Offset(jetMinJumpSpeed, PlayerData),
+      addFieldV( "jetMinJumpSpeed", TypeRangedF32, Offset(jetMinJumpSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum speed needed to jet jump.\n\n"
          "If the player's own z velocity is greater than this, then it is used to scale "
          "the jet jump speed, up to jetMaxJumpSpeed.\n"
          "@see jetMaxJumpSpeed\n");
-      addField( "jetMaxJumpSpeed", TypeF32, Offset(jetMaxJumpSpeed, PlayerData),
+      addFieldV( "jetMaxJumpSpeed", TypeRangedF32, Offset(jetMaxJumpSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Maximum vertical speed before the player can no longer jet jump.\n\n" );
-      addField( "jetJumpSurfaceAngle", TypeF32, Offset(jetJumpSurfaceAngle, PlayerData),
+      addFieldV( "jetJumpSurfaceAngle", TypeRangedF32, Offset(jetJumpSurfaceAngle, PlayerData), &CommonValidators::PosDegreeRangeQuarter,
          "@brief Angle from vertical (in degrees) where the player can jet jump.\n\n" );
 
    endGroup( "Movement: Jetting" );
 
    addGroup( "Falling" );
 
-      addField( "fallingSpeedThreshold", TypeF32, Offset(fallingSpeedThreshold, PlayerData),
+      addFieldV( "fallingSpeedThreshold", TypeRangedF32, Offset(fallingSpeedThreshold, PlayerData), &CommonValidators::F32Range,
          "@brief Downward speed at which we consider the player falling.\n\n" );
 
-      addField( "recoverDelay", TypeS32, Offset(recoverDelay, PlayerData),
+      addFieldV( "recoverDelay", TypeRangedS32, Offset(recoverDelay, PlayerData), &CommonValidators::PositiveInt,
          "@brief Number of ticks for the player to recover from falling.\n\n" );
 
-      addField( "recoverRunForceScale", TypeF32, Offset(recoverRunForceScale, PlayerData),
+      addFieldV( "recoverRunForceScale", TypeRangedF32, Offset(recoverRunForceScale, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Scale factor applied to runForce while in the recover state.\n\n"
          "This can be used to temporarily slow the player's movement after a fall, or "
          "prevent the player from moving at all if set to zero.\n" );
 
-      addField( "landSequenceTime", TypeF32, Offset(landSequenceTime, PlayerData),
+      addFieldV( "landSequenceTime", TypeRangedF32, Offset(landSequenceTime, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Time of land sequence play back when using new recover system.\n\n"
          "If greater than 0 then the legacy fall recovery system will be bypassed "
          "in favour of just playing the player's land sequence.  The time to "
@@ -988,27 +991,27 @@ void PlayerData::initPersistFields()
          "@brief Collision bounding box used when the player is swimming.\n\n"
          "@see boundingBox" );
 
-      addField( "boxHeadPercentage", TypeF32, Offset(boxHeadPercentage, PlayerData),
+      addFieldV( "boxHeadPercentage", TypeRangedF32, Offset(boxHeadPercentage, PlayerData), &CommonValidators::NormalizedFloat,
          "@brief Percentage of the player's bounding box height that represents the head.\n\n"
          "Used when computing the damage location.\n"
          "@see Player::getDamageLocation" );
-      addField( "boxTorsoPercentage", TypeF32, Offset(boxTorsoPercentage, PlayerData),
+      addFieldV( "boxTorsoPercentage", TypeRangedF32, Offset(boxTorsoPercentage, PlayerData), &CommonValidators::NormalizedFloat,
          "@brief Percentage of the player's bounding box height that represents the torso.\n\n"
          "Used when computing the damage location.\n"
          "@see Player::getDamageLocation" );
-      addField( "boxHeadLeftPercentage", TypeF32, Offset(boxHeadLeftPercentage, PlayerData),
+      addFieldV( "boxHeadLeftPercentage", TypeRangedF32, Offset(boxHeadLeftPercentage, PlayerData), &CommonValidators::NormalizedFloat,
          "@brief Percentage of the player's bounding box width that represents the left side of the head.\n\n"
          "Used when computing the damage location.\n"
          "@see Player::getDamageLocation" );
-      addField( "boxHeadRightPercentage", TypeF32, Offset(boxHeadRightPercentage, PlayerData),
+      addFieldV( "boxHeadRightPercentage", TypeRangedF32, Offset(boxHeadRightPercentage, PlayerData), &CommonValidators::NormalizedFloat,
          "@brief Percentage of the player's bounding box width that represents the right side of the head.\n\n"
          "Used when computing the damage location.\n"
          "@see Player::getDamageLocation" );
-      addField( "boxHeadBackPercentage", TypeF32, Offset(boxHeadBackPercentage, PlayerData),
+      addFieldV( "boxHeadBackPercentage", TypeRangedF32, Offset(boxHeadBackPercentage, PlayerData), &CommonValidators::NormalizedFloat,
          "@brief Percentage of the player's bounding box depth that represents the back side of the head.\n\n"
          "Used when computing the damage location.\n"
          "@see Player::getDamageLocation" );
-      addField( "boxHeadFrontPercentage", TypeF32, Offset(boxHeadFrontPercentage, PlayerData),
+      addFieldV( "boxHeadFrontPercentage", TypeRangedF32, Offset(boxHeadFrontPercentage, PlayerData), &CommonValidators::NormalizedFloat,
          "@brief Percentage of the player's bounding box depth that represents the front side of the head.\n\n"
          "Used when computing the damage location.\n"
          "@see Player::getDamageLocation" );
@@ -1022,12 +1025,12 @@ void PlayerData::initPersistFields()
          "walks along the ground).\n\n"
          "@note The generation of foot puffs requires the appropriate triggeres to be defined in the "
          "player's animation sequences.  Without these, no foot puffs will be generated.\n");
-      addField( "footPuffNumParts", TypeS32, Offset(footPuffNumParts, PlayerData),
+      addFieldV( "footPuffNumParts", TypeRangedS32, Offset(footPuffNumParts, PlayerData), &CommonValidators::PositiveInt,
          "@brief Number of footpuff particles to generate each step.\n\n"
          "Each foot puff is randomly placed within the defined foot puff radius.  This "
          "includes having footPuffNumParts set to one.\n"
          "@see footPuffRadius\n");
-      addField( "footPuffRadius", TypeF32, Offset(footPuffRadius, PlayerData),
+      addFieldV( "footPuffRadius", TypeRangedF32, Offset(footPuffRadius, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Particle creation radius for footpuff particles.\n\n"
          "This is applied to each foot puff particle, even if footPuffNumParts is set to one.  So "
          "set this value to zero if you want a single foot puff placed at exactly the same location "
@@ -1038,7 +1041,7 @@ void PlayerData::initPersistFields()
 
       addField( "decalData", TYPEID< DecalData >(), Offset(decalData, PlayerData),
          "@brief Decal to place on the ground for player footsteps.\n\n" );
-      addField( "decalOffset",TypeF32, Offset(decalOffset, PlayerData),
+      addFieldV( "decalOffset", TypeRangedF32, Offset(decalOffset, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Distance from the center of the model to the right foot.\n\n"
          "While this defines the distance to the right foot, it is also used to place "
          "the left foot decal as well.  Just on the opposite side of the player." );
@@ -1054,37 +1057,37 @@ void PlayerData::initPersistFields()
       addField( "splash", TYPEID< SplashData >(), Offset(splash, PlayerData),
          "@brief SplashData datablock used to create splashes when the player moves "
          "through water.\n\n" );
-      addField( "splashVelocity", TypeF32, Offset(splashVelocity, PlayerData),
+      addFieldV( "splashVelocity", TypeRangedF32, Offset(splashVelocity, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum velocity when moving through water to generate splashes.\n\n" );
-      addField( "splashAngle", TypeF32, Offset(splashAngle, PlayerData),
+      addFieldV( "splashAngle", TypeRangedF32, Offset(splashAngle, PlayerData), &CommonValidators::PosDegreeRange,
          "@brief Maximum angle (in degrees) from pure vertical movement in water to "
          "generate splashes.\n\n" );
 
-      addField( "splashFreqMod", TypeF32, Offset(splashFreqMod, PlayerData),
+      addFieldV( "splashFreqMod", TypeRangedF32, Offset(splashFreqMod, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Multipled by speed to determine the number of splash particles to generate.\n\n" );
-      addField( "splashVelEpsilon", TypeF32, Offset(splashVelEpsilon, PlayerData),
+      addFieldV( "splashVelEpsilon", TypeRangedF32, Offset(splashVelEpsilon, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum speed to generate splash particles.\n\n" );
-      addField( "bubbleEmitTime", TypeF32, Offset(bubbleEmitTime, PlayerData),
+      addFieldV( "bubbleEmitTime", TypeRangedF32, Offset(bubbleEmitTime, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Time in seconds to generate bubble particles after entering the water.\n\n" );
       addField( "splashEmitter", TYPEID< ParticleEmitterData >(), Offset(splashEmitterList, PlayerData), NUM_SPLASH_EMITTERS,
          "@brief Particle emitters used to generate splash particles.\n\n" );
 
-      addField( "footstepSplashHeight", TypeF32, Offset(footSplashHeight, PlayerData),
+      addFieldV( "footstepSplashHeight", TypeRangedF32, Offset(footSplashHeight, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Water coverage level to choose between FootShallowSound and FootWadingSound.\n\n"
          "@see FootShallowSound\n"
          "@see FootWadingSound\n");
 
-      addField( "mediumSplashSoundVelocity", TypeF32, Offset(medSplashSoundVel, PlayerData),
+      addFieldV( "mediumSplashSoundVelocity", TypeRangedF32, Offset(medSplashSoundVel, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum velocity when entering the water for choosing between the impactWaterEasy and "
          "impactWaterMedium sounds to play.\n\n"
          "@see impactWaterEasy\n"
          "@see impactWaterMedium\n" );
-      addField( "hardSplashSoundVelocity", TypeF32, Offset(hardSplashSoundVel, PlayerData),
+      addFieldV( "hardSplashSoundVelocity", TypeRangedF32, Offset(hardSplashSoundVel, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum velocity when entering the water for choosing between the impactWaterMedium and "
          "impactWaterHard sound to play.\n\n"
          "@see impactWaterMedium\n"
          "@see impactWaterHard\n" );
-      addField( "exitSplashSoundVelocity", TypeF32, Offset(exitSplashSoundVel, PlayerData),
+      addFieldV( "exitSplashSoundVelocity", TypeRangedF32, Offset(exitSplashSoundVel, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum velocity when leaving the water for the exitingWater sound to "
          "play.\n\n"
          "@see exitingWater");
@@ -1093,7 +1096,7 @@ void PlayerData::initPersistFields()
 
    addGroup( "Interaction: Ground Impact" );
 
-      addField( "groundImpactMinSpeed", TypeF32, Offset(groundImpactMinSpeed, PlayerData),
+      addFieldV( "groundImpactMinSpeed", TypeRangedF32, Offset(groundImpactMinSpeed, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Minimum falling impact speed to apply damage and initiate the camera "
          "shaking effect.\n\n" );
       addField( "groundImpactShakeFreq", TypePoint3F, Offset(groundImpactShakeFreq, PlayerData),
@@ -1102,10 +1105,10 @@ void PlayerData::initPersistFields()
       addField( "groundImpactShakeAmp", TypePoint3F, Offset(groundImpactShakeAmp, PlayerData),
          "@brief Amplitude of the camera shake effect after falling.\n\n"
          "This is how much to shake the camera.\n");
-      addField( "groundImpactShakeDuration", TypeF32, Offset(groundImpactShakeDuration, PlayerData),
+      addFieldV( "groundImpactShakeDuration", TypeRangedF32, Offset(groundImpactShakeDuration, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Duration (in seconds) of the camera shake effect after falling.\n\n"
          "This is how long to shake the camera.\n");
-      addField( "groundImpactShakeFalloff", TypeF32, Offset(groundImpactShakeFalloff, PlayerData),
+      addFieldV( "groundImpactShakeFalloff", TypeRangedF32, Offset(groundImpactShakeFalloff, PlayerData), &CommonValidators::PositiveFloat,
          "@brief Falloff factor of the camera shake effect after falling.\n\n"
          "This is how to fade the camera shake over the duration.\n");
 
@@ -1131,13 +1134,8 @@ void PlayerData::initPersistFields()
 
       // Mounted images arrays
       addArray( "Mounted Images", ShapeBase::MaxMountedImages );
-         addProtectedField("shapeNameFP", TypeShapeFilename, Offset(mShapeFPName, PlayerData), &_setShapeFPData, &defaultProtectedGetFn, ShapeBase::MaxMountedImages,
-            "@brief File name of this player's shape that will be used in conjunction with the corresponding mounted image.\n\n"
-            "These optional parameters correspond to each mounted image slot to indicate a shape that is rendered "
-            "in addition to the mounted image shape.  Typically these are a player's arms (or arm) that is "
-            "animated along with the mounted image's state animation sequences.\n", AbstractClassRep::FIELD_HideInInspectors);
 
-         INITPERSISTFIELD_SHAPEASSET_ARRAY(ShapeFP, ShapeBase::MaxMountedImages, PlayerData, "@brief File name of this player's shape that will be used in conjunction with the corresponding mounted image.\n\n"
+         INITPERSISTFIELD_SHAPEASSET_ARRAY_REFACTOR(ShapeFP, ShapeBase::MaxMountedImages, PlayerData, "@brief File name of this player's shape that will be used in conjunction with the corresponding mounted image.\n\n"
             "These optional parameters correspond to each mounted image slot to indicate a shape that is rendered "
             "in addition to the mounted image shape.  Typically these are a player's arms (or arm) that is "
             "animated along with the mounted image's state animation sequences.\n");
@@ -1337,14 +1335,14 @@ void PlayerData::packData(BitStream* stream)
    stream->writeString(imageAnimPrefixFP);
    for (U32 i=0; i<ShapeBase::MaxMountedImages; ++i)
    {
-      PACKDATA_ASSET_ARRAY(ShapeFP, i);
-
       // computeCRC is handled in ShapeBaseData
       if (computeCRC)
       {
          stream->write(mCRCFP[i]);
       }
    }
+
+   PACKDATA_ASSET_ARRAY_REFACTOR(ShapeFP, ShapeBase::MaxMountedImages)
 }
 
 void PlayerData::unpackData(BitStream* stream)
@@ -1517,14 +1515,14 @@ void PlayerData::unpackData(BitStream* stream)
    imageAnimPrefixFP = stream->readSTString();
    for (U32 i=0; i<ShapeBase::MaxMountedImages; ++i)
    {
-      UNPACKDATA_ASSET_ARRAY(ShapeFP, i);
-
       // computeCRC is handled in ShapeBaseData
       if (computeCRC)
       {
          stream->read(&(mCRCFP[i]));
       }
    }
+
+   UNPACKDATA_ASSET_ARRAY_REFACTOR(ShapeFP, ShapeBase::MaxMountedImages)
 }
 
 
@@ -1639,7 +1637,6 @@ Player::Player()
    mLastAbsoluteYaw = 0.0f;
    mLastAbsolutePitch = 0.0f;
    mLastAbsoluteRoll = 0.0f;
-   
    afx_init();
 }
 
@@ -1737,7 +1734,6 @@ bool Player::onAdd()
                            world );
       mPhysicsRep->setTransform( getTransform() );
    }
-
    return true;
 }
 
@@ -1862,9 +1858,9 @@ bool Player::onNewDataBlock( GameBaseData *dptr, bool reload )
    {
       for (U32 i=0; i<ShapeBase::MaxMountedImages; ++i)
       {
-         if (bool(mDataBlock->mShapeFP[i]))
+         if (bool(mDataBlock->getShapeFP(i)))
          {
-            mShapeFPInstance[i] = new TSShapeInstance(mDataBlock->mShapeFP[i], isClientObject());
+            mShapeFPInstance[i] = new TSShapeInstance(mDataBlock->getShapeFP(i), isClientObject());
 
             mShapeFPInstance[i]->cloneMaterialList();
 
@@ -1922,7 +1918,7 @@ bool Player::onNewDataBlock( GameBaseData *dptr, bool reload )
    onScaleChanged();
    resetWorldBox();
 
-   scriptOnNewDataBlock();
+   scriptOnNewDataBlock(reload);
    return true;
 }
 
@@ -2254,12 +2250,6 @@ void Player::advanceTime(F32 dt)
       }
    }
 }
-
-bool Player::getAIMove(Move* move)
-{
-   return false;
-}
-
 void Player::setState(ActionState state, U32 recoverTicks)
 {
    if (state != mState) {
@@ -4614,10 +4604,12 @@ void Player::onUnmount( SceneObject *obj, S32 node )
 
 void Player::unmount()
 {
+
    // Reset back to root position during dismount.  This copies what is
    // done on the server and corrects the fact that the RootAnim change
    // is not sent across to the client using the standard ActionMask.
-   setActionThread(PlayerData::RootAnim,true,false,false);
+   if (!isRemoved())
+      setActionThread(PlayerData::RootAnim,true,false,false);
 
    Parent::unmount();
 }
@@ -4762,15 +4754,25 @@ bool Player::step(Point3F *pos,F32 *maxStep,F32 time)
 // PATHSHAPE
 // This Function does a ray cast down to see if a pathshape object is below
 // If so, it will attempt to attach to it.
-void Player::updateAttachment(){
+void Player::updateAttachment()
+{
+   if (getDamageState() != Enabled && mVelocity.z > mDataBlock->fallingSpeedThreshold) return;
+
    Point3F rot, pos;
     RayInfo rInfo;
     MatrixF mat = getTransform();
     mat.getColumn(3, &pos);
+    disableCollision();
     if (gServerContainer.castRay(Point3F(pos.x, pos.y, pos.z + 0.1f),
         Point3F(pos.x, pos.y, pos.z - 1.0f ),
-        PathShapeObjectType, &rInfo))
+       PathShapeObjectType | StaticShapeObjectType | TerrainObjectType, &rInfo))
     {
+       Point3F setPos = rInfo.point;
+       setPos.z = mMax(setPos.z + sMinFaceDistance, pos.z);
+
+       if ((mJumpSurfaceLastContact < JumpSkipContactsMax) && !mSwimming)
+          setPosition(setPos, getRotation());
+
        if( rInfo.object->getTypeMask() & PathShapeObjectType) //Ramen
        {
           if (getParent() == NULL)
@@ -4790,12 +4792,13 @@ void Player::updateAttachment(){
     }
     else
     {	 
-       if (getParent() !=NULL)
+       if (getParent() != NULL)
        {
           clearProcessAfter();
           attachToParent(NULL);
        }
     }
+    enableCollision();
 }
 // PATHSHAPE END
 
@@ -7510,8 +7513,8 @@ F32 Player::getAnimationDurationByID(U32 anim_id)
    if (anim_id == BAD_ANIM_ID)
       return 0.0f;
    S32 seq_id = mDataBlock->actionList[anim_id].sequence;
-   if (seq_id >= 0 && seq_id < mDataBlock->mShape->sequences.size())
-      return mDataBlock->mShape->sequences[seq_id].duration;
+   if (seq_id >= 0 && seq_id < mDataBlock->getShape()->sequences.size())
+      return mDataBlock->getShape()->sequences[seq_id].duration;
 
    return 0.0f;
 }
@@ -7523,8 +7526,8 @@ bool Player::isBlendAnimation(const char* name)
       return false;
 
    S32 seq_id = mDataBlock->actionList[anim_id].sequence;
-   if (seq_id >= 0 && seq_id < mDataBlock->mShape->sequences.size())
-      return mDataBlock->mShape->sequences[seq_id].isBlend();
+   if (seq_id >= 0 && seq_id < mDataBlock->getShape()->sequences.size())
+      return mDataBlock->getShape()->sequences[seq_id].isBlend();
 
    return false;
 }

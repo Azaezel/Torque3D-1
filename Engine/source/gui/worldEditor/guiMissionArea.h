@@ -58,13 +58,13 @@ protected:
    };
 
    SimObjectPtr<MissionArea>  mMissionArea;
-   SimObjectPtr<TerrainBlock> mTerrainBlock;
 
    GFXStateBlockRef  mBlendStateBlock;
    GFXStateBlockRef  mSolidStateBlock;
+   GFXTextureTargetRef mLevelTexture;
+   Box3F mLevelBounds;
 
-   DECLARE_IMAGEASSET(GuiMissionAreaCtrl, HandleBitmap, onHandleBitmapChanged, GFXDefaultGUIProfile);
-   DECLARE_ASSET_SETGET(GuiMissionAreaCtrl, HandleBitmap);
+   DECLARE_IMAGEASSET(GuiMissionAreaCtrl, HandleBitmap, GFXDefaultGUIProfile)
 
    Point2I           mHandleTextureSize;
    Point2F           mHandleTextureHalfSize;
@@ -82,10 +82,6 @@ protected:
    bool     mSavedDrag;
 
    void submitUndo( const UTF8 *name = "Action" );
-
-   TerrainBlock * getTerrainObj();
-   GBitmap * createTerrainBitmap();
-   void updateTerrainBitmap();
 
    //void onUpdate();
 
@@ -110,8 +106,6 @@ protected:
    bool testWithinHandle(const Point2I & testPoint, S32 handleX, S32 handleY);
    S32 getHitHandles(const Point2I & mousePnt, const RectI & box);
 
-   void onHandleBitmapChanged() {}
-
 public:
    GuiMissionAreaCtrl();
    virtual ~GuiMissionAreaCtrl();
@@ -135,7 +129,7 @@ public:
    void onMouseLeave(const GuiEvent & event) override;
 
    void setMissionArea( MissionArea* area );
-   void updateTerrain();
+   void updateLevelBitmap();
 
    const RectI & getArea();
    void setArea(const RectI & area);

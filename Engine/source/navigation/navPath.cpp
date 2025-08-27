@@ -69,14 +69,11 @@ NavPath::NavPath() :
    mXray = false;
    mRenderSearch = false;
 
-   mQuery = NULL;
    mStatus = DT_FAILURE;
 }
 
 NavPath::~NavPath()
 {
-   dtFreeNavMeshQuery(mQuery);
-   mQuery = NULL;
 }
 
 void NavPath::checkAutoUpdate()
@@ -209,7 +206,7 @@ void NavPath::initPersistFields()
       "Does this path loop?");
    addField("isSliced", TypeBool, Offset(mIsSliced, NavPath),
       "Plan this path over multiple updates instead of all at once.");
-   addFieldV("maxIterations", TypeS32, Offset(mMaxIterations, NavPath), &ValidIterations,
+   addFieldV("maxIterations", TypeRangedS32, Offset(mMaxIterations, NavPath), &ValidIterations,
       "Maximum iterations of path planning this path does per tick.");
    addProtectedField("autoUpdate", TypeBool, Offset(mAutoUpdate, NavPath),
       &setProtectedAutoUpdate, &defaultProtectedGetFn,
@@ -264,9 +261,6 @@ bool NavPath::onAdd()
 
    if(isServerObject())
    {
-      mQuery = dtAllocNavMeshQuery();
-      if(!mQuery)
-         return false;
       checkAutoUpdate();
       if(!plan())
          setProcessTick(true);
@@ -293,7 +287,8 @@ bool NavPath::init()
       return false;
 
    // Initialise our query.
-   if(dtStatusFailed(mQuery->init(mMesh->getNavMesh(), MaxPathLen)))
+   mQuery = mMesh->getNavMeshQuery();
+   if(!mQuery)
       return false;
 
    mPoints.clear();
@@ -372,9 +367,6 @@ void NavPath::resize()
 bool NavPath::plan()
 {
    PROFILE_SCOPE(NavPath_plan);
-   // Initialise filter.
-   mFilter.setIncludeFlags(mLinkTypes.getFlags());
-
    // Initialise query and visit locations.
    if(!init())
       return false;
@@ -640,9 +632,8 @@ void NavPath::renderSimple(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
       if(np->mQuery && !dtStatusSucceed(np->mStatus))
       {
          duDebugDrawTorque dd;
-         dd.overrideColor(duRGBA(250, 20, 20, 255));
          duDebugDrawNavMeshNodes(&dd, *np->mQuery);
-         dd.render();
+         dd.immediateRender();
       }
    }
 }

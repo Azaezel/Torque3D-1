@@ -211,39 +211,21 @@ void MaterialAsset::initializeAsset()
 
 void MaterialAsset::onAssetRefresh()
 {
-   mScriptPath = getOwned() ? expandAssetFilePath(mScriptFile) : mScriptPath;
-
-   if (mMatDefinitionName == StringTable->EmptyString())
-   {
-      mLoadedState = Failed;
+   // Ignore if not yet added to the sim.
+   if (!isProperlyAdded())
       return;
-   }
 
-   if (Con::isScriptFile(mScriptPath))
+   // Call parent.
+   Parent::onAssetRefresh();
+
+   if (mMaterialDefinition)
    {
-      //Since we're refreshing, we can assume that the file we're executing WILL have an existing definition.
-      //But that definition, whatever it is, is the 'correct' one, so we enable the Replace Existing behavior
-      //when the engine encounters a named object conflict.
-      String redefineBehaviorPrev = Con::getVariable("$Con::redefineBehavior");
-      Con::setVariable("$Con::redefineBehavior", "replaceExisting");
-
-      if (Con::executeFile(mScriptPath, false, false))
-         mLoadedState = ScriptLoaded;
-      else
-         mLoadedState = Failed;
-
-      //And now that we've executed, switch back to the prior behavior
-      Con::setVariable("$Con::redefineBehavior", redefineBehaviorPrev.c_str());
+      mMaterialDefinition->flush();
+      mMaterialDefinition->reload();
    }
-
-   load();
-   AssetManager::typeAssetDependsOnHash::Iterator assetDependenciesItr = mpOwningAssetManager->getDependedOnAssets()->find(mpAssetDefinition->mAssetId);
-   // Iterate all dependencies.
-   while (assetDependenciesItr != mpOwningAssetManager->getDependedOnAssets()->end() && assetDependenciesItr->key == mpAssetDefinition->mAssetId)
+   else
    {
-      StringTableEntry assetId = assetDependenciesItr->value;
-      AssetBase* dependent = AssetDatabase.acquireAsset<AssetBase>(assetId);
-      dependent->refreshAsset();
+      load();
    }
 }
 
@@ -617,20 +599,42 @@ void GuiInspectorTypeMaterialAssetPtr::updateValue()
 
 void GuiInspectorTypeMaterialAssetPtr::updatePreviewImage()
 {
-   const char* previewImage;
+   const char* matAssetId;
    if (mInspector->getInspectObject() != nullptr)
-      previewImage = mInspector->getInspectObject()->getDataField(mCaption, NULL);
+      matAssetId = mInspector->getInspectObject()->getDataField(mCaption, NULL);
    else
-      previewImage = Con::getVariable(mVariableName);
+      matAssetId = Con::getVariable(mVariableName);
 
    //if what we're working with isn't even a valid asset, don't present like we found a good one
-   if (!AssetDatabase.isDeclaredAsset(previewImage))
+   if (!AssetDatabase.isDeclaredAsset(matAssetId))
    {
-      mPreviewImage->_setBitmap(StringTable->EmptyString());
+      mPreviewImage->_setBitmap(StringTable->insert("Core_Rendering:NoMaterial"));
       return;
    }
 
-   String matPreviewAssetId = String(previewImage) + "_PreviewImage";
+   AssetPtr<MaterialAsset> matAssetDef = matAssetId;
+   if (matAssetDef.isNull() || matAssetDef->getStatus() != AssetBase::AssetErrCode::Ok ||
+      matAssetDef->getMaterialDefinitionName() == StringTable->EmptyString())
+   {
+      mPreviewImage->_setBitmap(StringTable->insert("Core_Rendering:WarningMaterial"));
+      return;
+   }
+
+   Material* matDef;
+   if (!Sim::findObject(matAssetDef->getMaterialDefinitionName(), matDef))
+   {
+      mPreviewImage->_setBitmap(StringTable->insert("Core_Rendering:WarningMaterial"));
+      return;
+   }
+
+   AssetPtr<ImageAsset> difMapAsset = matDef->getDiffuseMapAsset(0);
+   if (difMapAsset.isNull() || difMapAsset->getStatus() != AssetBase::AssetErrCode::Ok)
+   {
+      mPreviewImage->_setBitmap(StringTable->insert("Core_Rendering:WarningMaterial"));
+      return;
+   }
+
+   String matPreviewAssetId = String(difMapAsset->getAssetName()) + "_PreviewImage";
    matPreviewAssetId.replace(":", "_");
    matPreviewAssetId = "ToolsModule:" + matPreviewAssetId;
    if (AssetDatabase.isDeclaredAsset(matPreviewAssetId.c_str()))
@@ -639,18 +643,14 @@ void GuiInspectorTypeMaterialAssetPtr::updatePreviewImage()
    }
    else
    {
-      if (AssetDatabase.isDeclaredAsset(previewImage))
+      if (AssetDatabase.isDeclaredAsset(difMapAsset->getAssetId()))
       {
-         MaterialAsset* matAsset = AssetDatabase.acquireAsset<MaterialAsset>(previewImage);
-         if (matAsset && matAsset->getMaterialDefinition())
-         {
-            mPreviewImage->_setBitmap(matAsset->getMaterialDefinition()->mDiffuseMapAssetId[0]);
-         }
+         mPreviewImage->setBitmap(difMapAsset->getAssetId());
       }
    }
 
    if (mPreviewImage->getBitmapAsset().isNull())
-      mPreviewImage->_setBitmap(StringTable->insert("ToolsModule:genericAssetIcon_image"));
+      mPreviewImage->setBitmap(StringTable->insert("ToolsModule:genericAssetIcon_image"));
 }
 
 void GuiInspectorTypeMaterialAssetPtr::setPreviewImage(StringTableEntry assetId)
@@ -676,7 +676,7 @@ void GuiInspectorTypeMaterialAssetPtr::setPreviewImage(StringTableEntry assetId)
          MaterialAsset* matAsset = AssetDatabase.acquireAsset<MaterialAsset>(assetId);
          if (matAsset && matAsset->getMaterialDefinition())
          {
-            mPreviewImage->_setBitmap(matAsset->getMaterialDefinition()->mDiffuseMapAssetId[0]);
+            mPreviewImage->_setBitmap(matAsset->getMaterialDefinition()->_getDiffuseMap(0));
          }
       }
    }

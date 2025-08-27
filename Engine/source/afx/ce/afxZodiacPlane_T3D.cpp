@@ -125,7 +125,7 @@ void afxZodiacPlane::_renderZodiacPlane(ObjectRenderInst *ri, SceneRenderState* 
     desc.setAlphaTest(true, GFXCmpGreater, 0);
 
     desc.setZReadWrite(true);
-    desc.zFunc = GFXCmpLessEqual;
+    desc.zFunc = GFXCmpGreaterEqual;
     desc.zWriteEnable = false;
     desc.samplersDefined = true;
 
@@ -207,7 +207,7 @@ void afxZodiacPlane::_renderZodiacPlane(ObjectRenderInst *ri, SceneRenderState* 
   GFXTransformSaver saver;
   GFX->multWorld(getRenderTransform());
 
-  GFX->setTexture(0, mDataBlock->mTexture);
+  GFX->setTexture(0, mDataBlock->getTexture());
 
   PrimBuild::begin(GFXTriangleStrip, 4);
   {

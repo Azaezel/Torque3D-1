@@ -111,7 +111,7 @@ public:
 };
 
 
-class GroundCover : public SceneObject
+class GroundCover : public SceneObject, protected AssetPtrCallback
 {
    friend class GroundCoverShaderConstHandles;
    friend class GroundCoverCell;
@@ -341,8 +341,7 @@ protected:
    RectF mBillboardRects[MAX_COVERTYPES];
 
    /// The cover shape filenames.
-   DECLARE_SHAPEASSET_ARRAY(GroundCover, Shape, MAX_COVERTYPES);
-   DECLARE_ASSET_ARRAY_NET_SETGET(GroundCover, Shape, -1);
+   DECLARE_SHAPEASSET_ARRAY_NET_REFACTOR(GroundCover, Shape, MAX_COVERTYPES, -1)
 
    /// The cover shape instances.
    TSShapeInstance* mShapeInstances[MAX_COVERTYPES];
@@ -409,6 +408,13 @@ protected:
                                     S32 randSeed );
 
    void _debugRender( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
+
+protected:
+   void onAssetRefreshed(AssetPtrBase* pAssetPtrBase) override
+   {
+      _initShapes();
+      setMaskBits(U32(-1));
+   }
 };
 
 #endif // _GROUNDCOVER_H_

@@ -50,9 +50,15 @@ class Player;
 class OpenVRTrackedObject;
 #endif
 
+#ifdef TORQUE_NAVIGATION_ENABLED
+#include "navigation/navPath.h"
+#include "navigation/navMesh.h"
+#include "navigation/coverPoint.h"
+#endif // TORQUE_NAVIGATION_ENABLED
+
 //----------------------------------------------------------------------------
 
-struct PlayerData: public ShapeBaseData {
+struct PlayerData: public ShapeBaseData /*protected AssetPtrCallback < already in shapebasedata. */ {
    typedef ShapeBaseData Parent;
    enum Constants {
       RecoverDelayBits = 7,
@@ -76,8 +82,7 @@ struct PlayerData: public ShapeBaseData {
                                                                   ///  that we don't create a TSThread on the player if we don't
                                                                   ///  need to.
 
-   DECLARE_SHAPEASSET_ARRAY(PlayerData, ShapeFP, ShapeBase::MaxMountedImages); ///< Used to render with mounted images in first person [optional]
-   DECLARE_ASSET_ARRAY_SETGET(PlayerData, ShapeFP);
+   DECLARE_SHAPEASSET_ARRAY_REFACTOR(PlayerData, ShapeFP, ShapeBase::MaxMountedImages)
 
    StringTableEntry  imageAnimPrefixFP;                           ///< Passed along to mounted images to modify
                                                                   ///  animation sequences played in first person. [optional]
@@ -346,7 +351,7 @@ struct PlayerData: public ShapeBaseData {
 
    // Jump off surfaces at their normal rather than straight up
    bool jumpTowardsNormal;
-
+   StringTableEntry mControlMap;
    // For use if/when mPhysicsPlayer is created
    StringTableEntry physicsPlayerType;
 
@@ -366,6 +371,11 @@ struct PlayerData: public ShapeBaseData {
    void packData(BitStream* stream) override;
    void unpackData(BitStream* stream) override;
 
+   void onShapeChanged()
+   {
+      reloadOnLocalClient();
+   }
+
    /// @name Callbacks
    /// @{
    DECLARE_CALLBACK( void, onPoseChange, ( Player* obj, const char* oldPose, const char* newPose ) );
@@ -380,6 +390,11 @@ struct PlayerData: public ShapeBaseData {
    DECLARE_CALLBACK( void, onEnterMissionArea, ( Player* obj ) );
    DECLARE_CALLBACK( void, onLeaveMissionArea, ( Player* obj ) );
    /// @}
+protected:
+   void onAssetRefreshed(AssetPtrBase* pAssetPtrBase) override
+   {
+      reloadOnLocalClient();
+   }
 };
 
 
@@ -753,8 +768,6 @@ public:
    Point3F getMomentum() const override;
    void    setMomentum(const Point3F &momentum) override;
    bool    displaceObject(const Point3F& displaceVector) override;
-   virtual bool    getAIMove(Move*);
-
    bool checkDismountPosition(const MatrixF& oldPos, const MatrixF& newPos);  ///< Is it safe to dismount here?
 
    //

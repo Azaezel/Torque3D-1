@@ -142,7 +142,7 @@ bool MissionMarker::onNewDataBlock( GameBaseData *dptr, bool reload )
    mDataBlock = dynamic_cast<MissionMarkerData*>( dptr );
    if ( !mDataBlock || !Parent::onNewDataBlock( dptr, reload ) )
       return(false);
-   scriptOnNewDataBlock();
+   scriptOnNewDataBlock(reload);
    return(true);
 }
 
@@ -444,14 +444,14 @@ void SpawnSphere::unpackUpdate(NetConnection * con, BitStream * stream)
       {
          delete mShapeInstance;
          ShapeBaseData *spawnedDatablock = dynamic_cast<ShapeBaseData *>(Sim::findObject(mSpawnDataBlock.c_str()));
-         if (spawnedDatablock && spawnedDatablock->mShape)
+         if (spawnedDatablock && spawnedDatablock->getShape())
          {
-               mShapeInstance = new TSShapeInstance(spawnedDatablock->mShape);
+               mShapeInstance = new TSShapeInstance(spawnedDatablock->getShape());
          }
          else if (mDataBlock)
          {
-            if (mDataBlock->mShape)
-               mShapeInstance = new TSShapeInstance(mDataBlock->mShape);
+            if (mDataBlock->getShape())
+               mShapeInstance = new TSShapeInstance(mDataBlock->getShape());
          }
       }
       stream->read(&mSpawnName);
@@ -489,7 +489,7 @@ void SpawnSphere::initPersistFields()
    endGroup( "Spawn" );
 
    addGroup( "Dimensions" );
-   addField( "radius", TypeF32, Offset(mRadius, SpawnSphere), "Deprecated" );
+   addFieldV( "radius", TypeRangedF32, Offset(mRadius, SpawnSphere), &CommonValidators::PositiveFloat, "Deprecated" );
    endGroup( "Dimensions" );
 
    addGroup( "Weight" );

@@ -122,9 +122,6 @@ ParticleData::ParticleData()
    animTexFramesString = NULL;  // string of animation frame indices
    animTexUVs = NULL;           // array of tile vertex UVs
 
-   INIT_ASSET(Texture);
-   INIT_ASSET(TextureExt);
-
    constrain_pos = false;
    start_angle = 0.0f;
    angle_variance = 0.0f;
@@ -138,9 +135,11 @@ ParticleData::ParticleData()
 //-----------------------------------------------------------------------------
 
 
-FRangeValidator dragCoefFValidator(0.f, 5.f);
-FRangeValidator gravCoefFValidator(-10.f, 10.f);
-FRangeValidator spinRandFValidator(-1000.f, 1000.f);
+FRangeValidator dragCoefFValidator(0.f, 5.f, BIT(10));
+FRangeValidator gravCoefFValidator(-10.f, 10.f, BIT(12));
+FRangeValidator spinRandFValidator(-1000.f, 1000.f, BIT(11));
+FRangeValidator particleTimeFValidator(0.0f, 1.0f, BIT(8));
+FRangeValidator particleSizeFValidator(0.0f, MaxParticleSize, BIT(16));
 
 //-----------------------------------------------------------------------------
 // initPersistFields
@@ -149,42 +148,37 @@ void ParticleData::initPersistFields()
 {
    docsURL;
    addGroup("Basic");
-      addProtectedField("textureName", TYPEID< StringTableEntry >(), Offset(mTextureName, ParticleData), _setTextureData, defaultProtectedGetFn,
-         "Texture file to use for this particle.", AbstractClassRep::FIELD_HideInInspectors);
-      addField("animTexName", TYPEID< StringTableEntry >(), Offset(mTextureName, ParticleData),
-         "@brief Texture file to use for this particle if animateTexture is true.\n\n"
-         "Deprecated. Use textureName instead.", AbstractClassRep::FIELD_HideInInspectors);
       INITPERSISTFIELD_IMAGEASSET(Texture, ParticleData, "Texture to use for this particle.");
       addField("useInvAlpha", TYPEID< bool >(), Offset(useInvAlpha, ParticleData),
          "@brief Controls how particles blend with the scene.\n\n"
          "If true, particles blend like ParticleBlendStyle NORMAL, if false, "
          "blend like ParticleBlendStyle ADDITIVE.\n"
          "@note If ParticleEmitterData::blendStyle is set, it will override this value.");
-      addField("lifetimeMS", TYPEID< S32 >(), Offset(lifetimeMS, ParticleData),
+      addFieldV("lifetimeMS", TypeRangedS32, Offset(lifetimeMS, ParticleData), &CommonValidators::PositiveInt,
          "Time in milliseconds before this particle is destroyed.");
-      addField("lifetimeVarianceMS", TYPEID< S32 >(), Offset(lifetimeVarianceMS, ParticleData),
+      addFieldV("lifetimeVarianceMS", TypeRangedS32, Offset(lifetimeVarianceMS, ParticleData), &CommonValidators::PositiveInt,
          "Variance in lifetime of particle, from 0 - lifetimeMS.");
    endGroup("Basic");
 
    addGroup("Motion");
-      addFieldV("dragCoefficient", TYPEID< F32 >(), Offset(dragCoefficient, ParticleData), &dragCoefFValidator,
+      addFieldV("dragCoefficient", TypeRangedF32, Offset(dragCoefficient, ParticleData), &dragCoefFValidator,
          "Particle physics drag amount.");
-      addField("windCoefficient", TYPEID< F32 >(), Offset(windCoefficient, ParticleData),
+      addFieldV("windCoefficient", TypeRangedF32, Offset(windCoefficient, ParticleData),&CommonValidators::F32Range,
          "Strength of wind on the particles.");
-      addFieldV("gravityCoefficient", TYPEID< F32 >(), Offset(gravityCoefficient, ParticleData), &gravCoefFValidator,
+      addFieldV("gravityCoefficient", TypeRangedF32, Offset(gravityCoefficient, ParticleData), &gravCoefFValidator,
          "Strength of gravity on the particles.");
-      addFieldV("inheritedVelFactor", TYPEID< F32 >(), Offset(inheritedVelFactor, ParticleData), &CommonValidators::NormalizedFloat,
+      addFieldV("inheritedVelFactor", TypeRangedF32, Offset(inheritedVelFactor, ParticleData), &CommonValidators::NormalizedFloat,
          "Amount of emitter velocity to add to particle initial velocity.");
-      addField("constantAcceleration", TYPEID< F32 >(), Offset(constantAcceleration, ParticleData),
+      addFieldV("constantAcceleration", TypeRangedF32, Offset(constantAcceleration, ParticleData), &CommonValidators::F32Range,
          "Constant acceleration to apply to this particle.");
    endGroup("Motion");
    
    addGroup("Spin");
-      addField("spinSpeed", TYPEID< F32 >(), Offset(spinSpeed, ParticleData),
+      addFieldV("spinSpeed", TypeRangedF32, Offset(spinSpeed, ParticleData), &spinRandFValidator,
          "Speed at which to spin the particle.");
-      addFieldV("spinRandomMin", TYPEID< F32 >(), Offset(spinRandomMin, ParticleData), &spinRandFValidator,
+      addFieldV("spinRandomMin", TypeRangedF32, Offset(spinRandomMin, ParticleData), &spinRandFValidator,
          "Minimum allowed spin speed of this particle, between -1000 and spinRandomMax.");
-      addFieldV("spinRandomMax", TYPEID< F32 >(), Offset(spinRandomMax, ParticleData), &spinRandFValidator,
+      addFieldV("spinRandomMax", TypeRangedF32, Offset(spinRandomMax, ParticleData), &spinRandFValidator,
          "Maximum allowed spin speed of this particle, between spinRandomMin and 1000.");
    endGroup("Spin");
   
@@ -223,29 +217,28 @@ void ParticleData::initPersistFields()
 
    // Interpolation variables
    addGroup("Over Time");
-      addProtectedField("times", TYPEID< F32 >(), Offset(times, ParticleData), &protectedSetTimes,
-         &defaultProtectedGetFn, PDC_NUM_KEYS,
+      addProtectedFieldV("times", TypeRangedF32, Offset(times, ParticleData), &protectedSetTimes,
+         &defaultProtectedGetFn, &particleTimeFValidator, PDC_NUM_KEYS,
          "@brief Time keys used with the colors and sizes keyframes.\n\n"
          "Values are from 0.0 (particle creation) to 1.0 (end of lifespace).");
       addField( "colors", TYPEID< LinearColorF >(), Offset(colors, ParticleData), PDC_NUM_KEYS,
          "@brief Particle RGBA color keyframe values.\n\n"
          "The particle color will linearly interpolate between the color/time keys "
          "over the lifetime of the particle." );
-      addProtectedField( "sizes", TYPEID< F32 >(), Offset(sizes, ParticleData), &protectedSetSizes, 
-         &defaultProtectedGetFn, PDC_NUM_KEYS,
+      addProtectedFieldV( "sizes", TypeRangedF32, Offset(sizes, ParticleData), &protectedSetSizes,
+         &defaultProtectedGetFn, &particleSizeFValidator, PDC_NUM_KEYS,
          "@brief Particle size keyframe values.\n\n"
          "The particle size will linearly interpolate between the size/time keys "
          "over the lifetime of the particle." );
    endGroup("Over Time");
 
    addGroup("AFX");
-      addProtectedField("textureExtName", TypeFilename, Offset(mTextureExtName,     ParticleData), _setTextureExtData, &defaultProtectedGetFn, "", AbstractClassRep::FIELD_HideInInspectors);
       INITPERSISTFIELD_IMAGEASSET(TextureExt, ParticleData, "");
       addField("constrainPos",         TypeBool,     Offset(constrain_pos,      ParticleData));
-      addField("angle",                TypeF32,      Offset(start_angle,        ParticleData));
-      addField("angleVariance",        TypeF32,      Offset(angle_variance,     ParticleData));
-      addField("sizeBias",             TypeF32,      Offset(sizeBias,           ParticleData));
-      addField("spinBias",             TypeF32,      Offset(spinBias,           ParticleData));
+      addFieldV("angle", TypeRangedF32,      Offset(start_angle,        ParticleData), &CommonValidators::DegreeRange);
+      addFieldV("angleVariance", TypeRangedF32,      Offset(angle_variance,     ParticleData), &CommonValidators::DegreeRange);
+      addFieldV("sizeBias", TypeRangedF32,      Offset(sizeBias,           ParticleData), &CommonValidators::F32Range);
+      addFieldV("spinBias", TypeRangedF32,      Offset(spinBias,           ParticleData), &CommonValidators::F32Range);
       addField("randomizeSpinDir",     TypeBool,     Offset(randomizeSpinDir,   ParticleData));
    endGroup("AFX"); 
    Parent::initPersistFields();
@@ -296,16 +289,16 @@ void ParticleData::packData(BitStream* stream)
 
    for( i=0; i<count; i++ )
    {
-      stream->writeFloat( colors[i].red, 7);
-      stream->writeFloat( colors[i].green, 7);
-      stream->writeFloat( colors[i].blue, 7);
-      stream->writeFloat( colors[i].alpha, 7);
+      stream->writeFloat( colors[i].red, 8);
+      stream->writeFloat( colors[i].green, 8);
+      stream->writeFloat( colors[i].blue, 8);
+      stream->writeFloat( colors[i].alpha, 8);
       // AFX bits raised from 14 to 16 to allow larger sizes
       stream->writeFloat( sizes[i]/MaxParticleSize, 16);
       stream->writeFloat( times[i], 8);
    }
 
-   PACKDATA_ASSET(Texture);
+   PACKDATA_ASSET_REFACTOR(Texture);
 
    for (i = 0; i < 4; i++)
       mathWrite(*stream, texCoords[i]);
@@ -319,7 +312,7 @@ void ParticleData::packData(BitStream* stream)
       stream->writeInt(framesPerSec, 8);
    }
 
-   PACKDATA_ASSET(TextureExt);
+   PACKDATA_ASSET_REFACTOR(TextureExt);
 
    stream->writeFlag(constrain_pos);
    stream->writeFloat(start_angle/360.0f, 11);
@@ -381,16 +374,16 @@ void ParticleData::unpackData(BitStream* stream)
    S32 count = stream->readInt(3) + 1;
    for(i = 0;i < count; i++)
    {
-      colors[i].red = stream->readFloat(7);
-      colors[i].green = stream->readFloat(7);
-      colors[i].blue = stream->readFloat(7);
-      colors[i].alpha = stream->readFloat(7);
+      colors[i].red = stream->readFloat(8);
+      colors[i].green = stream->readFloat(8);
+      colors[i].blue = stream->readFloat(8);
+      colors[i].alpha = stream->readFloat(8);
       // AFX bits raised from 14 to 16 to allow larger sizes
       sizes[i] = stream->readFloat(16) * MaxParticleSize;
       times[i] = stream->readFloat(8);
    }
 
-   UNPACKDATA_ASSET(Texture);
+   UNPACKDATA_ASSET_REFACTOR(Texture);
 
    for (i = 0; i < 4; i++)
       mathRead(*stream, &texCoords[i]);
@@ -403,7 +396,7 @@ void ParticleData::unpackData(BitStream* stream)
      framesPerSec = stream->readInt(8);
    }
 
-   UNPACKDATA_ASSET(TextureExt);
+   UNPACKDATA_ASSET_REFACTOR(TextureExt);
 
    constrain_pos = stream->readFlag();
    start_angle = 360.0f*stream->readFloat(11);
@@ -443,6 +436,17 @@ bool ParticleData::protectedSetTimes( void *object, const char *index, const cha
 
    pData->times[i] = mClampF( val, 0.f, 1.f );
 
+   pData->times[0] = 0.0f;
+
+   S32 last = i - 1;
+   S32 next = i + 1;
+   if (last >= 0 && next < PDC_NUM_KEYS-1)
+   {
+      if ((pData->times[last] != -1.0f) && (pData->times[i] < pData->times[last]))
+         pData->times[i] = pData->times[last];
+      else if ((pData->times[next] != -1.0f) && (pData->times[i] > pData->times[next]))
+         pData->times[i] = pData->times[next];
+   }
    return false;
 }
 
@@ -698,13 +702,6 @@ bool ParticleData::reload(char errorBuffer[256])
 {
    bool error = false;
 
-   StringTableEntry particleTex = getTexture();
-
-   if (!_setTexture(particleTex))
-   {
-      dSprintf(errorBuffer, 256, "Missing particle texture: %s", particleTex);
-   }
-
    /*
    numFrames = 0;
    for( S32 i=0; i<PDC_MAX_TEX; i++ )
@@ -775,12 +772,12 @@ ParticleData::ParticleData(const ParticleData& other, bool temp_clone) : SimData
   animTexFramesString = other.animTexFramesString;
   animTexFrames = other.animTexFrames; // -- parsed from animTexFramesString
 
-  CLONE_ASSET(Texture);
+  CLONE_ASSET_REFACTOR(Texture);
   
   spinBias = other.spinBias;
   randomizeSpinDir = other.randomizeSpinDir;
 
-  CLONE_ASSET(TextureExt);
+  CLONE_ASSET_REFACTOR(TextureExt);
 
   constrain_pos = other.constrain_pos;
   start_angle = other.start_angle;
@@ -816,4 +813,4 @@ void ParticleData::onPerformSubstitutions()
   reload(errorBuffer);
 }
 
-DEF_ASSET_BINDS(ParticleData, Texture);
+DEF_ASSET_BINDS_REFACTOR(ParticleData, Texture);

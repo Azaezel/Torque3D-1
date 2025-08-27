@@ -9,6 +9,7 @@
 #include "physics/physicsShape.h"
 #include "renderInstance/renderPassManager.h"
 #include "scene/sceneRenderState.h"
+#include "Scene.h"
 
 IMPLEMENT_CO_NETOBJECT_V1(SceneGroup);
 
@@ -117,6 +118,8 @@ void SceneGroup::inspectPostApply()
 void SceneGroup::onInspect(GuiInspector* inspector)
 {
    Parent::onInspect(inspector);
+
+#ifdef TORQUE_TOOLS
    
    //Put the SubScene group before everything that'd be SubScene-effecting, for orginazational purposes
    GuiInspectorGroup* sceneGroupGrp = inspector->findExistentGroup(StringTable->insert("Editing"));
@@ -154,6 +157,38 @@ void SceneGroup::onInspect(GuiInspector* inspector)
    regenButton->setConsoleCommand(rgBuffer);
 
    regenFieldGui->addObject(regenButton);
+
+   //
+    //Regen bounds button
+   GuiInspectorField* reparentFieldGui = sceneGroupGrp->createInspectorField();
+   reparentFieldGui->init(inspector, sceneGroupGrp);
+
+   reparentFieldGui->setSpecialEditField(true);
+   reparentFieldGui->setTargetObject(this);
+
+   fldnm = StringTable->insert("ReparentOOBObjs");
+
+   reparentFieldGui->setSpecialEditVariableName(fldnm);
+
+   reparentFieldGui->setInspectorField(NULL, fldnm);
+   reparentFieldGui->setDocs("");
+
+   stack->addObject(reparentFieldGui);
+
+   GuiButtonCtrl* reparentButton = new GuiButtonCtrl();
+   reparentButton->registerObject();
+   reparentButton->setDataField(StringTable->insert("profile"), NULL, "ToolsGuiButtonProfile");
+   reparentButton->setText("Reparent Out-of-bounds Objs");
+   reparentButton->resize(Point2I::Zero, regenFieldGui->getExtent());
+   reparentButton->setHorizSizing(GuiControl::horizResizeWidth);
+   reparentButton->setVertSizing(GuiControl::vertResizeHeight);
+
+   char rprntBuffer[512];
+   dSprintf(rprntBuffer, 512, "%d.reparentOOBObjects();", this->getId());
+   reparentButton->setConsoleCommand(rprntBuffer);
+
+   reparentFieldGui->addObject(reparentButton);
+#endif
 }
 
 void SceneGroup::setTransform(const MatrixF& mat)
@@ -276,6 +311,27 @@ void SceneGroup::recalculateBoundingBox()
    setMaskBits(TransformMask);
 }
 
+void SceneGroup::reparentOOBObjects()
+{
+   if (empty())
+      return;
+
+   // Extend the bounding box to include each child's bounding box
+   for (SimSetIterator itr(this); *itr; ++itr)
+   {
+      SceneObject* child = dynamic_cast<SceneObject*>(*itr);
+      if (child)
+      {
+         const Box3F& childBox = child->getWorldBox();
+
+         if(!mWorldBox.isOverlapped(childBox))
+         {
+            Scene::getRootScene()->addObject(child);
+         }
+      }
+   }
+}
+
 U32 SceneGroup::packUpdate(NetConnection* conn, U32 mask, BitStream* stream)
 {
    U32 retMask = Parent::packUpdate(conn, mask, stream);
@@ -308,55 +364,18 @@ void SceneGroup::unpackUpdate(NetConnection* conn, BitStream* stream)
    }
 }
 
-bool SceneGroup::buildPolyList(PolyListContext context, AbstractPolyList* polyList, const Box3F& box, const SphereF& sphere)
-{
-   Vector<SceneObject*> foundObjects;
-   if (empty())
-   {
-      Con::warnf("SceneGroup::buildPolyList() - SceneGroup %s is empty!", getName());
-      return false;
-   }
-   findObjectByType(foundObjects);
-
-   for (S32 i = 0; i < foundObjects.size(); i++)
-   {
-      foundObjects[i]->buildPolyList(context, polyList, box, sphere);
-   }
-
-   return true;
-}
-
-bool SceneGroup::buildExportPolyList(ColladaUtils::ExportData* exportData, const Box3F& box, const SphereF& sphere)
-{
-   Vector<SceneObject*> foundObjects;
-   findObjectByType(foundObjects);
-
-   for (S32 i = 0; i < foundObjects.size(); i++)
-   {
-      foundObjects[i]->buildExportPolyList(exportData, box, sphere);
-   }
-
-   return true;
-}
-
 void SceneGroup::getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList)
 {
-   //if (empty())
-      return;
-
-   Vector<SceneObject*> foundObjects;
-   findObjectByType(foundObjects);
-
-   for (S32 i = 0; i < foundObjects.size(); i++)
-   {
-      SceneObject* child = foundObjects[i];
-
-      child->getUtilizedAssets(usedAssetsList);
-   }
 }
 
 DefineEngineMethod(SceneGroup, recalculateBounds, void, (), ,
    "Recalculates the SceneGroups' bounds and centerpoint.\n")
 {
    object->recalculateBoundingBox();
+}
+
+DefineEngineMethod(SceneGroup, reparentOOBObjects, void, (), ,
+   "Finds objects that are children of the SceneGroup and, if not overlapping or in the bounds, reparents them to the root scene.\n")
+{
+   object->reparentOOBObjects();
 }

@@ -257,7 +257,13 @@ void ShaderGen::_processVertFeatures( Vector<GFXShaderMacro> &macros, bool macro
    {
       S32 index;
       const FeatureType &type = features.getAt( i, &index );
-      ShaderFeature* feature = FEATUREMGR->getByType( type );
+      void* args = features.getArguments(i);
+      ShaderFeature* feature = nullptr;
+      if(args)
+         feature = FEATUREMGR->createFeature(type, args);
+      else
+         feature = FEATUREMGR->getByType( type );
+
       if ( feature )
       {
          feature->setProcessIndex( index );
@@ -300,7 +306,12 @@ void ShaderGen::_processPixFeatures( Vector<GFXShaderMacro> &macros, bool macros
    {
       S32 index;
       const FeatureType &type = features.getAt( i, &index );
-      ShaderFeature* feature = FEATUREMGR->getByType( type );
+      void* args = features.getArguments(i);
+      ShaderFeature* feature = nullptr;
+      if (args)
+         feature = FEATUREMGR->createFeature(type, args);
+      else
+         feature = FEATUREMGR->getByType(type);
       if ( feature )
       {
          feature->setProcessIndex( index );
@@ -342,7 +353,12 @@ void ShaderGen::_printFeatureList(Stream &stream)
    {
       S32 index;
       const FeatureType &type = features.getAt( i, &index );
-      ShaderFeature* feature = FEATUREMGR->getByType( type );
+      void* args = features.getArguments(i);
+      ShaderFeature* feature = nullptr;
+      if (args)
+         feature = FEATUREMGR->createFeature(type, args);
+      else
+         feature = FEATUREMGR->getByType(type);
       if ( feature )
       {
          String line;
@@ -459,18 +475,12 @@ GFXShader* ShaderGen::getShader( const MaterialFeatureData &featureData, const G
    // Build a description string from the features
    // and vertex format combination ( and macros ).
    String shaderDescription = vertexFormat->getDescription() + features.getDescription();
-   if ( macros && !macros->empty() )
-   {
-      String macroStr;
-      GFXShaderMacro::stringize( *macros, &macroStr );
-      shaderDescription += macroStr;
-   }
-
    // Generate a single 64bit hash from the description string.
    //
    // Don't get paranoid!  This has 1 in 18446744073709551616
    // chance for collision... it won't happen in this lifetime.
    //
+   shaderDescription.replace("\n", " ");
    U64 hash = Torque::hash64( (const U8*)shaderDescription.c_str(), shaderDescription.length(), 0 );
    hash = convertHostToLEndian(hash);
    U32 high = (U32)( hash >> 32 );

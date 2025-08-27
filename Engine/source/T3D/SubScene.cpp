@@ -3,11 +3,15 @@
 #include "gameMode.h"
 #include "console/persistenceManager.h"
 #include "console/script.h"
+#include "environment/meshRoad.h"
+#include "environment/river.h"
 #include "scene/sceneRenderState.h"
 #include "renderInstance/renderPassManager.h"
 #include "gfx/gfxDrawUtil.h"
 #include "gfx/gfxTransformSaver.h"
 #include "gui/editor/inspector/group.h"
+#include "gui/worldEditor/editor.h"
+#include "math/mathIO.h"
 #include "T3D/gameBase/gameBase.h"
 
 bool SubScene::smTransformChildren = false;
@@ -22,14 +26,17 @@ IMPLEMENT_CALLBACK(SubScene, onUnloaded, void, (), (),
    "@brief Called when a subScene has been unloaded and has game mode implications.\n\n");
 
 SubScene::SubScene() :
-   mLevelAssetId(StringTable->EmptyString()),
+   mSubSceneAssetId(StringTable->EmptyString()),
    mGameModesNames(StringTable->EmptyString()),
    mScopeDistance(-1),
    mLoaded(false),
    mFreezeLoading(false),
    mTickPeriodMS(1000),
    mCurrTick(0),
-   mGlobalLayer(false)
+   mGlobalLayer(false),
+   mSaving(false),
+   mUseSeparateLoadBounds(false),
+   mLoadBounds(Point3F::One)
 {
    mNetFlags.set(Ghostable | ScopeAlways);
 
@@ -64,8 +71,11 @@ void SubScene::initPersistFields()
 {
    addGroup("SubScene");
    addField("isGlobalLayer", TypeBool, Offset(mGlobalLayer, SubScene), "");
-   INITPERSISTFIELD_LEVELASSET(Level, SubScene, "The level asset to load.");
+   INITPERSISTFIELD_SUBSCENEASSET(SubScene, SubScene, "The subscene asset to load.");
+   addField("tickPeriodMS", TypeS32, Offset(mTickPeriodMS, SubScene), "evaluation rate (ms)");
    addField("gameModes", TypeGameModeList, Offset(mGameModesNames, SubScene), "The game modes that this subscene is associated with.");
+   addField("UseSeparateLoadBounds", TypeBool, Offset(mUseSeparateLoadBounds, SubScene), "If true, this subscene will utilize a separate bounds for triggering loading/unloading than it's object bounds");
+   addField("LoadBounds", TypePoint3F, Offset(mLoadBounds, SubScene), "If UseSeparateLoadBounds is true, this subscene will use this value to set up the load/unload bounds");
    endGroup("SubScene");
 
    addGroup("LoadingManagement");
@@ -109,6 +119,11 @@ U32 SubScene::packUpdate(NetConnection* conn, U32 mask, BitStream* stream)
    U32 retMask = Parent::packUpdate(conn, mask, stream);
 
    stream->writeFlag(mGlobalLayer);
+   if(stream->writeFlag(mUseSeparateLoadBounds))
+   {
+      mathWrite(*stream, mLoadBounds);
+   }
+
 
    return retMask;
 }
@@ -119,11 +134,18 @@ void SubScene::unpackUpdate(NetConnection* conn, BitStream* stream)
 
    mGlobalLayer = stream->readFlag();
 
+   mUseSeparateLoadBounds = stream->readFlag();
+   if(mUseSeparateLoadBounds)
+   {
+      mathRead(*stream, &mLoadBounds);
+   }
 }
 
 void SubScene::onInspect(GuiInspector* inspector)
 {
    Parent::onInspect(inspector);
+
+#ifdef TORQUE_TOOLS
 
    //Put the SubScene group before everything that'd be SubScene-effecting, for orginazational purposes
    GuiInspectorGroup* subsceneGrp = inspector->findExistentGroup(StringTable->insert("SubScene"));
@@ -161,6 +183,7 @@ void SubScene::onInspect(GuiInspector* inspector)
    saveButton->setConsoleCommand(szBuffer);
 
    saveFieldGui->addObject(saveButton);
+#endif
 }
 
 void SubScene::inspectPostApply()
@@ -210,10 +233,25 @@ bool SubScene::evaluateCondition()
 
 bool SubScene::testBox(const Box3F& testBox)
 {
-   if (mGlobalLayer)
-      return true;
+   bool passes = mGlobalLayer;
 
-   bool passes = getWorldBox().isOverlapped(testBox);
+   if (!passes)
+   {
+      if(mUseSeparateLoadBounds)
+      {
+         Box3F loadBox = Box3F(-mLoadBounds.x, -mLoadBounds.y, -mLoadBounds.z,
+                                    mLoadBounds.x, mLoadBounds.y, mLoadBounds.z);
+
+         loadBox.setCenter(getPosition());
+
+         passes = loadBox.isOverlapped(testBox);
+      }
+      else
+      {
+         passes = getWorldBox().isOverlapped(testBox);
+      }
+   }
+
    if (passes)
       passes = evaluateCondition();
    return passes;
@@ -260,10 +298,16 @@ void SubScene::processTick(const Move* move)
 
 void SubScene::_onFileChanged(const Torque::Path& path)
 {
-   if(mLevelAsset.isNull() || Torque::Path(mLevelAsset->getLevelPath()) != path)
+   if (gEditingMission)
       return;
 
-   AssertFatal(path == mLevelAsset->getLevelPath(), "Prefab::_onFileChanged - path does not match filename.");
+   if(mSubSceneAsset.isNull() || Torque::Path(mSubSceneAsset->getLevelPath()) != path)
+      return;
+
+   if (mSaving)
+      return;
+
+   AssertFatal(path == mSubSceneAsset->getLevelPath(), "SubScene::_onFileChanged - path does not match filename.");
 
    _closeFile(false);
    _loadFile(false);
@@ -299,9 +343,9 @@ void SubScene::_closeFile(bool removeFileNotify)
 
    _removeContents(SimGroupIterator(this));
 
-   if (removeFileNotify && mLevelAsset.notNull() && mLevelAsset->getLevelPath() != StringTable->EmptyString())
+   if (removeFileNotify && mSubSceneAsset.notNull() && mSubSceneAsset->getLevelPath() != StringTable->EmptyString())
    {
-      Torque::FS::RemoveChangeNotification(mLevelAsset->getLevelPath(), this, &SubScene::_onFileChanged);
+      Torque::FS::RemoveChangeNotification(mSubSceneAsset->getLevelPath(), this, &SubScene::_onFileChanged);
    }
 
    mGameModesList.clear();
@@ -311,18 +355,18 @@ void SubScene::_loadFile(bool addFileNotify)
 {
    AssertFatal(isServerObject(), "Trying to load a SubScene file on the client is bad!");
 
-   if(mLevelAsset.isNull() || mLevelAsset->getLevelPath() == StringTable->EmptyString())
+   if(mSubSceneAsset.isNull() || mSubSceneAsset->getLevelPath() == StringTable->EmptyString())
       return;
 
-   String evalCmd = String::ToString("exec(\"%s\");", mLevelAsset->getLevelPath());
+   String evalCmd = String::ToString("exec(\"%s\");", mSubSceneAsset->getLevelPath());
 
    String instantGroup = Con::getVariable("InstantGroup");
    Con::setIntVariable("InstantGroup", this->getId());
-   Con::evaluate((const char*)evalCmd.c_str(), false, mLevelAsset->getLevelPath());
+   Con::evaluate((const char*)evalCmd.c_str(), false, mSubSceneAsset->getLevelPath());
    Con::setVariable("InstantGroup", instantGroup.c_str());
 
    if (addFileNotify)
-      Torque::FS::AddChangeNotification(mLevelAsset->getLevelPath(), this, &SubScene::_onFileChanged);
+      Torque::FS::AddChangeNotification(mSubSceneAsset->getLevelPath(), this, &SubScene::_onFileChanged);
 }
 
 void SubScene::load()
@@ -336,10 +380,18 @@ void SubScene::load()
    if (mFreezeLoading)
       return;
 
-   _loadFile(true);
-   mLoaded = true;
+   if (mSaving)
+      return;
 
    GameMode::findGameModes(mGameModesNames, &mGameModesList);
+   if (!isSelected() && (String(mGameModesNames).isNotEmpty() && mGameModesList.size() == 0) || !evaluateCondition())
+   {
+      mLoaded = false;
+      return;
+   }
+
+   _loadFile(true);
+   mLoaded = true;
 
    onLoaded_callback();
    for (U32 i = 0; i < mGameModesList.size(); i++)
@@ -347,11 +399,6 @@ void SubScene::load()
       mGameModesList[i]->onSubsceneLoaded_callback(this);
    }
 
-   if (!mOnLoadCommand.isEmpty())
-   {
-      String command = "%this = " + String(getIdString()) + "; " + mLoadIf + ";";
-      Con::evaluatef(command.c_str());
-   }
 }
 
 void SubScene::unload()
@@ -360,6 +407,9 @@ void SubScene::unload()
       return;
 
    if (mFreezeLoading)
+      return;
+
+   if (mSaving)
       return;
 
    if (isSelected())
@@ -409,7 +459,7 @@ void SubScene::unload()
 
 }
 
-bool SubScene::save()
+bool SubScene::save(const String& filename)
 {
    if (!isServerObject())
       return false;
@@ -418,16 +468,24 @@ bool SubScene::save()
    if (size() == 0 || !isLoaded())
       return false;
 
-   if (mLevelAsset.isNull())
+   if (mSubSceneAsset.isNull())
+      return false;
+
+   if (mSaving)
       return false;
 
    //If we're flagged for unload, push back the unload timer so we can't accidentally trip be saving partway through an unload
    if (mStartUnloadTimerMS != -1)
       mStartUnloadTimerMS = Sim::getCurrentTime();
 
+   mSaving = true;
+
    PersistenceManager prMger;
 
-   StringTableEntry levelPath = mLevelAsset->getLevelPath();
+   StringTableEntry levelPath = mSubSceneAsset->getLevelPath();
+
+   if (filename.isNotEmpty())
+      levelPath = StringTable->insert(filename.c_str());
 
    FileStream fs;
    fs.open(levelPath, Torque::FS::File::Write);
@@ -441,13 +499,18 @@ bool SubScene::save()
       {
          if ((*itr)->isMethod("onSaving"))
          {
-            Con::executef((*itr), "onSaving", mLevelAssetId);
+            Con::executef((*itr), "onSaving", mSubSceneAssetId);
          }
 
          if (childObj->getGroup() == this)
          {
             prMger.setDirty((*itr), levelPath);
          }
+      }
+
+      if(dynamic_cast<MeshRoad*>(childObj) || dynamic_cast<River*>(childObj))
+      {
+         prMger.addRemoveField(childObj, "position");
       }
    }
 
@@ -457,14 +520,16 @@ bool SubScene::save()
    bool saveSuccess = false;
 
    //Get the level asset
-   if (mLevelAsset.isNull())
+   if (mSubSceneAsset.isNull())
       return saveSuccess;
 
    //update the gamemode list as well
-   mLevelAsset->setDataField(StringTable->insert("gameModesNames"), NULL, StringTable->insert(mGameModesNames));
+   mSubSceneAsset->setDataField(StringTable->insert("gameModesNames"), NULL, StringTable->insert(mGameModesNames));
 
    //Finally, save
-   saveSuccess = mLevelAsset->saveAsset();
+   saveSuccess = mSubSceneAsset->saveAsset();
+
+   mSaving = false;
 
    return saveSuccess;
 }
@@ -518,8 +583,26 @@ void SubScene::renderObject(ObjectRenderInst* ri,
    //Box3F scale = getScale()
    //Box3F bounds = Box3F(-m)
 
+   if(mUseSeparateLoadBounds && !mGlobalLayer)
+   {
+      Box3F loadBounds = Box3F(-mLoadBounds.x, -mLoadBounds.y, -mLoadBounds.z,
+         mLoadBounds.x, mLoadBounds.y, mLoadBounds.z);
+
+      //bounds.setCenter(getPosition());
+
+      ColorI loadBoundsColor = ColorI(200, 200, 100, 50);
+
+      drawer->drawCube(desc, loadBounds, loadBoundsColor);
+
+      // Render wireframe.
+
+      desc.setFillModeWireframe();
+      drawer->drawCube(desc, loadBounds, ColorI::BLACK);
+      desc.setFillModeSolid();
+   }
+
    Point3F scale = getScale();
-   Box3F bounds = Box3F(-scale/2, scale/2);
+   Box3F bounds = Box3F(-scale / 2, scale / 2);
 
    ColorI boundsColor = ColorI(135, 206, 235, 50);
 
@@ -536,10 +619,11 @@ void SubScene::renderObject(ObjectRenderInst* ri,
    drawer->drawCube(desc, bounds, ColorI::BLACK);
 }
 
-DefineEngineMethod(SubScene, save, bool, (),,
-   "Save out the subScene.\n")
+DefineEngineMethod(SubScene, save, bool, (const char* filename), (""),
+   "Save out the subScene.\n"
+   "@param filename (optional) If empty, the subScene will save to it's regular asset path. If defined, it will save out to the filename provided")
 {
-   return object->save();
+   return object->save(filename);
 }
 
 

@@ -43,6 +43,7 @@
 // Debug Profiling.
 #include "platform/profiler.h"
 #include "gfx/gfxDrawUtil.h"
+#include "T3D/SubScene.h"
 
 
 //-----------------------------------------------------------------------------
@@ -100,7 +101,7 @@ ConsoleSetType(TypeLevelAssetId)
 }
 //-----------------------------------------------------------------------------
 
-LevelAsset::LevelAsset() : AssetBase(), mIsSubLevel(false)
+LevelAsset::LevelAsset() : AssetBase()
 {
    mLevelName = StringTable->EmptyString();
    mLevelFile = StringTable->EmptyString();
@@ -116,7 +117,6 @@ LevelAsset::LevelAsset() : AssetBase(), mIsSubLevel(false)
    mNavmeshPath = StringTable->EmptyString();
 
    mGameModesNames = StringTable->EmptyString();
-   mMainLevelAsset = StringTable->EmptyString();
 
    mEditorFile = StringTable->EmptyString();
    mBakedSceneFile = StringTable->EmptyString();
@@ -157,7 +157,6 @@ void LevelAsset::initPersistFields()
    addProtectedField("BakedSceneFile", TypeAssetLooseFilePath, Offset(mBakedSceneFile, LevelAsset),
       &setBakedSceneFile, &getBakedSceneFile, "Path to the level file with the objects generated as part of the baking process");
 
-   addField("isSubScene", TypeBool, Offset(mIsSubLevel, LevelAsset), "Is this a sublevel to another Scene");
    addField("gameModesNames", TypeString, Offset(mGameModesNames, LevelAsset), "Name of the Game Mode to be used with this level");
 }
 
@@ -228,9 +227,9 @@ StringTableEntry LevelAsset::getPreviewImageAsset() const
 
 StringTableEntry LevelAsset::getPreviewImagePath(void) const
 {
-   if (mPreviewImageAsset.notNull() && mPreviewImageAsset->isAssetValid())
+   if (mPreviewImageAsset.notNull())
    {
-      return mPreviewImageAsset->getImagePath();
+      return mPreviewImageAsset->getImageFile();
    }
 
    return StringTable->EmptyString();
@@ -442,6 +441,7 @@ DefineEngineMethod(LevelAsset, unloadDependencies, void, (), ,
    return object->unloadDependencies();
 }
 
+#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // GuiInspectorTypeAssetId
 //-----------------------------------------------------------------------------
@@ -537,3 +537,5 @@ void GuiInspectorTypeLevelAssetId::consoleInit()
 
    ConsoleBaseType::getType(TypeLevelAssetId)->setInspectorFieldType("GuiInspectorTypeLevelAssetId");
 }
+
+#endif

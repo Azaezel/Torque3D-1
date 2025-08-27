@@ -127,6 +127,7 @@ TurretShapeData::TurretShapeData()
       recoilSequence[i] = -1;
    pitchSequence = -1;
    headingSequence = -1;
+   mControlMap = StringTable->EmptyString();
 }
 
 void TurretShapeData::initPersistFields()
@@ -134,21 +135,23 @@ void TurretShapeData::initPersistFields()
    docsURL;
    Parent::initPersistFields();
    addGroup("Steering");
+   addField("controlMap", TypeString, Offset(mControlMap, TurretShapeData),
+      "@brief movemap used by these types of objects.\n\n");
       addField("zRotOnly",       TypeBool,         Offset(zRotOnly,       TurretShapeData),
          "@brief Should the turret allow only z rotations.\n\n"
          "True indicates that the turret may only be rotated on its z axis, just like the Item class.  "
          "This keeps the turret always upright regardless of the surface it lands on.\n");
-      addField("maxHeading",        TypeF32,       Offset(maxHeading,         TurretShapeData),
+      addFieldV("maxHeading", TypeRangedF32,       Offset(maxHeading,         TurretShapeData), &CommonValidators::PosDegreeRangeHalf,
          "@brief Maximum number of degrees to rotate from center.\n\n"
          "A value of 180 or more degrees indicates the turret may rotate completely around.\n");
-      addField("minPitch",          TypeF32,       Offset(minPitch,           TurretShapeData),
+      addFieldV("minPitch", TypeRangedF32,       Offset(minPitch,           TurretShapeData), &CommonValidators::PosDegreeRangeQuarter,
          "@brief Minimum number of degrees to rotate down from straight ahead.\n\n");
-      addField("maxPitch",          TypeF32,       Offset(maxPitch,           TurretShapeData),
+      addFieldV("maxPitch", TypeRangedF32,       Offset(maxPitch,           TurretShapeData), &CommonValidators::PosDegreeRangeQuarter,
          "@brief Maximum number of degrees to rotate up from straight ahead.\n\n");
-      addField("headingRate",       TypeF32,       Offset(headingRate,        TurretShapeData),
+      addFieldV("headingRate", TypeRangedF32,       Offset(headingRate,        TurretShapeData), &CommonValidators::DegreeRange,
          "@brief Degrees per second rotation.\n\n"
          "A value of 0 means no rotation is allowed.  A value less than 0 means the rotation is instantaneous.\n");
-      addField("pitchRate",         TypeF32,       Offset(pitchRate,          TurretShapeData),
+      addFieldV("pitchRate", TypeRangedF32,       Offset(pitchRate,          TurretShapeData), &CommonValidators::DegreeRange,
          "@brief Degrees per second rotation.\n\n"
          "A value of 0 means no rotation is allowed.  A value less than 0 means the rotation is instantaneous.\n");
    endGroup("Steering");
@@ -167,7 +170,7 @@ void TurretShapeData::initPersistFields()
    endGroup("Weapon State");
 
    addGroup("Camera", "The settings used by the shape when it is the camera.");
-   addField("cameraOffset",      TypeF32,       Offset(cameraOffset,       TurretShapeData),
+   addFieldV("cameraOffset",      TypeRangedF32,       Offset(cameraOffset,       TurretShapeData), &CommonValidators::F32Range,
       "Vertical (Z axis) height of the camera above the turret." );
    endGroup("Camera");
 }
@@ -214,35 +217,35 @@ bool TurretShapeData::preload(bool server, String &errorStr)
       return false;
 
    // We have mShape at this point.  Resolve nodes.
-   headingNode = mShape->findNode("heading");
-   pitchNode = mShape->findNode("pitch");
+   headingNode = getShape()->findNode("heading");
+   pitchNode = getShape()->findNode("pitch");
 
    // Find any mirror pitch nodes
    for (U32 i = 0; i < NumMirrorDirectionNodes; ++i)
    {
       char name[32];
       dSprintf(name, 31, "pitch%d", i+1);
-      pitchNodes[i] = mShape->findNode(name);
+      pitchNodes[i] = getShape()->findNode(name);
 
       dSprintf(name, 31, "heading%d", i+1);
-      headingNodes[i] = mShape->findNode(name);
+      headingNodes[i] = getShape()->findNode(name);
    }
 
    // Resolve weapon mount point node indexes
    for (U32 i = 0; i < ShapeBase::MaxMountedImages; i++) {
       char fullName[256];
       dSprintf(fullName,sizeof(fullName),"weaponMount%d",i);
-      weaponMountNode[i] = mShape->findNode(fullName);
+      weaponMountNode[i] = getShape()->findNode(fullName);
    }
 
    // Recoil animations
-   recoilSequence[0] = mShape->findSequence("light_recoil");
-   recoilSequence[1] = mShape->findSequence("medium_recoil");
-   recoilSequence[2] = mShape->findSequence("heavy_recoil");
+   recoilSequence[0] = getShape()->findSequence("light_recoil");
+   recoilSequence[1] = getShape()->findSequence("medium_recoil");
+   recoilSequence[2] = getShape()->findSequence("heavy_recoil");
 
    // Optional sequences used when the turret rotates
-   pitchSequence = mShape->findSequence("pitch");
-   headingSequence = mShape->findSequence("heading");
+   pitchSequence = getShape()->findSequence("pitch");
+   headingSequence = getShape()->findSequence("heading");
 
    return true;
 }
@@ -440,7 +443,7 @@ bool TurretShape::onNewDataBlock(GameBaseData* dptr, bool reload)
 
    if (!mSubclassTurretShapeHandlesScene)
    {
-      scriptOnNewDataBlock();
+      scriptOnNewDataBlock(reload);
    }
 
    return true;
@@ -1044,8 +1047,8 @@ void TurretShape::writePacketData(GameConnection *connection, BitStream *stream)
    // Update client regardless of status flags.
    Parent::writePacketData(connection, stream);
    
-   stream->writeSignedFloat(mRot.x / M_2PI_F, 7);
-   stream->writeSignedFloat(mRot.z / M_2PI_F, 7);
+   stream->writeSignedFloat(mRot.x / M_2PI_F, 11);
+   stream->writeSignedFloat(mRot.z / M_2PI_F, 11);
 }
 
 void TurretShape::readPacketData(GameConnection *connection, BitStream *stream)
@@ -1053,8 +1056,8 @@ void TurretShape::readPacketData(GameConnection *connection, BitStream *stream)
    Parent::readPacketData(connection, stream);
 
    Point3F rot(0.0f, 0.0f, 0.0f);
-   rot.x = stream->readSignedFloat(7) * M_2PI_F;
-   rot.z = stream->readSignedFloat(7) * M_2PI_F;
+   rot.x = stream->readSignedFloat(11) * M_2PI_F;
+   rot.z = stream->readSignedFloat(11) * M_2PI_F;
    _setRotation(rot);
 
    mTurretDelta.rot = rot;

@@ -41,6 +41,7 @@
 #include "ts/tsShapeInstance.h"
 #include "postFx/postEffect.h"
 #include "math/util/matrixSet.h"
+#include "console/typeValidators.h"
 
 IMPLEMENT_CO_NETOBJECT_V1(WaterBlock);
 
@@ -529,12 +530,10 @@ void WaterBlock::initPersistFields()
 {
    docsURL;
    addGroup( "WaterBlock" );
-      addProtectedField( "gridElementSize", TypeF32,  Offset( mGridElementSize, WaterBlock ), 
-         &setGridSizeProperty, &defaultProtectedGetFn, "Spacing between vertices in the WaterBlock mesh" );
-      addProtectedField( "gridSize", TypeF32,  Offset( mGridElementSize, WaterBlock ), 
-         &setGridSizeProperty, &defaultProtectedGetFn, "Duplicate of gridElementSize for backwards compatility" );
-   endGroup( "WaterBlock" );
 
+   addProtectedFieldV("gridSize", TypeRangedF32, Offset(mGridElementSize, WaterBlock), &setGridSizeProperty, &defaultProtectedGetFn, &CommonValidators::PositiveFloat,
+      "Spacing between vertices in the WaterBlock mesh");
+   addProtectedFieldV("gridElementSize", TypeRangedF32, Offset(mGridElementSize, WaterBlock), &setGridSizeProperty, &defaultProtectedGetFn, &CommonValidators::PositiveFloat, "Duplicate of gridElementSize for backwards compatility");
    Parent::initPersistFields();
 }     
 

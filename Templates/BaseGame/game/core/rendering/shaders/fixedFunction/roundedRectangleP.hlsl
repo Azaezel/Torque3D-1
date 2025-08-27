@@ -26,7 +26,9 @@ struct Conn
 {
    float4 HPOS             : TORQUE_POSITION;
    float4 color            : COLOR;
+   float2 texCoord         : TEXCOORD0;
 };
+
 
 uniform float2 sizeUni;
 uniform float2 rectCenter;
@@ -34,6 +36,7 @@ uniform float2 oneOverViewport;
 uniform float radius;
 uniform float borderSize;
 uniform float4 borderCol;
+uniform float gradientFill;
 
 float RoundedRectSDF(float2 p, float2 size, float radius)
 {
@@ -62,13 +65,19 @@ float4 main(Conn IN) : TORQUE_TARGET0
 
     float cornerRadius = radius;
 
-    // if ((p.y < 0.0 && p.x < 0.0) || // top left corner
-    //     (p.y < 0.0 && p.x > 0.0) || // top right corner
-    //     (p.y > 0.0 && p.x > 0.0) || // bottom right corner.  
-    //     (p.y > 0.0 && p.x < 0.0))  // bottom left corner
-    // {
-    //     cornerRadius = radius;   
-    // } 
+    float4 baseColor = IN.color;
+
+    if(gradientFill > 0.5f)
+    {
+        float blendX = 1.0 - IN.texCoord.x;
+        float blendY = IN.texCoord.y;
+        float gamma = 2.4;
+        blendX = pow(abs(blendX), gamma);
+        blendY = pow(abs(blendY), 1/gamma);
+
+        float4 interpolatedColor = lerp(lerp(baseColor,float4(1.0f, 1.0f, 1.0f, 1.0f), blendX),float4(0.0f, 0.0f, 0.0f, 1.0f), blendY);
+        baseColor = interpolatedColor;
+    }
 
     if(cornerRadius > 0.0 || halfBorder > 0.0)
     {
@@ -78,19 +87,13 @@ float4 main(Conn IN) : TORQUE_TARGET0
         {
             if(sdf < 0.0)
             {
-                // if ((p.y >= -halfSize.y - radius + halfBorder && p.y <= -halfSize.y + radius - halfBorder)  ||  // top border
-                //     (p.y >= halfSize.y - radius + halfBorder && p.y <= halfSize.y + radius - halfBorder)    ||  // bottom border
-                //     (p.x >= -halfSize.x - radius + halfBorder && p.x <= -halfSize.x + radius - halfBorder)  ||  // left border
-                //     (p.x >= halfSize.x - radius + halfBorder && p.x <= halfSize.x + radius - halfBorder) ) {    // right border
-                    
-                // }
-                toColor = IN.color;
-                sdf = abs(sdf) / borderSize;
+                toColor = baseColor;
+                sdf = abs(sdf) - borderSize;
             } 
             
         } 
         else{
-            fromColor = IN.color; 
+            fromColor = baseColor; 
         }  
 
         float alpha = smoothstep(-1.0, 1.0, sdf); 
@@ -98,6 +101,6 @@ float4 main(Conn IN) : TORQUE_TARGET0
     }
     else
     {
-        return IN.color;
+        return baseColor;
     }
 }

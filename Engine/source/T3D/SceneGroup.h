@@ -46,10 +46,11 @@ public:
    void addObject(SimObject* object) override;
    void removeObject(SimObject* object) override;
    void recalculateBoundingBox();
+   void reparentOOBObjects();
 
    ///
-   bool buildPolyList(PolyListContext context, AbstractPolyList* polyList, const Box3F& box, const SphereF& sphere) override;
-   bool buildExportPolyList(ColladaUtils::ExportData* exportData, const Box3F& box, const SphereF&) override;
+   bool buildPolyList(PolyListContext context, AbstractPolyList* polyList, const Box3F& box, const SphereF& sphere) override { return false; };
+   bool buildExportPolyList(ColladaUtils::ExportData* exportData, const Box3F& box, const SphereF&) override { return false; };
    void getUtilizedAssets(Vector<StringTableEntry>* usedAssetsList) override;
 };
 #endif

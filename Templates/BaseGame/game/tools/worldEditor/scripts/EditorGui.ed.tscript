@@ -671,7 +671,7 @@ function EditorGui::updateSideBar(%this)
          case "ForestEditorPlugin ":
             ForestEditorPalleteWindow.onMouseDragged();
          case "MaterialEditorPlugin":
-            MaterialEditorPreviewWindow.onMouseDragged();
+            MaterialEditorGuiWindow.onMouseDragged();
          case "MeshRoadEditorPlugin":
             MeshRoadEditorTreeWindow.onMouseDragged();
          case "MissionAreaEditorPlugin":
@@ -1000,6 +1000,24 @@ function EditorGui::syncCameraGui( %this )
 /// @name EditorPlugin Methods 
 /// @{
  
+function EditorGui::SetStandardPalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "EWorldEditorNoneModeBtn::onClick();", "", "Select Arrow", "1");
+   EWToolsPaletteWindow.addButton("Move", "ToolsModule:translate_n_image", "EWorldEditorMoveModeBtn::onClick();", "", "Move Selection", "2");
+   EWToolsPaletteWindow.addButton("Rotate", "ToolsModule:rotate_n_image", "EWorldEditorRotateModeBtn::onClick();", "", "Rotate Selection", "3");
+   EWToolsPaletteWindow.addButton("Scale", "ToolsModule:Scale_n_image", "EWorldEditorScaleModeBtn::onClick();", "", "Scale Selection", "4");
+   
+   EWToolsPaletteWindow.refresh();
+}
+
 //------------------------------------------------------------------------------
 // WorldEditorPlugin
 //------------------------------------------------------------------------------
@@ -1038,6 +1056,8 @@ function WorldEditorPlugin::onActivated( %this )
    SnapToBar-->objectGridSnapBtn.setStateOn( EWorldEditor.UseGridSnap );
    
    Parent::onActivated(%this);
+
+   EditorGui.SetStandardPalletBar();
 }
 
 function WorldEditorPlugin::onDeactivated( %this )
@@ -1096,21 +1116,6 @@ function WorldEditorInspectorPlugin::onActivated( %this )
 {   
    Parent::onActivated( %this );
    
-   //Clears the button pallete stack
-   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
-   EWToolsPaletteWindow.clearButtons();
-   
-   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
-   
-   //Adds a button to the pallete stack
-                          //Name     Icon                         Click Command                         Tooltip text    Keybind
-   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "EWorldEditorNoneModeBtn::onClick();", "", "Select Arrow", "1");
-   EWToolsPaletteWindow.addButton("Move", "ToolsModule:translate_n_image", "EWorldEditorMoveModeBtn::onClick();", "", "Move Selection", "2");
-   EWToolsPaletteWindow.addButton("Rotate", "ToolsModule:rotate_n_image", "EWorldEditorRotateModeBtn::onClick();", "", "Rotate Selection", "3");
-   EWToolsPaletteWindow.addButton("Scale", "ToolsModule:Scale_n_image", "EWorldEditorScaleModeBtn::onClick();", "", "Scale Selection", "4");
-   
-   EWToolsPaletteWindow.refresh();
-
    EditorGui-->InspectorWindow.setVisible( true );   
    EditorGui-->TreeWindow.setVisible( true );
    EditorGui-->WorldEditorToolbar.setVisible( true );
@@ -1200,10 +1205,12 @@ function TerrainEditorPlugin::onWorldEditorStartup( %this )
    %map.bindCmd( keyboard, "4", "ToolsPaletteArray->smoothHeight.performClick();", "" );    // Average Height
    %map.bindCmd( keyboard, "5", "ToolsPaletteArray->smoothSlope.performClick();", "" );    // Smooth Slope
    %map.bindCmd( keyboard, "6", "ToolsPaletteArray->paintNoise.performClick();", "" );      // Noise
-   %map.bindCmd( keyboard, "7", "ToolsPaletteArray->flattenHeight.performClick();", "" );   // Flatten
-   %map.bindCmd( keyboard, "8", "ToolsPaletteArray->setHeight.performClick();", "" );       // Set Height
-   %map.bindCmd( keyboard, "9", "ToolsPaletteArray->setEmpty.performClick();", "" );    // Clear Terrain
-   %map.bindCmd( keyboard, "0", "ToolsPaletteArray->clearEmpty.performClick();", "" );  // Restore Terrain
+   %map.bindCmd( keyboard, "6", "ToolsPaletteArray->thermalErode.performClick();", "" );      // Noise
+   %map.bindCmd( keyboard, "7", "ToolsPaletteArray->hydraulicErode.performClick();", "" );      // Noise
+   %map.bindCmd( keyboard, "8", "ToolsPaletteArray->flattenHeight.performClick();", "" );   // Flatten
+   %map.bindCmd( keyboard, "9", "ToolsPaletteArray->setHeight.performClick();", "" );       // Set Height
+   %map.bindCmd( keyboard, "0", "ToolsPaletteArray->setEmpty.performClick();", "" );    // Clear Terrain
+   %map.bindCmd( keyboard, "shift 0", "ToolsPaletteArray->clearEmpty.performClick();", "" );  // Restore Terrain
    %map.bindCmd( keyboard, "v", "EWTerrainEditToolbarBrushType->ellipse.performClick();", "" );// Circle Brush
    %map.bindCmd( keyboard, "b", "EWTerrainEditToolbarBrushType->box.performClick();", "" );// Box Brush
    %map.bindCmd( keyboard, "=", "TerrainEditorPlugin.keyboardModifyBrushSize(1);", "" );// +1 Brush Size
@@ -1228,9 +1235,39 @@ function TerrainEditorPlugin::onWorldEditorStartup( %this )
    };   
 }
 
+function EditorGui::SetTerrainPalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("AdjustHeight", "ToolsModule:brushAdjustHeight_n_image", "ETerrainEditor.switchAction( brushAdjustHeight );", "", "Grab Terrain", "1"); 
+   EWToolsPaletteWindow.addButton("RaiseHeight", "ToolsModule:raiseHeight_n_image", "ETerrainEditor.switchAction( raiseHeight );", "", "Raise Height", "2");  
+   EWToolsPaletteWindow.addButton("LowerHeight", "ToolsModule:lowerHeight_n_image", "ETerrainEditor.switchAction( lowerHeight );", "", "Lower Height", "3");  
+   EWToolsPaletteWindow.addButton("SmoothHeight", "ToolsModule:smoothHeight_n_image", "ETerrainEditor.switchAction( smoothHeight );", "", "Smooth Height", "4");
+   EWToolsPaletteWindow.addButton("SmoothSlope", "ToolsModule:softCurve_n_image", "ETerrainEditor.switchAction( smoothSlope );", "", "Smooth Slope", "5");    
+   EWToolsPaletteWindow.addButton("PaintNoise", "ToolsModule:brushPaintNoise_n_image", "ETerrainEditor.switchAction( paintNoise );", "", "Paint Noise", "6");     
+   EWToolsPaletteWindow.addButton("thermalErode", "ToolsModule:brushPaintNoise_n_image", "ETerrainEditor.switchAction( thermalErode );", "", "thermal Erode", "7");    
+   EWToolsPaletteWindow.addButton("hydraulicErode", "ToolsModule:brushPaintNoise_n_image", "ETerrainEditor.switchAction( hydraulicErode );", "", "hydraulic Erode", "8");
+   EWToolsPaletteWindow.addButton("FlattenHeight", "ToolsModule:flattenHeight_n_image", "ETerrainEditor.switchAction( flattenHeight );", "", "Flatten Height", "9");
+   EWToolsPaletteWindow.addButton("SetHeight", "ToolsModule:setHeight_n_image", "ETerrainEditor.switchAction( setHeight );", "", "Set Height", "0");    
+   EWToolsPaletteWindow.addButton("SetEmpty", "ToolsModule:setEmpty_n_image", "ETerrainEditor.switchAction( setEmpty );", "", "Set Empty", "0");     
+   EWToolsPaletteWindow.addButton("ClearEmpty", "ToolsModule:clearEmpty_n_image", "ETerrainEditor.switchAction( clearEmpty );", "", "Clear Empty", "shift 0"); 
+   EWToolsPaletteWindow.addButton("Copy", "ToolsModule:setHeight_n_image", "ETerrainEditor.switchAction( copy );", "", "copy", "ctrl C");
+   EWToolsPaletteWindow.addButton("Paste", "ToolsModule:setHeight_n_image", "ETerrainEditor.switchAction( paste );", "", "paste", "ctrl v"); 
+   EWToolsPaletteWindow.addButton("pasteUp", "ToolsModule:setHeight_n_image", "ETerrainEditor.switchAction( pasteUp );", "", "pasteUp", "ctrl b");
+   EWToolsPaletteWindow.addButton("PasteDown", "ToolsModule:setHeight_n_image", "ETerrainEditor.switchAction( pasteDown );", "", "pasteDown", "ctrl n");
+   EWToolsPaletteWindow.refresh();
+}
+
 function TerrainEditorPlugin::onActivated( %this )
 {
    Parent::onActivated( %this );
+   EditorGui.SetTerrainPalletBar();
 
    EditorGui.readTerrainEditorSettings();
    
@@ -1372,6 +1409,7 @@ function TerrainPainterPlugin::onWorldEditorStartup( %this )
 function TerrainPainterPlugin::onActivated( %this )
 {
    Parent::onActivated( %this );
+   WorldEditorInspectorPlugin::onActivated( %this );
 
    EditorGui.readTerrainEditorSettings();
 
@@ -1671,7 +1709,7 @@ function EWorldEditor::maxSize(%this, %window)
       
       %fixedWindow = EWTreeWindow;
       %fluidWindow = EWInspectorWindow;
-      %offset = 25; // tweak the vertical offset so that it aligns neatly
+      %offset = 0; // tweak the vertical offset so that it aligns neatly
       %top = EditorGuiToolbar.extent.y + %offset;
       %bottom = %top + 59;
       %maxHeight = Canvas.extent.y - %top - %bottom + 12;
@@ -2063,7 +2101,10 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
       %popup.item[ 0 ] = "Delete" TAB "" TAB "EditorMenuEditDelete();";
       %popup.item[ 1 ] = "Group" TAB "" TAB "EWorldEditor.addSimGroup( true );";
       %popup.item[ 2 ] = "-";
-      %popup.item[ 3 ] = "Make selected a Sub-Level" TAB "" TAB "MakeSelectionASublevel();";
+      %popup.item[ 3 ] = "Make selected a Prefab" TAB "" TAB "EWorldEditor.makeSelectionPrefab();";
+      %popup.item[ 4 ] = "Bake selected into Mesh" TAB "" TAB "AssetBrowser.setupCreateNewAsset(\"ShapeAsset\", AssetBrowser.selectedModule, \"makeSelectedAMesh\");";
+      %popup.item[ 5 ] = "-";
+      %popup.item[ 6 ] = "Make selected a Sub-Level" TAB "" TAB "MakeSelectionASublevel();";
    }
    else
    {
@@ -2168,6 +2209,29 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
                %popup.item[ 13 ] = "Convert to SubScene" TAB "" TAB "EWorldEditor.createSelectedAsSubScene( " @ %popup.object @ " );";
             }
          }  
+         else if(%obj.getClassName() $= "TSStatic")
+         {
+            if(AssetDatabase.isDeclaredAsset(%obj.shapeAsset))
+            {
+               %assetDef = AssetDatabase.acquireAsset(%obj.shapeAsset);
+               
+               %assetFileName = %assetDef.getFilename();
+               %assetFileBase = strreplace(fileBase(%assetFileName), ".asset", "");
+               %assetFileBase = strreplace(%assetFileBase, ".taml", "");
+               
+               %prefabFile = filePath(%assetFileName) @ "/" @ %assetFileBase @ ".prefab";
+               if(isFile(%prefabFile))
+               {
+                  %popup.item[ 8 ] = "-";
+                  %popup.item[ 9 ] = "Restore to Prefab" TAB "" TAB "EWorldEditor.restoreSelectedToPrefab( " @ %popup.object @ " );";
+                  %popup.item[ 10 ] = "Rebake Mesh" TAB "" TAB "EWorldEditor.rebakeSelectedMesh( " @ %popup.object @ " );";
+               }
+            }
+         }
+         else if( %obj.isMemberOfClass( "Prefab" ) )
+         {
+            %popup.item[ 8 ] = "Explode Prefab" TAB "" TAB "EWorldEditor.explodeSelectedPrefab();";
+         }
       }
    }
 
@@ -2566,13 +2630,13 @@ function EWorldEditor::syncToolPalette( %this )
    switch$ ( GlobalGizmoProfile.mode )
    {
       case "None":
-         EWorldEditorNoneModeBtn.performClick();
+         EWorldEditorNoneModeBtn::onClick();
       case "Move":
-         EWorldEditorMoveModeBtn.performClick();
+         EWorldEditorMoveModeBtn::onClick();
       case "Rotate":
-         EWorldEditorRotateModeBtn.performClick();
+         EWorldEditorRotateModeBtn::onClick();
       case "Scale":
-         EWorldEditorScaleModeBtn.performClick();
+         EWorldEditorScaleModeBtn::onClick();
    }
 }
 
@@ -3295,10 +3359,10 @@ function TerrainSetHeightSliderCtrlContainer::onWake(%this)
 }
 
 //------------------------------------------------------------------------------------
-function CameraSpeedDropdownCtrlContainer::onWake(%this)
+function CameraSpeedDropdownContainer::onWake(%this)
 {
-   %this-->slider.setValue(CameraSpeedDropdownContainer-->textEdit.getText());
-   %pos = CameraSpeedDropdownContainer.getGlobalPosition();
+   %this-->slider.setValue(CameraSpeedDropdownCtrlContainer-->textEdit.getText());
+   %pos = CameraSpeedDropdownCtrlContainer.getGlobalPosition();
    %this-->slider.setPositionGlobal(%pos.x, %pos.y + 25);
 }
 

@@ -57,13 +57,13 @@ public:
    // Draw Rectangles : FILL
    //-----------------------------------------------------------------------------
 
-   void drawRectFill(const Point2F& upperL, const Point2F& lowerR, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0));
-   void drawRectFill(const RectF& rect, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0));
-   void drawRectFill(const Point2I& upperLeft, const Point2I& lowerRight, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0));
-   void drawRectFill(const RectI& rect, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0));
-   void drawRoundedRect(const F32& cornerRadius, const RectI& rect, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0));
-   void drawRoundedRect(const F32& cornerRadius, const Point2I& upperLeft, const Point2I& lowerRight, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0));
-   void drawRoundedRect(const F32& cornerRadius, const Point2F& upperLeft, const Point2F& lowerRight, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0));
+   void drawRectFill(const Point2F& upperL, const Point2F& lowerR, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0), bool gradientFill = false);
+   void drawRectFill(const RectF& rect, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0), bool gradientFill = false);
+   void drawRectFill(const Point2I& upperLeft, const Point2I& lowerRight, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0), bool gradientFill = false);
+   void drawRectFill(const RectI& rect, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0), bool gradientFill = false);
+   void drawRoundedRect(const F32& cornerRadius, const RectI& rect, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0), bool gradientFill = false);
+   void drawRoundedRect(const F32& cornerRadius, const Point2I& upperLeft, const Point2I& lowerRight, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0), bool gradientFill = false);
+   void drawRoundedRect(const F32& cornerRadius, const Point2F& upperLeft, const Point2F& lowerRight, const ColorI& color, const F32& borderSize = 0.0f, const ColorI& borderColor = ColorI(0, 0, 0, 0), bool gradientFill = false);
 
    void draw2DSquare(const Point2F& screenPoint, F32 width, F32 spinAngle = 0.0f);
 

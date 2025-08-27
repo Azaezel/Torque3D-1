@@ -498,7 +498,8 @@ public:
       FIELD_ComponentInspectors = BIT(1),       ///< Custom fields used by components. They are likely to be non-standard size/configuration, so 
                                                 ///< They are handled specially
       FIELD_CustomInspectors = BIT(2),          ///< Display as a button in inspectors.
-      FIELD_SpecialtyArrayField = BIT(3)
+      FIELD_SpecialtyArrayField = BIT(3),
+      FIELD_DontWriteToFile = BIT(4),
    };
 
    struct Field
@@ -705,7 +706,9 @@ public:
       smPropertyTable = _smPropertyTable;
 
       const_cast<EngineTypeInfo*>(mTypeInfo)->mPropertyTable = &_smPropertyTable;
- 
+
+      // After we hand it off, immediately delete if safe:
+      delete[] props;
       // Let the base finish up.
       AbstractClassRep::init();
    }
@@ -945,6 +948,13 @@ public:
       TypeValidator *v,
       const char *   in_pFieldDocs = NULL);
 
+   static void addFieldV(const char* in_pFieldname,
+      const U32      in_fieldType,
+      const dsize_t  in_fieldOffset,
+      TypeValidator* v,
+      const U32     in_elementCount,
+      const char* in_pFieldDocs = NULL);
+
    /// Register a complex protected field.
    ///
    /// @param  in_pFieldname     Name of the field.
@@ -995,6 +1005,37 @@ public:
       const dsize_t in_fieldOffset,
       AbstractClassRep::SetDataNotify in_setDataFn,
       AbstractClassRep::GetDataNotify in_getDataFn = &defaultProtectedGetFn,
+      const char* in_pFieldDocs = NULL,
+      U32 flags = 0);
+
+
+   static void addProtectedFieldV(const char* in_pFieldname,
+      const U32     in_fieldType,
+      const dsize_t in_fieldOffset,
+      AbstractClassRep::SetDataNotify in_setDataFn,
+      AbstractClassRep::GetDataNotify in_getDataFn = &defaultProtectedGetFn,
+      AbstractClassRep::WriteDataNotify in_writeDataFn = &defaultProtectedWriteFn,
+      TypeValidator* v  = NULL,
+      const U32     in_elementCount = 1,
+      const char* in_pFieldDocs = NULL,
+      U32 flags = 0);
+
+   static void addProtectedFieldV(const char* in_pFieldname,
+      const U32     in_fieldType,
+      const dsize_t in_fieldOffset,
+      AbstractClassRep::SetDataNotify in_setDataFn,
+      AbstractClassRep::GetDataNotify in_getDataFn = &defaultProtectedGetFn,
+      TypeValidator* v = NULL,
+      const U32     in_elementCount = 1,
+      const char* in_pFieldDocs = NULL,
+      U32 flags = 0);
+
+   static void addProtectedFieldV(const char* in_pFieldname,
+      const U32     in_fieldType,
+      const dsize_t in_fieldOffset,
+      AbstractClassRep::SetDataNotify in_setDataFn,
+      AbstractClassRep::GetDataNotify in_getDataFn = &defaultProtectedGetFn,
+      TypeValidator* v = NULL,
       const char* in_pFieldDocs = NULL,
       U32 flags = 0);
 

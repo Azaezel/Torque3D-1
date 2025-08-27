@@ -508,30 +508,24 @@ inline MatrixF& MatrixF::add( const MatrixF& a )
 
 inline void MatrixF::LookAt(const VectorF& eye, const VectorF& target, const VectorF& up)
 {
-   VectorF yAxis = target - eye;          // Forward
-   yAxis.normalize();
+   // Calculate the forward vector (camera direction).
+   VectorF zAxis = target; // Camera looks towards the target
+   zAxis.normalize();
 
-   VectorF xAxis = mCross(up, yAxis);     // Right
+   // Calculate the right vector.
+   VectorF xAxis = mCross(up, zAxis);
    xAxis.normalize();
 
-   VectorF zAxis = mCross(yAxis, xAxis);  // Up
+   // Recalculate the up vector.
+   VectorF yAxis = mCross(zAxis, xAxis);
 
-   // Right vector.
-   setColumn(0, xAxis);
-   m[12] = -mDot(xAxis, eye);
+   // Set the rotation part of the matrix (camera axes).
+   setColumn(0, xAxis); // Right
+   setColumn(1, zAxis); // Forward
+   setColumn(2, yAxis); // Up
 
-   // Forward vector.
-   setColumn(1, yAxis);
-   m[13] = -mDot(yAxis, eye);
-
-   // Up vector.
-   setColumn(2, zAxis);
-   m[14] = -mDot(zAxis, eye);
-
-   m[3] = 0.0f;
-   m[7] = 0.0f;
-   m[11] = 0.0f;
-   m[15] = 1.0f;
+   // Set the translation part (camera position).
+   setPosition(eye);
 
 }
 

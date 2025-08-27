@@ -85,6 +85,25 @@ function RoadEditorPlugin::onWorldEditorStartup( %this )
    ESettingsWindow.addEditorSettingsPage("RoadEditor", "Decal Road Editor");
 }
 
+function EditorGui::SetRoadPalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "RoadEditorGui.prepSelectionMode();", "", "Select Road", "1"); 
+   EWToolsPaletteWindow.addButton("MovePoint", "ToolsModule:move_point_n_image", "RoadEditorGui.setMode(\"RoadEditorMoveMode\");", "", "Move Point", "2"); 
+   EWToolsPaletteWindow.addButton("ScalePoint", "ToolsModule:scale_point_n_image", "RoadEditorGui.setMode(\"RoadEditorScaleMode\");", "", "Scale Point", "3"); 
+   EWToolsPaletteWindow.addButton("AddRoad", "ToolsModule:add_road_path_n_image", "RoadEditorGui.setMode(\"RoadEditorAddRoadMode\");", "", "Add Road", "4");
+   EWToolsPaletteWindow.addButton("InsertPoint", "ToolsModule:add_point_n_image", "RoadEditorGui.setMode(\"RoadEditorInsertPointMode\");", "", "Insert Point", "+");
+   EWToolsPaletteWindow.addButton("RemovePoint", "ToolsModule:subtract_point_n_image", "RoadEditorGui.setMode(\"RoadEditorRemovePointMode\");", "", "Remove Point", "-");
+   EWToolsPaletteWindow.refresh();
+}
+
 function RoadEditorPlugin::onActivated( %this )
 {
    %this.readSettings();
@@ -109,6 +128,7 @@ function RoadEditorPlugin::onActivated( %this )
    EditorGuiStatusBar.setSelection("");
    
    Parent::onActivated(%this);
+   EditorGui.SetRoadPalletBar();
 }
 
 function RoadEditorPlugin::onDeactivated( %this )

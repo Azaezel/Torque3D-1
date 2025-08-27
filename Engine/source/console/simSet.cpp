@@ -231,26 +231,27 @@ void SimSet::scriptSort( const String &scriptCallbackFn )
 
 void SimSet::callOnChildren( const String &method, S32 argc, ConsoleValue argv[], bool executeOnChildGroups )
 {
-   // Prep the arguments for the console exec...
-   // Make sure and leave args[1] empty.
-   ConsoleValue args[21] = { };
-   args[0].setString(method.c_str());
-
-   for (S32 i = 0; i < argc; i++)
-      args[i + 2].setString(argv[i].getString());
+   S32 targc = argc;
 
    for( iterator i = begin(); i != end(); i++ )
    {
       SimObject *childObj = static_cast<SimObject*>(*i);
 
+      // Prep the arguments for the console exec...
+      // // Make sure and leave args[1] empty.
+      ConsoleValue args[21] = { };
+      args[0].setStringTableEntry(method.c_str());
+      for (S32 arg = 0; arg < targc; arg++)
+         args[arg + 2].setString(argv[arg].getString());
+
       if( childObj->isMethod( method.c_str() ) )
-         Con::execute(childObj, argc + 2, args);
+         Con::execute(childObj, targc + 2, args);
 
       if( executeOnChildGroups )
       {
          SimSet* childSet = dynamic_cast<SimSet*>(*i);
          if ( childSet )
-            childSet->callOnChildren( method, argc, argv, executeOnChildGroups );
+            childSet->callOnChildren( method, targc, argv, executeOnChildGroups );
       }
    }
 }

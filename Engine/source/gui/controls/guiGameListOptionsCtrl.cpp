@@ -111,7 +111,7 @@ void GuiGameListOptionsCtrl::onRender(Point2I offset, const RectI &updateRect)
             arrowOffset.y = currentOffset.y + arrowOffsetY;
 
             drawer->clearBitmapModulation();
-            drawer->drawBitmapStretchSR(profile->getBitmapResource(), RectI(arrowOffset, arrowExtent), profile->getBitmapArrayRect((U32)iconIndex));
+            drawer->drawBitmapStretchSR(profile->getBitmap(), RectI(arrowOffset, arrowExtent), profile->getBitmapArrayRect((U32)iconIndex));
 
             // render the right arrow
             bool arrowOnR = (isRowSelected || isRowHighlighted) && (myRow->mWrapOptions || (myRow->mSelectedOption < myRow->mOptions.size() - 1));
@@ -120,7 +120,7 @@ void GuiGameListOptionsCtrl::onRender(Point2I offset, const RectI &updateRect)
             arrowOffset.y = currentOffset.y + arrowOffsetY;
 
             drawer->clearBitmapModulation();
-            drawer->drawBitmapStretchSR(profile->getBitmapResource(), RectI(arrowOffset, arrowExtent), profile->getBitmapArrayRect((U32)iconIndex));
+            drawer->drawBitmapStretchSR(profile->getBitmap(), RectI(arrowOffset, arrowExtent), profile->getBitmapArrayRect((U32)iconIndex));
          }
 
          // get the appropriate font color
@@ -544,10 +544,10 @@ ConsoleDocClass( GuiGameListOptionsProfile,
 void GuiGameListOptionsProfile::initPersistFields()
 {
    docsURL;
-   addField( "columnSplit", TypeS32, Offset(mColumnSplit, GuiGameListOptionsProfile),
+   addFieldV( "columnSplit", TypeRangedS32, Offset(mColumnSplit, GuiGameListOptionsProfile), &CommonValidators::PositiveInt,
       "Padding between the leftmost edge of the control, and the row's left arrow." );
 
-   addField( "rightPad", TypeS32, Offset(mRightPad, GuiGameListOptionsProfile),
+   addFieldV( "rightPad", TypeRangedS32, Offset(mRightPad, GuiGameListOptionsProfile), &CommonValidators::PositiveInt,
       "Padding between the rightmost edge of the control and the row's right arrow." );
 
    Parent::initPersistFields();

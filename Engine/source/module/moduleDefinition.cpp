@@ -68,7 +68,8 @@ mModuleId(StringTable->EmptyString()),
     mLoadCount( 0 ),
     mScopeSet( 0 ),
     mLocked( false ),
-    mpModuleManager( NULL )
+    mpModuleManager( NULL ),
+    mPriority(0.0f)
 {
     // Set Vector Associations.
     VECTOR_SET_ASSOCIATION( mDependencies );
@@ -111,6 +112,8 @@ void ModuleDefinition::initPersistFields()
 
     /// Misc.
     addProtectedField( "Signature", TypeString, 0, &defaultProtectedNotSetFn, &getSignature, &defaultProtectedNotWriteFn, "A unique signature of the module definition based upon its Id, version and build.  This is read-only and is available only after the module has been registered by a module manager." );
+    addProtectedField( "Priority",  TypeF32, 0, &setPriority, &defaultProtectedGetFn, &defaultProtectedNotWriteFn, "A numeric value indicating execution priority for certain callback commands. 0 has the highest priority and is then sorted from there ascending in value.  This is read-only and is available only after the module has been registered by a module manager.");
+
 }
 
 //-----------------------------------------------------------------------------

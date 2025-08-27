@@ -98,9 +98,6 @@ BasicClouds::BasicClouds()
    mTexOffset[0].set( 0.5f, 0.5f );
    mTexOffset[1].set( 0.5f, 0.5f );
    mTexOffset[2].set( 0.5f, 0.5f );
-
-   for (U32 i=0; i< TEX_COUNT;i++)
-      INIT_IMAGEASSET_ARRAY(Texture, GFXStaticTextureSRGBProfile, i);
 }
 
 IMPLEMENT_CO_NETOBJECT_V1( BasicClouds );
@@ -179,19 +176,19 @@ void BasicClouds::initPersistFields()
 
          INITPERSISTFIELD_IMAGEASSET_ARRAY(Texture, TEX_COUNT, BasicClouds, "Texture for this layer.");
 
-         addField( "texScale", TypeF32, Offset( mTexScale, BasicClouds ), TEX_COUNT,
+         addFieldV( "texScale", TypeRangedF32, Offset( mTexScale, BasicClouds ), &CommonValidators::PositiveFloat, TEX_COUNT,
             "Texture repeat for this layer." );
 
          addField( "texDirection", TypePoint2F, Offset( mTexDirection, BasicClouds ), TEX_COUNT,
             "Texture scroll direction for this layer, relative to the world axis." );
 
-         addField( "texSpeed", TypeF32, Offset( mTexSpeed, BasicClouds ), TEX_COUNT,
+         addFieldV( "texSpeed", TypeRangedF32, Offset( mTexSpeed, BasicClouds ), &CommonValidators::PositiveFloat, TEX_COUNT,
             "Texture scroll speed for this layer." );   
 
          addField( "texOffset", TypePoint2F, Offset( mTexOffset, BasicClouds ), TEX_COUNT,
             "UV offset for this layer." );
 
-         addField( "height", TypeF32, Offset( mHeight, BasicClouds ), TEX_COUNT,
+         addFieldV( "height", TypeRangedF32, Offset( mHeight, BasicClouds ), &CommonValidators::F32Range, TEX_COUNT,
             "Abstract number which controls the curvature and height of the dome mesh" );
 
       endArray( "Layers" );      
@@ -215,12 +212,11 @@ U32 BasicClouds::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
 {
    U32 retMask = Parent::packUpdate( conn, mask, stream );
 
+   PACK_ASSET_ARRAY_REFACTOR(conn, Texture, TEX_COUNT)
+
    for ( U32 i = 0; i < TEX_COUNT; i++ )
    {
       stream->writeFlag( mLayerEnabled[i] );
-
-      PACK_ASSET_ARRAY(conn, Texture, i);
-
       stream->write( mTexScale[i] );
       mathWrite( *stream, mTexDirection[i] );
       stream->write( mTexSpeed[i] );   
@@ -236,12 +232,11 @@ void BasicClouds::unpackUpdate( NetConnection *conn, BitStream *stream )
 {
    Parent::unpackUpdate( conn, stream );
 
+   UNPACK_ASSET_ARRAY_REFACTOR(conn, Texture, TEX_COUNT)
+
    for ( U32 i = 0; i < TEX_COUNT; i++ )
    {
       mLayerEnabled[i] = stream->readFlag();
-
-      UNPACK_ASSET_ARRAY(conn, Texture, i);
-      
       stream->read( &mTexScale[i] );      
       mathRead( *stream, &mTexDirection[i] );
       stream->read( &mTexSpeed[i] );
@@ -315,14 +310,14 @@ void BasicClouds::renderObject( ObjectRenderInst *ri, SceneRenderState *state, B
 
    for ( U32 i = 0; i < TEX_COUNT; i++ )
    {      
-      if ( !mLayerEnabled[i] )
+      if ( !mLayerEnabled[i] || mTextureAsset[i].isNull())
          continue;
 
       mShaderConsts->setSafe( mTexScaleSC, mTexScale[i] );
       mShaderConsts->setSafe( mTexDirectionSC, mTexDirection[i] * mTexSpeed[i] );
       mShaderConsts->setSafe( mTexOffsetSC, mTexOffset[i] );         
 
-      GFX->setTexture( mDiffuseMapSC->getSamplerRegister(), mTexture[i] );                            
+      GFX->setTexture( mDiffuseMapSC->getSamplerRegister(), getTexture(i) );                            
       GFX->setVertexBuffer( mVB[i] );            
 
       GFX->drawIndexedPrimitive( GFXTriangleList, 0, 0, smVertCount, 0, smTriangleCount );
@@ -337,13 +332,11 @@ void BasicClouds::_initTexture()
 {
    for ( U32 i = 0; i < TEX_COUNT; i++ )
    {
-      if ( !mLayerEnabled[i] )
+      if ( mLayerEnabled[i])
       {
-         mTexture[i] = NULL;
-         continue;
+         // load the resource.
+         getTexture(i);
       }
-
-      _setTexture(getTexture(i), i);
    }
 }
 

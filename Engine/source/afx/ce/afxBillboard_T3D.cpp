@@ -67,9 +67,8 @@ void afxBillboard::_renderBillboard(ObjectRenderInst *ri, SceneRenderState* stat
     desc.alphaTestRef = 1;
     desc.alphaTestFunc = GFXCmpGreaterEqual;
     
-    desc.setZReadWrite(true);
-    desc.zFunc = GFXCmpLessEqual;
-    desc.zWriteEnable = false;
+    desc.setZReadWrite(true, false);
+    desc.zFunc = GFXCmpGreaterEqual;
 
     desc.samplersDefined = true;
 
@@ -87,7 +86,7 @@ void afxBillboard::_renderBillboard(ObjectRenderInst *ri, SceneRenderState* stat
   GFXTransformSaver saver;
   GFX->multWorld(getRenderTransform());
 
-  GFX->setTexture(0, mDataBlock->mTexture);
+  GFX->setTexture(0, mDataBlock->getTexture());
 
 	MatrixF worldmod = GFX->getWorldMatrix();
 	MatrixF viewmod = GFX->getViewMatrix();

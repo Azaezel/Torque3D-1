@@ -341,6 +341,9 @@ public:
     bool restoreAssetTags( void );
     inline AssetTagsManifest* getAssetTags( void ) const { return mAssetTagsManifest; }
 
+    /// Loose File management
+    const char* getAssetLooseFiles(const char* pAssetId);
+
     /// Info.
     inline U32 getDeclaredAssetCount( void ) const { return (U32)mDeclaredAssets.size(); }
     inline U32 getReferencedAssetCount( void ) const { return (U32)mReferencedAssets.size(); }
@@ -372,6 +375,9 @@ public:
     S32 findAssetLooseFile( AssetQuery* pAssetQuery, const char* pLooseFile, const bool assetQueryAsSource = false );
 
     typeAssetDependsOnHash* getDependedOnAssets();
+
+    S32 getAssetLooseFileCount(const char* pAssetId);
+    const char* getAssetLooseFile(const char* pAssetId, const S32& index);
 
     /// Declare Console Object.
     DECLARE_CONOBJECT( AssetManager );

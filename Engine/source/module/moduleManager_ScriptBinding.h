@@ -150,8 +150,14 @@ DefineEngineMethod(ModuleManager, findModuleByFilePath, String, (const char* fil
 }
 
 //-----------------------------------------------------------------------------
+static S32 QSORT_CALLBACK _findModulesSortByPriority(ModuleDefinition* const* a, ModuleDefinition* const* b)
+{
+   F32 diff = (*a)->getPriority() - (*b)->getPriority();
+   return diff > 0 ? 1 : diff < 0 ? -1 : 0;
+}
 
-DefineEngineMethod(ModuleManager, findModules, String, (bool loadedOnly), (true),
+
+DefineEngineMethod(ModuleManager, findModules, String, (bool loadedOnly, bool sortByPriority, const char* moduleGroup), (true, false, ""),
    "Find all the modules registered with the specified loaded state.\n"
    "@param loadedOnly Whether to return only modules that are loaded or not.\n"
    "@return A list of space - separated module definition object Ids.\n")
@@ -174,11 +180,22 @@ DefineEngineMethod(ModuleManager, findModules, String, (bool loadedOnly), (true)
     char* pReturnBuffer = Con::getReturnBuffer( bufferSize );
     char* pBufferWrite = pReturnBuffer;
 
+    if (sortByPriority)
+       moduleDefinitions.sort(_findModulesSortByPriority);
+
+    StringTableEntry moduleGroupStr = StringTable->insert(moduleGroup);
+
     // Iterate module definitions.
     for ( ModuleManager::typeConstModuleDefinitionVector::const_iterator moduleDefinitionItr = moduleDefinitions.begin(); moduleDefinitionItr != moduleDefinitions.end(); ++moduleDefinitionItr )
     {
         // Fetch module definition.
         const ModuleDefinition* pModuleDefinition = *moduleDefinitionItr;
+
+        if(moduleGroupStr != StringTable->EmptyString())
+        {
+           if (pModuleDefinition->getModuleGroup() != moduleGroupStr)
+              continue;
+        }
 
         // Format module definition.
         const U32 offset = dSprintf( pBufferWrite, bufferSize, "%d ", pModuleDefinition->getId() );

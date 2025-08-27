@@ -12,12 +12,12 @@ namespace Con
       String error;
 
    public:
-      EvalResult() {}
+      EvalResult() { valid = false;  error = ""; }
 
-      EvalResult(ConsoleValue&& pValue)
+      EvalResult(ConsoleValue pValue)
       {
          valid = true;
-         value = (ConsoleValue&&)pValue;
+         value = (pValue);
       }
 
       EvalResult(String errorMessage)

@@ -133,6 +133,7 @@ ReflectionProbe::ReflectionProbe()
 
    mCaptureMask = REFLECTION_PROBE_CAPTURE_TYPEMASK;
    mCanDamp = false;
+   mAtten = 0.0f;
 }
 
 ReflectionProbe::~ReflectionProbe()
@@ -152,14 +153,15 @@ ReflectionProbe::~ReflectionProbe()
 void ReflectionProbe::initPersistFields()
 {
    docsURL;
-   addField("canDamp", TypeBool, Offset(mCanDamp, ReflectionProbe),"wetness allowed");
    addGroup("Rendering");
       addProtectedField("enabled", TypeBool, Offset(mEnabled, ReflectionProbe),
          &_setEnabled, &defaultProtectedGetFn, "Is the probe enabled or not");
+      addField("canDamp", TypeBool, Offset(mCanDamp, ReflectionProbe),"wetness allowed");
+      addFieldV("attenuation", TypeRangedF32, Offset(mAtten, ReflectionProbe), &CommonValidators::NormalizedFloat, "falloff percent");
    endGroup("Rendering");
 
    addGroup("Reflection");
-      addProtectedField("radius", TypeF32, Offset(mRadius, ReflectionProbe), &_setRadius, &defaultProtectedGetFn, 
+      addProtectedFieldV("radius", TypeRangedF32, Offset(mRadius, ReflectionProbe), &_setRadius, &defaultProtectedGetFn, &CommonValidators::PositiveFloat,
          "The name of the material used to render the mesh.");
 
       addProtectedField("EditPosOffset", TypeBool, Offset(mEditPosOffset, ReflectionProbe),
@@ -436,6 +438,7 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
       stream->write(mProbeUniqueID);
       stream->write((U32)mReflectionModeType);
       stream->writeString(mCubemapName);
+      stream->write(mAtten);
    }
 
    if (stream->writeFlag(mask & EnabledMask))
@@ -490,6 +493,7 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
       if(oldReflectModeType != mReflectionModeType || oldCubemapName != mCubemapName)
          mCubemapDirty = true;
 
+      stream->read(&mAtten);
       mDirty = true;
    }
 
@@ -565,6 +569,7 @@ void ReflectionProbe::updateProbeParams()
    mProbeInfo.mProbeRefOffset = mProbeRefOffset;
    mProbeInfo.mProbeRefScale = mProbeRefScale;
    mProbeInfo.mCanDamp = mCanDamp;
+   mProbeInfo.mAtten = mAtten;
    
    mProbeInfo.mDirty = true;
 
@@ -600,7 +605,7 @@ void ReflectionProbe::processBakedCubemap()
 
    if (mIrridianceMap == nullptr || mIrridianceMap->mCubemap.isNull())
    {
-      Con::errorf("ReflectionProbe::processDynamicCubemap() - Unable to load baked irradiance map at %s", getIrradianceMapPath().c_str());
+      Con::errorf("ReflectionProbe::processBakedCubemap() - Unable to load baked irradiance map at %s", getIrradianceMapPath().c_str());
       return;
    }
 
@@ -613,7 +618,7 @@ void ReflectionProbe::processBakedCubemap()
 
    if (mPrefilterMap == nullptr || mPrefilterMap->mCubemap.isNull())
    {
-      Con::errorf("ReflectionProbe::processDynamicCubemap() - Unable to load baked prefilter map at %s", getPrefilterMapPath().c_str());
+      Con::errorf("ReflectionProbe::processBakedCubemap() - Unable to load baked prefilter map at %s", getPrefilterMapPath().c_str());
       return;
    }
 

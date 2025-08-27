@@ -57,6 +57,44 @@ function initializeNavEditor()
       editorGui = NavEditorGui;
    };
 
+   new SimSet(NavMeshTools)
+   {
+      new NavMeshSelectTool()
+      {
+         internalName = "SelectTool";
+         toolTip = "Edit NavMesh";
+         buttonImage = "ToolsModule:visibility_toggle_n_image";  
+      };
+
+      new OffMeshConnectionTool()
+      {
+         internalName = "LinkTool";
+         toolTip = "Link tool";
+         buttonImage = "ToolsModule:nav_link_n_image";  
+      };
+
+      new CoverTool()
+      {
+         internalName = "NavCoverTool";
+         toolTip = "Cover Tool";
+         buttonImage = "ToolsModule:nav_cover_n_image";
+      };
+
+      new TileTool()
+      {
+         internalName = "TileTool";
+         toolTip = "Tile selection tool";
+         buttonImage = "ToolsModule:select_bounds_n_image";      
+      };
+
+      new NavMeshTestTool()
+      {
+         internalName = "TestTool";
+         toolTip = "PathFinding Test tool";
+         buttonImage = "ToolsModule:3rd_person_camera_n_image";
+      };
+   }; 
+
    // Bind shortcuts for the nav editor.
    %map = new ActionMap();
    %map.bindCmd(keyboard, "1", "ENavEditorSelectModeBtn.performClick();", "");
@@ -87,7 +125,7 @@ function NavEditorPlugin::onWorldEditorStartup(%this)
 
    // Add ourselves to the Editor Settings window.
    exec("./NavEditorSettingsTab.gui");
-   //ESettingsWindow.addTabPage(ENavEditorSettingsPage);
+   ESettingsWindow.addTabPage(ENavEditorSettingsPage);
    ENavEditorSettingsPage.init();
 
    // Add items to World Editor Creator
@@ -104,8 +142,27 @@ function ENavEditorSettingsPage::init(%this)
 {
    // Initialises the settings controls in the settings dialog box.
    %this-->SpawnClassOptions.clear();
+   %this-->SpawnClassOptions.add("Player");
    %this-->SpawnClassOptions.add("AIPlayer");
    %this-->SpawnClassOptions.setFirstSelected();
+}
+
+function EditorGui::SetNavPalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                                 //Name          Icon                                     Click Command                              Tooltip text              Keybind
+   EWToolsPaletteWindow.addButton("EditMode", "ToolsModule:visibility_toggle_n_image", "NavEditorGui.setActiveTool(NavMeshTools->SelectTool);", "", "Edit NavMesh", "1"); 
+   EWToolsPaletteWindow.addButton("LinkMode", "ToolsModule:nav_link_n_image",          "NavEditorGui.setActiveTool(NavMeshTools->LinkTool);", "", "Create off-mesh links",  "2");  
+   EWToolsPaletteWindow.addButton("CoverMode","ToolsModule:nav_cover_n_image",         "NavEditorGui.setActiveTool(NavMeshTools->NavCoverTool);", "", "Create Cover Points.", "3");  
+   EWToolsPaletteWindow.addButton("TileMode", "ToolsModule:select_bounds_n_image",     "NavEditorGui.setActiveTool(NavMeshTools->TileTool);" , "", "View and Edit Tiles", "4");
+   EWToolsPaletteWindow.addButton("TestMode", "ToolsModule:3rd_person_camera_n_image", "NavEditorGui.setActiveTool(NavMeshTools->TestTool);", "", "Test pathfinding", "5"); 
+   EWToolsPaletteWindow.refresh();
 }
 
 function NavEditorPlugin::onActivated(%this)
@@ -116,7 +173,22 @@ function NavEditorPlugin::onActivated(%this)
    $Nav::EditorOpen = true;
 
    // Start off in Select mode.
-   ToolsPaletteArray->NavEditorSelectMode.performClick();
+      // Callback when the nav editor changes mode. Set the appropriate dynamic
+   // GUI contents in the properties/actions boxes.
+   NavInspector.setVisible(false);
+
+   %actions = NavEditorOptionsWindow->ActionsBox;
+   %actions->SelectActions.setVisible(false);
+   %actions->LinkActions.setVisible(false);
+   %actions->CoverActions.setVisible(false);
+   %actions->TileActions.setVisible(false);
+   %actions->TestActions.setVisible(false);
+
+   %properties = NavEditorOptionsWindow->PropertiesBox;
+   %properties->LinkProperties.setVisible(false);
+   %properties->TileProperties.setVisible(false);
+
+   ENavEditorSelectModeBtn.performClick();
    EditorGui.bringToFront(NavEditorGui);
 
    NavEditorGui.setVisible(true);
@@ -157,6 +229,10 @@ function NavEditorPlugin::onActivated(%this)
    NavEditorGui.onEditorActivated(); 
 
    Parent::onActivated(%this);
+   EditorGui.SetNavPalletBar();
+
+   DrawModeSelector.init();
+   DrawModeSelector.selectDefault();
 }
 
 function NavEditorPlugin::onDeactivated(%this)
@@ -222,7 +298,7 @@ function NavEditorPlugin::initSettings(%this)
    EditorSettings.beginGroup("NavEditor", true);
 
    EditorSettings.setDefaultValue("SpawnClass",     "AIPlayer");
-   EditorSettings.setDefaultValue("SpawnDatablock", "DefaultPlayerData");
+   EditorSettings.setDefaultValue("SpawnDatablock", "ProtoPlayer");
 
    EditorSettings.endGroup();
 }
@@ -232,9 +308,6 @@ function NavEditorPlugin::readSettings(%this)
    EditorSettings.beginGroup("NavEditor", true);
 
    // Currently these are globals because of the way they are accessed in navMesh.cpp.
-   $Nav::Editor::renderMesh       = EditorSettings.value("RenderMesh");
-   $Nav::Editor::renderPortals    = EditorSettings.value("RenderPortals");
-   $Nav::Editor::renderBVTree     = EditorSettings.value("RenderBVTree");
    NavEditorGui.spawnClass        = EditorSettings.value("SpawnClass");
    NavEditorGui.spawnDatablock    = EditorSettings.value("SpawnDatablock");
    NavEditorGui.backgroundBuild   = EditorSettings.value("BackgroundBuild");
@@ -254,9 +327,6 @@ function NavEditorPlugin::writeSettings(%this)
 {
    EditorSettings.beginGroup("NavEditor", true);
 
-   EditorSettings.setValue("RenderMesh",        $Nav::Editor::renderMesh);
-   EditorSettings.setValue("RenderPortals",     $Nav::Editor::renderPortals);
-   EditorSettings.setValue("RenderBVTree",      $Nav::Editor::renderBVTree);
    EditorSettings.setValue("SpawnClass",        NavEditorGui.spawnClass);
    EditorSettings.setValue("SpawnDatablock",    NavEditorGui.spawnDatablock);
    EditorSettings.setValue("BackgroundBuild",   NavEditorGui.backgroundBuild);

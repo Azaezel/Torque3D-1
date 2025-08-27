@@ -38,6 +38,7 @@
 #include "T3D/accumulationVolume.h"
 #include "gui/controls/guiTreeViewCtrl.h"
 #include <console/persistenceManager.h>
+#include "console/typeValidators.h"
 
 IMPLEMENT_CONOBJECT(Material);
 
@@ -71,21 +72,17 @@ ConsoleDocClass(Material,
 ImplementBitfieldType(MaterialAnimType,
    "The type of animation effect to apply to this material.\n"
    "@ingroup GFX\n\n")
-{
-   Material::Scroll, "Scroll", "Scroll the material along the X/Y axis.\n"
-},
-{ Material::Rotate, "Rotate" , "Rotate the material around a point.\n" },
-{ Material::Wave, "Wave" , "Warps the material with an animation using Sin, Triangle or Square mathematics.\n" },
-{ Material::Scale, "Scale", "Scales the material larger and smaller with a pulsing effect.\n" },
-{ Material::Sequence, "Sequence", "Enables the material to have multiple frames of animation in its imagemap.\n" }
+{ Material::Scroll, "$Scroll", "Scroll the material along the X/Y axis.\n"},
+{ Material::Rotate, "$Rotate" , "Rotate the material around a point.\n" },
+{ Material::Wave, "$Wave" , "Warps the material with an animation using Sin, Triangle or Square mathematics.\n" },
+{ Material::Scale, "$Scale", "Scales the material larger and smaller with a pulsing effect.\n" },
+{ Material::Sequence, "$Sequence", "Enables the material to have multiple frames of animation in its imagemap.\n" }
 EndImplementBitfieldType;
 
 ImplementEnumType(MaterialBlendOp,
    "The type of graphical blending operation to apply to this material\n"
    "@ingroup GFX\n\n")
-{
-   Material::None, "None", "Disable blending for this material."
-},
+{ Material::None, "None", "Disable blending for this material."},
 { Material::Mul,          "Mul", "Multiplicative blending." },
 { Material::PreMul,       "PreMul", "Premultiplied alpha." },
 { Material::Add,          "Add", "Adds the color of the material to the frame buffer with full alpha for each pixel." },
@@ -103,6 +100,15 @@ ImplementEnumType(MaterialWaveType,
 { Material::Triangle,     "Triangle", "Warps the material along a sharp Triangle Wave." },
 { Material::Square,       "Square", "Warps the material along a wave which transitions between two oppposite states. As a Square Wave, the transition is quick and sudden." },
    EndImplementEnumType;
+
+ImplementEnumType(MaterialSourceChannelType,
+   "When sampling from ORM Texture maps, dictates what channel to sample from for a given AO, Roughness or Metalness texture.\n"
+   "@ingroup GFX\n")
+{ Material::RedChannel, "Red", "Red Channel"  },
+{ Material::GreenChannel,     "Green", "Green Channel" },
+{ Material::BlueChannel,       "Blue", "Blue Channel" },
+{ Material::AlphaChannel,       "Alpha", "Alpha Channel" },
+EndImplementEnumType;
 
 bool Material::sAllowTextureTargetAssignment = false;
 
@@ -141,19 +147,6 @@ Material::Material()
       mAccuStrength[i] = 0.6f;
       mAccuCoverage[i] = 0.9f;
       mAccuSpecular[i] = 16.0f;
-
-      INIT_IMAGEASSET_ARRAY(DiffuseMap, GFXStaticTextureSRGBProfile, i);
-      INIT_IMAGEASSET_ARRAY(OverlayMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(LightMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(ToneMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(DetailMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(NormalMap, GFXNormalMapProfile, i);
-      INIT_IMAGEASSET_ARRAY(ORMConfigMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(RoughMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(AOMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(MetalMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(GlowMap, GFXStaticTextureProfile, i);
-      INIT_IMAGEASSET_ARRAY(DetailNormalMap, GFXNormalMapProfile, i);
 
       mParallaxScale[i] = 0.0f;
 
@@ -243,11 +236,11 @@ Material::Material()
    mReverbSoundOcclusion = 1.0;
 }
 
-void Material::onImageAssetChanged()
-{
-   flush();
-   reload();
-}
+IRangeValidator bmpChanRange(0, 3);
+FRangeValidator glowMulRange(0.0f, 20.0f);
+FRangeValidator parallaxScaleRange(0.0f, 4.0f);
+FRangeValidator scrollSpeedRange(0.0f, 10.0f);
+FRangeValidator waveFreqRange(0.0f, 10.0f);
 
 void Material::initPersistFields()
 {
@@ -269,32 +262,33 @@ void Material::initPersistFields()
    endGroup("Basic Texture Maps");
 
    addGroup("Light Influence Maps");
-      addField("roughness", TypeF32, Offset(mRoughness, Material), MAX_STAGES,
+
+      addFieldV("roughness", TypeRangedF32, Offset(mRoughness, Material), &CommonValidators::F32_8BitPercent, MAX_STAGES,
          "The degree of roughness when not using a ORMConfigMap.");
-
-      addField("metalness", TypeF32, Offset(mMetalness, Material), MAX_STAGES,
+      addFieldV("metalness", TypeRangedF32, Offset(mMetalness, Material), &CommonValidators::F32_8BitPercent, MAX_STAGES,
          "The degree of Metalness when not using a ORMConfigMap.");
-
-      addField("invertRoughness", TypeBool, Offset(mInvertRoughness, Material), MAX_STAGES,
-         "Treat Roughness as Roughness");
-
-      addField("AOChan", TypeF32, Offset(mAOChan, Material), MAX_STAGES,
-         "The input channel AO maps use.");
-      addField("roughnessChan", TypeF32, Offset(mRoughnessChan, Material), MAX_STAGES,
-         "The input channel roughness maps use.");
-      addField("metalChan", TypeF32, Offset(mMetalChan, Material), MAX_STAGES,
-         "The input channel metalness maps use.");
 
       INITPERSISTFIELD_IMAGEASSET_ARRAY(ORMConfigMap, MAX_STAGES, Material, "AO|Roughness|metalness map");
       addField("isSRGb", TypeBool, Offset(mIsSRGb, Material), MAX_STAGES,
          "Substance Designer Workaround.");
+      addField("invertRoughness", TypeBool, Offset(mInvertRoughness, Material), MAX_STAGES,
+         "Treat Roughness as Roughness");
 
       INITPERSISTFIELD_IMAGEASSET_ARRAY(AOMap, MAX_STAGES, Material, "AOMap");
+      addField("AOChan", TYPEID< SourceChannelType >(), Offset(mAOChan, Material), MAX_STAGES,
+         "The input channel AO maps use.");
+
       INITPERSISTFIELD_IMAGEASSET_ARRAY(RoughMap, MAX_STAGES, Material, "RoughMap (also needs MetalMap)");
+      addField("roughnessChan", TYPEID< SourceChannelType >(), Offset(mRoughnessChan, Material), MAX_STAGES,
+         "The input channel roughness maps use.");
+
       INITPERSISTFIELD_IMAGEASSET_ARRAY(MetalMap, MAX_STAGES, Material, "MetalMap (also needs RoughMap)");
+      addField("metalChan", TYPEID< SourceChannelType >(), Offset(mMetalChan, Material),  MAX_STAGES,
+         "The input channel metalness maps use.");
+
       INITPERSISTFIELD_IMAGEASSET_ARRAY(GlowMap, MAX_STAGES, Material, "GlowMap (needs Albedo)");
 
-      addField("glowMul", TypeF32, Offset(mGlowMul, Material), MAX_STAGES,
+      addFieldV("glowMul", TypeRangedF32, Offset(mGlowMul, Material),&glowMulRange, MAX_STAGES,
          "glow mask multiplier");
    endGroup("Light Influence Maps");
 
@@ -304,7 +298,8 @@ void Material::initPersistFields()
          "The scale factor for the detail map.");
 
       INITPERSISTFIELD_IMAGEASSET_ARRAY(DetailNormalMap, MAX_STAGES, Material, "DetailNormalMap");
-      addField("detailNormalMapStrength", TypeF32, Offset(mDetailNormalMapStrength, Material), MAX_STAGES,
+      addFieldV("detailNormalMapStrength", TypeRangedF32, Offset(mDetailNormalMapStrength, Material), &CommonValidators::PositiveFloat, MAX_STAGES,
+
          "Used to scale the strength of the detail normal map when blended with the base normal map.");
 
       INITPERSISTFIELD_IMAGEASSET_ARRAY(OverlayMap, MAX_STAGES, Material, "Overlay");
@@ -316,19 +311,19 @@ void Material::initPersistFields()
       addProtectedField("accuEnabled", TYPEID< bool >(), Offset(mAccuEnabled, Material),
          &_setAccuEnabled, &defaultProtectedGetFn, MAX_STAGES, "Accumulation texture.");
 
-      addField("accuScale", TypeF32, Offset(mAccuScale, Material), MAX_STAGES,
+      addFieldV("accuScale", TypeRangedF32, Offset(mAccuScale, Material), &CommonValidators::PositiveFloat, MAX_STAGES,
          "The scale that is applied to the accu map texture. You can use this to fit the texture to smaller or larger objects.");
 
-      addField("accuDirection", TypeF32, Offset(mAccuDirection, Material), MAX_STAGES,
+      addFieldV("accuDirection", TypeRangedF32, Offset(mAccuDirection, Material), &CommonValidators::DirFloat, MAX_STAGES,
          "The direction of the accumulation. Chose whether you want the accu map to go from top to bottom (ie. snow) or upwards (ie. mold).");
 
-      addField("accuStrength", TypeF32, Offset(mAccuStrength, Material), MAX_STAGES,
+      addFieldV("accuStrength", TypeRangedF32, Offset(mAccuStrength, Material), &CommonValidators::NormalizedFloat, MAX_STAGES,
          "The strength of the accu map. This changes the transparency of the accu map texture. Make it subtle or add more contrast.");
 
-      addField("accuCoverage", TypeF32, Offset(mAccuCoverage, Material), MAX_STAGES,
+      addFieldV("accuCoverage", TypeRangedF32, Offset(mAccuCoverage, Material), &CommonValidators::NormalizedFloat, MAX_STAGES,
          "The coverage ratio of the accu map texture. Use this to make the entire shape pick up some of the accu map texture or none at all.");
 
-      addField("accuSpecular", TypeF32, Offset(mAccuSpecular, Material), MAX_STAGES,
+      addFieldV("accuSpecular", TypeRangedF32, Offset(mAccuSpecular, Material), &CommonValidators::NormalizedFloat, MAX_STAGES,
          "Changes specularity to this value where the accumulated material is present.");
    endGroup("Accumulation Properties");
    
@@ -339,7 +334,7 @@ void Material::initPersistFields()
          "Enables emissive lighting for the material.");
       addField("glow", TypeBool, Offset(mGlow, Material), MAX_STAGES,
          "Enables rendering as glowing.");
-      addField("parallaxScale", TypeF32, Offset(mParallaxScale, Material), MAX_STAGES,
+      addFieldV("parallaxScale", TypeRangedF32, Offset(mParallaxScale, Material),&parallaxScaleRange, MAX_STAGES,
          "Enables parallax mapping and defines the scale factor for the parallax effect.  Typically "
          "this value is less than 0.4 else the effect breaks down.");
 
@@ -350,7 +345,7 @@ void Material::initPersistFields()
          "If true the vertex color is used for lighting.");
       addField("vertColor", TypeBool, Offset(mVertColor, Material), MAX_STAGES,
          "If enabled, vertex colors are premultiplied with diffuse colors.");
-
+   /* presently unsupported directly. advice would be to use a glowmap+glowmul to fine tune backscatter effects
       addField("subSurface", TypeBool, Offset(mSubSurface, Material), MAX_STAGES,
          "Enables the subsurface scattering approximation.");
       addField("minnaertConstant", TypeF32, Offset(mMinnaertConstant, Material), MAX_STAGES,
@@ -359,6 +354,7 @@ void Material::initPersistFields()
          "The color used for the subsurface scattering approximation.");
       addField("subSurfaceRolloff", TypeF32, Offset(mSubSurfaceRolloff, Material), MAX_STAGES,
          "The 0 to 1 rolloff factor used in the subsurface scattering approximation.");
+   */
    endGroup("Lighting Properties");
 
    addGroup("Animation Properties");
@@ -368,10 +364,10 @@ void Material::initPersistFields()
       addField("scrollDir", TypePoint2F, Offset(mScrollDir, Material), MAX_STAGES,
          "The scroll direction in UV space when scroll animation is enabled.");
 
-      addField("scrollSpeed", TypeF32, Offset(mScrollSpeed, Material), MAX_STAGES,
+      addFieldV("scrollSpeed", TypeRangedF32, Offset(mScrollSpeed, Material), &scrollSpeedRange, MAX_STAGES,
          "The speed to scroll the texture in UVs per second when scroll animation is enabled.");
 
-      addField("rotSpeed", TypeF32, Offset(mRotSpeed, Material), MAX_STAGES,
+      addFieldV("rotSpeed", TypeRangedF32, Offset(mRotSpeed, Material), &CommonValidators::DegreeRange, MAX_STAGES,
          "The speed to rotate the texture in degrees per second when rotation animation is enabled.");
 
       addField("rotPivotOffset", TypePoint2F, Offset(mRotPivotOffset, Material), MAX_STAGES,
@@ -380,10 +376,10 @@ void Material::initPersistFields()
       addField("waveType", TYPEID< WaveType >(), Offset(mWaveType, Material), MAX_STAGES,
          "The type of wave animation to perform when wave animation is enabled.");
 
-      addField("waveFreq", TypeF32, Offset(mWaveFreq, Material), MAX_STAGES,
+      addFieldV("waveFreq", TypeRangedF32, Offset(mWaveFreq, Material),&waveFreqRange, MAX_STAGES,
          "The wave frequency when wave animation is enabled.");
 
-      addField("waveAmp", TypeF32, Offset(mWaveAmp, Material), MAX_STAGES,
+      addFieldV("waveAmp", TypeRangedF32, Offset(mWaveAmp, Material), &CommonValidators::NormalizedFloat, MAX_STAGES,
          "The wave amplitude when wave animation is enabled.");
 
       addField("sequenceFramePerSec", TypeF32, Offset(mSeqFramePerSec, Material), MAX_STAGES,
@@ -397,7 +393,7 @@ void Material::initPersistFields()
          "@internal");
       addField("cellLayout", TypePoint2I, Offset(mCellLayout, Material), MAX_STAGES,
          "@internal");
-      addField("cellSize", TypeS32, Offset(mCellSize, Material), MAX_STAGES,
+      addFieldV("cellSize", TypeRangedS32, Offset(mCellSize, Material), &CommonValidators::PositiveInt, MAX_STAGES,
          "@internal");
       addField("bumpAtlas", TypeBool, Offset(mNormalMapAtlas, Material), MAX_STAGES,
          "@internal");
@@ -427,7 +423,7 @@ void Material::initPersistFields()
       addField("alphaTest", TypeBool, Offset(mAlphaTest, Material),
          "Enables alpha test when rendering the material.\n@see alphaRef\n");
 
-      addField("alphaRef", TypeS32, Offset(mAlphaRef, Material),
+      addFieldV("alphaRef", TypeRangedS32, Offset(mAlphaRef, Material), &CommonValidators::S32_8BitCap,
          "The alpha reference value for alpha testing.  Must be between 0 to 255.\n@see alphaTest\n");
 
       addField("cubemap", TypeRealString, Offset(mCubemapName, Material),
@@ -502,22 +498,10 @@ void Material::initPersistFields()
    endGroup("Behavioral (All Layers)");
 
    // For backwards compatibility.  
-   //
-   // They point at the new 'map' fields, but reads always return
-   // an empty string and writes only apply if the value is not empty.
-   //
-   addProtectedField("baseTex", TypeImageFilename, Offset(mDiffuseMapName, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see diffuseMap\n", AbstractClassRep::FIELD_HideInInspectors);
-   addProtectedField("detailTex", TypeImageFilename, Offset(mDetailMapName, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see detailMap\n", AbstractClassRep::FIELD_HideInInspectors);
-   addProtectedField("overlayTex", TypeImageFilename, Offset(mOverlayMapName, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see overlayMap\n", AbstractClassRep::FIELD_HideInInspectors);
-   addProtectedField("bumpTex", TypeImageFilename, Offset(mNormalMapName, Material),
-      defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-      "For backwards compatibility.\n@see normalMap\n", AbstractClassRep::FIELD_HideInInspectors);
+  //
+  // They point at the new 'map' fields, but reads always return
+  // an empty string and writes only apply if the value is not empty.
+  //
    addProtectedField("colorMultiply", TypeColorF, Offset(mDiffuse, Material),
       defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
       "For backwards compatibility.\n@see diffuseColor\n", AbstractClassRep::FIELD_HideInInspectors);
@@ -623,7 +607,7 @@ bool Material::isLightmapped() const
 {
    bool ret = false;
    for (U32 i = 0; i < MAX_STAGES; i++)
-      ret |= mLightMapName[i] != StringTable->EmptyString() || mToneMapName[i] != StringTable->EmptyString() || mVertLit[i];
+      ret |= mLightMapAsset[i].notNull() || mToneMapAsset[i].notNull() || mVertLit[i];
    return ret;
 }
 
@@ -636,8 +620,8 @@ void Material::updateTimeBasedParams()
       for (U32 i = 0; i < MAX_STAGES; i++)
       {
          mScrollOffset[i] += mScrollDir[i] * mScrollSpeed[i] * dt;
-         mScrollOffset[i].x = mWrapF(mScrollOffset[i].x, 0.0, 1.0);
-         mScrollOffset[i].y = mWrapF(mScrollOffset[i].y, 0.0, 1.0);
+         mScrollOffset[i].x = mWrapF(mScrollOffset[i].x, -1.0, 1.0);
+         mScrollOffset[i].y = mWrapF(mScrollOffset[i].y, -1.0, 1.0);
          mRotPos[i] = mWrapF((mRotPos[i] + (mRotSpeed[i] * dt)), 0.0, 360.0);
          mWavePos[i] = mWrapF((mWavePos[i] + (mWaveFreq[i] * dt)), 0.0, 1.0);
       }
@@ -656,26 +640,11 @@ void Material::_mapMaterial()
    // If mapTo not defined in script, try to use the base texture name instead
    if (mMapTo.isEmpty())
    {
-      if (mDiffuseMapName[0] == StringTable->EmptyString() && mDiffuseMapAsset->isNull())
+      if (mDiffuseMapAsset->isNull())
          return;
-
-      else
+      else if (mDiffuseMapAsset->notNull())
       {
-         // extract filename from base texture
-         if (mDiffuseMapName[0] != StringTable->EmptyString())
-         {
-            U32 slashPos = String(mDiffuseMapName[0]).find('/', 0, String::Right);
-            if (slashPos == String::NPos)
-               // no '/' character, must be no path, just the filename
-               mMapTo = mDiffuseMapName[0];
-            else
-               // use everything after the last slash
-               mMapTo = String(mDiffuseMapName[0]).substr(slashPos + 1, (U32)strlen(mDiffuseMapName[0]) - slashPos - 1);
-         }
-         else if (!mDiffuseMapAsset->isNull())
-         {
-            mMapTo = mDiffuseMapAsset[0]->getImageFileName();
-         }
+         mMapTo = mDiffuseMapAsset[0]->getImageFile();
       }
    }
 
@@ -850,16 +819,15 @@ bool Material::_setAccuEnabled(void* object, const char* index, const char* data
 //material.getDiffuseMap(%layer); //returns the raw file referenced
 //material.getDiffuseMapAsset(%layer); //returns the asset id
 //material.setDiffuseMap(%texture, %layer); //tries to set the asset and failing that attempts a flat file reference
-DEF_IMAGEASSET_ARRAY_BINDS(Material, DiffuseMap)
-DEF_IMAGEASSET_ARRAY_BINDS(Material, OverlayMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, LightMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, ToneMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, DetailMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, NormalMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, ORMConfigMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, RoughMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, AOMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, MetalMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, GlowMap);
-DEF_IMAGEASSET_ARRAY_BINDS(Material, DetailNormalMap);
-
+DEF_IMAGEASSET_ARRAY_BINDS(Material, DiffuseMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, NormalMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, DetailNormalMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, OverlayMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, LightMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, ToneMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, DetailMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, ORMConfigMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, RoughMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, AOMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, MetalMap, Material::Constants::MAX_STAGES)
+DEF_IMAGEASSET_ARRAY_BINDS(Material, GlowMap, Material::Constants::MAX_STAGES)

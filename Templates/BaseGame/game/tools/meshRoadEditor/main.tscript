@@ -86,6 +86,27 @@ function MeshRoadEditorPlugin::onWorldEditorStartup( %this )
    ESettingsWindow.addEditorSettingsPage("MeshRoadEditor", "Mesh Road Editor");
 }
 
+function EditorGui::SetMeshRoadPalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "MeshRoadEditorGui.prepSelectionMode();", "", "Select Arrow", "1");
+   EWToolsPaletteWindow.addButton("Move", "ToolsModule:translate_n_image", "MeshRoadEditorGui.setMode(\"MeshRoadEditorMoveMode\");", "", "Move Selection", "2");
+   EWToolsPaletteWindow.addButton("Rotate", "ToolsModule:rotate_n_image", "MeshRoadEditorGui.setMode(\"MeshRoadEditorRotateMode\");", "", "Rotate Selection", "3");
+   EWToolsPaletteWindow.addButton("Scale", "ToolsModule:Scale_n_image", "MeshRoadEditorGui.setMode(\"MeshRoadEditorScaleMode\");", "", "Scale Selection", "4");
+   EWToolsPaletteWindow.addButton("Add", "ToolsModule:add_mesh_road_n_image", "MeshRoadEditorGui.setMode(\"MeshRoadEditorAddRoadMode\");", "", "Create Road", "5");
+   EWToolsPaletteWindow.addButton("Insert", "ToolsModule:add_point_n_image", "MeshRoadEditorGui.setMode(\"MeshRoadEditorInsertPointMode\");", "", "Insert Point", "+");
+   EWToolsPaletteWindow.addButton("Remove", "ToolsModule:subtract_point_n_image", "MeshRoadEditorGui.setMode(\"MeshRoadEditorRemovePointMode\");", "", "Remove Point", "-");
+   
+   EWToolsPaletteWindow.refresh();
+}
+
 function MeshRoadEditorPlugin::onActivated( %this )
 {
    %this.readSettings();
@@ -116,6 +137,7 @@ function MeshRoadEditorPlugin::onActivated( %this )
    EditorGuiStatusBar.setSelection("");
    
    Parent::onActivated(%this);
+   EditorGui.SetMeshRoadPalletBar();
 }
 
 function MeshRoadEditorPlugin::onDeactivated( %this )

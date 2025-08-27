@@ -5,8 +5,8 @@
 #ifndef SCENE_GROUP_H
 #include "SceneGroup.h"
 #endif
-#ifndef LEVEL_ASSET_H
-#include "assets/LevelAsset.h"
+#ifndef SUBSCENE_ASSET_H
+#include "assets/SubSceneAsset.h"
 #endif
 
 class GameMode;
@@ -21,13 +21,13 @@ public:
       NextFreeMask = Parent::NextFreeMask << 0
    };
 
-   void onLevelChanged() {}
+   void onSubSceneChanged() {}
 
 protected:
    static bool smTransformChildren;
 
 private:
-   DECLARE_LEVELASSET(SubScene, Level, onLevelChanged);
+   DECLARE_SUBSCENEASSET(SubScene, SubScene, onSubSceneChanged);
 
    StringTableEntry mGameModesNames;
    Vector<GameMode*> mGameModesList;
@@ -40,6 +40,7 @@ private:
    S32 mStartUnloadTimerMS;
 
    bool mLoaded;
+   bool mSaving;
    bool mFreezeLoading;
 
    String mLoadIf;
@@ -51,6 +52,9 @@ private:
 
    bool mGlobalLayer;
 
+   bool mUseSeparateLoadBounds;
+   Point3F mLoadBounds;
+
 public:
    SubScene();
    virtual ~SubScene();
@@ -60,7 +64,7 @@ public:
 
    static void initPersistFields();
    static void consoleInit();
-   StringTableEntry getTypeHint() const override { return (getLevelAsset()) ? getLevelAsset()->getAssetName() : StringTable->EmptyString(); }
+   StringTableEntry getTypeHint() const override { return (getSubSceneAsset()) ? getSubSceneAsset()->getAssetName() : StringTable->EmptyString(); }
 
    // SimObject
    bool onAdd() override;
@@ -117,10 +121,10 @@ public:
       return mStartUnloadTimerMS;
    }
 
-   bool save();
+   bool save(const String& filename = String());
 
    DECLARE_CALLBACK(void, onLoaded, ());
    DECLARE_CALLBACK(void, onUnloaded, ());
-   DECLARE_ASSET_SETGET(SubScene, Level);
+   DECLARE_ASSET_SETGET(SubScene, SubScene);
 };
 #endif

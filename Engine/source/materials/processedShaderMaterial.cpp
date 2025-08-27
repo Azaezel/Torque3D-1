@@ -229,10 +229,9 @@ bool ProcessedShaderMaterial::init( const FeatureSet &features,
       mInstancingState = new InstancingState();
       mInstancingState->setFormat( _getRPD( 0 )->shader->getInstancingFormat(), mVertexFormat );
    }
-   if (mMaterial && mMaterial->mDiffuseMapName[0] != StringTable->EmptyString() && String(mMaterial->mDiffuseMapName[0]).startsWith("#"))
+   if (mMaterial && mMaterial->getDiffuseMapAsset(0).notNull() && mMaterial->getDiffuseMapAsset(0)->isNamedTarget())
    {
-      String texTargetBufferName = String(mMaterial->mDiffuseMapName[0]).substr(1, (U32)strlen(mMaterial->mDiffuseMapName[0]) - 1);
-      NamedTexTarget *texTarget = NamedTexTarget::find(texTargetBufferName);
+      NamedTexTarget *texTarget = mMaterial->getDiffuseMapAsset(0)->getNamedTarget();
       RenderPassData* rpd = getPass(0);
 
       if (rpd)
@@ -876,13 +875,27 @@ void ProcessedShaderMaterial::setTextureStages( SceneRenderState *state, const S
          case Material::TexTarget:
             {
                texTarget = rpd->mTexSlot[i].texTarget;
-               if ( !texTarget )
+               if (!mMaterial->getDiffuseMap(0))
                {
-                  GFX->setTexture( i, NULL );
+                  GFX->setTexture(i, NULL);
                   break;
                }
-            
-               texObject = texTarget->getTexture();
+
+               texObject = mMaterial->getDiffuseMapAsset(0)->getTexture(&GFXStaticTextureSRGBProfile);
+               if ( !texTarget )
+               {
+                  // try again.
+                  texTarget = mMaterial->getDiffuseMapAsset(0)->getNamedTarget();
+                  if (!texTarget)
+                  {
+                     GFX->setTexture(i, texObject);
+                     break;
+                  }
+                  else
+                  {
+                     rpd->mTexSlot[i].texTarget = texTarget;
+                  }
+               }
 
                // If no texture is available then map the default 2x2
                // black texture to it.  This at least will ensure that
@@ -914,98 +927,79 @@ void ProcessedShaderMaterial::_setTextureTransforms(const U32 pass)
    PROFILE_SCOPE( ProcessedShaderMaterial_SetTextureTransforms );
 
    ShaderConstHandles* handles = _getShaderConstHandles(pass);
-   if (handles->mTexMatSC->isValid())
-   {   
-      MatrixF texMat( true );
+   if (!handles->mTexMatSC->isValid())
+      return;
 
-      mMaterial->updateTimeBasedParams();
-      F32 waveOffset = _getWaveOffset( pass ); // offset is between 0.0 and 1.0
+   MatrixF texMat(true);
+   mMaterial->updateTimeBasedParams();
+   F32 waveOffset = _getWaveOffset(pass); // offset is between 0.0 and 1.0
 
-      // handle scroll anim type
-      if(  mMaterial->mAnimFlags[pass] & Material::Scroll )
-      {
-         if( mMaterial->mAnimFlags[pass] & Material::Wave )
-         {
-            Point3F scrollOffset;
-            scrollOffset.x = mMaterial->mScrollDir[pass].x * waveOffset;
-            scrollOffset.y = mMaterial->mScrollDir[pass].y * waveOffset;
-            scrollOffset.z = 1.0;
+   // --- Scroll Animation ---
+   if (mMaterial->mAnimFlags[pass] & Material::Scroll)
+   {
+      Point3F offset = (mMaterial->mAnimFlags[pass] & Material::Wave)
+         ? Point3F(mMaterial->mScrollDir[pass].x * waveOffset,
+            mMaterial->mScrollDir[pass].y * waveOffset, 0.0f)
+         : Point3F(mMaterial->mScrollOffset[pass].x,
+            mMaterial->mScrollOffset[pass].y, 0.0f);
 
-            texMat.setColumn( 3, scrollOffset );
-         }
-         else
-         {
-            Point3F offset( mMaterial->mScrollOffset[pass].x, 
-               mMaterial->mScrollOffset[pass].y, 
-               1.0 );
-
-            texMat.setColumn( 3, offset );
-         }
-
-      }
-
-      // handle rotation
-      if( mMaterial->mAnimFlags[pass] & Material::Rotate )
-      {
-         if( mMaterial->mAnimFlags[pass] & Material::Wave )
-         {
-            F32 rotPos = waveOffset * M_2PI;
-            texMat.set( EulerF( 0.0, 0.0, rotPos ) );
-            texMat.setColumn( 3, Point3F( 0.5, 0.5, 0.0 ) );
-
-            MatrixF test( true );
-            test.setColumn( 3, Point3F( mMaterial->mRotPivotOffset[pass].x, 
-               mMaterial->mRotPivotOffset[pass].y,
-               0.0 ) );
-            texMat.mul( test );
-         }
-         else
-         {
-            texMat.set( EulerF( 0.0, 0.0, mMaterial->mRotPos[pass] ) );
-
-            texMat.setColumn( 3, Point3F( 0.5, 0.5, 0.0 ) );
-
-            MatrixF test( true );
-            test.setColumn( 3, Point3F( mMaterial->mRotPivotOffset[pass].x, 
-               mMaterial->mRotPivotOffset[pass].y,
-               0.0 ) );
-            texMat.mul( test );
-         }
-      }
-
-      // Handle scale + wave offset
-      if(  mMaterial->mAnimFlags[pass] & Material::Scale &&
-         mMaterial->mAnimFlags[pass] & Material::Wave )
-      {
-         F32 wOffset = fabs( waveOffset );
-
-         texMat.setColumn( 3, Point3F( 0.5, 0.5, 0.0 ) );
-
-         MatrixF temp( true );
-         temp.setRow( 0, Point3F( wOffset,  0.0,  0.0 ) );
-         temp.setRow( 1, Point3F( 0.0,  wOffset,  0.0 ) );
-         temp.setRow( 2, Point3F( 0.0,  0.0,  wOffset ) );
-         temp.setColumn( 3, Point3F( -wOffset * 0.5, -wOffset * 0.5, 0.0 ) );
-         texMat.mul( temp );
-      }
-
-      // handle sequence
-      if( mMaterial->mAnimFlags[pass] & Material::Sequence )
-      {
-         U32 frameNum = (U32)(MATMGR->getTotalTime() * mMaterial->mSeqFramePerSec[pass]);
-         F32 offset = frameNum * mMaterial->mSeqSegSize[pass];
-
-         if ( mMaterial->mAnimFlags[pass] & Material::Scale )
-            texMat.scale( Point3F( mMaterial->mSeqSegSize[pass], 1.0f, 1.0f ) );
-
-         Point3F texOffset = texMat.getPosition();
-         texOffset.x += offset;
-         texMat.setPosition( texOffset );
-      }
-
-      GFXShaderConstBuffer* shaderConsts = _getShaderConstBuffer(pass);
-      shaderConsts->setSafe(handles->mTexMatSC, texMat);
+      MatrixF scrollMat(true);
+      scrollMat.setColumn(3, offset);
+      texMat.mul(scrollMat);
    }
+
+   // --- Rotation Animation ---
+   if (mMaterial->mAnimFlags[pass] & Material::Rotate)
+   { 
+      F32 rotationAngle = (mMaterial->mAnimFlags[pass] & Material::Wave)
+         ? waveOffset * M_2PI
+         : mMaterial->mRotPos[pass];
+
+      Point3F pivotPoint(
+         mMaterial->mRotPivotOffset[pass].x,
+         mMaterial->mRotPivotOffset[pass].y,
+         0.0f);
+      
+      MatrixF rotationMat = MatrixF(EulerF(0.0, 0.0, rotationAngle), Point3F(0.5, 0.5, 0.0));
+      MatrixF test(true);
+      test.setColumn(3, pivotPoint);
+      rotationMat.mul(test);
+      rotationMat.displace(texMat.getPosition());
+      // Apply final rotation matrix
+      texMat = rotationMat;
+   }
+
+   // --- Scale Animation ---
+   if ((mMaterial->mAnimFlags[pass] & Material::Scale) && (mMaterial->mAnimFlags[pass] & Material::Wave))
+   {
+      F32 scaleFactor = mFabs(waveOffset);
+
+      MatrixF scaleMat(true);
+      scaleMat.setRow(0, Point3F(scaleFactor, 0.0f, 0.0f));
+      scaleMat.setRow(1, Point3F(0.0f, scaleFactor, 0.0f));
+      scaleMat.setRow(2, Point3F(0.0f, 0.0f, scaleFactor));
+
+      // Apply final scale matrix
+      texMat.mul(scaleMat);
+   }
+
+   // --- Sequence Animation ---
+   if (mMaterial->mAnimFlags[pass] & Material::Sequence)
+   {
+      U32 frameNum = static_cast<U32>(MATMGR->getTotalTime() * mMaterial->mSeqFramePerSec[pass]);
+      F32 offset = frameNum * mMaterial->mSeqSegSize[pass];
+
+      MatrixF sequenceMat(true);
+      sequenceMat.setColumn(3, Point3F(offset, 0.0f, 0.0f));
+
+      if (mMaterial->mAnimFlags[pass] & Material::Scale)
+         sequenceMat.scale(Point3F(mMaterial->mSeqSegSize[pass], 1.0f, 1.0f));
+
+      texMat.mul(sequenceMat);
+   }
+
+   GFXShaderConstBuffer* shaderConsts = _getShaderConstBuffer(pass);
+   shaderConsts->setSafe(handles->mTexMatSC, texMat);
 }
 
 //--------------------------------------------------------------------------
@@ -1290,35 +1284,35 @@ void ProcessedShaderMaterial::setNodeTransforms(const MatrixF *transforms, const
 
 void ProcessedShaderMaterial::setCustomShaderData(Vector<CustomShaderBindingData> &shaderData, const U32 pass)
 {
-	PROFILE_SCOPE(ProcessedShaderMaterial_setCustomShaderData);
+   PROFILE_SCOPE(ProcessedShaderMaterial_setCustomShaderData);
 
-	GFXShaderConstBuffer* shaderConsts = _getShaderConstBuffer(pass);
-	ShaderConstHandles* handles = _getShaderConstHandles(pass);
+   GFXShaderConstBuffer* shaderConsts = _getShaderConstBuffer(pass);
+   ShaderConstHandles* handles = _getShaderConstHandles(pass);
 
-	for (U32 i = 0; i < shaderData.size(); i++)
-	{
-		//roll through and try setting our data!
-		for (U32 h = 0; h < handles->mCustomHandles.size(); ++h)
-		{
-			if (handles->mCustomHandles[h].handleName == shaderData[i].getHandleName())
-			{
-				if (handles->mCustomHandles[h].handle->isValid())
-				{
-					CustomShaderBindingData::UniformType type = shaderData[i].getType();
+   for (U32 i = 0; i < shaderData.size(); i++)
+   {
+      //roll through and try setting our data!
+      for (U32 h = 0; h < handles->mCustomHandles.size(); ++h)
+      {
+         if (handles->mCustomHandles[h].handleName == shaderData[i].getHandleName())
+         {
+            if (handles->mCustomHandles[h].handle->isValid())
+            {
+               CustomShaderBindingData::UniformType type = shaderData[i].getType();
 
-					if (type == CustomShaderBindingData::Float)
-						shaderConsts->setSafe(handles->mCustomHandles[h].handle, shaderData[i].getFloat());
-					else if (type == CustomShaderBindingData::Float2)
-						shaderConsts->setSafe(handles->mCustomHandles[h].handle, shaderData[i].getFloat2());
-					else if (type == CustomShaderBindingData::Float3)
-						shaderConsts->setSafe(handles->mCustomHandles[h].handle, shaderData[i].getFloat3());
-					else if (type == CustomShaderBindingData::Float4)
-						shaderConsts->setSafe(handles->mCustomHandles[h].handle, shaderData[i].getFloat4());
-					break;
-				}
-			}
-		}
-	}
+               if (type == CustomShaderBindingData::Float)
+                  shaderConsts->setSafe(handles->mCustomHandles[h].handle, shaderData[i].getFloat());
+               else if (type == CustomShaderBindingData::Float2)
+                  shaderConsts->setSafe(handles->mCustomHandles[h].handle, shaderData[i].getFloat2());
+               else if (type == CustomShaderBindingData::Float3)
+                  shaderConsts->setSafe(handles->mCustomHandles[h].handle, shaderData[i].getFloat3());
+               else if (type == CustomShaderBindingData::Float4)
+                  shaderConsts->setSafe(handles->mCustomHandles[h].handle, shaderData[i].getFloat4());
+               break;
+            }
+         }
+      }
+   }
 }
 
 void ProcessedShaderMaterial::setSceneInfo(SceneRenderState * state, const SceneData& sgData, U32 pass)
@@ -1341,7 +1335,7 @@ void ProcessedShaderMaterial::setSceneInfo(SceneRenderState * state, const Scene
    if (sgData.cubemap)
       shaderConsts->setSafe(handles->mCubeMipsSC, (F32)sgData.cubemap->getMipMapLevels());
    else
-      shaderConsts->setSafe(handles->mCubeMipsSC, 1.0f);
+      shaderConsts->setSafe(handles->mCubeMipsSC, (F32)getBinLog2(PROBEMGR->getProbeTexSize()));
 
    shaderConsts->setSafe(handles->mVisiblitySC, sgData.visibility);
 

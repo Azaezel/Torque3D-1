@@ -87,6 +87,24 @@ function DecalEditorPlugin::onWorldEditorStartup( %this )
    %this.paletteSelection = "AddDecalMode";
 }
 
+function EditorGui::SetDecalPalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("SelectDecal", "ToolsModule:arrow_n_image", "DecalEditorGui.setMode(\"SelectDecalMode\");", "", "Select Decal", "1"); 
+   EWToolsPaletteWindow.addButton("MoveDecal", "ToolsModule:move_point_n_image", "DecalEditorGui.setMode(\"MoveDecalMode\");", "", "Move Decal", "2"); 
+   EWToolsPaletteWindow.addButton("RotateDecal", "ToolsModule:rotate_point_n_image", "DecalEditorGui.setMode(\"RotateDecalMode\");", "", "Rotate Decal", "3");
+   EWToolsPaletteWindow.addButton("ScaleDecal", "ToolsModule:scale_point_n_image", "DecalEditorGui.setMode(\"ScaleDecalMode\");", "", "Scale Decal", "4");  
+   EWToolsPaletteWindow.addButton("AddDecal", "ToolsModule:add_decal_n_image", "DecalEditorGui.setMode(\"AddDecalMode\");", "", "Add Decal", "5");  
+   EWToolsPaletteWindow.refresh();
+}
+
 function DecalEditorPlugin::onActivated( %this )
 {   
    EditorGui.bringToFront( DecalEditorGui );
@@ -119,6 +137,7 @@ function DecalEditorPlugin::onActivated( %this )
    //ShapeEdPropWindow.syncNodeDetails(-1);
    
    Parent::onActivated(%this);
+   EditorGui.SetDecalPalletBar();
 }
 
 function DecalEditorPlugin::onDeactivated( %this )

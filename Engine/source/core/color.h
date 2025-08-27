@@ -34,9 +34,24 @@
 #include "console/engineAPI.h"
 #endif
 
+#ifdef TORQUE_USE_LEGACY_GAMMA
 const F32 gGamma = 2.2f;
 const F32 gOneOverGamma = 1.f / 2.2f;
+#else
+const F32 gGamma = 2.4f;
+const F32 gOneOverGamma = 1.f / 2.4f;
 const F32 gOneOver255 = 1.f / 255.f;
+#endif
+
+struct Hsb
+{
+   Hsb() :hue(0), sat(0), brightness(0) {};
+   Hsb(U32 h, U32 s, U32 b) :hue(h), sat(s), brightness(b) {};
+
+   U32 hue;   ///Hue
+   U32 sat;   ///Saturation
+   U32 brightness;   //Brightness/Value/Lightness
+};
 
 class ColorI;
 
@@ -55,9 +70,14 @@ public:
    LinearColorF(const F32 in_r, const F32 in_g, const F32 in_b, const F32 in_a = 1.0f);
    LinearColorF(const ColorI &color);
    LinearColorF(const char* pStockColorName);
+   LinearColorF(const Hsb& color);
+
+   F32 srgbToLinearChannel(const F32 chan_col);
+   F32 linearChannelToSrgb(const F32 chan_col);
 
    void set( const F32 in_r, const F32 in_g, const F32 in_b, const F32 in_a = 1.0f );
    void set( const char* pStockColorName );
+   void set(const Hsb& color);
 
    static const LinearColorF& StockColor( const char* pStockColorName );
    StringTableEntry StockColor( void );
@@ -88,6 +108,7 @@ public:
    U32 getARGBPack() const;
    U32 getRGBAPack() const;
    U32 getABGRPack() const;
+   Hsb getHSB();
 
    void interpolate(const LinearColorF& in_rC1,
                     const LinearColorF& in_rC2,
@@ -125,16 +146,6 @@ public:
    U8 green;
    U8 blue;
    U8 alpha;
-
-   struct Hsb
-   {
-      Hsb() :hue(0), sat(0), brightness(0){};
-      Hsb(U32 h, U32 s, U32 b) :hue(h), sat(s), brightness(b){};
-
-      U32 hue;   ///Hue
-      U32 sat;   ///Saturation
-      U32 brightness;   //Brightness/Value/Lightness
-   };
 
 public:
    ColorI() : red(0), green(0), blue(0), alpha(0) {}
@@ -246,6 +257,27 @@ public:
    static void create( void );
    static void destroy( void );
 };
+
+inline F32 LinearColorF::srgbToLinearChannel(const F32 chan_col)
+{
+   if (chan_col < 0.0405f) {
+      return chan_col / 12.92f;
+   }
+   else {
+      return mPow((chan_col + 0.055f) / 1.055f, gGamma);
+   }
+}
+
+inline F32 LinearColorF::linearChannelToSrgb(const F32 chan_col)
+{
+   if (chan_col <= 0.0031308f) {
+      return chan_col * 12.92f;
+   }
+   else {
+      return 1.055f * mPow(chan_col, gOneOverGamma) - 0.055f;
+   }
+}
+
 
 //------------------------------------------------------------------------------
 //-------------------------------------- INLINES (LinearColorF)
@@ -441,6 +473,80 @@ inline F32 LinearColorF::luminance()
    return red * 0.3f + green * 0.59f + blue * 0.11f;
 }
 
+inline LinearColorF::LinearColorF(const Hsb& color)
+{
+   set(color);
+}
+
+inline void LinearColorF::set(const Hsb& color)
+{
+   F64 c = (color.brightness / 100.0) * (color.sat / 100.0);
+   F64 x = c * (1.0 - fabs(fmod(color.hue / 60.0, 2.0) - 1.0));
+   F64 m = (color.brightness / 100.0) - c;
+
+   F64 r = 0.0, g = 0.0, b = 0.0;
+   if (color.hue < 60.0) {
+      r = c; g = x; b = 0.0;
+   }
+   else if (color.hue < 120.0) {
+      r = x; g = c; b = 0.0;
+   }
+   else if (color.hue < 180.0) {
+      r = 0.0; g = c; b = x;
+   }
+   else if (color.hue < 240.0) {
+      r = 0.0; g = x; b = c;
+   }
+   else if (color.hue < 300.0) {
+      r = x; g = 0.0; b = c;
+   }
+   else {
+      r = c; g = 0.0; b = x;
+   }
+
+   r += m;
+   g += m;
+   b += m;
+
+   red = static_cast<F32>(srgbToLinearChannel(r));
+   green = static_cast<F32>(srgbToLinearChannel(g));
+   blue = static_cast<F32>(srgbToLinearChannel(b));
+   alpha = 1.0f; // Default alpha to 1.0
+}
+
+inline Hsb LinearColorF::getHSB()
+{
+   F32 r = linearChannelToSrgb(red);
+   F32 g = linearChannelToSrgb(green);
+   F32 b = linearChannelToSrgb(blue);
+
+   F32 maxVal = mMax(r, mMax(g, b));
+   F32 minVal = mMin(r, mMin(g, b));
+   F32 delta = maxVal - minVal;
+
+   Hsb hsb;
+   hsb.brightness = maxVal * 100.0; // Convert to percentage
+   hsb.sat = (maxVal > 0.0f) ? (delta / maxVal) * 100.0 : 0.0;
+
+   if (delta > 0.0f) {
+      if (r == maxVal)
+         hsb.hue = 60.0 * mFmod(((g - b) / delta), 6.0);
+      else if (g == maxVal)
+         hsb.hue = 60.0 * (((b - r) / delta) + 2.0);
+      else
+         hsb.hue = 60.0 * (((r - g) / delta) + 4.0);
+
+      if (hsb.hue < 0.0)
+         hsb.hue += 360.0;
+   }
+   else {
+      hsb.hue = 0.0;
+   }
+
+   return hsb;
+}
+
+
 //------------------------------------------------------------------------------
 //-------------------------------------- INLINES (ColorI)
 //
@@ -466,72 +572,48 @@ inline void ColorI::set(const ColorI& in_rCopy,
 
 inline void ColorI::set(const Hsb& color)
 {
-	U32 r = 0;
-	U32 g = 0;
-	U32 b = 0;
+   // Normalize the input HSB values
+   F64 H = (F64)color.hue / 360.0;        // Hue: [0, 360] -> [0, 1]
+   F64 S = (F64)color.sat / 100.0;        // Saturation: [0, 100] -> [0, 1]
+   F64 B = (F64)color.brightness / 100.0; // Brightness: [0, 100] -> [0, 1]
 
-	F64 L = ((F64)color.brightness) / 100.0;
-	F64 S = ((F64)color.sat) / 100.0;
-	F64 H = ((F64)color.hue) / 360.0;
+   F64 r = 0.0, g = 0.0, b = 0.0;
 
-	if (color.sat == 0)
-	{
-		r = color.brightness;
-		g = color.brightness;
-		b = color.brightness;
-	}
-	else
-	{
-		F64 temp1 = 0;
-		if (L < 0.50)
-		{
-			temp1 = L*(1 + S);
-		}
-		else
-		{
-			temp1 = L + S - (L*S);
-		}
+   if(S == 0.0)
+   {
+      // Achromatic case (grey scale)
+      r = g = b = B;
+   }
+   else
+   {
+      // Compute chroma
+      F64 C = B * S;
 
-		F64 temp2 = 2.0*L - temp1;
+      // Intermediate value for the hue
+      F64 X = C * (1 - mFabsD(mFmodD(H * 6.0, 2.0) - 1));
 
-		F64 temp3 = 0;
-		for (S32 i = 0; i < 3; i++)
-		{
-			switch (i)
-			{
-			case 0: // red
-			{
-				temp3 = H + 0.33333;
-				if (temp3 > 1.0)
-					temp3 -= 1.0;
-				HSLtoRGB_Subfunction(r, temp1, temp2, temp3);
-				break;
-			}
-			case 1: // green
-			{
-				temp3 = H;
-				HSLtoRGB_Subfunction(g, temp1, temp2, temp3);
-				break;
-			}
-			case 2: // blue
-			{
-				temp3 = H - 0.33333;
-				if (temp3 < 0)
-					temp3 += 1;
-				HSLtoRGB_Subfunction(b, temp1, temp2, temp3);
-				break;
-			}
-			default:
-			{
+      // Minimum component
+      F64 m = B - C;
 
-			}
-			}
-		}
-	}
-	red = (U32)((((F64)r) / 100) * 255);
-	green = (U32)((((F64)g) / 100) * 255);
-	blue = (U32)((((F64)b) / 100) * 255);
-   alpha = 255;
+      // Assign r, g, b based on the hue sector
+      if (H >= 0.0 && H < 1.0 / 6.0) { r = C; g = X; b = 0.0; }
+      else if (H >= 1.0 / 6.0 && H < 2.0 / 6.0) { r = X; g = C; b = 0.0; }
+      else if (H >= 2.0 / 6.0 && H < 3.0 / 6.0) { r = 0.0; g = C; b = X; }
+      else if (H >= 3.0 / 6.0 && H < 4.0 / 6.0) { r = 0.0; g = X; b = C; }
+      else if (H >= 4.0 / 6.0 && H < 5.0 / 6.0) { r = X; g = 0.0; b = C; }
+      else if (H >= 5.0 / 6.0 && H <= 1.0) { r = C; g = 0.0; b = X; }
+
+      // Add the minimum component to normalize to the brightness
+      r += m;
+      g += m;
+      b += m;
+   }
+
+   // Convert normalized [0.0, 1.0] RGB values to integer [0, 255]
+   red = static_cast<U32>(r * 255.0 + 0.5);
+   green = static_cast<U32>(g * 255.0 + 0.5);
+   blue = static_cast<U32>(b * 255.0 + 0.5);
+   alpha = 255; // Set alpha to fully opaque
 }
 
 // This is a subfunction of HSLtoRGB
@@ -574,6 +656,7 @@ inline void ColorI::set(const String& hex)
 	red = (U8)(convertFromHex(redString));
 	green = (U8)(convertFromHex(greenString));
 	blue = (U8)(convertFromHex(blueString));
+   alpha = 255;
 }
 
 inline S32 ColorI::convertFromHex(const String& hex) const
@@ -742,72 +825,48 @@ inline U16 ColorI::get4444() const
               U16(U16(blue  >> 4) <<  0));
 }
 
-inline ColorI::Hsb ColorI::getHSB() const
+inline Hsb ColorI::getHSB() const
 {
-	F64 rPercent = ((F64)red) / 255;
-	F64 gPercent = ((F64)green) / 255;
-	F64 bPercent = ((F64)blue) / 255;
+   // Normalize RGB values to [0, 1]
+   F64 rPercent = (F64)red / 255.0;
+   F64 gPercent = (F64)green / 255.0;
+   F64 bPercent = (F64)blue / 255.0;
 
-	F64 maxColor = 0.0;
-	if ((rPercent >= gPercent) && (rPercent >= bPercent))
-		maxColor = rPercent;
-	if ((gPercent >= rPercent) && (gPercent >= bPercent))
-		maxColor = gPercent;
-	if ((bPercent >= rPercent) && (bPercent >= gPercent))
-		maxColor = bPercent;
+   // Find the max and min values among the normalized RGB values
+   F64 maxColor = mMax(rPercent, mMax(gPercent, bPercent));
+   F64 minColor = mMin(rPercent, mMin(gPercent, bPercent));
 
-	F64 minColor = 0.0;
-	if ((rPercent <= gPercent) && (rPercent <= bPercent))
-		minColor = rPercent;
-	if ((gPercent <= rPercent) && (gPercent <= bPercent))
-		minColor = gPercent;
-	if ((bPercent <= rPercent) && (bPercent <= gPercent))
-		minColor = bPercent;
+   // Initialize H, S, B
+   F64 H = 0.0, S = 0.0, B = maxColor;
 
-	F64 H = 0.0;
-	F64 S = 0.0;
-	F64 B = 0.0;
+   // Compute saturation
+   F64 delta = maxColor - minColor;
+   if (delta > 0.0)
+   {
+      S = delta / maxColor; // Saturation
 
-	B = (maxColor + minColor) / 2.0;
+      // Compute hue
+      if (mFabsD(maxColor - rPercent) < 1e-6)
+      {
+         H = 60.0 * ((gPercent - bPercent) / delta);
+      }
+      else if (mFabsD(maxColor - gPercent) < 1e-6)
+      {
+         H = 60.0 * (((bPercent - rPercent) / delta) + 2.0);
+      }
+      else if (mFabsD(maxColor - bPercent) < 1e-6)
+      {
+         H = 60.0 * (((rPercent - gPercent) / delta) + 4.0);
+      }
+   }
 
-	if (maxColor == minColor)
-	{
-		H = 0.0;
-		S = 0.0;
-	}
-	else
-	{
-		if (B < 0.50)
-		{
-			S = (maxColor - minColor) / (maxColor + minColor);
-		}
-		else
-		{
-			S = (maxColor - minColor) / (2.0 - maxColor - minColor);
-		}
-		if (maxColor == rPercent)
-		{
-			H = (gPercent - bPercent) / (maxColor - minColor);
-		}
-		if (maxColor == gPercent)
-		{
-			H = 2.0 + (bPercent - rPercent) / (maxColor - minColor);
-		}
-		if (maxColor == bPercent)
-		{
-			H = 4.0 + (rPercent - gPercent) / (maxColor - minColor);
-		}
-	}
+   // Prepare the output HSB struct
+   Hsb val;
+   val.hue = H;            // Round to nearest integer
+   val.sat = S * 100.0;    // Convert to percentage
+   val.brightness = B * 100.0; // Convert to percentage
 
-	ColorI::Hsb val;
-	val.sat = (U32)(S * 100);
-	val.brightness = (U32)(B * 100);
-	H = H*60.0;
-	if (H < 0.0)
-		H += 360.0;
-	val.hue = (U32)H;
-
-	return val;
+   return val;
 }
 
 inline String ColorI::getHex() const
@@ -829,9 +888,9 @@ inline String ColorI::getHex() const
 
 inline LinearColorF::LinearColorF( const ColorI &color)
 {
-   red = sSrgbToLinear[color.red],
-   green = sSrgbToLinear[color.green],
-   blue = sSrgbToLinear[color.blue],
+   red =    srgbToLinearChannel(color.red * gOneOver255),
+   green =  srgbToLinearChannel(color.green * gOneOver255),
+   blue =   srgbToLinearChannel(color.blue * gOneOver255),
    alpha = F32(color.alpha * gOneOver255);
 }
 
@@ -846,14 +905,14 @@ inline ColorI LinearColorF::toColorI(const bool keepAsLinear)
       else
       {
    #ifdef TORQUE_USE_LEGACY_GAMMA
-         float r = mPow(red, gOneOverGamma);
-         float g = mPow(green, gOneOverGamma);
-         float b = mPow(blue, gOneOverGamma);
+         F32 r = mPow(red, gOneOverGamma);
+         F32 g = mPow(green, gOneOverGamma);
+         F32 b = mPow(blue, gOneOverGamma);
          return ColorI(U8(r * 255.0f + 0.5), U8(g * 255.0f + 0.5), U8(b * 255.0f + 0.5), U8(alpha * 255.0f + 0.5));
    #else
-         float r = red < 0.0031308f ? 12.92f * red : 1.055f * mPow(red, 1.0f / 2.4f) - 0.055f;
-         float g = green < 0.0031308f ? 12.92f * green : 1.055f * mPow(green, 1.0f / 2.4f) - 0.055f;
-         float b = blue < 0.0031308f ? 12.92f * blue : 1.055f * mPow(blue, 1.0f / 2.4f) - 0.055f;
+         F32 r = linearChannelToSrgb(red);
+         F32 g = linearChannelToSrgb(green);
+         F32 b = linearChannelToSrgb(blue);
          return ColorI(U8(r * 255.0f + 0.5), U8(g * 255.0f + 0.5), U8(b * 255.0f + 0.5), U8(alpha * 255.0f + 0.5f));
    #endif
       }
@@ -870,14 +929,14 @@ inline ColorI LinearColorF::toColorI(const bool keepAsLinear)
       else
       {
    #ifdef TORQUE_USE_LEGACY_GAMMA
-         float r = mPow(red, gOneOverGamma);
-         float g = mPow(green, gOneOverGamma);
-         float b = mPow(blue, gOneOverGamma);
+         F32 r = mPow(red, gOneOverGamma);
+         F32 g = mPow(green, gOneOverGamma);
+         F32 b = mPow(blue, gOneOverGamma);
          return ColorI(U8(r * 255.0f + 0.5), U8(g * 255.0f + 0.5), U8(b * 255.0f + 0.5), U8(alpha * 255.0f + 0.5));
    #else
-         float r = red < 0.0031308f ? 12.92f * red : 1.055f * mPow(red, 1.0f / 2.4f) - 0.055f;
-         float g = green < 0.0031308f ? 12.92f * green : 1.055f * mPow(green, 1.0f / 2.4f) - 0.055f;
-         float b = blue < 0.0031308f ? 12.92f * blue : 1.055f * mPow(blue, 1.0f / 2.4f) - 0.055f;
+         F32 r = linearChannelToSrgb(red);
+         F32 g = linearChannelToSrgb(green);
+         F32 b = linearChannelToSrgb(blue);
          return ColorI(U8(r * 255.0f + 0.5f), U8(g * 255.0f + 0.5f), U8(b * 255.0f + 0.5f), U8(alpha * 255.0f + 0.5f));
    #endif
       }

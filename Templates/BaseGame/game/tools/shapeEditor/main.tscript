@@ -151,8 +151,8 @@ function ShapeEditorPlugin::openShapeAsset(%this, %assetDef)
 function ShapeEditorPlugin::openShapeAssetId(%this, %assetId)
 {
    %this.selectedAssetDef = AssetDatabase.acquireAsset(%assetId);
-   //%this.selectedAssetDef = %assetDef;
-   %this.open(%this.selectedAssetDef);
+   EditorGui.setEditor( ShapeEditorPlugin );
+   ShapeEditorPlugin.openShapeAsset(%this.selectedAssetDef);
 }
 
 function ShapeEditorPlugin::open(%this, %shapeAsset)
@@ -221,6 +221,23 @@ function ShapeEditorPlugin::open(%this, %shapeAsset)
    }
 }
 
+function EditorGui::SetShapePalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "GlobalGizmoProfile.mode = \"None\";", "", "Select Arrow", "1"); 
+   EWToolsPaletteWindow.addButton("MoveSelection", "ToolsModule:move_point_n_image", "GlobalGizmoProfile.mode = \"Move\";", "", "Move", "2"); 
+   EWToolsPaletteWindow.addButton("RotateSelection", "ToolsModule:rotate_point_n_image", "GlobalGizmoProfile.mode = \"Rotate\";", "", "Rotate", "3"); 
+   EWToolsPaletteWindow.addButton("RotateSun", "ToolsModule:sun_btn_n_image", "ShapeEdShapeView.editSun = !ShapeEdShapeView.editSun;", "", "Rotate sun", "4"); 
+   EWToolsPaletteWindow.refresh();
+}
+
 function ShapeEditorPlugin::onActivated(%this)
 {
    %this.open("");
@@ -255,6 +272,7 @@ function ShapeEditorPlugin::onActivated(%this)
    
    EditorGuiToolbarStack.remove( EWorldEditorToolbar );
    EditorGuiToolbarStack.add( ShapeEditorToolbar );
+   EditorGui.SetShapePalletBar();
 }
 
 function ShapeEditorPlugin::initStatusBar(%this)
@@ -305,7 +323,7 @@ function ShapeEditorPlugin::onExitMission( %this )
 {
    // unselect the current shape
    ShapeEdShapeView.setModel( "" );
-   if (ShapeEditor.shape != -1)
+   if (ShapeEditor.shape != 0 && ShapeEditor.shape != -1)
       ShapeEditor.shape.delete();
    ShapeEditor.shape = 0;
    ShapeEdUndoManager.clearAll();

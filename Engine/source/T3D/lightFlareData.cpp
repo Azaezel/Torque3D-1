@@ -132,8 +132,6 @@ LightFlareData::LightFlareData()
 
    for ( U32 i = 0; i < MAX_ELEMENTS; i++ )   
       mElementDist[i] = -1.0f;
-
-   INIT_ASSET(FlareTexture);
 }
 
 LightFlareData::~LightFlareData()
@@ -145,10 +143,10 @@ void LightFlareData::initPersistFields()
    docsURL;
    addGroup( "LightFlareData" );
 
-      addField( "overallScale", TypeF32, Offset( mScale, LightFlareData ),
+      addFieldV( "overallScale", TypeRangedF32, Offset( mScale, LightFlareData ), &CommonValidators::PositiveFloat,
          "Size scale applied to all elements of the flare." );
 
-      addField( "occlusionRadius", TypeF32, Offset( mOcclusionRadius, LightFlareData ), 
+      addFieldV( "occlusionRadius", TypeRangedF32, Offset( mOcclusionRadius, LightFlareData ), &CommonValidators::PositiveFloat,
          "If positive an occlusion query is used to test flare visibility, else it uses simple raycasts." );
 
       addField( "renderReflectPass", TypeBool, Offset( mRenderReflectPass, LightFlareData ), 
@@ -168,10 +166,10 @@ void LightFlareData::initPersistFields()
          addField( "elementRect", TypeRectF, Offset( mElementRect, LightFlareData ), MAX_ELEMENTS,
             "A rectangle specified in pixels of the flareTexture image." );
 
-         addField( "elementDist", TypeF32, Offset( mElementDist, LightFlareData ), MAX_ELEMENTS,
+         addFieldV( "elementDist", TypeRangedF32, Offset( mElementDist, LightFlareData ), &CommonValidators::F32Range, MAX_ELEMENTS,
             "Where this element appears along the flare beam." );
 
-         addField( "elementScale", TypeF32, Offset( mElementScale, LightFlareData ), MAX_ELEMENTS,
+         addFieldV( "elementScale", TypeRangedF32, Offset( mElementScale, LightFlareData ), &CommonValidators::PositiveFloat, MAX_ELEMENTS,
             "Size scale applied to this element." );
 
          addField( "elementTint", TypeColorF, Offset( mElementTint, LightFlareData ), MAX_ELEMENTS,
@@ -220,7 +218,7 @@ void LightFlareData::packData( BitStream *stream )
 
    stream->writeFlag( mFlareEnabled );
 
-   PACKDATA_ASSET(FlareTexture);
+   PACKDATA_ASSET_REFACTOR(FlareTexture);
 
    stream->write( mScale );
    stream->write( mOcclusionRadius );
@@ -245,7 +243,7 @@ void LightFlareData::unpackData( BitStream *stream )
 
    mFlareEnabled = stream->readFlag();
 
-   UNPACKDATA_ASSET(FlareTexture);
+   UNPACKDATA_ASSET_REFACTOR(FlareTexture);
 
    stream->read( &mScale );
    stream->read( &mOcclusionRadius );
@@ -540,7 +538,7 @@ void LightFlareData::prepRender(SceneRenderState *state, LightFlareState *flareS
 
    GFXVertexPCT *vert = flareState->vertBuffer.lock();
 
-   const Point2F oneOverTexSize( 1.0f / (F32)mFlareTexture.getWidth(), 1.0f / (F32)mFlareTexture.getHeight() );
+   const Point2F oneOverTexSize( 1.0f / (F32)getFlareTexture().getWidth(), 1.0f / (F32)getFlareTexture().getHeight());
 
    for ( U32 i = 0; i < mElementCount; i++ )
    {      
@@ -614,7 +612,7 @@ void LightFlareData::prepRender(SceneRenderState *state, LightFlareState *flareS
    ri->bbModelViewProj = &MatrixF::Identity;
    ri->count = elementCount;
    ri->blendStyle = ParticleRenderInst::BlendGreyscale;
-   ri->diffuseTex = mFlareTexture;
+   ri->diffuseTex = getFlareTexture();
    ri->softnessDistance = 1.0f; 
    ri->defaultKey = ri->diffuseTex ? (uintptr_t)ri->diffuseTex : (uintptr_t)ri->vertBuff; // Sort by texture too.
 

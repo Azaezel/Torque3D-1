@@ -27,10 +27,10 @@ function Core_ClientServer::finishMapLoad(%this)
     Core_ClientServer.GetEventManager().postEvent( "mapLoadComplete" );
 }
 
-function Core_ClientServer::FailMapLoad(%this, %moduleName, %isFine)
+function Core_ClientServer::FailMapLoad(%this, %moduleName, %canContinueOnFail)
 {    
     Core_ClientServer.failedModuleName = %moduleName;
-    Core_ClientServer.GetEventManager().postEvent( "mapLoadFail", %isFine );
+    Core_ClientServer.GetEventManager().postEvent( "mapLoadFail", %canContinueOnFail );
 }
 
 function Core_ClientServerListener::onMapLoadComplete(%this)
@@ -50,9 +50,9 @@ function Core_ClientServerListener::onMapLoadComplete(%this)
     }
 }
 
-function Core_ClientServerListener::onmapLoadFail(%this, %isFine)
+function Core_ClientServerListener::onMapLoadFail(%this, %canContinueOnFail)
 {   
-    if (%isFine) 
+    if (%canContinueOnFail) 
     {
         %this.onMapLoadComplete();
         return;
@@ -119,11 +119,11 @@ function Core_ClientServer::onDestroy( %this )
    
    sfxShutdown();
       
-   echo("Exporting client prefs");
    %prefPath = getPrefpath();
+   echo("Exporting client prefs to "@ getUserHomeDirectory() @ "/clientPrefs." @ $TorqueScriptFileExtension);
    export("$pref::*", %prefPath @ "/clientPrefs." @ $TorqueScriptFileExtension, false);
 
-   echo("Exporting server prefs");
+   echo("Exporting server prefs to "@ getUserHomeDirectory() @ "/serverPrefs." @ $TorqueScriptFileExtension);
    export("$Pref::Server::*", %prefPath @ "/serverPrefs." @ $TorqueScriptFileExtension, false);
    BanList::Export(%prefPath @ "/banlist." @ $TorqueScriptFileExtension);
 }

@@ -51,6 +51,11 @@
 #include "gfx/bitmap/gBitmap.h"
 #include "gui/controls/guiTreeViewCtrl.h"
 
+#if !defined(TORQUE_DISABLE_MEMORY_MANAGER)
+#ifdef new
+#undef new
+#endif
+#endif
 // assimp include files. 
 #include <assimp/cimport.h>
 #include <assimp/scene.h>
@@ -58,6 +63,12 @@
 #include <assimp/types.h>
 #include <assimp/config.h>
 #include <exception>
+
+#if !defined(TORQUE_DISABLE_MEMORY_MANAGER)
+#  define _new new(__FILE__, __LINE__)
+#  define new  _new
+#endif
+
 
 MODULE_BEGIN( AssimpShapeLoader )
    MODULE_INIT_AFTER( ShapeLoader )
@@ -980,6 +991,23 @@ TSShape* assimpLoadShape(const Torque::Path &path)
       {
          Con::printf("Writing cached shape to %s", cachedPath.getFullPath().c_str());
          tss->write(&dtsStream);
+      }
+
+      Torque::Path dsqPath(cachedPath);
+      dsqPath.setExtension("dsq");
+      FileStream animOutStream;
+      for (S32 i = 0; i < tss->sequences.size(); i++)
+      {
+         const String& seqName = tss->getName(tss->sequences[i].nameIndex);
+         Con::printf("Writing DSQ Animation File for sequence '%s'", seqName.c_str());
+
+         dsqPath.setFileName(cachedPath.getFileName() + "_" + seqName);
+         if (animOutStream.open(dsqPath.getFullPath(), Torque::FS::File::Write))
+         {
+            tss->exportSequence(&animOutStream, tss->sequences[i], false);
+            animOutStream.close();
+         }
+
       }
 
       loader.updateMaterialsScript(path);

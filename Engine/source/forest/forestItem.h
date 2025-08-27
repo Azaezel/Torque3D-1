@@ -48,7 +48,7 @@ struct RayInfo;
 class AbstractPolyList;
 
 
-class ForestItemData : public SimDataBlock
+class ForestItemData : public SimDataBlock, protected AssetPtrCallback
 {
 protected:
 
@@ -62,8 +62,7 @@ protected:
 
 public:
    
-   DECLARE_SHAPEASSET(ForestItemData, Shape, onShapeChanged);
-   DECLARE_ASSET_SETGET(ForestItemData, Shape);
+   DECLARE_SHAPEASSET_REFACTOR(ForestItemData, Shape)
 
    /// This is the radius used during placement to ensure
    /// the element isn't crowded up against other trees.
@@ -118,9 +117,10 @@ public:
 
    /// Called from Forest the first time a datablock is used
    /// in order to lazy load content.
-   void preload() 
-   { 
-      if ( !mNeedPreload ) 
+   bool preload(bool server, String& errorStr) override { return false; }; // we don't ghost ForestItemData specifically. we do do so for TSForestItemData
+   void preload()
+   {
+      if (!mNeedPreload)
          return;
 
       _preload();
@@ -143,7 +143,13 @@ public:
       return theSignal;
    }
 
-   void onShapeChanged() {}
+   TSShape* mShape;
+
+protected:
+   void onAssetRefreshed(AssetPtrBase* pAssetPtrBase) override
+   {
+      reloadOnLocalClient();
+   }
 };
 
 typedef Vector<ForestItemData*> ForestItemDataVector;

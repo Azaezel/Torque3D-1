@@ -393,6 +393,7 @@ void GuiCanvas::setWindowTitle(const char *newTitle)
 }
 
 CanvasSizeChangeSignal GuiCanvas::smCanvasSizeChangeSignal;
+CanvasSetActiveSignal GuiCanvas::smCanvasSetActiveSignal;
 
 void GuiCanvas::handleResize( WindowId did, S32 width, S32 height )
 {
@@ -689,6 +690,15 @@ bool GuiCanvas::processInputEvent(InputEventInfo &inputEvent)
 {
    mConsumeLastInputEvent = true;
    mLastInputDeviceType = inputEvent.deviceType;
+
+   // If we have an active offscreen canvas, give it the input
+   if (GuiOffscreenCanvas::sActiveOffscreenCanvas &&
+      (GuiOffscreenCanvas::sActiveOffscreenCanvas != this) &&
+      GuiOffscreenCanvas::sActiveOffscreenCanvas->processInputEvent(inputEvent))
+   {
+      GuiOffscreenCanvas::sActiveOffscreenCanvas = NULL;
+      return mConsumeLastInputEvent;
+   }
 
    // First call the general input handler (on the extremely off-chance that it will be handled):
    if (mFirstResponder &&  mFirstResponder->onInputEvent(inputEvent))
@@ -2169,7 +2179,7 @@ void GuiCanvas::setFirstResponder( GuiControl* newResponder )
    if( oldResponder && ( oldResponder != newResponder ) )
       oldResponder->onLoseFirstResponder();
       
-   if( newResponder && ( newResponder != oldResponder ) )
+   if( newResponder && ( newResponder != oldResponder ) && newResponder->isProperlyAdded())
       newResponder->onGainFirstResponder();
 }
 
@@ -2191,6 +2201,13 @@ StringTableEntry GuiCanvas::getLastInputDeviceType()
    }
 
    return StringTable->EmptyString();
+}
+
+void GuiCanvas::setActive(bool value)
+{
+   Parent::setActive(value);
+
+   GuiCanvas::getCanvasSetActiveSignal().trigger(this, value);
 }
 
 DefineEngineMethod( GuiCanvas, getContent, S32, (),,
@@ -3017,4 +3034,12 @@ DefineEngineMethod(GuiCanvas, resetVideoMode, void, (), , "")
 DefineEngineMethod(GuiCanvas, getLastInputDevice, const char*, (), , "Returns the name of the last input device that the GuiCanvas consumed.")
 {
    return object->getLastInputDeviceType();
+}
+
+DefineEngineMethod(GuiCanvas, getActiveOffscreenCanvas, S32, (), , "Returns the SimID of the active offscreen canvas, if one exists. If not, returns 0")
+{
+   if (GuiOffscreenCanvas::sActiveOffscreenCanvas && GuiOffscreenCanvas::sActiveOffscreenCanvas->isActive())
+      return GuiOffscreenCanvas::sActiveOffscreenCanvas->getId();
+
+   return 0;
 }

@@ -141,12 +141,14 @@ VehicleData::VehicleData()
    dMemset( damageEmitterOffset, 0, sizeof( damageEmitterOffset ) );
    dMemset( damageEmitterIDList, 0, sizeof( damageEmitterIDList ) );
    dMemset( damageLevelTolerance, 0, sizeof( damageLevelTolerance ) );
+   mControlMap = StringTable->EmptyString();
 
    numDmgEmitterAreas = 0;
 
    collDamageThresholdVel = 20;
    collDamageMultiplier = 0.05f;
    enablePhysicsRep = true;
+   mControlMap = StringTable->EmptyString();
 }
 
 
@@ -161,7 +163,7 @@ bool VehicleData::preload(bool server, String &errorStr)
    if (!collisionDetails.size() || collisionDetails[0] == -1)
    {
       Con::errorf("VehicleData::preload failed: Vehicle models must define a collision-1 detail");
-      errorStr = String::ToString("VehicleData: Couldn't load shape asset \"%s\"", mShapeAsset.getAssetId());
+      errorStr = String::ToString("VehicleData: Couldn't load shape asset \"%s\"", getShapeAsset().getAssetId());
       return false;
    }
 
@@ -297,12 +299,12 @@ void VehicleData::initPersistFields()
       "damageEmitterOffset[1] = \"-0.5 3 1\";\n"
       "numDmgEmitterAreas = 2;\n"
       "@endtsexample\n" );
-   addField( "damageLevelTolerance", TypeF32, Offset(damageLevelTolerance, VehicleData), VC_NUM_DAMAGE_LEVELS,
+   addFieldV( "damageLevelTolerance", TypeRangedF32, Offset(damageLevelTolerance, VehicleData), &CommonValidators::PositiveFloat, VC_NUM_DAMAGE_LEVELS,
       "@brief Damage levels (as a percentage of maxDamage) above which to begin "
       "emitting particles from the associated damageEmitter.\n\n"
       "Levels should be in order of increasing damage.\n\n"
       "@see damageEmitterOffset" );
-   addField( "numDmgEmitterAreas", TypeF32, Offset(numDmgEmitterAreas, VehicleData),
+   addFieldV( "numDmgEmitterAreas", TypeRangedF32, Offset(numDmgEmitterAreas, VehicleData), &CommonValidators::PositiveFloat,
       "Number of damageEmitterOffset values to use for each damageEmitter.\n\n"
       "@see damageEmitterOffset" );
    endGroup("Particle Effects");
@@ -313,33 +315,40 @@ void VehicleData::initPersistFields()
    endGroup("Physics");
 
    addGroup("Collision");
-   addField( "collDamageThresholdVel", TypeF32, Offset(collDamageThresholdVel, VehicleData),
+   addFieldV( "collDamageThresholdVel", TypeRangedF32, Offset(collDamageThresholdVel, VehicleData), &CommonValidators::PositiveFloat,
       "Minimum collision velocity to cause damage to this vehicle.\nCurrently unused." );
-   addField( "collDamageMultiplier", TypeF32, Offset(collDamageMultiplier, VehicleData),
+   addFieldV( "collDamageMultiplier", TypeRangedF32, Offset(collDamageMultiplier, VehicleData), &CommonValidators::PositiveFloat,
       "@brief Damage to this vehicle after a collision (multiplied by collision "
       "velocity).\n\nCurrently unused." );
    endGroup("Collision");
 
+   addGroup("Movement");
+   addField("controlMap", TypeString, Offset(mControlMap, VehicleData),
+      "@brief movemap used by these types of objects.\n\n");
+   endGroup("Movement");
+
    addGroup("Steering");
-      addField( "jetForce", TypeF32, Offset(jetForce, VehicleData),
+   addField("controlMap", TypeString, Offset(mControlMap, VehicleData),
+      "@brief movemap used by these types of objects.\n\n");
+      addFieldV( "jetForce", TypeRangedF32, Offset(jetForce, VehicleData), &CommonValidators::PositiveFloat,
          "@brief Additional force applied to the vehicle when it is jetting.\n\n"
          "For WheeledVehicles, the force is applied in the forward direction. For "
          "FlyingVehicles, the force is applied in the thrust direction." );
-      addField( "jetEnergyDrain", TypeF32, Offset(jetEnergyDrain, VehicleData),
+      addFieldV( "jetEnergyDrain", TypeRangedF32, Offset(jetEnergyDrain, VehicleData), &CommonValidators::PositiveFloat,
       "@brief Energy amount to drain for each tick the vehicle is jetting.\n\n"
          "Once the vehicle's energy level reaches 0, it will no longer be able to jet." );
-      addField( "minJetEnergy", TypeF32, Offset(minJetEnergy, VehicleData),
+      addFieldV( "minJetEnergy", TypeRangedF32, Offset(minJetEnergy, VehicleData), &CommonValidators::PositiveFloat,
       "Minimum vehicle energy level to begin jetting." );
-      addField( "maxSteeringAngle", TypeF32, Offset(maxSteeringAngle, VehicleData),
+      addFieldV( "maxSteeringAngle", TypeRangedF32, Offset(maxSteeringAngle, VehicleData), &CommonValidators::PositiveFloat,
          "Maximum yaw (horizontal) and pitch (vertical) steering angle in radians." );
    endGroup("Steering");
 
    addGroup("AutoCorrection");
    addField( "powerSteering", TypeBool, Offset(powerSteering, VehicleData),
       "If true, steering does not auto-centre while the vehicle is being steered by its driver." );
-   addField( "steeringReturn", TypeF32, Offset(steeringReturn, VehicleData),
+   addFieldV( "steeringReturn", TypeRangedF32, Offset(steeringReturn, VehicleData), &CommonValidators::PositiveFloat,
       "Rate at which the vehicle's steering returns to forwards when it is moving." );
-   addField( "steeringReturnSpeedScale", TypeF32, Offset(steeringReturnSpeedScale, VehicleData),
+   addFieldV( "steeringReturnSpeedScale", TypeRangedF32, Offset(steeringReturnSpeedScale, VehicleData), &CommonValidators::PositiveFloat,
       "Amount of effect the vehicle's speed has on its rate of steering return." );
    endGroup("AutoCorrection");
 }
@@ -471,7 +480,6 @@ bool Vehicle::onAdd()
 void Vehicle::onRemove()
 {
    SAFE_DELETE(mPhysicsRep);
-
    U32 i=0;
 
    for( i=0; i<VehicleData::VC_NUM_DAMAGE_EMITTERS; i++ )
@@ -496,9 +504,16 @@ void Vehicle::processTick(const Move* move)
 {
    PROFILE_SCOPE( Vehicle_ProcessTick );
 
+   // If we're not being controlled by a client, let the
+   // AI sub-module get a chance at producing a move.
+   Move aiMove;
+   if (!move && isServerObject() && getAIMove(&aiMove))
+      move = &aiMove;
+
    ShapeBase::processTick(move);
    if ( isMounted() )
       return;
+
 
    // Warp to catch up to server
    if (mDelta.warpCount < mDelta.warpTicks)
@@ -726,6 +741,9 @@ void Vehicle::updateMove(const Move* move)
    if (mDamageState == Enabled) {
       setImageTriggerState(0,move->trigger[0]);
       setImageTriggerState(1,move->trigger[1]);
+      //legacy code has trigger 2 and 3 reserved
+      setImageTriggerState(2, move->trigger[4]);
+      setImageTriggerState(3, move->trigger[5]);
    }
 
    // Throttle
@@ -807,7 +825,7 @@ void Vehicle::updatePos(F32 dt)
       if (mCollisionList.getCount()) 
       {
          F32 k = mRigid.getKineticEnergy();
-         F32 G = mNetGravity* dt;
+         F32 G = mNetGravity* dt * TickMs / mDataBlock->integration;
          F32 Kg = 0.5 * mRigid.mass * G * G;
          if (k < sRestTol * Kg && ++restCount > sRestCount)
             mRigid.setAtRest();
@@ -959,16 +977,6 @@ U32 Vehicle::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
    stream->writeFloat(pitch,9);
    mDelta.move.pack(stream);
 
-   if (stream->writeFlag(mask & PositionMask))
-   {
-      stream->writeCompressedPoint(mRigid.linPosition);
-      mathWrite(*stream, mRigid.angPosition);
-      mathWrite(*stream, mRigid.linMomentum);
-      mathWrite(*stream, mRigid.angMomentum);
-      stream->writeFlag(mRigid.atRest);
-   }
-
-   
    stream->writeFloat(mClampF(getEnergyValue(), 0.f, 1.f), 8);
 
    return retMask;
@@ -988,73 +996,6 @@ void Vehicle::unpackUpdate(NetConnection *con, BitStream *stream)
    mSteering.x = (2 * yaw * mDataBlock->maxSteeringAngle) - mDataBlock->maxSteeringAngle;
    mSteering.y = (2 * pitch * mDataBlock->maxSteeringAngle) - mDataBlock->maxSteeringAngle;
    mDelta.move.unpack(stream);
-
-   if (stream->readFlag()) 
-   {
-      mPredictionCount = sMaxPredictionTicks;
-      F32 speed = mRigid.linVelocity.len();
-      mDelta.warpRot[0] = mRigid.angPosition;
-
-      // Read in new position and momentum values
-      stream->readCompressedPoint(&mRigid.linPosition);
-      mathRead(*stream, &mRigid.angPosition);
-      mathRead(*stream, &mRigid.linMomentum);
-      mathRead(*stream, &mRigid.angMomentum);
-      mRigid.atRest = stream->readFlag();
-      mRigid.updateVelocity();
-
-      if (isProperlyAdded()) 
-      {
-         // Determine number of ticks to warp based on the average
-         // of the client and server velocities.
-         Point3F cp = mDelta.pos + mDelta.posVec * mDelta.dt;
-         mDelta.warpOffset = mRigid.linPosition - cp;
-
-         // Calc the distance covered in one tick as the average of
-         // the old speed and the new speed from the server.
-         F32 dt,as = (speed + mRigid.linVelocity.len()) * 0.5 * TickSec;
-
-         // Cal how many ticks it will take to cover the warp offset.
-         // If it's less than what's left in the current tick, we'll just
-         // warp in the remaining time.
-         if (!as || (dt = mDelta.warpOffset.len() / as) > sMaxWarpTicks)
-            dt = mDelta.dt + sMaxWarpTicks;
-         else
-            dt = (dt <= mDelta.dt)? mDelta.dt : mCeil(dt - mDelta.dt) + mDelta.dt;
-
-         // Adjust current frame interpolation
-         if (mDelta.dt) {
-            mDelta.pos = cp + (mDelta.warpOffset * (mDelta.dt / dt));
-            mDelta.posVec = (cp - mDelta.pos) / mDelta.dt;
-            QuatF cr;
-            cr.interpolate(mDelta.rot[1],mDelta.rot[0],mDelta.dt);
-            mDelta.rot[1].interpolate(cr,mRigid.angPosition,mDelta.dt / dt);
-            mDelta.rot[0].extrapolate(mDelta.rot[1],cr,mDelta.dt);
-         }
-
-         // Calculated multi-tick warp
-         mDelta.warpCount = 0;
-         mDelta.warpTicks = (S32)(mFloor(dt));
-         if (mDelta.warpTicks) 
-         {
-            mDelta.warpOffset = mRigid.linPosition - mDelta.pos;
-            mDelta.warpOffset /= (F32)mDelta.warpTicks;
-            mDelta.warpRot[0] = mDelta.rot[1];
-            mDelta.warpRot[1] = mRigid.angPosition;
-         }
-      }
-      else 
-      {
-         // Set the vehicle to the server position
-         mDelta.dt  = 0;
-         mDelta.pos = mRigid.linPosition;
-         mDelta.posVec.set(0,0,0);
-         mDelta.rot[1] = mDelta.rot[0] = mRigid.angPosition;
-         mDelta.warpCount = mDelta.warpTicks = 0;
-         setPosition(mRigid.linPosition, mRigid.angPosition);
-      }
-      mRigid.updateCenterOfMass();
-   }
 
    setEnergyLevel(stream->readFloat(8) * mDataBlock->maxEnergy);
 }

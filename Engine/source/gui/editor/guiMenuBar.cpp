@@ -34,6 +34,7 @@
 #include "gfx/primBuilder.h"
 #include "console/engineAPI.h"
 #include "gui/editor/guiPopupMenuCtrl.h"
+#include "console/typeValidators.h"
 
 // menu bar:
 // basic idea - fixed height control bar at the top of a window, placed and sized in gui editor
@@ -188,9 +189,9 @@ void GuiMenuBar::onRemove()
 void GuiMenuBar::initPersistFields()
 {
    docsURL;
-   addField("padding", TypeS32, Offset( mPadding, GuiMenuBar ),"Extra padding to add to the bounds of the control.\n");
+   addFieldV("padding", TypeRangedS32, Offset( mPadding, GuiMenuBar ), &CommonValidators::PositiveInt,"Extra padding to add to the bounds of the control.\n");
 
-   addField("menubarHeight", TypeS32, Offset(mMenubarHeight, GuiMenuBar), "Sets the height of the menubar when attached to the canvas.\n");
+   addFieldV("menubarHeight", TypeRangedS32, Offset(mMenubarHeight, GuiMenuBar), &CommonValidators::PositiveInt, "Sets the height of the menubar when attached to the canvas.\n");
 
    Parent::initPersistFields();
 }
@@ -409,7 +410,7 @@ void GuiMenuBar::onRender(Point2I offset, const RectI &updateRect)
          bitmapstart.y = mMenuList[i].bounds.point.y + (mMenuList[i].bounds.extent.y - rect.extent.y) / 2;
 
          drawUtil->clearBitmapModulation();
-         drawUtil->drawBitmapSR(mProfile->getBitmapResource(), offset + bitmapstart, rect);
+         drawUtil->drawBitmapSR(mProfile->getBitmap(), offset + bitmapstart, rect);
 
          // Should we also draw the text?
          if (!mMenuList[i].drawBitmapOnly)
@@ -506,6 +507,16 @@ void GuiMenuBar::onAction()
    mouseDownMenu->popupMenu->showPopup(root, pos.x, pos.y);
 }
 
+void GuiMenuBar::closeMenu()
+{
+   if(mouseDownMenu)
+      mouseDownMenu->popupMenu->hidePopup();
+
+   mouseOverMenu = NULL;
+   mouseDownMenu = NULL;
+   mMouseInMenu = false;
+}
+
 //  Process a tick
 void GuiMenuBar::processTick()
 {
@@ -515,10 +526,22 @@ void GuiMenuBar::processTick()
 
 void GuiMenuBar::insert(SimObject* pObject, S32 pos)
 {
-   PopupMenu* menu = dynamic_cast<PopupMenu*>(pObject);
+   PopupMenu* menu = nullptr;
+   if (pObject != nullptr)
+   {
+      menu = dynamic_cast<PopupMenu*>(pObject);
+   }
+
    if (menu == nullptr)
    {
-      Con::errorf("GuiMenuBar::insert() - attempted to insert non-popupMenu object: %d", pObject->getId());
+      if (pObject != nullptr)
+      {
+         Con::errorf("GuiMenuBar::insert() - attempted to insert non-popupMenu object: %d", pObject->getId());
+      }
+      else
+      {
+         Con::errorf("GuiMenuBar::insert() - attempted to insert a nullptr object.");
+      }
       return;
    }
 
@@ -541,10 +564,22 @@ void GuiMenuBar::insert(SimObject* pObject, S32 pos)
 
 void GuiMenuBar::remove(SimObject* pObject)
 {
-   PopupMenu* menu = dynamic_cast<PopupMenu*>(pObject);
+   PopupMenu* menu = nullptr;
+   if (pObject != nullptr)
+   {
+      menu = dynamic_cast<PopupMenu*>(pObject);
+   }
+
    if (menu == nullptr)
    {
-      Con::errorf("GuiMenuBar::remove() - attempted to remove non-popupMenu object: %d", pObject->getId());
+      if (pObject != nullptr)
+      {
+         Con::errorf("GuiMenuBar::insert() - attempted to insert non-popupMenu object: %d", pObject->getId());
+      }
+      else
+      {
+         Con::errorf("GuiMenuBar::insert() - attempted to insert a nullptr object.");
+      }
       return;
    }
 

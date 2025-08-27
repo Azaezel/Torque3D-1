@@ -115,11 +115,11 @@ public:
 
    enum AnimType
    {
-      Scroll = 1,
-      Rotate = 2,
-      Wave = 4,
-      Scale = 8,
-      Sequence = 16,
+      Scroll = BIT(0),
+      Rotate = BIT(1),
+      Wave = BIT(2),
+      Scale = BIT(3),
+      Sequence = BIT(4),
    };
 
    enum WaveType
@@ -127,6 +127,14 @@ public:
       Sin = 0,
       Triangle,
       Square,
+   };
+
+   enum SourceChannelType
+   {
+      RedChannel = 0,
+      GreenChannel,
+      BlueChannel,
+      AlphaChannel
    };
 
    class StageData
@@ -208,56 +216,29 @@ public:
    //-----------------------------------------------------------------------
    // Data
    //-----------------------------------------------------------------------
-   void onImageAssetChanged();
-
-   DECLARE_IMAGEASSET_ARRAY(Material, DiffuseMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, DiffuseMap);
+   DECLARE_IMAGEASSET_ARRAY(Material, DiffuseMap, GFXStaticTextureSRGBProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, NormalMap, GFXNormalMapProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, DetailNormalMap, GFXNormalMapProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, OverlayMap, GFXStaticTextureProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, LightMap, GFXStaticTextureProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, ToneMap, GFXStaticTextureProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, DetailMap, GFXStaticTextureProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, ORMConfigMap, GFXStaticTextureProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, AOMap, GFXStaticTextureProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, RoughMap, GFXStaticTextureProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, MetalMap, GFXStaticTextureProfile, MAX_STAGES)
+   DECLARE_IMAGEASSET_ARRAY(Material, GlowMap, GFXStaticTextureProfile, MAX_STAGES)
 
    bool     mDiffuseMapSRGB[MAX_STAGES];   // SRGB diffuse
-   DECLARE_IMAGEASSET_ARRAY(Material, OverlayMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, OverlayMap);
-
-   DECLARE_IMAGEASSET_ARRAY(Material, LightMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, LightMap);
-
-   DECLARE_IMAGEASSET_ARRAY(Material, ToneMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, ToneMap);
-
-   DECLARE_IMAGEASSET_ARRAY(Material, DetailMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, DetailMap);
-
-   DECLARE_IMAGEASSET_ARRAY(Material, NormalMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, NormalMap);
-
-   DECLARE_IMAGEASSET_ARRAY(Material, ORMConfigMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, ORMConfigMap);
-
-   bool     mIsSRGb[MAX_STAGES];
-   DECLARE_IMAGEASSET_ARRAY(Material, AOMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, AOMap);
-   F32      mAOChan[MAX_STAGES];
-
-   DECLARE_IMAGEASSET_ARRAY(Material, RoughMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, RoughMap);
+   bool     mIsSRGb[MAX_STAGES];           // SRGB ORM
+   U32      mAOChan[MAX_STAGES];
    bool     mInvertRoughness[MAX_STAGES];
-   F32      mRoughnessChan[MAX_STAGES];
-
-   DECLARE_IMAGEASSET_ARRAY(Material, MetalMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, MetalMap);
-
-   F32      mMetalChan[MAX_STAGES];
-   DECLARE_IMAGEASSET_ARRAY(Material, GlowMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, GlowMap);
-
+   U32      mRoughnessChan[MAX_STAGES];
+   U32      mMetalChan[MAX_STAGES];
    F32      mGlowMul[MAX_STAGES];
-   /// A second normal map which repeats at the detail map
-   /// scale and blended with the base normal map.
-   DECLARE_IMAGEASSET_ARRAY(Material, DetailNormalMap, MAX_STAGES, onImageAssetChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(Material, DetailNormalMap);
 
    /// The strength scalar for the detail normal map.
-   F32 mDetailNormalMapStrength[MAX_STAGES];
-
+   F32      mDetailNormalMapStrength[MAX_STAGES];
    bool     mAccuEnabled[MAX_STAGES];
    F32      mAccuScale[MAX_STAGES];
    F32      mAccuDirection[MAX_STAGES];
@@ -452,9 +433,11 @@ private:
 typedef Material::AnimType MaterialAnimType;
 typedef Material::BlendOp MaterialBlendOp;
 typedef Material::WaveType MaterialWaveType;
+typedef Material::SourceChannelType MaterialSourceChannelType;
 
 DefineBitfieldType(MaterialAnimType);
 DefineEnumType(MaterialBlendOp);
 DefineEnumType(MaterialWaveType);
+DefineEnumType(MaterialSourceChannelType);
 
 #endif // _MATERIALDEFINITION_H_

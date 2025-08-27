@@ -205,7 +205,7 @@ public: \
    {\
       if(m##name##AssetId != _in || m##name##Name != _in)\
       {\
-         if (_in == NULL || _in == StringTable->EmptyString())\
+         if (_in == NULL || !String::compare(_in,StringTable->EmptyString()))\
          {\
             m##name##Name = StringTable->EmptyString();\
             m##name##AssetId = StringTable->EmptyString();\
@@ -394,7 +394,7 @@ public: \
       {\
          if(index >= sm##name##Count || index < 0) \
                return false;\
-         if (_in == NULL || _in == StringTable->EmptyString())\
+         if (_in == NULL || !String::compare(_in,StringTable->EmptyString()))\
          {\
             m##name##Name[index] = StringTable->EmptyString();\
             m##name##AssetId[index] = StringTable->EmptyString();\
@@ -516,7 +516,12 @@ if (m##name##AssetId[index] != StringTable->EmptyString())\
    else Con::warnf("Warning: %s::LOAD_SOUNDASSET_ARRAY(%s[%i])-%s", mClassName, m##name##AssetId[index], index, ImageAsset::getAssetErrstrn(assetState).c_str());\
 }
 
-#define assetEnumNameConcat(x,suff)(new std::string( x + std::string(#suff)))->c_str()
+#define assetEnumNameConcat(x, suff) ([](const char* base) { \
+         String result = String(base) + #suff; \
+         char* ret = Con::getReturnBuffer(result.length() + 1); \
+         dStrcpy(ret, result.c_str(), result.length() + 1); \
+         return ret; \
+      })(x)
 
 #define INITPERSISTFIELD_SOUNDASSET_ENUMED(name, enumType, maxValue, consoleClass, docs) \
    for (U32 i = 0; i < maxValue; i++)\

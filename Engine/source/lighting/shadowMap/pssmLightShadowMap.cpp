@@ -135,29 +135,30 @@ void PSSMLightShadowMap::_calcSplitPos(const Frustum& currFrustum)
 
 Box3F PSSMLightShadowMap::_calcClipSpaceAABB(const Frustum& f, const MatrixF& transform, F32 farDist)
 {
-   PROFILE_SCOPE(PSSMLightShadowMap_calcClipSpaceAABB);
-
-   // Transform frustum corners to light space.
-   Point3F transformedPoints[8];
+   // Calculate frustum center
+   Point3F center(0, 0, 0);
    const Point3F* frustumPoints = f.getPoints();
-   for (U32 i = 0; i < 8; i++) {
-      transformedPoints[i] = frustumPoints[i];
-      transform.mulP(transformedPoints[i]);
+   for (U32 i = 0; i < 8; i++)
+   {
+      const Point3F& pt = frustumPoints[i];
+      center += pt;
    }
+   center /= 8;
 
-   // Compute the AABB for the transformed points.
+   // Calculate frustum bounding sphere radius
+   F32 radius = 0.0f;
+   for (U32 i = 0; i < 8; i++)
+      radius = getMax(radius, (frustumPoints[i] - center).lenSquared());
+   radius = mFloor(mSqrt(radius));
+
+   // Now build box for sphere
    Box3F result;
-   result.minExtents.set(F32_MAX, F32_MAX, F32_MAX);
-   result.maxExtents.set(-F32_MAX, -F32_MAX, -F32_MAX);
+   Point3F radiusBox(radius, radius, radius);
+   result.minExtents = center - radiusBox;
+   result.maxExtents = center + radiusBox;
 
-   for (U32 i = 0; i < 8; i++) {
-      result.minExtents.setMin(transformedPoints[i]);
-      result.maxExtents.setMax(transformedPoints[i]);
-   }
-
-   // Clamp Z to within near and far distances to avoid over-extension.
-   result.minExtents.z = getMax(result.minExtents.z, 0.0f); // Z must be non-negative in light space.
-   result.maxExtents.z = getMin(result.maxExtents.z, farDist);
+   // Transform to light projection space
+   transform.mul(result);
 
    return result;
 }
@@ -174,9 +175,10 @@ void PSSMLightShadowMap::_roundProjection(const MatrixF& lightMat, const MatrixF
    lightProjection.mul(origin);
    origin /= origin.w;
 
-   // Convert to texture space (based on shadow map resolution).
-   F32 texelWidth = mShadowMapTex->getWidth() / (mNumSplits < 4 ? mNumSplits : 2);
-   Point2F texelScale(texelWidth * 0.5f, mShadowMapTex->getHeight() * 0.5f);
+   // Convert to shadow map texel space.
+   const F32 texelWidth = mShadowMapTex->getWidth() / (mNumSplits < 4 ? mNumSplits : 2);
+   const F32 texelHeight = mShadowMapTex->getHeight();
+   Point2F texelScale(texelWidth * 0.5f, texelHeight * 0.5f);
 
    // Adjust origin to align to nearest texel.
    Point2F originTexelSpace(origin.x * texelScale.x, origin.y * texelScale.y);

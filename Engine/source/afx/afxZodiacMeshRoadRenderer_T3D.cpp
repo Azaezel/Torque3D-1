@@ -105,10 +105,8 @@ void afxZodiacMeshRoadRenderer::initShader()
    d.cullDefined = true;
    d.blendDefined = true;
    d.blendEnable = true;
-   d.zDefined = false;
-   d.zEnable = true;
-   d.zWriteEnable = false;
-   d.zFunc = GFXCmpLessEqual;
+   d.setZReadWrite(true, false);
+   d.zFunc = GFXCmpGreaterEqual;
    d.zSlopeBias = 0;
    d.alphaDefined = true;
    d.alphaTestEnable = true; 
@@ -268,7 +266,7 @@ void afxZodiacMeshRoadRenderer::render(SceneRenderState* state)
       GFX->setShaderConstBuffer(shader_consts);
 
       // set the texture
-      GFX->setTexture(0, *zode->txr);
+      GFX->setTexture(0, zode->txr);
       LinearColorF zode_color = (LinearColorF)zode->color;
       zode_color.alpha *= fadebias;
       shader_consts->set(color_sc, zode_color);

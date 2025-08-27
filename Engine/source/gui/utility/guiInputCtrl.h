@@ -47,13 +47,20 @@ public:
 
    GuiInputCtrl();
 
+   bool onAdd() override;
+   void onRemove() override;
+
    // GuiControl.
    bool onWake() override;
    void onSleep() override;
 
+   virtual void setActive(bool state);
+
    bool onInputEvent( const InputEventInfo &event ) override;
 
    static void initPersistFields();
+
+   void handleCanvasSetActive(GuiCanvas* canvas, bool isActive);
 
    DECLARE_CONOBJECT(GuiInputCtrl);
    DECLARE_CATEGORY( "Gui Other Script" );

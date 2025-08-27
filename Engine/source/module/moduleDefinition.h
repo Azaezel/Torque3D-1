@@ -115,6 +115,7 @@ private:
     SimObjectId                     mScopeSet;
     bool                            mLocked;
     ModuleManager*                  mpModuleManager;
+    F32                             mPriority;
 
 private:
     inline bool             checkUnlocked( void ) const { if ( mLocked )        { Con::warnf("Ignoring changes for locked module definition."); } return !mLocked; }
@@ -194,6 +195,9 @@ public:
     inline void             setModuleLocked( const bool status )                { mLocked = status; }
     inline bool             getModuleLocked( void ) const                       { return mLocked; }
     inline ModuleManager*   getModuleManager( void ) const                      { return mpModuleManager; }
+
+    inline void             setPriority(const F32 pPriority)                    { if (checkUnlocked()) { mPriority = pPriority; } }
+    inline F32              getPriority(void) const                             { return mPriority; }
 
     using Parent::save;
     bool                    save( void );
@@ -332,6 +336,8 @@ protected:
     }
     static bool             writeDependencies( void* obj, StringTableEntry pFieldName ) { return static_cast<ModuleDefinition*>(obj)->getDependencies().size() > 0; }
     static const char*      getSignature(void* obj, const char* data)                   { return static_cast<ModuleDefinition*>(obj)->getSignature(); }
+
+    static bool             setPriority(void* obj, const char* index, const char* data) { static_cast<ModuleDefinition*>(obj)->setPriority((F32)dAtof(data)); return false; }
 };
 
 #endif // _MODULE_DEFINITION_H

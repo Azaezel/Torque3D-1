@@ -66,9 +66,6 @@ class LevelAsset : public AssetBase
    StringTableEntry        mEditorFile;
    StringTableEntry        mBakedSceneFile;
 
-   bool                    mIsSubLevel;
-   StringTableEntry        mMainLevelAsset;
-
    StringTableEntry        mGameModesNames;
 
    Vector<AssetBase*>      mAssetDependencies;
@@ -200,7 +197,7 @@ public: \
          {\
             m##name##Asset->getChangedSignal().remove(this, &className::changeFunc);\
          }\
-         if (_in == NULL || _in == StringTable->EmptyString())\
+         if (_in == NULL || !String::compare(_in,StringTable->EmptyString()))\
          {\
             m##name##AssetId = StringTable->EmptyString();\
             m##name##Asset = NULL;\

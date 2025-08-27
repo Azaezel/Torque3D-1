@@ -129,11 +129,7 @@ PrecipitationData::PrecipitationData()
 {
    INIT_ASSET(Sound);
 
-   INIT_ASSET(Drop);
-
    mDropShaderName   = StringTable->EmptyString();
-
-   INIT_ASSET(Splash);
 
    mSplashShaderName = StringTable->EmptyString();
 
@@ -145,12 +141,6 @@ void PrecipitationData::initPersistFields()
 {
    docsURL;
    INITPERSISTFIELD_SOUNDASSET(Sound, PrecipitationData, "Looping SFXProfile effect to play while Precipitation is active.");
-
-   addProtectedField( "dropTexture", TypeFilename, Offset(mDropName, PrecipitationData), &_setDropData, &defaultProtectedGetFn,
-      "@brief Texture filename for drop particles.\n\n"
-      "The drop texture can contain several different drop sub-textures "
-      "arranged in a grid. There must be the same number of rows as columns. A "
-      "random frame will be chosen for each drop.", AbstractClassRep::FIELD_HideInInspectors );
       
    INITPERSISTFIELD_IMAGEASSET(Drop, PrecipitationData, "@brief Texture for drop particles.\n\n"
       "The drop texture can contain several different drop sub-textures "
@@ -160,12 +150,6 @@ void PrecipitationData::initPersistFields()
    addField( "dropShader", TypeString, Offset(mDropShaderName, PrecipitationData),
       "The name of the shader used for raindrops." );
       
-   addProtectedField("splashTexture", TypeFilename, Offset(mSplashName, PrecipitationData), &_setSplashData, &defaultProtectedGetFn,
-      "@brief Texture filename for splash particles.\n\n"
-      "The splash texture can contain several different splash sub-textures "
-      "arranged in a grid. There must be the same number of rows as columns. A "
-      "random frame will be chosen for each splash.", AbstractClassRep::FIELD_HideInInspectors);
-
    INITPERSISTFIELD_IMAGEASSET(Splash, PrecipitationData, "@brief Texture for splash particles.\n\n"
       "The splash texture can contain several different splash sub-textures "
       "arranged in a grid. There must be the same number of rows as columns. A "
@@ -173,11 +157,11 @@ void PrecipitationData::initPersistFields()
 
    addField( "splashShader", TypeString, Offset(mSplashShaderName, PrecipitationData),
       "The name of the shader used for splashes." );
-   addField( "dropsPerSide", TypeS32, Offset(mDropsPerSide, PrecipitationData),
+   addFieldV( "dropsPerSide", TypeRangedS32, Offset(mDropsPerSide, PrecipitationData), &CommonValidators::PositiveInt,
       "@brief How many rows and columns are in the raindrop texture.\n\n"
       "For example, if the texture has 16 raindrops arranged in a grid, this "
       "field should be set to 4." );
-   addField( "splashesPerSide", TypeS32, Offset(mSplashesPerSide, PrecipitationData),
+   addFieldV( "splashesPerSide", TypeRangedS32, Offset(mSplashesPerSide, PrecipitationData), &CommonValidators::PositiveInt,
       "@brief How many rows and columns are in the splash texture.\n\n"
       "For example, if the texture has 9 splashes arranged in a grid, this "
       "field should be set to 3." );
@@ -206,11 +190,11 @@ void PrecipitationData::packData(BitStream* stream)
 
    PACKDATA_ASSET(Sound);
 
-   PACKDATA_ASSET(Drop);
+   PACKDATA_ASSET_REFACTOR(Drop);
 
    stream->writeString(mDropShaderName);
 
-   PACKDATA_ASSET(Splash);
+   PACKDATA_ASSET_REFACTOR(Splash);
 
    stream->writeString(mSplashShaderName);
    stream->write(mDropsPerSide);
@@ -223,11 +207,11 @@ void PrecipitationData::unpackData(BitStream* stream)
 
    UNPACKDATA_ASSET(Sound);
 
-   UNPACKDATA_ASSET(Drop);
+   UNPACKDATA_ASSET_REFACTOR(Drop);
 
    mDropShaderName = stream->readSTString();
 
-   UNPACKDATA_ASSET(Splash);
+   UNPACKDATA_ASSET_REFACTOR(Splash);
 
    mSplashShaderName = stream->readSTString();
    stream->read(&mDropsPerSide);
@@ -368,45 +352,45 @@ void Precipitation::initPersistFields()
    docsURL;
    addGroup("Precipitation");
 
-      addFieldV( "numDrops", TypeS32, Offset(mNumDrops, Precipitation), &ValidNumDropsRange,
+      addFieldV( "numDrops", TypeRangedS32, Offset(mNumDrops, Precipitation), &ValidNumDropsRange,
          "@brief Maximum number of drops allowed to exist in the precipitation "
          "box at any one time.\n\n"
          "The actual number of drops in the effect depends on the current "
          "percentage, which can change over time using modifyStorm()." );
 
-      addField( "boxWidth", TypeF32, Offset(mBoxWidth, Precipitation),
+      addFieldV( "boxWidth", TypeRangedF32, Offset(mBoxWidth, Precipitation), &CommonValidators::PositiveFloat,
          "Width and depth (horizontal dimensions) of the precipitation box." );
 
-      addField( "boxHeight", TypeF32, Offset(mBoxHeight, Precipitation),
+      addFieldV( "boxHeight", TypeRangedF32, Offset(mBoxHeight, Precipitation), &CommonValidators::PositiveFloat,
          "Height (vertical dimension) of the precipitation box." );
 
    endGroup("Precipitation");
 
    addGroup("Rendering");
 
-      addField( "dropSize", TypeF32, Offset(mDropSize, Precipitation),
+      addFieldV( "dropSize", TypeRangedF32, Offset(mDropSize, Precipitation), &CommonValidators::PositiveFloat,
          "Size of each drop of precipitation. This will scale the texture." );
 
-      addField( "splashSize", TypeF32, Offset(mSplashSize, Precipitation),
+      addFieldV( "splashSize", TypeRangedF32, Offset(mSplashSize, Precipitation), &CommonValidators::PositiveFloat,
          "Size of each splash animation when a drop collides with another surface." );
 
-      addField( "splashMS", TypeS32, Offset(mSplashMS, Precipitation),
+      addFieldV( "splashMS", TypeRangedS32, Offset(mSplashMS, Precipitation), &CommonValidators::PositiveInt,
          "Lifetime of splashes in milliseconds." );
 
       addField( "animateSplashes", TypeBool, Offset(mAnimateSplashes, Precipitation),
          "Set to true to enable splash animations when drops collide with other surfaces." );
 
-      addField( "dropAnimateMS", TypeS32, Offset(mDropAnimateMS, Precipitation),
+      addFieldV( "dropAnimateMS", TypeRangedS32, Offset(mDropAnimateMS, Precipitation), &CommonValidators::PositiveInt,
          "@brief Length (in milliseconds) to display each drop frame.\n\n"
          "If #dropAnimateMS <= 0, drops select a single random frame at creation "
          "that does not change throughout the drop's lifetime. If #dropAnimateMS "
          "> 0, each drop cycles through the the available frames in the drop "
          "texture at the given rate." );
 
-      addField( "fadeDist", TypeF32, Offset(mFadeDistance, Precipitation),
+      addFieldV( "fadeDist", TypeRangedF32, Offset(mFadeDistance, Precipitation), &CommonValidators::PositiveFloat,
          "The distance at which drops begin to fade out." );
 
-      addField( "fadeDistEnd", TypeF32, Offset(mFadeDistanceEnd, Precipitation),
+      addFieldV( "fadeDistEnd", TypeRangedF32, Offset(mFadeDistanceEnd, Precipitation), &CommonValidators::PositiveFloat,
          "The distance at which drops are completely faded out." );
 
       addField( "useTrueBillboards", TypeBool, Offset(mUseTrueBillboards, Precipitation),
@@ -459,23 +443,23 @@ void Precipitation::initPersistFields()
          "Controls whether drops are affected by wind.\n"
          "@see ForestWindEmitter" );
 
-      addField( "minSpeed", TypeF32, Offset(mMinSpeed, Precipitation),
+      addFieldV( "minSpeed", TypeRangedF32, Offset(mMinSpeed, Precipitation), &CommonValidators::PositiveFloat,
          "@brief Minimum speed at which a drop will fall.\n\n"
          "On creation, the drop will be assigned a random speed between #minSpeed "
          "and #maxSpeed." );
 
-      addField( "maxSpeed", TypeF32, Offset(mMaxSpeed, Precipitation),
+      addFieldV( "maxSpeed", TypeRangedF32, Offset(mMaxSpeed, Precipitation), &CommonValidators::PositiveFloat,
          "@brief Maximum speed at which a drop will fall.\n\n"
          "On creation, the drop will be assigned a random speed between #minSpeed "
          "and #maxSpeed." );
 
-      addField( "minMass", TypeF32, Offset(mMinMass, Precipitation),
+      addFieldV( "minMass", TypeRangedF32, Offset(mMinMass, Precipitation), &CommonValidators::PositiveFloat,
          "@brief Minimum mass of a drop.\n\n"
          "Drop mass determines how strongly the drop is affected by wind and "
          "turbulence. On creation, the drop will be assigned a random speed "
          "between #minMass and #minMass." );
 
-      addField( "maxMass", TypeF32, Offset(mMaxMass, Precipitation),
+      addFieldV( "maxMass", TypeRangedF32, Offset(mMaxMass, Precipitation), &CommonValidators::PositiveFloat,
          "@brief Maximum mass of a drop.\n\n"
          "Drop mass determines how strongly the drop is affected by wind and "
          "turbulence. On creation, the drop will be assigned a random speed "
@@ -489,10 +473,10 @@ void Precipitation::initPersistFields()
          "Check to enable turbulence. This causes precipitation drops to spiral "
          "while falling." );
 
-      addField( "maxTurbulence", TypeF32, Offset(mMaxTurbulence, Precipitation),
+      addFieldV( "maxTurbulence", TypeRangedF32, Offset(mMaxTurbulence, Precipitation), &CommonValidators::PositiveFloat,
          "Radius at which precipitation drops spiral when turbulence is enabled." );
 
-      addField( "turbulenceSpeed", TypeF32, Offset(mTurbulenceSpeed, Precipitation),
+      addFieldV( "turbulenceSpeed", TypeRangedF32, Offset(mTurbulenceSpeed, Precipitation), &CommonValidators::PositiveFloat,
          "Speed at which precipitation drops spiral when turbulence is enabled." );
 
    endGroup("Turbulence");
@@ -614,7 +598,7 @@ bool Precipitation::onNewDataBlock( GameBaseData *dptr, bool reload )
       initMaterials();
    }
 
-   scriptOnNewDataBlock();
+   scriptOnNewDataBlock(reload);
    return true;
 }
 
@@ -632,10 +616,10 @@ void Precipitation::initMaterials()
    mDropShader = NULL;
    mSplashShader = NULL;
 
-   if(pd->mDrop.isNull())
-      Con::warnf("Precipitation::initMaterials - failed to locate texture '%s'!", pd->getDrop());
+   if(pd->getDropAsset().isNull())
+      Con::warnf("Precipitation::initMaterials - failed to locate texture '%s'!", pd->getDropAsset().getAssetId());
    else
-      mDropHandle = pd->mDrop;
+      mDropHandle = pd->getDrop();
 
    if ( dStrlen(pd->mDropShaderName) > 0 )
    {
@@ -655,10 +639,10 @@ void Precipitation::initMaterials()
       }
    }
 
-   if (pd->mSplash.isNull())
-      Con::warnf("Precipitation::initMaterials - failed to locate texture '%s'!", pd->getSplash());
+   if (pd->getSplashAsset().isNull())
+      Con::warnf("Precipitation::initMaterials - failed to locate texture '%s'!", pd->getSplashAsset().getAssetId());
    else
-      mSplashHandle = pd->mSplash;
+      mSplashHandle = pd->getSplash();
 
    if ( dStrlen(pd->mSplashShaderName) > 0 )
    {

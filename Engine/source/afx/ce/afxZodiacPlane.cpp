@@ -51,8 +51,6 @@ ConsoleDocClass( afxZodiacPlaneData,
 
 afxZodiacPlaneData::afxZodiacPlaneData()
 {
-   INIT_ASSET(Texture);
-
   radius_xy = 1;
   start_ang = 0;
   ang_per_sec = 0;
@@ -71,7 +69,7 @@ afxZodiacPlaneData::afxZodiacPlaneData()
 afxZodiacPlaneData::afxZodiacPlaneData(const afxZodiacPlaneData& other, bool temp_clone)
   : GameBaseData(other, temp_clone)
 {
-   CLONE_ASSET(Texture);
+   CLONE_ASSET_REFACTOR(Texture);
 
   radius_xy = other.radius_xy;
   start_ang = other.start_ang;
@@ -114,20 +112,20 @@ void afxZodiacPlaneData::initPersistFields()
    docsURL;
    INITPERSISTFIELD_IMAGEASSET(Texture, afxZodiacPlaneData, "An image to use as the zodiac's texture.");
 
-  addField("radius",          TypeF32,        myOffset(radius_xy),
+  addFieldV("radius", TypeRangedF32,        myOffset(radius_xy), &CommonValidators::PositiveFloat,
     "The zodiac's radius in scene units.");
-  addField("startAngle",      TypeF32,        myOffset(start_ang),
+  addFieldV("startAngle", TypeRangedF32,        myOffset(start_ang), &CommonValidators::DegreeRange,
     "The starting angle in degrees of the zodiac's rotation.");
-  addField("rotationRate",    TypeF32,        myOffset(ang_per_sec),
+  addFieldV("rotationRate", TypeRangedF32,        myOffset(ang_per_sec), &CommonValidators::DegreeRange,
     "The rate of rotation in degrees-per-second. Zodiacs with a positive rotationRate "
     "rotate clockwise, while those with negative values turn counter-clockwise.");
-  addField("growInTime",      TypeF32,        myOffset(grow_in_time),
+  addFieldV("growInTime", TypeRangedF32,        myOffset(grow_in_time), &CommonValidators::PositiveFloat,
     "A duration of time in seconds over which the zodiac grows from a zero size to its "
     "full size as specified by the radius.");
-  addField("shrinkOutTime",   TypeF32,        myOffset(shrink_out_time),
+  addFieldV("shrinkOutTime", TypeRangedF32,        myOffset(shrink_out_time), &CommonValidators::PositiveFloat,
     "A duration of time in seconds over which the zodiac shrinks from full size to "
     "invisible.");
-  addField("growthRate",      TypeF32,        myOffset(growth_rate),
+  addFieldV("growthRate", TypeRangedF32,        myOffset(growth_rate), &CommonValidators::F32Range,
     "A rate in meters-per-second at which the zodiac grows in size. A negative value will "
     "shrink the zodiac.");
   addField("color",           TypeColorF,     myOffset(color),
@@ -166,7 +164,7 @@ void afxZodiacPlaneData::packData(BitStream* stream)
 
   merge_zflags();
 
-  PACKDATA_ASSET(Texture);
+  PACKDATA_ASSET_REFACTOR(Texture);
 
   stream->write(radius_xy);
   stream->write(start_ang);
@@ -185,7 +183,7 @@ void afxZodiacPlaneData::unpackData(BitStream* stream)
 {
   Parent::unpackData(stream);
 
-  UNPACKDATA_ASSET(Texture);
+  UNPACKDATA_ASSET_REFACTOR(Texture);
 
   stream->read(&radius_xy);
   stream->read(&start_ang);

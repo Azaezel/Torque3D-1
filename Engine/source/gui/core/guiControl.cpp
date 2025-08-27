@@ -39,6 +39,7 @@
 #include "gui/core/guiDefaultControlRender.h"
 #include "gui/editor/guiEditCtrl.h"
 #include "gfx/gfxDrawUtil.h"
+#include "console/typeValidators.h"
 
 
 //#define DEBUG_SPEW
@@ -306,7 +307,7 @@ void GuiControl::initPersistFields()
          "Control profile to use when rendering tooltips for this control." );
       addField("tooltip",           TypeRealString,   Offset(mTooltip, GuiControl),
          "String to show in tooltip for this control." );
-      addField("hovertime",         TypeS32,          Offset(mTipHoverTime, GuiControl),
+      addFieldV("hovertime",         TypeRangedS32,          Offset(mTipHoverTime, GuiControl), &CommonValidators::PositiveInt,
          "Time for mouse to hover over control until tooltip is shown (in milliseconds)." );
    endGroup( "ToolTip" );
 
@@ -2230,10 +2231,10 @@ void GuiControl::setFirstResponder( GuiControl* firstResponder )
 
 void GuiControl::setFirstResponder()
 {
-	if( mAwake && mVisible )
+	if( mAwake && mVisible && isProperlyAdded())
 	{
 	   GuiControl *parent = getParent();
-	   if ( mProfile->mCanKeyFocus == true && parent != NULL )
+	   if ( mProfile->mCanKeyFocus == true && parent && parent->isProperlyAdded())
          parent->setFirstResponder( this );
 	}
 }
@@ -2850,6 +2851,23 @@ DefineEngineMethod( GuiControl, getGlobalCenter, Point2I, (),,
    Point2I center( pos.x + ext.x / 2, pos.y + ext.y / 2 );
    
    return center;
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineMethod(GuiControl, setGlobalCenter, void, (S32 x, S32 y), ,
+   "Set the coordinate of the control's center point in coordinates relative to the root control in its control hierarchy.\n"
+   "@param x The X coordinate of the new center point of the control relative to the root control's.\n"
+   "@param y The Y coordinate of the new center point of the control relative to the root control's.")
+{
+   //see if we can turn the x/y into ints directly, 
+   Point2I lPosOffset = object->globalToLocalCoord(Point2I(x, y));
+
+   lPosOffset += object->getPosition();
+
+   const Point2I ext = object->getExtent();
+   Point2I newpos(lPosOffset.x - ext.x / 2, lPosOffset.y - ext.y / 2);
+   object->setPosition(newpos);
 }
 
 //-----------------------------------------------------------------------------

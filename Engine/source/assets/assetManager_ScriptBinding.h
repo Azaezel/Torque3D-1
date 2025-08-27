@@ -432,6 +432,20 @@ DefineEngineMethod(AssetManager, getAssetTags, S32, (), ,
 
 //-----------------------------------------------------------------------------
 
+DefineEngineMethod(AssetManager, getAssetLooseFiles, const char*, (const char* assetId), (""),
+   "Finds the specified asset Id and gets a list of its loose files.\n"
+   "@param assetId The selected asset Id.\n"
+   "@return A tab-delinated list of loose files associated to the assetId.\n")
+{
+   // Fetch asset Id.
+   const char* pAssetId = assetId;
+
+   // Delete asset.
+   return object->getAssetLooseFiles(pAssetId);
+}
+
+//-----------------------------------------------------------------------------
+
 DefineEngineMethod(AssetManager, findAllAssets, S32, (const char* assetQuery, bool ignoreInternal, bool ignorePrivate), ("", true, true),
    "Performs an asset query searching for all assets optionally ignoring internal assets.\n"
    "@param assetQuery The asset query object that will be populated with the results.\n"
@@ -745,6 +759,36 @@ DefineEngineMethod(AssetManager, findAssetLooseFile, S32, (const char* assetQuer
 
     // Perform query.
     return object->findAssetLooseFile( pAssetQuery, pAssetLooseFile, assetQueryAsSource );
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineMethod(AssetManager, getAssetLooseFileCount, S32, (const char* assetId), (""),
+   "Gets the number of loose files associated with the given assetId.\n"
+   "@param assetId The assetId to check.\n"
+   "@return The number of loose files associated with the assetId.\n")
+{
+   // Fetch asset loose file.
+   const char* pAssetId = assetId;
+
+   // Perform query.
+   return object->getAssetLooseFileCount(pAssetId);
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineMethod(AssetManager, getAssetLooseFile, const char*, (const char* assetId, S32 index), ("", 0),
+   "Gets the loose file associated to the given assetId at the provided index.\n"
+   "@param assetId The assetId to check.\n"
+   "@param index The index of the loose file to get.\n"
+   "@return The file name of the associated loose file.\n")
+{
+
+   // Fetch asset loose file.
+   const char* pAssetId = assetId;
+
+   // Perform query.
+   return object->getAssetLooseFile(pAssetId, index);
 }
 
 //-----------------------------------------------------------------------------

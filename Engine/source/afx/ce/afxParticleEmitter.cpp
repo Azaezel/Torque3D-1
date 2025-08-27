@@ -292,9 +292,9 @@ afxParticleEmitterConeData::afxParticleEmitterConeData(const afxParticleEmitterC
 void afxParticleEmitterConeData::initPersistFields()
 {
    docsURL;
-  addField("spreadMin",   TypeF32,    Offset(spread_min, afxParticleEmitterConeData),
+  addFieldV("spreadMin",   TypeRangedF32,    Offset(spread_min, afxParticleEmitterConeData), &CommonValidators::PosDegreeRangeHalf,
     "...");
-  addField("spreadMax",   TypeF32,    Offset(spread_max, afxParticleEmitterConeData),
+  addFieldV("spreadMax", TypeRangedF32,    Offset(spread_max, afxParticleEmitterConeData), &CommonValidators::PosDegreeRangeHalf,
     "...");
 
   Parent::initPersistFields();
@@ -416,7 +416,7 @@ void afxParticleEmitterPathData::initPersistFields()
     "...");
   addField("groundConformInteriors",  TypeBool, Offset(ground_conform_interiors,  afxParticleEmitterPathData),
     "...");
-  addField("groundConformHeight",     TypeF32,  Offset(ground_conform_height,     afxParticleEmitterPathData),
+  addFieldV("groundConformHeight",     TypeRangedF32,  Offset(ground_conform_height,     afxParticleEmitterPathData), &CommonValidators::PositiveFloat,
     "...");
 
   Parent::initPersistFields();
@@ -647,9 +647,9 @@ afxParticleEmitterDiscData::afxParticleEmitterDiscData(const afxParticleEmitterD
 void afxParticleEmitterDiscData::initPersistFields()
 {
    docsURL;
-  addField("radiusMin",   TypeF32,    Offset(pe_radius_min, afxParticleEmitterDiscData),
+  addFieldV("radiusMin",   TypeRangedF32,    Offset(pe_radius_min, afxParticleEmitterDiscData), &CommonValidators::PositiveFloat,
     "...");
-  addField("radiusMax",   TypeF32,    Offset(pe_radius_max, afxParticleEmitterDiscData),
+  addFieldV("radiusMax", TypeRangedF32,    Offset(pe_radius_max, afxParticleEmitterDiscData), &CommonValidators::PositiveFloat,
     "...");
 
   Parent::initPersistFields();
@@ -1064,7 +1064,7 @@ bool afxParticleEmitter::onNewDataBlock(GameBaseData* dptr, bool reload)
   if (mDataBlock->isTempClone())
     return true;
 
-  scriptOnNewDataBlock();
+  scriptOnNewDataBlock(reload);
   return true;
 }
 
@@ -1108,7 +1108,7 @@ bool afxParticleEmitterVector::onNewDataBlock(GameBaseData* dptr, bool reload)
   if (mDataBlock->isTempClone())
     return true;
 
-  scriptOnNewDataBlock();
+  scriptOnNewDataBlock(reload);
   return true;
 }
 
@@ -1177,7 +1177,7 @@ bool afxParticleEmitterCone::onNewDataBlock(GameBaseData* dptr, bool reload)
   if (mDataBlock->isTempClone())
     return true;
 
-  scriptOnNewDataBlock();
+  scriptOnNewDataBlock(reload);
   return true;
 }
 
@@ -1294,7 +1294,7 @@ bool afxParticleEmitterPath::onNewDataBlock(GameBaseData* dptr, bool reload)
   if (mDataBlock->isTempClone())
     return true;
 
-  scriptOnNewDataBlock();
+  scriptOnNewDataBlock(reload);
   return true;
 }
 

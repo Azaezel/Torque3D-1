@@ -63,7 +63,7 @@ class Projectile;
 
 //--------------------------------------------------------------------------
 /// Datablock for projectiles.  This class is the base class for all other projectiles.
-class ProjectileData : public GameBaseData
+class ProjectileData : public GameBaseData, protected AssetPtrCallback
 {
    typedef GameBaseData Parent;
 
@@ -71,8 +71,7 @@ protected:
    bool onAdd() override;
 
 public:
-   DECLARE_SHAPEASSET(ProjectileData, ProjectileShape, onShapeChanged);
-   DECLARE_ASSET_SETGET(ProjectileData, ProjectileShape);
+   DECLARE_SHAPEASSET_REFACTOR(ProjectileData, ProjectileShape)
 
    /// Set to true if it is a billboard and want it to always face the viewer, false otherwise
    bool faceViewer;
@@ -87,9 +86,9 @@ public:
    /// Force imparted on a hit object.
    F32 impactForce;
 
+   bool mExplodeOnTmeout;
    /// Should it arc?
    bool isBallistic;
-
    /// How HIGH should it bounce (parallel to normal), [0,1]
    F32 bounceElasticity;
    /// How much momentum should be lost when it bounces (perpendicular to normal), [0,1]
@@ -154,7 +153,11 @@ public:
    ProjectileData(const ProjectileData&, bool = false);
    bool allowSubstitutions() const override { return true; }
 
-   void onShapeChanged() {}
+protected:
+   void onAssetRefreshed(AssetPtrBase* pAssetPtrBase) override
+   {
+      reloadOnLocalClient();
+   }
 };
 
 
@@ -274,7 +277,7 @@ protected:
    
    LightInfo *mLight;
    LightState mLightState;   
-
+   bool             mHasHit;
    bool             mHasExploded;   ///< Prevent rendering, lighting, and duplicate explosions.
    F32              mFadeValue;     ///< set in processTick, interpolation between fadeDelay and lifetime
                                     ///< in data block

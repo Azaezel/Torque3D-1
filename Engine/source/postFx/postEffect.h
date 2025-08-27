@@ -90,9 +90,9 @@ public:
 
 protected:
 
-   DECLARE_IMAGEASSET_ARRAY(PostEffect, Texture, NumTextures, onTextureChanged);
-   DECLARE_IMAGEASSET_ARRAY_SETGET(PostEffect, Texture);
-   void onTextureChanged() {}
+   DECLARE_IMAGEASSET_ARRAY(PostEffect, Texture, GFXStaticTextureSRGBProfile, NumTextures);
+   GFXTextureProfile* mTextureProfile[NumTextures];
+   GFXTexHandle mTexture[NumTextures];
 
    bool mTexSRGB[NumTextures];
 
@@ -133,6 +133,7 @@ protected:
 
    GFXShaderConstHandle *mTexSizeSC[NumTextures];
    GFXShaderConstHandle *mRenderTargetParamsSC[NumTextures];
+   GFXShaderConstHandle* mMipCountSC[NumTextures];
 
    GFXShaderConstHandle *mViewportOffsetSC;
 
@@ -176,6 +177,7 @@ protected:
 
    String mTargetName;
    GFXTexHandle mTargetTex;
+   S32 mMipCap;
 
    String mTargetDepthStencilName;
    GFXTexHandle mTargetDepthStencil;
@@ -202,7 +204,7 @@ protected:
 
    String mRenderBin;
 
-   F32 mRenderPriority;
+   S16 mRenderPriority;
 
    /// This is true if the effect has been succesfully
    /// initialized and all requirements are met for use.
@@ -215,6 +217,7 @@ protected:
    /// Parent and sibling PostEffects in the chain are still processed.
    /// This is intended for debugging purposes.
    bool mSkip;
+   bool mPreProcessed;
 
    bool mOneFrameOnly;
    bool mOnThisFrame;  

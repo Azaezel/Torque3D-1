@@ -32,25 +32,22 @@
 /// This control draws a box containing a color specified by mPickColor, 
 /// in a way according to one of the PickMode enum's, stored as mDisplayMode.
 /// 
-/// The color the box represents is stored as mBaseColour (for pPallete, pBlendColorRange), 
+/// The color the box represents is stored as mBaseColour (for pPalette, pBlendColorRange), 
 /// whilst the color chosen by the box is stored as mPickColor.
 ///
 /// Whenever the control is clicked, it will do one of many things :
 ///
-/// -# If its in pPallete mode, execute the regular "command"
-/// -# If its in pBlendColorRange mode, update the selector position. The position will be re-read upon the next render. In addition, a cross will be drawn where the color has been selected from. As with 1, "command" will be executed.
-/// -# If its in pHorizColorRange or pVertColorRange mode, it will function in a similar manner to 2, but the selector will resemble a horizontal or vertical bar.
-/// -# If its in pHorizAlphaRange or pVertAlphaRange mode, it will also function the same way as 3
+/// -# If its in pPalette mode, execute the regular "command"
+/// -# If its in pBlendRange mode, update the selector position. The position will be re-read upon the next render. In addition, a cross will be drawn where the color has been selected from. As with 1, "command" will be executed.
+/// -# If its in pHueRange or pAlphaRange mode, it will function in a similar manner to 2, but the selector will resemble a horizontal or vertical bar.
+/// -# If its in pAlphaRange mode, it will also function the same way as 3
 /// -# If its in pDropperBackground mode, nothing will happen
 ///
 /// Colours are drawn in different ways according to mDisplayMode:
 ///
-/// -# With pPallete, a box with a blank color, mBaseColor is drawn.
-/// -# With pHorizColorRange, a horizontal box with colors blending in the range, mColorRange.
-/// -# With pVertColorRange, a vertical box with colors blending in the range, mColorRange.
-/// -# With pBlendColorRange, a box, the bottom colors being black, but the top left being white, and the top right being mBaseColor.
-/// -# With pHorizAlphaRange, a horizontal box with black blending with an alpha from 0 to 255
-/// -# With pVertAlphaRange, a vertical box with black blending with an apha from 0 to 255
+/// -# With pPalette, a box with a blank color, mBaseColor is drawn.
+/// -# With pHueRange, a box containing the hue range 0-360.
+/// -# With pAlphaRange, a box containing the alpha range 0-255.
 /// -# With pDropperBackground, nothing is drawn
 class GuiColorPickerCtrl : public GuiControl
 {
@@ -59,14 +56,10 @@ class GuiColorPickerCtrl : public GuiControl
   public:
    enum PickMode
    {
-     pPallet = 0,                ///< We just have a solid color; We just act like a pallet 
-     pHorizColorRange,           ///< We have a range of base colors going horizontally
-     pVertColorRange,            ///< We have a range of base colors going vertically
-     pHorizColorBrightnessRange, ///< HorizColorRange with brightness
-     pVertColorBrightnessRange,  ///< VertColorRange with brightness
-     pBlendColorRange,           ///< We have a box which shows a range in brightness of the color
-     pHorizAlphaRange,           ///< We have a box which shows a range in alpha going horizontally
-     pVertAlphaRange,            ///< We have a box which shows a range in alpha going vertically
+     pPalette = 0,                ///< We just have a solid color; We just act like a pallet
+     pBlendRange,                ///< The full range of brightness and saturation.
+     pHueRange,                  ///< The full hue range 0-360.
+     pAlphaRange,                ///< The full alpha range 0-255.
      pDropperBackground          ///< The control does not draw anything; Only does something when you click, or move the mouse (when active)
    };
    
@@ -77,37 +70,67 @@ class GuiColorPickerCtrl : public GuiControl
    };
 
   protected:
-   /// @name Core Rendering functions
-   /// @{
-   void renderColorBox(RectI &bounds); ///< Function that draws the actual color box
-   void drawSelector(RectI &bounds, Point2I &selectorPos, SelectorMode mode); /// < Function that draws the selection indicator
-   void drawBlendBox(RectI &bounds, LinearColorF &c1, LinearColorF &c2, LinearColorF &c3, LinearColorF &c4);
-   void drawBlendRangeBox(RectI &bounds, bool vertical, U8 numColors, ColorI *colors);
-   /// @}
+
+   /// <summary>
+   /// Render the hue gradient for pBlendRange mode.
+   /// </summary>
+   /// <param name="bounds">The bounds of the ctrl.</param>
+   void renderBlendRange(RectI& bounds);
+
+   /// <summary>
+   /// Render the selector for pBlendRange mode.
+   /// </summary>
+   /// <param name="bounds">The bounds of the ctrl.</param>
+   void renderBlendSelector(RectI& bounds);
+
+   /// <summary>
+   /// Render the hue gradient for pHueRange mode.
+   /// </summary>
+   /// <param name="bounds">The bounds of the ctrl.</param>
+   /// <param name="numColours">The number of splits in the gradient. 7 as default.</param>
+   void renderHueGradient(RectI& bounds, U32 numColours);
+
+   /// <summary>
+   /// Render the selector for pHueRange mode.
+   /// </summary>
+   /// <param name="bounds">The bounds of the ctrl.</param>
+   void renderHueSelector(RectI& bounds);
+
+   /// <summary>
+   /// Render the alpha gradient for pAlphaRange mode.
+   /// </summary>
+   /// <param name="bounds">The bounds of the ctrl.</param>
+   void renderAlphaGradient(RectI& bounds);
+
+   /// <summary>
+   /// Render the selector for pAlphaRange mode.
+   /// </summary>
+   /// <param name="bounds">The bounds of the ctrl.</param>
+   void renderAlphaSelector(RectI& bounds);
+
+   void renderEyeDropper();
 
    /// @name Core Variables
    /// @{
-   LinearColorF mPickColor;		///< Color that has been picked from control
-   LinearColorF mBaseColor;		///< Colour we display (in case of pallet and blend mode)
-   PickMode mDisplayMode;	///< Current color display mode of the selector
-   
-   Point2I mSelectorPos;	///< Current position of the selector
-   bool mPositionChanged;	///< Current position has changed since last render?
-   bool mMouseOver;		///< Mouse is over?
-   bool mMouseDown;		///< Mouse button down?
-   bool mActionOnMove;		///< Perform onAction() when position has changed?
+   PickMode mDisplayMode;	      ///< Current color display mode of the selector
+   SelectorMode mSelectorMode;	///< Current color display mode of the selector
+   U32 mSelectedHue;
+   U32 mSelectedSaturation;
+   U32 mSelectedBrightness;
+   U32 mSelectedAlpha;
+   Point2I eyeDropperPos;
+   GBitmap* eyeDropperCap;
+   GFXTexHandle eyeHandle;
 
-   bool mSelectColor;
-   LinearColorF mSetColor;
-   GBitmap* mBitmap;
+   bool mDropperActive;       ///< Is the eye dropper active?
+   bool mMouseOver;		      ///< Mouse is over?
+   bool mMouseDown;		      ///< Mouse button down?
+   bool mActionOnMove;		   ///< Perform onAction() when position has changed?
+   bool mShowReticle;         ///< Show reticle on render
 
-   Point2I findColor(const LinearColorF & color, const Point2I& offset, const Point2I& resolution, GBitmap& bmp);
-   
-   S32   mSelectorGap;		///< The half-way "gap" between the selector pos and where the selector is allowed to draw. 
+   S32   mSelectorGap;		   ///< The half-way "gap" between the selector pos and where the selector is allowed to draw. 
 
    GFXStateBlockRef mStateBlock;
-
-   static ColorI mColorRange[7]; ///< Color range for pHorizColorRange and pVertColorRange
    /// @}
 
   public:
@@ -120,23 +143,7 @@ class GuiColorPickerCtrl : public GuiControl
 
    static void initPersistFields();
    void onRender(Point2I offset, const RectI &updateRect) override;
-   bool mShowReticle;       ///< Show reticle on render
-   /// @name Color Value Functions
-   /// @{
-   /// NOTE: setValue only sets baseColor, since setting pickColor wouldn't be useful
-   void setValue(LinearColorF &value) {mBaseColor = value;}
-   /// NOTE: getValue() returns baseColor if pallet (since pallet controls can't "pick" colours themselves)
-   LinearColorF getValue() { return mDisplayMode == pPallet ? mBaseColor : mPickColor; }
-   const char *getScriptValue() override;
-   void setScriptValue(const char *value) override;
-   void updateColor() {mPositionChanged = true;}
-   /// @}
-
-   /// @name Selector Functions
-   /// @{
-   void setSelectorPos(const Point2I &pos); ///< Set new pos (in local coords)
-   void setSelectorPos(const LinearColorF & color);
-   Point2I getSelectorPos() {return mSelectorPos;}
+   
    /// @}
 
    /// @name Input Events
@@ -149,9 +156,43 @@ class GuiColorPickerCtrl : public GuiControl
    void onMouseEnter(const GuiEvent &) override;
    void onMouseLeave(const GuiEvent &) override;
    /// @}
+
+   // script getters and setters
+   /// <summary>
+   /// Set the selected hue.
+   /// </summary>
+   /// <param name="hueValue">Hue value, 0 - 360.</param>
+   void setSelectedHue(const U32& hueValue);
+   U32 getSelectedHue() { return mSelectedHue; }
+
+   /// <summary>
+   /// Set the selected brightness.
+   /// </summary>
+   /// <param name="brightValue">Brightness value, 0 - 100.</param>
+   void setSelectedBrightness(const U32& brightValue);
+   U32 getSelectedBrightness() { return mSelectedBrightness; }
+
+   /// <summary>
+   /// Set the selected saturation.
+   /// </summary>
+   /// <param name="satValue">Saturation value, 0 - 100.</param>
+   void setSelectedSaturation(const U32& satValue);
+   U32 getSelectedSaturation() { return mSelectedSaturation; }
+
+   /// <summary>
+   /// Set the selected alpha.
+   /// </summary>
+   /// <param name="alphaValue">Alpha value, 0 - 255.</param>
+   void setSelectedAlpha(const U32& alphaValue);
+   U32 getSelectedAlpha() { return mSelectedAlpha; }
+
+   void activateEyeDropper();
+
 };
 
 typedef GuiColorPickerCtrl::PickMode GuiColorPickMode;
+typedef GuiColorPickerCtrl::SelectorMode GuiColorSelectorMode;
 DefineEnumType( GuiColorPickMode );
+DefineEnumType(GuiColorSelectorMode);
 
 #endif

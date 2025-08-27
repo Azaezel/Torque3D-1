@@ -114,6 +114,26 @@ function ForestEditorPlugin::onWorldEditorShutdown( %this )
       ForestDataManager.delete();
 }
 
+function EditorGui::SetForestPalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("SelectItem", "ToolsModule:arrow_n_image", "GlobalGizmoProfile.mode = \"None\"; ForestEditorGui.setActiveTool(ForestTools->SelectionTool);", "", "Select Item", "1"); 
+   EWToolsPaletteWindow.addButton("MoveItem", "ToolsModule:translate_n_image", "GlobalGizmoProfile.mode = \"Move\"; ForestEditorGui.setActiveTool(ForestTools->SelectionTool);", "", "Move Item", "2"); 
+   EWToolsPaletteWindow.addButton("RotateItem", "ToolsModule:rotate_n_image", "GlobalGizmoProfile.mode = \"Rotate\"; ForestEditorGui.setActiveTool(ForestTools->SelectionTool);", "", "Rotate Item", "3");
+   EWToolsPaletteWindow.addButton("ScaleItem", "ToolsModule:scale_n_image", "GlobalGizmoProfile.mode = \"Scale\"; ForestEditorGui.setActiveTool(ForestTools->SelectionTool);", "", "Scale Item", "4"); 
+   EWToolsPaletteWindow.addButton("Paint", "ToolsModule:paint_forest_btn_n_image", "ForestEditorGui.setActiveTool( ForestTools->BrushTool ); ForestTools->BrushTool.mode = \"Paint\";", "", "Paint", "5"); 
+   EWToolsPaletteWindow.addButton("EraseAll", "ToolsModule:erase_all_btn_n_image", "ForestEditorGui.setActiveTool( ForestTools->BrushTool ); ForestTools->BrushTool.mode = \"Erase\";", "", "Erase All", "6");
+   EWToolsPaletteWindow.addButton("EraseSelected", "ToolsModule:erase_element_btn_n_image", "ForestEditorGui.setActiveTool( ForestTools->BrushTool ); ForestTools->BrushTool.mode = \"EraseSelected\";", "", "Erase Selected", "7"); 
+   EWToolsPaletteWindow.refresh();
+}
+
 function ForestEditorPlugin::onActivated( %this )
 {
    EditorGui.bringToFront( ForestEditorGui );
@@ -133,7 +153,8 @@ function ForestEditorPlugin::onActivated( %this )
    }
    
    %this.map.push();
-   Parent::onActivated(%this);   
+   Parent::onActivated(%this);
+   EditorGui.SetForestPalletBar(); 
    
    ForestEditBrushTree.open( ForestBrushSet );   
    ForestEditMeshTree.open( ForestItemDataSet );
@@ -288,6 +309,8 @@ function ForestEditorPlugin::onEditMenuSelect( %this, %editMenu )
 function ForestEditorPlugin::handleDelete( %this )
 {
    ForestTools->SelectionTool.deleteSelection();   
+   
+   ForestEditorPlugin.dirty = true;
 }
 
 function ForestEditorPlugin::handleDeselect( %this )
@@ -298,6 +321,8 @@ function ForestEditorPlugin::handleDeselect( %this )
 function ForestEditorPlugin::handleCut( %this )
 {
    ForestTools->SelectionTool.cutSelection();
+   
+   ForestEditorPlugin.dirty = true;
 }
 
 function ForestEditorPlugin::handleCopy( %this )
@@ -308,4 +333,6 @@ function ForestEditorPlugin::handleCopy( %this )
 function ForestEditorPlugin::handlePaste( %this )
 {
    ForestTools->SelectionTool.pasteSelection();
+   
+   ForestEditorPlugin.dirty = true;
 }

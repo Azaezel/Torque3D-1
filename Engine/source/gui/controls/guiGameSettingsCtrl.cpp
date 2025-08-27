@@ -29,6 +29,7 @@
 #include "gui/containers/guiScrollCtrl.h"
 #include "core/strings/stringUnit.h"
 #include "gui/core/guiDefaultControlRender.h"
+#include "console/typeValidators.h"
 
 //-----------------------------------------------------------------------------
 // GuiGameSettingsCtrl
@@ -59,10 +60,6 @@ GuiGameSettingsCtrl::GuiGameSettingsCtrl() :
    mCallbackOnB = mCallbackOnA;
    mCallbackOnX = mCallbackOnA;
    mCallbackOnY = mCallbackOnA;
-
-   INIT_ASSET(KeybindBitmap);
-   INIT_ASSET(PreviousBitmap);
-   INIT_ASSET(NextBitmap);
 }
 
 GuiGameSettingsCtrl::~GuiGameSettingsCtrl()
@@ -187,13 +184,13 @@ void GuiGameSettingsCtrl::onRenderListOption(Point2I currentOffset)
       bool arrowOnR = (isSelected() || isHighlighted()) && (mWrapOptions || (mSelectedOption < mOptions.size() - 1));
       if (arrowOnL)
       {
-         if (mPreviousBitmapAsset.notNull())
+         if (getPreviousBitmap())
          {
             arrowOffset.x = currentOffset.x + mColumnSplit;
             arrowOffset.y = currentOffset.y + arrowOffsetY;
 
             drawer->clearBitmapModulation();
-            drawer->drawBitmapStretch(mPreviousBitmap, RectI(arrowOffset, Point2I(mArrowSize, mArrowSize)), GFXBitmapFlip_None, GFXTextureFilterLinear, false);
+            drawer->drawBitmapStretch(getPreviousBitmap(), RectI(arrowOffset, Point2I(mArrowSize, mArrowSize)), GFXBitmapFlip_None, GFXTextureFilterLinear, false);
          }
          else
          {
@@ -208,13 +205,13 @@ void GuiGameSettingsCtrl::onRenderListOption(Point2I currentOffset)
       }
       if (arrowOnR)
       {
-         if (mNextBitmapAsset.notNull())
+         if (getNextBitmap())
          {
             arrowOffset.x = currentOffset.x + getWidth() - mRightPad - mArrowSize;
             arrowOffset.y = currentOffset.y + arrowOffsetY;
 
             drawer->clearBitmapModulation();
-            drawer->drawBitmapStretch(mNextBitmap, RectI(arrowOffset, Point2I(mArrowSize, mArrowSize)), GFXBitmapFlip_None, GFXTextureFilterLinear, false);
+            drawer->drawBitmapStretch(getNextBitmap(), RectI(arrowOffset, Point2I(mArrowSize, mArrowSize)), GFXBitmapFlip_None, GFXTextureFilterLinear, false);
          }
          else
          {
@@ -372,11 +369,11 @@ void GuiGameSettingsCtrl::onRenderKeybindOption(Point2I currentOffset)
    buttonSize.x = height;
    buttonSize.y = height;
 
-   if (mKeybindBitmapAsset.notNull())
+   if (getKeybindBitmap())
    {
       RectI rect(button, buttonSize);
       drawer->clearBitmapModulation();
-      drawer->drawBitmapStretch(mKeybindBitmap, rect, GFXBitmapFlip_None, GFXTextureFilterLinear, false);
+      drawer->drawBitmapStretch(getKeybindBitmap(), rect, GFXBitmapFlip_None, GFXTextureFilterLinear, false);
    }
 
    //drawer->drawRectFill(button, ColorI::BLUE);
@@ -454,22 +451,11 @@ bool GuiGameSettingsCtrl::onWake()
    if( !Parent::onWake() )
       return false;
 
-   _setNextBitmap(getNextBitmap());
-   _setPreviousBitmap(getPreviousBitmap());
-   _setKeybindBitmap(getKeybindBitmap());
-
    return true;
 }
 
 void GuiGameSettingsCtrl::onSleep()
 {
-   if (mNextBitmapAsset.notNull())
-      mNextBitmap = NULL;
-   if (mPreviousBitmapAsset.notNull())
-      mPreviousBitmap = NULL;
-   if (mKeybindBitmapAsset.notNull())
-      mKeybindBitmap = NULL;
-
    Parent::onSleep();
 }
 
@@ -844,13 +830,13 @@ void GuiGameSettingsCtrl::initPersistFields()
    INITPERSISTFIELD_IMAGEASSET(PreviousBitmap, GuiGameSettingsCtrl, "Bitmap used for the previous button when in list mode.");
    INITPERSISTFIELD_IMAGEASSET(NextBitmap, GuiGameSettingsCtrl, "Bitmap used for the next button when in list mode.");
 
-   addField("arrowSize", TypeS32, Offset(mArrowSize, GuiGameSettingsCtrl),
+   addFieldV("arrowSize", TypeRangedS32, Offset(mArrowSize, GuiGameSettingsCtrl), &CommonValidators::PositiveInt,
       "Size of the arrow buttons' extents");
 
-   addField("columnSplit", TypeS32, Offset(mColumnSplit, GuiGameSettingsCtrl),
+   addFieldV("columnSplit", TypeRangedS32, Offset(mColumnSplit, GuiGameSettingsCtrl), &CommonValidators::NaturalNumber,
       "Position of the split between the leftside label and the rightside setting parts");
 
-   addField("rightPad", TypeS32, Offset(mRightPad, GuiGameSettingsCtrl),
+   addFieldV("rightPad", TypeRangedS32, Offset(mRightPad, GuiGameSettingsCtrl), &CommonValidators::NaturalNumber,
       "Padding between the rightmost edge of the control and right arrow.");
 
    addField("callbackOnA", TypeString, Offset(mCallbackOnA, GuiGameSettingsCtrl),

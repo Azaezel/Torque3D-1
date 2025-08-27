@@ -114,6 +114,10 @@ AIPlayer::AIPlayer()
    mJump = None;
    mNavSize = Regular;
    mLinkTypes = LinkData(AllFlags);
+   mFilter.setIncludeFlags(mLinkTypes.getFlags());
+   mFilter.setExcludeFlags(0);
+   mAreaCosts.setSize(PolyAreas::NumAreas);
+   mAreaCosts.fill(1.0f);
 #endif
 
    mIsAiControlled = true;
@@ -136,34 +140,35 @@ void AIPlayer::initPersistFields()
    docsURL;
    addGroup( "AI" );
 
-      addField( "mMoveTolerance", TypeF32, Offset( mMoveTolerance, AIPlayer ), 
+      addFieldV( "mMoveTolerance", TypeRangedF32, Offset( mMoveTolerance, AIPlayer ), &CommonValidators::PositiveFloat,
          "@brief Distance from destination before stopping.\n\n"
          "When the AIPlayer is moving to a given destination it will move to within "
          "this distance of the destination and then stop.  By providing this tolerance "
          "it helps the AIPlayer from never reaching its destination due to minor obstacles, "
          "rounding errors on its position calculation, etc.  By default it is set to 0.25.\n");
 
-      addField( "moveStuckTolerance", TypeF32, Offset( mMoveStuckTolerance, AIPlayer ), 
+      addFieldV( "moveStuckTolerance", TypeRangedF32, Offset( mMoveStuckTolerance, AIPlayer ), &CommonValidators::PositiveFloat,
          "@brief Distance tolerance on stuck check.\n\n"
          "When the AIPlayer is moving to a given destination, if it ever moves less than "
          "this tolerance during a single tick, the AIPlayer is considered stuck.  At this point "
          "the onMoveStuck() callback is called on the datablock.\n");
 
-      addField( "moveStuckTestDelay", TypeS32, Offset( mMoveStuckTestDelay, AIPlayer ), 
+      addFieldV( "moveStuckTestDelay", TypeRangedS32, Offset( mMoveStuckTestDelay, AIPlayer ), &CommonValidators::PositiveInt,
          "@brief The number of ticks to wait before testing if the AIPlayer is stuck.\n\n"
          "When the AIPlayer is asked to move, this property is the number of ticks to wait "
          "before the AIPlayer starts to check if it is stuck.  This delay allows the AIPlayer "
          "to accelerate to full speed without its initial slow start being considered as stuck.\n"
          "@note Set to zero to have the stuck test start immediately.\n");
 
-      addField( "AttackRadius", TypeF32, Offset( mAttackRadius, AIPlayer ), 
+      addFieldV( "AttackRadius", TypeRangedF32, Offset( mAttackRadius, AIPlayer ), &CommonValidators::PositiveFloat,
          "@brief Distance considered in firing range for callback purposes.");
            
    endGroup( "AI" );
 
 #ifdef TORQUE_NAVIGATION_ENABLED
    addGroup("Pathfinding");
-
+      addField("areaCosts", TypeF32Vector, Offset(mAreaCosts, AIPlayer),
+         "Vector of costs for each PolyArea.");
       addField("allowWalk", TypeBool, Offset(mLinkTypes.walk, AIPlayer),
          "Allow the character to walk on dry land.");
       addField("allowJump", TypeBool, Offset(mLinkTypes.jump, AIPlayer),
@@ -621,7 +626,7 @@ bool AIPlayer::getAIMove(Move *movePtr)
    // Replicate the trigger state into the move so that
    // triggers can be controlled from scripts.
    for( U32 i = 0; i < MaxTriggerKeys; i++ )
-      movePtr->trigger[ i ] = getImageTriggerState( i );
+      movePtr->trigger[ i ] = getMoveTrigger( i );
 
 #ifdef TORQUE_NAVIGATION_ENABLED
    if(mJump == Now)
@@ -785,6 +790,7 @@ void AIPlayer::moveToNode(S32 node)
 
 bool AIPlayer::setPathDestination(const Point3F &pos)
 {
+#ifdef TORQUE_NAVIGATION_ENABLED
    // Pathfinding only happens on the server.
    if(!isServerObject())
       return false;
@@ -799,6 +805,13 @@ bool AIPlayer::setPathDestination(const Point3F &pos)
       return false;
    }
 
+   mFilter.setIncludeFlags(mLinkTypes.getFlags());
+   mFilter.setExcludeFlags(mLinkTypes.getExcludeFlags());
+   for (U32 i = 0; i < PolyAreas::NumAreas; i++)
+   {
+      mFilter.setAreaCost((PolyAreas)i, mAreaCosts[i]);
+   }
+
    // Create a new path.
    NavPath *path = new NavPath();
 
@@ -808,6 +821,7 @@ bool AIPlayer::setPathDestination(const Point3F &pos)
    path->mFromSet = path->mToSet = true;
    path->mAlwaysRender = true;
    path->mLinkTypes = mLinkTypes;
+   path->mFilter = mFilter;
    path->mXray = true;
    // Paths plan automatically upon being registered.
    if(!path->registerObject())
@@ -839,6 +853,9 @@ bool AIPlayer::setPathDestination(const Point3F &pos)
       path->deleteObject();
       return false;
    }
+#else
+   setMoveDestination(pos, false);
+#endif
 }
 
 DefineEngineMethod(AIPlayer, setPathDestination, bool, (Point3F goal),,
@@ -1390,14 +1407,14 @@ DefineEngineMethod(AIPlayer, checkInFoV, bool, (ShapeBase* obj, F32 fov, bool ch
    return object->checkInFoV(obj, fov, checkEnabled);
 }
 
-DefineEngineMethod( AIPlayer, setMoveTrigger, void, ( U32 slot ),,
+DefineEngineMethod( AIPlayer, setMoveTrigger, void, ( U32 slot, bool state ),(true),
    "@brief Sets a movement trigger on an AI object.\n\n"
    "@param slot The trigger slot to set.\n"
    "@see getMoveTrigger()\n"
    "@see clearMoveTrigger()\n"
    "@see clearMoveTriggers()\n")
 {
-   object->setMoveTrigger( slot, true );
+   object->setMoveTrigger( slot, state );
 }
 
 DefineEngineMethod( AIPlayer, clearMoveTrigger, void, ( U32 slot ),,

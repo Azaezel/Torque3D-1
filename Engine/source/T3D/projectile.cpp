@@ -56,6 +56,7 @@
 #include "T3D/decal/decalData.h"
 #include "T3D/lightDescription.h"
 #include "console/engineAPI.h"
+#include "T3D/rigidShape.h"
 
 
 IMPLEMENT_CO_DATABLOCK_V1(ProjectileData);
@@ -144,7 +145,7 @@ U32 Projectile::smProjectileWarpTicks = 5;
 //
 ProjectileData::ProjectileData()
 {
-   INIT_ASSET(ProjectileShape);
+   mProjectileShapeAsset.registerRefreshNotify(this);
 
    INIT_ASSET(ProjectileSound);
 
@@ -163,6 +164,7 @@ ProjectileData::ProjectileData()
    scale.set( 1.0f, 1.0f, 1.0f );
 
    isBallistic = false;
+   mExplodeOnTmeout = false;
 
 	velInheritFactor = 1.0f;
 	muzzleVelocity = 50;
@@ -203,6 +205,7 @@ ProjectileData::ProjectileData(const ProjectileData& other, bool temp_clone) : G
    muzzleVelocity = other.muzzleVelocity;
    impactForce = other.impactForce;
    isBallistic = other.isBallistic;
+   mExplodeOnTmeout = other.mExplodeOnTmeout;
    bounceElasticity = other.bounceElasticity;
    bounceFriction = other.bounceFriction;
    gravityMod = other.gravityMod;
@@ -220,7 +223,7 @@ ProjectileData::ProjectileData(const ProjectileData& other, bool temp_clone) : G
    CLONE_ASSET(ProjectileSound);
    lightDesc = other.lightDesc;
    lightDescId = other.lightDescId; // -- for pack/unpack of lightDesc ptr
-   CLONE_ASSET(ProjectileShape);// -- TSShape loads using mProjectileShapeName
+   mProjectileShapeAsset = other.mProjectileShapeAsset;// -- TSShape loads using mProjectileShapeName
    activateSeq = other.activateSeq; // -- from projectileShape sequence "activate"
    maintainSeq = other.maintainSeq; // -- from projectileShape sequence "maintain"
    particleEmitter = other.particleEmitter;
@@ -234,9 +237,7 @@ void ProjectileData::initPersistFields()
 {
    docsURL;
    addGroup("Shapes");
-      addProtectedField("projectileShapeName", TypeShapeFilename, Offset(mProjectileShapeName, ProjectileData), &_setProjectileShapeData, &defaultProtectedGetFn,
-         "@brief File path to the model of the projectile.\n\n", AbstractClassRep::FIELD_HideInInspectors);
-      INITPERSISTFIELD_SHAPEASSET(ProjectileShape, ProjectileData, "@brief The model of the projectile.\n\n");
+      INITPERSISTFIELD_SHAPEASSET_REFACTOR(ProjectileShape, ProjectileData, "@brief The model of the projectile.\n\n");
       addField("scale", TypePoint3F, Offset(scale, ProjectileData),
          "@brief Scale to apply to the projectile's size.\n\n"
          "@note This is applied after SceneObject::scale\n");
@@ -273,42 +274,44 @@ void ProjectileData::initPersistFields()
    endGroup("Light Emitter");   
 
    addGroup("Physics");
-      addProtectedField("lifetime", TypeS32, Offset(lifetime, ProjectileData), &setLifetime, &getScaledValue,
+      addProtectedFieldV("lifetime", TypeRangedS32, Offset(lifetime, ProjectileData), &setLifetime, &getScaledValue, &CommonValidators::NaturalNumber,
          "@brief Amount of time, in milliseconds, before the projectile is removed from the simulation.\n\n"
          "Used with fadeDelay to determine the transparency of the projectile at a given time. "
          "A projectile may exist up to a maximum of 131040ms (or 4095 ticks) as defined by Projectile::MaxLivingTicks in the source code."
          "@see fadeDelay");
-      addProtectedField("armingDelay", TypeS32, Offset(armingDelay, ProjectileData), &setArmingDelay, &getScaledValue,
+      addProtectedFieldV("armingDelay", TypeRangedS32, Offset(armingDelay, ProjectileData), &setArmingDelay, &getScaledValue, &CommonValidators::PositiveInt,
          "@brief Amount of time, in milliseconds, before the projectile will cause damage or explode on impact.\n\n"
          "This value must be equal to or less than the projectile's lifetime.\n\n"
          "@see lifetime");
-      addProtectedField("fadeDelay", TypeS32, Offset(fadeDelay, ProjectileData), &setFadeDelay, &getScaledValue,
+      addProtectedFieldV("fadeDelay", TypeRangedS32, Offset(fadeDelay, ProjectileData), &setFadeDelay, &getScaledValue, &CommonValidators::NaturalNumber,
          "@brief Amount of time, in milliseconds, before the projectile begins to fade out.\n\n"
          "This value must be smaller than the projectile's lifetime to have an affect.");
+      addField("explodeOnTmeout", TypeBool, Offset(mExplodeOnTmeout, ProjectileData),
+         "@brief Detetmines if the projectile should explode on timeout");      
       addField("isBallistic", TypeBool, Offset(isBallistic, ProjectileData),
          "@brief Detetmines if the projectile should be affected by gravity and whether or not "
          "it bounces before exploding.\n\n");
-      addField("velInheritFactor", TypeF32, Offset(velInheritFactor, ProjectileData),
+      addFieldV("velInheritFactor", TypeRangedF32, Offset(velInheritFactor, ProjectileData), &CommonValidators::F32Range,
          "@brief Amount of velocity the projectile recieves from the source that created it.\n\n"
          "Use an amount between 0 and 1 for the best effect. "
          "This value is never modified by the engine.\n"
          "@note This value by default is not transmitted between the server and the client.");
-      addField("muzzleVelocity", TypeF32, Offset(muzzleVelocity, ProjectileData),
+      addFieldV("muzzleVelocity", TypeRangedF32, Offset(muzzleVelocity, ProjectileData), &CommonValidators::PositiveFloat,
          "@brief Amount of velocity the projectile recieves from the \"muzzle\" of the gun.\n\n"
          "Used with velInheritFactor to determine the initial velocity of the projectile. "
          "This value is never modified by the engine.\n\n"
          "@note This value by default is not transmitted between the server and the client.\n\n"
          "@see velInheritFactor");
-      addField("impactForce", TypeF32, Offset(impactForce, ProjectileData));
-      addField("bounceElasticity", TypeF32, Offset(bounceElasticity, ProjectileData),
+      addFieldV("impactForce", TypeRangedF32, Offset(impactForce, ProjectileData), &CommonValidators::PositiveFloat);
+      addFieldV("bounceElasticity", TypeRangedF32, Offset(bounceElasticity, ProjectileData), &CommonValidators::PositiveFloat,
          "@brief Influences post-bounce velocity of a projectile that does not explode on contact.\n\n"
          "Scales the velocity from a bounce after friction is taken into account. "
          "A value of 1.0 will leave it's velocity unchanged while values greater than 1.0 will increase it.\n");
-      addField("bounceFriction", TypeF32, Offset(bounceFriction, ProjectileData),
+      addFieldV("bounceFriction", TypeRangedF32, Offset(bounceFriction, ProjectileData), &CommonValidators::PositiveFloat,
          "@brief Factor to reduce post-bounce velocity of a projectile that does not explode on contact.\n\n"
          "Reduces bounce velocity by this factor and a multiple of the tangent to impact. "
          "Used to simulate surface friction.\n");
-      addField("gravityMod", TypeF32, Offset(gravityMod, ProjectileData),
+      addFieldV("gravityMod", TypeRangedF32, Offset(gravityMod, ProjectileData), &CommonValidators::F32Range,
          "@brief Scales the influence of gravity on the projectile.\n\n"
          "The larger this value is, the more that gravity will affect the projectile. "
          "A value of 1.0 will assume \"normal\" influence upon it.\n"
@@ -378,22 +381,18 @@ bool ProjectileData::preload(bool server, String &errorStr)
             Con::errorf(ConsoleLogEntry::General, "ProjectileData::preload: Invalid packet, bad datablockid(lightDesc): %d", lightDescId);   
    }
 
-   if (mProjectileShapeAssetId != StringTable->EmptyString())
+   if (getProjectileShape())
    {
-      //If we've got a shapeAsset assigned for our projectile, but we failed to load the shape data itself, report the error
-      if (!mProjectileShape)
-      {
-         errorStr = String::ToString("ProjectileData::load: Couldn't load shape \"%s\"", mProjectileShapeAssetId);
-         return false;
-      }
-      else
-      {
-         activateSeq = mProjectileShape->findSequence("activate");
-         maintainSeq = mProjectileShape->findSequence("maintain");
+      activateSeq = getProjectileShape()->findSequence("activate");
+      maintainSeq = getProjectileShape()->findSequence("maintain");
 
-         TSShapeInstance* pDummy = new TSShapeInstance(mProjectileShape, !server);
-         delete pDummy;
-      }
+      TSShapeInstance* pDummy = new TSShapeInstance(getProjectileShape(), !server);
+      delete pDummy;
+   }
+   else if (mProjectileShapeAsset.notNull())
+   {
+      errorStr = String::ToString("ProjectileData::preload: Couldn't load shape \"%s\"", _getProjectileShapeAssetId());
+      return false;
    }
 
    return true;
@@ -404,7 +403,7 @@ void ProjectileData::packData(BitStream* stream)
 {
    Parent::packData(stream);
 
-   PACKDATA_ASSET(ProjectileShape);
+   PACKDATA_ASSET_REFACTOR(ProjectileShape);
 
    stream->writeFlag(faceViewer);
    if(stream->writeFlag(scale.x != 1 || scale.y != 1 || scale.z != 1))
@@ -455,20 +454,21 @@ void ProjectileData::packData(BitStream* stream)
    stream->write(armingDelay);
    stream->write(fadeDelay);
 
+   stream->writeFlag(mExplodeOnTmeout);
    if(stream->writeFlag(isBallistic))
    {
       stream->write(gravityMod);
       stream->write(bounceElasticity);
       stream->write(bounceFriction);
    }
-
+   
 }
 
 void ProjectileData::unpackData(BitStream* stream)
 {
    Parent::unpackData(stream);
 
-   UNPACKDATA_ASSET(ProjectileShape);
+   UNPACKDATA_ASSET_REFACTOR(ProjectileShape);
 
    faceViewer = stream->readFlag();
    if(stream->readFlag())
@@ -514,6 +514,7 @@ void ProjectileData::unpackData(BitStream* stream)
    stream->read(&armingDelay);
    stream->read(&fadeDelay);
 
+   mExplodeOnTmeout = stream->readFlag();
    isBallistic = stream->readFlag();
    if(isBallistic)
    {
@@ -611,6 +612,7 @@ Projectile::Projectile()
    mProjectileShape( NULL ),
    mActivateThread( NULL ),
    mMaintainThread( NULL ),
+   mHasHit(false),
    mHasExploded( false ),
    mFadeValue( 1.0f )
 {
@@ -792,9 +794,9 @@ bool Projectile::onAdd()
    }
    else
    {
-      if (bool(mDataBlock->mProjectileShape))
+      if (bool(mDataBlock->getProjectileShape()))
       {
-         mProjectileShape = new TSShapeInstance(mDataBlock->mProjectileShape, isClientObject());
+         mProjectileShape = new TSShapeInstance(mDataBlock->getProjectileShape(), isClientObject());
 
          if (mDataBlock->activateSeq != -1)
          {
@@ -833,8 +835,8 @@ bool Projectile::onAdd()
       processAfter(mSourceObject);
 
    // Setup our bounding box
-   if (bool(mDataBlock->mProjectileShape) == true)
-      mObjBox = mDataBlock->mProjectileShape->mBounds;
+   if (bool(mDataBlock->getProjectileShape()) == true)
+      mObjBox = mDataBlock->getProjectileShape()->mBounds;
    else
       mObjBox = Box3F(Point3F(0, 0, 0), Point3F(0, 0, 0));
 
@@ -1128,10 +1130,18 @@ void Projectile::processTick( const Move *move )
 
 void Projectile::simulate( F32 dt )
 {         
-   if ( isServerObject() && mCurrTick >= mDataBlock->lifetime )
+   if ( isServerObject()  )
    {
-      deleteObject();
-      return;
+      if (mCurrTick >= (mDataBlock->lifetime - TickMs))
+      {
+         if (mDataBlock->mExplodeOnTmeout)
+            explode(mCurrPosition, Point3F::UnitZ, VehicleObjectType);
+      }
+      if (mCurrTick >= mDataBlock->lifetime || (mHasHit && mCurrTick < mDataBlock->armingDelay))
+      {
+         deleteObject();
+         return;
+      }
    }
    
    if ( mHasExploded )
@@ -1167,9 +1177,16 @@ void Projectile::simulate( F32 dt )
 
    if ( mPhysicsWorld )
       hit = mPhysicsWorld->castRay( oldPosition, newPosition, &rInfo, Point3F( newPosition - oldPosition) * mDataBlock->impactForce );            
-   else 
+   else
+   {
       hit = getContainer()->castRay(oldPosition, newPosition, dynamicCollisionMask | staticCollisionMask, &rInfo);
-
+      if (hit && rInfo.object->getTypeMask() & VehicleObjectType)
+      {
+         RigidShape* aRigid = dynamic_cast<RigidShape*>(rInfo.object);
+         if (aRigid)
+            aRigid->applyImpulse(rInfo.point, Point3F(newPosition - oldPosition) * mDataBlock->impactForce);
+      }
+   }
    if ( hit )
    {
       // make sure the client knows to bounce
@@ -1237,6 +1254,8 @@ void Projectile::simulate( F32 dt )
       else
       {
          mCurrVelocity    = Point3F::Zero;
+         newPosition = oldPosition = rInfo.point + rInfo.normal * 0.05f;
+         mHasHit = true;
       }
    }
 

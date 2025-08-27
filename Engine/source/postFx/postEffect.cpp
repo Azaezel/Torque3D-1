@@ -44,6 +44,7 @@
 #include "materials/shaderData.h"
 #include "postFx/postEffectManager.h"
 #include "postFx/postEffectVis.h"
+#include <console/consoleInternal.h>
 
 using namespace Torque;
 
@@ -141,25 +142,23 @@ IMPLEMENT_CONOBJECT(PostEffect);
 
 GFX_ImplementTextureProfile( PostFxTextureProfile,
                             GFXTextureProfile::DiffuseMap,
-                            GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::NoMipmap,
+                            GFXTextureProfile::Static | GFXTextureProfile::PreserveSize,
                             GFXTextureProfile::NONE );
 
 GFX_ImplementTextureProfile( PostFxTextureSRGBProfile,
                              GFXTextureProfile::DiffuseMap,
-                             GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::NoMipmap | GFXTextureProfile::SRGB,
+                             GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::SRGB,
                              GFXTextureProfile::NONE);
 
 GFX_ImplementTextureProfile( VRTextureProfile,
                             GFXTextureProfile::DiffuseMap,
                             GFXTextureProfile::PreserveSize |
-                            GFXTextureProfile::RenderTarget |
-                            GFXTextureProfile::NoMipmap,
+                            GFXTextureProfile::RenderTarget,
                             GFXTextureProfile::NONE );
 
 GFX_ImplementTextureProfile( VRDepthProfile,
                             GFXTextureProfile::DiffuseMap,
                             GFXTextureProfile::PreserveSize |
-                            GFXTextureProfile::NoMipmap |
                             GFXTextureProfile::ZTarget,
                             GFXTextureProfile::NONE );
 
@@ -458,6 +457,7 @@ PostEffect::PostEffect()
       mStateBlockData( NULL ),
       mUpdateShader( true ),
       mSkip( false ),
+      mPreProcessed(false),
       mAllowReflectPass( false ),
       mTargetClear( PFXTargetClear_None ),
       mTargetScale( Point2F::One ),
@@ -499,7 +499,8 @@ PostEffect::PostEffect()
       mInvCameraTransSC(NULL),
       mMatCameraToScreenSC(NULL),
       mMatScreenToCameraSC(NULL),
-      mIsCapturingSC(NULL)
+      mIsCapturingSC(NULL),
+      mMipCap(1)
 {
    dMemset( mTexSRGB, 0, sizeof(bool) * NumTextures);
    dMemset( mActiveTextures, 0, sizeof( GFXTextureObject* ) * NumTextures );
@@ -507,11 +508,7 @@ PostEffect::PostEffect()
    dMemset( mActiveTextureViewport, 0, sizeof( RectI ) * NumTextures );
    dMemset( mTexSizeSC, 0, sizeof( GFXShaderConstHandle* ) * NumTextures );
    dMemset( mRenderTargetParamsSC, 0, sizeof( GFXShaderConstHandle* ) * NumTextures );
-
-   for (U32 i = 0; i < NumTextures; i++)
-   {
-      INIT_IMAGEASSET_ARRAY(Texture, PostFxTextureProfile, i);
-   }
+   dMemset(mMipCountSC, 0, sizeof(GFXShaderConstHandle*) * NumTextures);
 }
 
 PostEffect::~PostEffect()
@@ -540,6 +537,9 @@ void PostEffect::initPersistFields()
 
    addField( "targetScale", TypePoint2F, Offset( mTargetScale, PostEffect ),
        "If targetSize is zero this is used to set a relative size from the current target." );
+
+   addField("mipCap", TypeS32, Offset(mMipCap, PostEffect),
+      "generate up to this many mips. 0 = all, 1 = none, >1 = as specified max."); //todo: de-stupid
        
    addField( "targetSize", TypePoint2I, Offset( mTargetSize, PostEffect ), 
       "If non-zero this is used as the absolute target size." );   
@@ -556,6 +556,7 @@ void PostEffect::initPersistFields()
    addField( "targetViewport", TYPEID< PFXTargetViewport >(), Offset( mTargetViewport, PostEffect ),
       "Specifies how the viewport should be set up for a target texture." );
 
+   addProtectedField("Texture", TypeImageFilename, Offset(mTextureAsset, PostEffect), _setTextureData, &defaultProtectedGetFn, NumTextures, "Input textures to this effect(samplers).\n", AbstractClassRep::FIELD_HideInInspectors);
    INITPERSISTFIELD_IMAGEASSET_ARRAY(Texture, NumTextures, PostEffect, "Input textures to this effect ( samplers ).\n"
       "@see PFXTextureIdentifiers");
 
@@ -568,7 +569,7 @@ void PostEffect::initPersistFields()
    addField( "renderBin", TypeRealString, Offset( mRenderBin, PostEffect ),
       "Name of a renderBin, used if renderTime is PFXBeforeBin or PFXAfterBin." );
 
-   addField( "renderPriority", TypeF32, Offset( mRenderPriority, PostEffect ), 
+   addField( "renderPriority", TypeS16, Offset( mRenderPriority, PostEffect ),
       "PostEffects are processed in DESCENDING order of renderPriority if more than one has the same renderBin/Time." );
 
    addField( "allowReflectPass", TypeBool, Offset( mAllowReflectPass, PostEffect ), 
@@ -608,22 +609,24 @@ bool PostEffect::onAdd()
    for (S32 i = 0; i < NumTextures; i++)
    {
       mTextureType[i] = NormalTextureType;
-      String texFilename = getTexture(i);
+      if (mTextureAsset[i].notNull()) {
+         String texFilename = mTextureAsset[i]->getImageFile();
 
-      // Skip empty stages or ones with variable or target names.
-      if (texFilename.isEmpty() ||
-         texFilename[0] == '$' ||
-         texFilename[0] == '#')
-         continue;
+         // Skip empty stages or ones with variable or target names.
+         if (texFilename.isEmpty() ||
+            texFilename[0] == '$' ||
+            texFilename[0] == '#')
+            continue;
 
-      mTextureProfile[i] = (mTexSRGB[i]) ? &PostFxTextureSRGBProfile : &PostFxTextureProfile;
-      _setTexture(texFilename, i);
+         mTextureProfile[i] = (mTexSRGB[i]) ? &PostFxTextureSRGBProfile : &PostFxTextureProfile;
+         _setTexture(texFilename, i);
+      }
    }
 
    // Is the target a named target?
    if ( mTargetName.isNotEmpty() && mTargetName[0] == '#' )
    {
-      mNamedTarget.registerWithName( mTargetName.substr( 1 ) );
+      mNamedTarget.registerWithName(mTargetName.substr(1));
       mNamedTarget.getTextureDelegate().bind( this, &PostEffect::_getTargetTexture );
    }
    if ( mTargetDepthStencilName.isNotEmpty() && mTargetDepthStencilName[0] == '#' )
@@ -759,6 +762,7 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
       {
          mTexSizeSC[i] = mShader->getShaderConstHandle(String::ToString("$texSize%d", i));
          mRenderTargetParamsSC[i] = mShader->getShaderConstHandle(String::ToString("$rtParams%d",i));
+         mMipCountSC[i] = mShader->getShaderConstHandle(String::ToString("$mipCount%d", i));
       }
 
       mTargetViewportSC = mShader->getShaderConstHandle( "$targetViewport" );
@@ -841,6 +845,11 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
          texSizeConst.x = (F32)mActiveTextures[i]->getWidth();
          texSizeConst.y = (F32)mActiveTextures[i]->getHeight();
          mShaderConsts->set( mTexSizeSC[i], texSizeConst );
+      }
+
+      if (mMipCountSC[i]->isValid())
+      {
+         mShaderConsts->set(mMipCountSC[i], (S32)mActiveTextures[i]->getMipLevels());
       }
    }
 
@@ -1110,33 +1119,37 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
       dSscanf( buffer.c_str(), "%g %g", texSizeScriptConst.x, texSizeScriptConst.y );
    }
    */
-      
-   {
-      PROFILE_SCOPE( PostEffect_SetShaderConsts );
 
-      // Pass some data about the current render state to script.
-      // 
-      // TODO: This is pretty messy... it should go away.  This info
-      // should be available from some other script accessible method
-      // or field which isn't PostEffect specific.
-      //
-      if ( state )
+   {
       {
-         Con::setFloatVariable( "$Param::NearDist", state->getNearPlane() );
-         Con::setFloatVariable( "$Param::FarDist", state->getFarPlane() );   
+         PROFILE_SCOPE(PostEffect_SetShaderConsts);
+
+         // Pass some data about the current render state to script.
+         // 
+         // TODO: This is pretty messy... it should go away.  This info
+         // should be available from some other script accessible method
+         // or field which isn't PostEffect specific.
+         //
+         if (state)
+         {
+            Con::setFloatVariable("$Param::NearDist", state->getNearPlane());
+            Con::setFloatVariable("$Param::FarDist", state->getFarPlane());
+         }
+         bool tracing = Con::gTraceOn;
+         Con::gTraceOn = false;
+         setShaderConsts_callback();
+         Con::gTraceOn = tracing;
       }
 
-      setShaderConsts_callback();
-   }   
-
-   EffectConstTable::Iterator iter = mEffectConsts.begin();
-   for ( ; iter != mEffectConsts.end(); iter++ )
-      iter->value->setToBuffer( mShaderConsts );
+      EffectConstTable::Iterator iter = mEffectConsts.begin();
+      for (; iter != mEffectConsts.end(); iter++)
+         iter->value->setToBuffer(mShaderConsts);
+   }
 }
 
 void PostEffect::_setupTexture( U32 stage, GFXTexHandle &inputTex, const RectI *inTexViewport )
 {
-   const String &texFilename = getTexture( stage );
+   const String &texFilename = mTextureAsset[stage].notNull() ? mTextureAsset[stage]->getImageFile() : "";
 
    GFXTexHandle theTex;
    NamedTexTarget *namedTarget = NULL;
@@ -1173,7 +1186,11 @@ void PostEffect::_setupTexture( U32 stage, GFXTexHandle &inputTex, const RectI *
    }
    else
    {
-      theTex = mTexture[ stage ];
+      theTex = mTexture[stage];
+
+      if (!theTex && mTextureAsset[stage].notNull())
+         theTex = mTextureAsset[stage]->getTexture(mTextureProfile[stage]);
+
       if ( theTex )
          viewport.set( 0, 0, theTex->getWidth(), theTex->getHeight() );
    }
@@ -1256,7 +1273,7 @@ void PostEffect::_setupTarget( const SceneRenderState *state, bool *outClearTarg
             mTargetTex.getWidthHeight() != targetSize )
       {
          mTargetTex.set( targetSize.x, targetSize.y, mTargetFormat,
-            &PostFxTargetProfile, "PostEffect::_setupTarget" );
+            &PostFxTargetProfile, "PostEffect::_setupTarget", mMipCap);
 
          if ( mTargetClear == PFXTargetClear_OnCreate )
             *outClearTarget = true;
@@ -1420,9 +1437,11 @@ void PostEffect::process(  const SceneRenderState *state,
       return;
 
    GFXDEBUGEVENT_SCOPE_EX( PostEffect_Process, ColorI::GREEN, avar("PostEffect: %s", getName()) );
-
-   preProcess_callback();   
-
+   if (!mPreProcessed || mShader->getReloadKey() != mShaderReloadKey)
+   {
+      mPreProcessed = true;
+      preProcess_callback();
+   }
    GFXTransformSaver saver;
 
    // Set the textures.
@@ -1575,6 +1594,7 @@ bool PostEffect::_setIsEnabled( void *object, const char *index, const char *dat
 
 void PostEffect::enable()
 {
+   mPreProcessed = false;
    // Don't add TexGen PostEffects to the PostEffectManager!
    if ( mRenderTime == PFXTexGenOnDemand )
       return;
@@ -1618,6 +1638,7 @@ void PostEffect::disable()
 
 void PostEffect::reload()
 {
+   mPreProcessed = false;
    // Reload the shader if we have one or mark it
    // for updating when its processed next.
    if ( mShader )
@@ -1640,7 +1661,6 @@ void PostEffect::reload()
 void PostEffect::setTexture( U32 index, const String &texFilePath )
 {
 	// Set the new texture name.
-	mTextureName[index] = texFilePath;
 	mTexture[index].free();
 
     // Skip empty stages or ones with variable or target names.
@@ -1651,14 +1671,13 @@ void PostEffect::setTexture( U32 index, const String &texFilePath )
 
     mTextureProfile[index] = (mTexSRGB[index])? &PostFxTextureSRGBProfile : &PostFxTextureProfile;
     _setTexture(texFilePath, index);
-
+    mTexture[index] = mTextureAsset[index]->getTexture(mTextureProfile[index]);
     mTextureType[index] = NormalTextureType;
 }
 
 void PostEffect::setTexture(U32 index, const GFXTexHandle& texHandle)
 {
    // Set the new texture name.
-   mTextureName[index] = StringTable->EmptyString();
    mTexture[index].free();
 
    // Skip empty stages or ones with variable or target names.
@@ -1847,18 +1866,21 @@ void PostEffect::_checkRequirements()
    {
       if (mTextureType[i] == NormalTextureType)
       {
-         const String &texFilename = mTextureName[i];
-
-         if (texFilename.isNotEmpty() && texFilename[0] == '#')
+         if (mTextureAsset[i].notNull())
          {
-            NamedTexTarget *namedTarget = NamedTexTarget::find(texFilename.c_str() + 1);
-            if (!namedTarget)
-            {
-               return;
-            }
+            const String& texFilename = mTextureAsset[i]->getImageFile();
 
-            // Grab the macros for shader initialization.
-            namedTarget->getShaderMacros(&macros);
+            if (texFilename.isNotEmpty() && texFilename[0] == '#')
+            {
+               NamedTexTarget* namedTarget = NamedTexTarget::find(texFilename.c_str() + 1);
+               if (!namedTarget)
+               {
+                  return;
+               }
+
+               // Grab the macros for shader initialization.
+               namedTarget->getShaderMacros(&macros);
+            }
          }
       }
    }

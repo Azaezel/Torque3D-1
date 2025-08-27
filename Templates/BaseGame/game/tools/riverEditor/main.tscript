@@ -86,6 +86,26 @@ function RiverEditorPlugin::onWorldEditorStartup( %this )
    ESettingsWindow.addEditorSettingsPage("RiverEditor", "River Editor");
 }
 
+function EditorGui::SetRiverPalletBar()
+{   
+   //Clears the button pallete stack
+   EWToolsPaletteWindow.setStackCtrl(ToolsPaletteArray); //legacy ctrl adhereance
+   EWToolsPaletteWindow.clearButtons();
+   
+   EWToolsPaletteWindow.setActionMap(WorldEditorInspectorPlugin.map);
+   
+   //Adds a button to the pallete stack
+                          //Name     Icon                         Click Command                         Tooltip text    Keybind
+   EWToolsPaletteWindow.addButton("Select", "ToolsModule:arrow_n_image", "RiverEditorGui.prepSelectionMode();", "", "Select River", "1"); 
+   EWToolsPaletteWindow.addButton("MovePoint", "ToolsModule:move_point_n_image", "RiverEditorGui.setMode(\"RiverEditorMoveMode\");", "", "Move Point", "2"); 
+   EWToolsPaletteWindow.addButton("RotatePoint", "ToolsModule:rotate_point_n_image", "RiverEditorGui.setMode(\"RiverEditorRotateMode\");", "", "Rotate Point", "3"); 
+   EWToolsPaletteWindow.addButton("ScalePoint", "ToolsModule:scale_point_n_image", "RiverEditorGui.setMode(\"RiverEditorScaleMode\");", "", "Scale Point", "4"); 
+   EWToolsPaletteWindow.addButton("AddRoad", "ToolsModule:add_road_path_n_image", "RiverEditorGui.setMode(\"RiverEditorAddRiverMode\");", "", "Add River", "5");
+   EWToolsPaletteWindow.addButton("InsertPoint", "ToolsModule:add_point_n_image", "RiverEditorGui.setMode(\"RiverEditorInsertPointMode\");", "", "Insert Point", "+");
+   EWToolsPaletteWindow.addButton("RemovePoint", "ToolsModule:subtract_point_n_image", "RiverEditorGui.setMode(\"RiverEditorRemovePointMode\");", "", "Remove Point", "-");
+   EWToolsPaletteWindow.refresh();
+}
+
 function RiverEditorPlugin::onActivated( %this )
 {
    %this.readSettings();
@@ -123,6 +143,7 @@ function RiverEditorPlugin::onActivated( %this )
    RiverEditorGui.onEditorActivated(); 
    
    Parent::onActivated(%this);
+   EditorGui.SetRiverPalletBar();
 }
 
 function RiverEditorPlugin::onDeactivated( %this )

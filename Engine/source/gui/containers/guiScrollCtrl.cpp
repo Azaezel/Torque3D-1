@@ -111,7 +111,7 @@ void GuiScrollCtrl::initPersistFields()
       addField( "constantThumbHeight",  TypeBool,    Offset(mUseConstantHeightThumb, GuiScrollCtrl));
       addField( "childMargin",          TypePoint2I, Offset(mChildMargin, GuiScrollCtrl),
          "Padding region to put around child contents." );
-      addField( "mouseWheelScrollSpeed", TypeS32,    Offset(mScrollAnimSpeed, GuiScrollCtrl),
+      addFieldV( "mouseWheelScrollSpeed", TypeRangedS32,    Offset(mScrollAnimSpeed, GuiScrollCtrl), &CommonValidators::NegDefaultInt,
          "Pixels/Tick - if not positive then mousewheel scrolling occurs instantly (like other scrolling).");
       
    endGroup( "Scrolling" );
@@ -148,7 +148,7 @@ bool GuiScrollCtrl::onWake()
    if (! Parent::onWake())
       return false;
 
-   mTextureObject = mProfile->getBitmapResource();
+   mTextureObject = mProfile->getBitmap();
    if (mTextureObject && (mProfile->constructBitmapArray() >= (U32)BmpStates * (U32)BmpCount))
    {
       mBitmapBounds = mProfile->mBitmapArrayRects.address();

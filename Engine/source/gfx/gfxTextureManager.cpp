@@ -1410,17 +1410,28 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
                                           U32 &inOutNumMips, GFXFormat &inOutFormat  )
 {
    // Validate mipmap parameter. If this profile requests no mips, set mips to 1.
-   if( profile->noMip() )
+   if( profile->noMip()|| inOutNumMips == 1)
    {
       inOutNumMips = 1;
    }
-   else if( !isPow2( width ) || !isPow2( height ) )
+   else if (!isPow2(width) || !isPow2(height))
    {
       // If a texture is not power-of-2 in size for both dimensions, it must
       // have only 1 mip level.
-      inOutNumMips = 1;
+      if (profile->isRenderTarget() && !profile->noMip())
+      {
+         if (inOutNumMips == 0) //auto
+            inOutNumMips = mFloor(mLog2(mMax(width, height))) + 1;
+         else if (inOutNumMips > 1) //capped
+            inOutNumMips = mMin(inOutNumMips,mFloor(mLog2(mMax(width, height))) + 1);
+         inOutNumMips = mClampF(inOutNumMips, 1, 13);
+      }
+      else
+      {
+         inOutNumMips = 1;
+      }
    }
-   
+
    // Check format, and compatibility with texture profile requirements
    bool autoGenSupp = ( inOutNumMips == 0 );
 
@@ -1631,4 +1642,108 @@ DefineEngineFunction( reloadTextures, void, (),,
 
    TEXMGR->reloadTextures();
    PROBEMGR->reloadTextures();
+}
+
+
+void GFXTextureManager::splitTerrainMaps(const Torque::Path& path)
+{
+   bool decompressed = false;
+
+   GFXTextureObject* inputTex = createTexture(path, &GFXTexturePersistentSRGBProfile);
+   if (!inputTex)
+   {
+      Con::errorf("GFXTextureManager::splitTerrainMaps - Unable to create texture: %s", path.getFullPath().c_str());
+      return;
+   }
+   GBitmap* inData = inputTex->getBitmap();
+   if (!inData)
+   {
+      DDSFile* tryDDS = inputTex->getDDS();
+      if (!tryDDS)
+      {
+         Con::errorf("GFXTextureManager::splitTerrainMaps - Unable to load texture: %s", path.getFullPath().c_str());
+         return;
+      }
+      decompressed = true;
+      inData = new GBitmap();
+      tryDDS->decompressToGBitmap(inData);
+   }
+
+   double average[4] = { 0.0, 0.0, 0.0, 0.0 };
+
+   Point2F inputSize = Point2F(inputTex->getBitmapWidth(), inputTex->getBitmapHeight());
+   U32 count = inputSize.x * inputSize.y;
+   int u, v;
+   for (u = 0; u < inputSize.x; u++)
+   {
+      for (v = 0; v < inputSize.y; v++)
+      {
+         LinearColorF color = inData->sampleTexel(u/ F32(inputSize.x), v / F32(inputSize.y), true);
+         average[0] += color.red;
+         average[1] += color.green;
+         average[2] += color.blue;
+         average[3] += color.alpha;
+      }
+   }
+
+   for (U32 i = 0; i < 4; i++)
+   {
+      average[i] /= count;
+   }
+
+   LinearColorF averageColor = LinearColorF(F32(average[0]), F32(average[1]), F32(average[2]), F32(average[3]));
+
+   Con::printf("Average color: %f %f %f %f", averageColor.red, averageColor.green, averageColor.blue, averageColor.alpha);
+
+   GBitmap* outBitmap[2];
+   outBitmap[0] = new GBitmap();
+   outBitmap[0]->allocateBitmap(inputSize.x, inputSize.y, false, GFXFormatR8G8B8A8);
+   for (u = 0; u < inputSize.x; u++)
+   {
+      for (v= 0; v < inputSize.y; v++)
+      {
+         outBitmap[0]->setColor(u, v, averageColor.toColorI(true));
+      }
+   }
+
+   Torque::Path difPath = path;
+   difPath.setFileName(path.getFileName()+String("_bas"));
+   difPath.setExtension("png");
+   GFXTextureObject* difRet = _createTexture(outBitmap[0], String(difPath), &GFXTexturePersistentProfile, false, NULL);
+   difRet->dumpToDisk("png", difPath.getFullPath());
+
+   outBitmap[1] = new GBitmap();
+   outBitmap[1]->allocateBitmap(inputSize.x, inputSize.y, false, GFXFormatR8G8B8A8);
+
+   for (u = 0; u < inputSize.x; u++)
+   {
+      for (v = 0; v < inputSize.y; v++)
+      {
+         LinearColorF color = inData->sampleTexel(u / F32(inputSize.x), v / F32(inputSize.y), true);
+         color -= averageColor;
+         color *= 0.5;
+         color += LinearColorF(0.5,0.5,0.5);
+         outBitmap[1]->setColor(u, v, color.toColorI(true));
+      }
+   }
+
+   Torque::Path detPath = path;
+   detPath.setFileName(path.getFileName() + String("_det"));
+   detPath.setExtension("png");
+   GFXTextureObject* detRet = _createTexture(outBitmap[1], String(detPath), &GFXTexturePersistentProfile, false, NULL);
+   detRet->dumpToDisk("png", detPath.getFullPath());
+
+   delete outBitmap[0];
+   delete outBitmap[1];
+   if (decompressed)
+      delete inData;
+}
+
+
+DefineEngineFunction(splitTerrainMaps, void, (const char* path), ,
+   "Splits a detailed albedo map into separate diffuse and detail textures and saves them to disk.\n"
+   "@param path The path to the input albedo map.\n"
+   "@ingroup GFX\n")
+{
+   GFX->getTextureManager()->splitTerrainMaps(path);
 }

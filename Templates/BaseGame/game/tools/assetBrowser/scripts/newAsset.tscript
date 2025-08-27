@@ -119,11 +119,9 @@ function AssetBrowser::setupCreateNewAsset(%this, %assetType, %moduleName, %call
    NewAssetPropertiesInspector.addCallbackField("description", "Description", "Command",  "Description of the new asset", "", "", "updateNewAssetField", %this.newAssetSettings);   
    NewAssetPropertiesInspector.endGroup();
    
-   if(%this.isMethod("setupCreateNew"@%assetType))
-   {
-      %command = %this @ ".setupCreateNew"@%assetType @"();";
-      eval(%command);
-   }
+   %this.callAssetTypeFunc(%assetType, "setupCreateNew");
+   
+   NewAssetPropertiesInspector.refresh();
 }
 
 function NewAssetPropertiesInspector::updateNewAssetField(%this)
@@ -253,12 +251,14 @@ function CreateNewAsset()
 		return;
 	}
 	
-	%assetFilePath = eval(AssetBrowser @ ".create"@%assetType@"();");
+	%assetFilePath = AssetBrowser.callAssetTypeFunc(%assetType, "onCreateNew");
 	
 	Canvas.popDialog(AssetBrowser_newAsset);
 	
+	%assetTypeGroup = AssetBrowser::getAssetTypeGroup(%assetType);
+	
 	//Load it
-	if(!AssetDatabase.isDeclaredAsset(%moduleName @ ":" @ %assetName))
+	if(%assetTypeGroup $= "Asset" && !AssetDatabase.isDeclaredAsset(%moduleName @ ":" @ %assetName))
 	{
       %moduleDef = ModuleDatabase.findModule(%moduleName,1);
       AssetDatabase.addDeclaredAsset(%moduleDef, %assetFilePath);
@@ -272,18 +272,7 @@ function CreateNewAsset()
       %callbackCommand = "" @ AssetBrowser_newAsset.callbackFunc @ "(\"" @ %moduleName @ ":" @ %assetName @ "\");";
       eval(%callbackCommand);
 	}
-	
-	//Update the selection to immediately jump to the new asset
-   /*AssetBrowser-->filterTree.clearSelection();
-   %ModuleItem = AssetBrowser-->filterTree.findItemByName(%moduleName);
-   %assetTypeId = AssetBrowser-->filterTree.findChildItemByName(%ModuleItem, %assetType);
-   
-   AssetBrowser-->filterTree.selectItem(%assetTypeId);
-   
-   %selectedItem = AssetBrowser-->filterTree.getSelectedItem();
-   AssetBrowser-->filterTree.scrollVisibleByObjectId(%selectedItem);
-   
-   AssetBrowser-->filterTree.buildVisibleTree(); */
+
    AssetBrowser.refresh();
 }
 

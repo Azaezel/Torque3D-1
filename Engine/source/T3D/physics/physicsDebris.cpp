@@ -74,7 +74,12 @@ PhysicsDebrisData::PhysicsDebrisData()
    lifetime = 5.0f;
    lifetimeVariance = 0.0f;
 
-   INIT_ASSET(Shape);
+   mShapeAsset.registerRefreshNotify(this);
+}
+
+PhysicsDebrisData::~PhysicsDebrisData()
+{
+   mShapeAsset.unregisterRefreshNotify();
 }
 
 bool PhysicsDebrisData::onAdd()
@@ -92,16 +97,16 @@ bool PhysicsDebrisData::preload( bool server, String &errorStr )
 
    if ( server ) return true;
 
-   if ( mShapeAsset.notNull() )
+   if ( getShape() )
    {
       // Create a dummy shape to force the generation of shaders and materials
       // during the level load and not during gameplay.
-      TSShapeInstance *pDummy = new TSShapeInstance( mShape, !server );
+      TSShapeInstance *pDummy = new TSShapeInstance( getShape(), !server);
       delete pDummy;
    }
    else
    {
-      errorStr = String::ToString("PhysicsDebrisData::load: Couldn't load shape asset \"%s\"", mShapeAssetId);
+      errorStr = String::ToString("PhysicsDebrisData::load: Couldn't load shape asset \"%s\"", _getShapeAssetId());
       return false;
    }
 
@@ -113,12 +118,9 @@ void PhysicsDebrisData::initPersistFields()
    docsURL;
    addGroup( "Shapes" );
 
-      addProtectedField( "shapeFile", TypeShapeFilename, Offset( mShapeName, PhysicsDebrisData ), &_setShapeData, &defaultProtectedGetFn,
-         "@brief Path to the .DAE or .DTS file to use for this shape.\n\n"
-         "Compatable with Live-Asset Reloading.", AbstractClassRep::FIELD_HideInInspectors);
+   INITPERSISTFIELD_SHAPEASSET_REFACTOR(Shape, PhysicsDebrisData, "@brief Shape to use with this debris.\n\n"
+      "Compatable with Live-Asset Reloading."); 
 
-      INITPERSISTFIELD_SHAPEASSET(Shape, PhysicsDebrisData, "@brief Shape to use with this debris.\n\n"
-         "Compatable with Live-Asset Reloading.");
    endGroup( "Shapes" );
 
    addGroup("Rendering");
@@ -128,29 +130,29 @@ void PhysicsDebrisData::initPersistFields()
 
    addGroup( "Physics" );
 
-      addField("lifetime", TypeF32, Offset( lifetime, PhysicsDebrisData ),
+      addFieldV("lifetime", TypeRangedF32, Offset( lifetime, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Base time, in seconds, that debris persists after time of creation.\n\n"
          "@note A %PhysicsDebris' lifetime multiplied by it's $pref::PhysicsDebris::lifetimeScale "
          "must be equal to or greater than 1.0.\n\n");
 
-      addField("lifetimeVariance", TypeF32, Offset( lifetimeVariance, PhysicsDebrisData ),
+      addFieldV("lifetimeVariance", TypeRangedF32, Offset( lifetimeVariance, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Range of variation randomly applied to lifetime when debris is created.\n\n"
          "Represents the maximum amount of seconds that will be added or subtracted to a shape's base lifetime. "
          "A value of 0 will apply the same lifetime to each shape created.\n\n");
 
-      addField( "mass", TypeF32, Offset( mass, PhysicsDebrisData ),
+      addFieldV( "mass", TypeRangedF32, Offset( mass, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Value representing the mass of the shape.\n\n"
          "A shape's mass influences the magnitude of any force applied to it. "
          "@note All PhysicsDebris objects are dynamic.");
 
-      addField( "friction", TypeF32, Offset( dynamicFriction, PhysicsDebrisData ),
+      addFieldV( "friction", TypeRangedF32, Offset( dynamicFriction, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Coefficient of kinetic %friction to be applied to the shape.\n\n" 
          "Kinetic %friction reduces the velocity of a moving object while it is in contact with a surface. "
          "A larger coefficient will result in a larger reduction in velocity. "
          "A shape's friction should be smaller than it's staticFriction, but greater than 0.\n\n"
          "@note This value is only applied while an object is in motion. For an object starting at rest, see PhysicsDebrisData::staticFriction");
 
-      addField( "staticFriction", TypeF32, Offset( staticFriction, PhysicsDebrisData ),
+      addFieldV( "staticFriction", TypeRangedF32, Offset( staticFriction, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Coefficient of static %friction to be applied to the shape.\n\n" 
          "Static %friction determines the force needed to start moving an at-rest object in contact with a surface. "
          "If the force applied onto shape cannot overcome the force of static %friction, the shape will remain at rest. "
@@ -158,7 +160,7 @@ void PhysicsDebrisData::initPersistFields()
          "This value should be both greater than 0 and the PhysicsDebrisData::friction.\n\n"
          "@note This value is only applied while an object is at rest. For an object in motion, see PhysicsDebrisData::friction");
 
-      addField( "restitution", TypeF32, Offset( restitution, PhysicsDebrisData ),
+      addFieldV( "restitution", TypeRangedF32, Offset( restitution, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Bounce coeffecient applied to the shape in response to a collision.\n\n"
          "Restitution is a ratio of a shape's velocity before and after a collision. "
          "A value of 0 will zero out a shape's post-collision velocity, making it stop on contact. "
@@ -167,29 +169,29 @@ void PhysicsDebrisData::initPersistFields()
          "@note Values near or equaling 1.0 are likely to cause undesirable results in the physics simulation."
          " Because of this, it is reccomended to avoid values close to 1.0");
 
-      addField( "linearDamping", TypeF32, Offset( linearDamping, PhysicsDebrisData ),
+      addFieldV( "linearDamping", TypeRangedF32, Offset( linearDamping, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Value that reduces an object's linear velocity over time.\n\n"
          "Larger values will cause velocity to decay quicker.\n\n" );
 
-      addField( "angularDamping", TypeF32, Offset( angularDamping, PhysicsDebrisData ),
+      addFieldV( "angularDamping", TypeRangedF32, Offset( angularDamping, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Value that reduces an object's rotational velocity over time.\n\n"
          "Larger values will cause velocity to decay quicker.\n\n" );
 
-      addField( "linearSleepThreshold", TypeF32, Offset( linearSleepThreshold, PhysicsDebrisData ),
+      addFieldV( "linearSleepThreshold", TypeRangedF32, Offset( linearSleepThreshold, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Minimum linear velocity before the shape can be put to sleep.\n\n"
          "This should be a positive value. Shapes put to sleep will not be simulated in order to save system resources.\n\n"
          "@note The shape must be dynamic.");
 
-      addField( "angularSleepThreshold", TypeF32, Offset( angularSleepThreshold, PhysicsDebrisData ),
+      addFieldV( "angularSleepThreshold", TypeRangedF32, Offset( angularSleepThreshold, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Minimum rotational velocity before the shape can be put to sleep.\n\n"
          "This should be a positive value. Shapes put to sleep will not be simulated in order to save system resources.\n\n"
          "@note The shape must be dynamic.");
 
-      addField( "waterDampingScale", TypeF32, Offset( waterDampingScale, PhysicsDebrisData ),
+      addFieldV( "waterDampingScale", TypeRangedF32, Offset( waterDampingScale, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief Scale to apply to linear and angular dampening while underwater.\n\n "
          "@see angularDamping linearDamping" );
 
-      addField( "buoyancyDensity", TypeF32, Offset( buoyancyDensity, PhysicsDebrisData ),
+      addFieldV( "buoyancyDensity", TypeRangedF32, Offset( buoyancyDensity, PhysicsDebrisData ), &CommonValidators::PositiveFloat,
          "@brief The density of this shape for purposes of calculating buoyant forces.\n\n"
          "The result of the calculated buoyancy is relative to the density of the WaterObject the PhysicsDebris is within."
          "@see WaterObject::density");
@@ -216,7 +218,7 @@ void PhysicsDebrisData::packData(BitStream* stream)
    stream->write( waterDampingScale );
    stream->write( buoyancyDensity );
 
-   PACKDATA_ASSET(Shape);
+   PACKDATA_ASSET_REFACTOR(Shape);
 }
 
 void PhysicsDebrisData::unpackData(BitStream* stream)
@@ -237,7 +239,7 @@ void PhysicsDebrisData::unpackData(BitStream* stream)
    stream->read( &waterDampingScale );
    stream->read( &buoyancyDensity );
 
-   UNPACKDATA_ASSET(Shape);
+   UNPACKDATA_ASSET_REFACTOR(Shape);
 }
 
 DefineEngineMethod( PhysicsDebrisData, preload, void, (), , 
@@ -248,7 +250,7 @@ DefineEngineMethod( PhysicsDebrisData, preload, void, (), ,
 {
    String errorStr;
 
-   object->_setShape(object->getShape());
+   object->_setShape(object->_getShapeAssetId());
 
    if( !object->preload( false, errorStr ) )
       Con::errorf( "PhsysicsDebrisData::preload - error: %s", errorStr.c_str() );
@@ -362,7 +364,7 @@ bool PhysicsDebris::onAdd()
    }
 
    // Setup our bounding box
-   mObjBox = mDataBlock->mShape->mBounds;
+   mObjBox = mDataBlock->getShape()->mBounds;
    resetWorldBox();
 
    // Add it to the client scene.
@@ -625,7 +627,7 @@ void PhysicsDebris::_createFragments()
    if ( !mWorld )
       return;
 
-   TSShape *shape = mDataBlock->mShape;
+   TSShape *shape = mDataBlock->getShape();
 
    mShapeInstance = new TSShapeInstance( shape, true );
    mShapeInstance->animate();
@@ -699,7 +701,7 @@ void PhysicsDebris::_findNodes( U32 colNode, Vector<U32> &nodeIds )
    // 1. Visible mesh nodes are siblings of the collision node under a common parent dummy node
    // 2. Collision node is a child of its visible mesh node
 
-   TSShape *shape = mDataBlock->mShape;
+   TSShape *shape = mDataBlock->getShape();
    S32 itr = shape->nodes[colNode].parentIndex;
    itr = shape->nodes[itr].firstChild;
 

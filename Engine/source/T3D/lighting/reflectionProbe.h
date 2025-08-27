@@ -167,6 +167,7 @@ protected:
    /// Whether this probe is enabled or not
    /// </summary>
    bool mEnabled;
+   F32 mAtten;
    
    bool mDirty;
 

@@ -47,42 +47,42 @@
 ImplementBitfieldType(GameTypeMasksType,
    "The type of animation effect to apply to this material.\n"
    "@ingroup GFX\n\n")
-{ SceneObjectTypes::StaticObjectType, "StaticObjectType", "Static Objects.\n" },
-{ SceneObjectTypes::EnvironmentObjectType, "EnvironmentObjectType" , "Objects considered part of the background or environment of a level.\n" },
-{ SceneObjectTypes::TerrainObjectType, "TerrainObjectType" , "Terrain Objects.\n" },
-{ SceneObjectTypes::WaterObjectType, "WaterObjectType", "Water Objects.\n" },
-{ SceneObjectTypes::TriggerObjectType, "TriggerObjectType", "Interactive Trigger Objects.\n" },
-{ SceneObjectTypes::MarkerObjectType, "MarkerObjectType", "Marker Objects, utilized primarily for tooling.\n" },
-{ SceneObjectTypes::LightObjectType, "LightObjectType", "Lights.\n" },
-{ SceneObjectTypes::ZoneObjectType, "ZoneObjectType", "zones.\n" },
-{ SceneObjectTypes::StaticShapeObjectType, "StaticShapeObjectType", "Static Shape Objects. Distinct from StaticObjectType in that Static Shapes have additional functionality and behaviors.\n" },
-{ SceneObjectTypes::DynamicShapeObjectType, "DynamicShapeObjectType", "Any sort of Dynamic Object.\n" },
-{ SceneObjectTypes::GameBaseObjectType, "GameBaseObjectType", "Any Gamebase-based Objects. Objects generally associated to gameplay functionality.\n" },
-{ SceneObjectTypes::GameBaseHiFiObjectType, "GameBaseHiFiObjectType", "Specialised Gamebase-based Objects. currently narrowly used. if at all.\n" },
-{ SceneObjectTypes::ShapeBaseObjectType, "ShapeBaseObjectType", "Any Gamebase-based Objects. Objects generally associated to gameplay functionality.\n" },
-{ SceneObjectTypes::CameraObjectType, "CameraObjectType", "Camera Objects.\n" },
-{ SceneObjectTypes::PlayerObjectType, "PlayerObjectType", "Player Objects.\n" },
-{ SceneObjectTypes::ItemObjectType, "ItemObjectType", "Item Objects.\n" },
-{ SceneObjectTypes::VehicleObjectType, "VehicleObjectType", "Any sort of Vehicle Object.\n" },
-{ SceneObjectTypes::VehicleBlockerObjectType, "VehicleBlockerObjectType", "\n" },
-{ SceneObjectTypes::ProjectileObjectType, "ProjectileObjectType", "Projectiles.\n" },
-{ SceneObjectTypes::ExplosionObjectType, "ExplosionObjectType", "Explosion and Effects.\n" },
-{ SceneObjectTypes::CorpseObjectType, "CorpseObjectType", "Corpses of controlled objects.\n" },
-{ SceneObjectTypes::DebrisObjectType, "DebrisObjectType", "Debris or debris-like things such as shell casings.\n" },
-{ SceneObjectTypes::PhysicalZoneObjectType, "PhysicalZoneObjectType", "Physical Zones. Distinct from triggers in that they have physics forces applications.\n" },
-{ SceneObjectTypes::EntityObjectType, "EntityObjectType", "A generic entity.\n" },
-{ SceneObjectTypes::InteriorLikeObjectType, "InteriorLikeObjectType", "InteriorLikeObjectType (deprecated).\n" },
-{ SceneObjectTypes::TerrainLikeObjectType, "TerrainLikeObjectType", "Pseudo-terrains, like groundplanes, or meshroads.\n" },
+{ SceneObjectTypes::StaticObjectType, "$TypeMasks::StaticObjectType", "Static Objects.\n" },
+{ SceneObjectTypes::EnvironmentObjectType, "$TypeMasks::EnvironmentObjectType" , "Objects considered part of the background or environment of a level.\n" },
+{ SceneObjectTypes::TerrainObjectType, "$TypeMasks::TerrainObjectType" , "Terrain Objects.\n" },
+{ SceneObjectTypes::WaterObjectType, "$TypeMasks::WaterObjectType", "Water Objects.\n" },
+{ SceneObjectTypes::TriggerObjectType, "$TypeMasks::TriggerObjectType", "Interactive Trigger Objects.\n" },
+{ SceneObjectTypes::MarkerObjectType, "$TypeMasks::MarkerObjectType", "Marker Objects, utilized primarily for tooling.\n" },
+{ SceneObjectTypes::LightObjectType, "$TypeMasks::LightObjectType", "Lights.\n" },
+{ SceneObjectTypes::ZoneObjectType, "$TypeMasks::ZoneObjectType", "zones.\n" },
+{ SceneObjectTypes::StaticShapeObjectType, "$TypeMasks::StaticShapeObjectType", "Static Shape Objects. Distinct from StaticObjectType in that Static Shapes have additional functionality and behaviors.\n" },
+{ SceneObjectTypes::DynamicShapeObjectType, "$TypeMasks::DynamicShapeObjectType", "Any sort of Dynamic Object.\n" },
+{ SceneObjectTypes::GameBaseObjectType, "$TypeMasks::GameBaseObjectType", "Any Gamebase-based Objects. Objects generally associated to gameplay functionality.\n" },
+{ SceneObjectTypes::GameBaseHiFiObjectType, "$TypeMasks::GameBaseHiFiObjectType", "Specialised Gamebase-based Objects. currently narrowly used. if at all.\n" },
+{ SceneObjectTypes::ShapeBaseObjectType, "$TypeMasks::ShapeBaseObjectType", "Any Gamebase-based Objects. Objects generally associated to gameplay functionality.\n" },
+{ SceneObjectTypes::CameraObjectType, "$TypeMasks::CameraObjectType", "Camera Objects.\n" },
+{ SceneObjectTypes::PlayerObjectType, "$TypeMasks::PlayerObjectType", "Player Objects.\n" },
+{ SceneObjectTypes::ItemObjectType, "$TypeMasks::ItemObjectType", "Item Objects.\n" },
+{ SceneObjectTypes::VehicleObjectType, "$TypeMasks::VehicleObjectType", "Any sort of Vehicle Object.\n" },
+{ SceneObjectTypes::VehicleBlockerObjectType, "$TypeMasks::VehicleBlockerObjectType", "\n" },
+{ SceneObjectTypes::ProjectileObjectType, "$TypeMasks::ProjectileObjectType", "Projectiles.\n" },
+{ SceneObjectTypes::ExplosionObjectType, "$TypeMasks::ExplosionObjectType", "Explosion and Effects.\n" },
+{ SceneObjectTypes::CorpseObjectType, "$TypeMasks::CorpseObjectType", "Corpses of controlled objects.\n" },
+{ SceneObjectTypes::DebrisObjectType, "$TypeMasks::DebrisObjectType", "Debris or debris-like things such as shell casings.\n" },
+{ SceneObjectTypes::PhysicalZoneObjectType, "$TypeMasks::PhysicalZoneObjectType", "Physical Zones. Distinct from triggers in that they have physics forces applications.\n" },
+{ SceneObjectTypes::EntityObjectType, "$TypeMasks::EntityObjectType", "A generic entity.\n" },
+{ SceneObjectTypes::InteriorLikeObjectType, "$TypeMasks::InteriorLikeObjectType", "InteriorLikeObjectType (deprecated).\n" },
+{ SceneObjectTypes::TerrainLikeObjectType, "$TypeMasks::TerrainLikeObjectType", "Pseudo-terrains, like groundplanes, or meshroads.\n" },
 #if defined(AFX_CAP_AFXMODEL_TYPE) 
 { SceneObjectTypes::afxModelObjectType, "afxModelObjectType", "afx-specific model typemask.\n" },
 #else
-{ SceneObjectTypes::N_A_27, "N_A_27", "unused 27th bit.\n" },
+{ SceneObjectTypes::N_A_27, "$TypeMasks::N_A_27", "unused 27th bit.\n" },
 #endif
-{ SceneObjectTypes::N_A_28, "N_A_28", "unused 28th bit.\n" },
-{ SceneObjectTypes::PathShapeObjectType, "PathShapeObjectType", "Path-following Objects.\n" },
-{ SceneObjectTypes::TurretObjectType, "TurretObjectType", "Turret Objects.\n" },
-{ SceneObjectTypes::N_A_31, "N_A_31", "unused 31st bit.\n" },
-{ SceneObjectTypes::N_A_32, "N_A_32", "unused 32nd bit.\n" },
+{ SceneObjectTypes::N_A_28, "$TypeMasks::N_A_28", "unused 28th bit.\n" },
+{ SceneObjectTypes::PathShapeObjectType, "$TypeMasks::PathShapeObjectType", "Path-following Objects.\n" },
+{ SceneObjectTypes::TurretObjectType, "$TypeMasks::TurretObjectType", "Turret Objects.\n" },
+{ SceneObjectTypes::N_A_31, "$TypeMasks::N_A_31", "unused 31st bit.\n" },
+{ SceneObjectTypes::AIObjectType, "$TypeMasks::AIObjectType", "AIObjectType.\n" },
 
 EndImplementBitfieldType;
 
@@ -372,7 +372,7 @@ void SimObject::writeFields(Stream &stream, U32 tabStop)
       const AbstractClassRep::Field* f = &list[i];
 
       // Skip the special field types.
-      if ( f->type >= AbstractClassRep::ARCFirstCustomField || f->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors))
+      if ( f->type >= AbstractClassRep::ARCFirstCustomField || f->flag.test(AbstractClassRep::FieldFlags::FIELD_ComponentInspectors) || f->flag.test(AbstractClassRep::FieldFlags::FIELD_DontWriteToFile))
          continue;
 
       for(U32 j = 0; S32(j) < f->elementCount; j++)
@@ -1097,7 +1097,7 @@ void SimObject::setDataField(StringTableEntry slotName, const char *array, const
                Con::setData(fld->type, (void *) (((const char *)this) + fld->offset), array1, 1, &value, fld->table);
 
             if(fld->validator)
-               fld->validator->validateType(this, (void *) (((const char *)this) + fld->offset));
+               fld->validator->validateType(this, fld->pFieldname,  (void *) (((const char *)this) + fld->offset));
 
             if (fld->networkMask != 0)
             {
@@ -1111,7 +1111,7 @@ void SimObject::setDataField(StringTableEntry slotName, const char *array, const
          }
 
          if(fld->validator)
-            fld->validator->validateType(this, (void *) (((const char *)this) + fld->offset));
+            fld->validator->validateType(this, fld->pFieldname, (void *) (((const char *)this) + fld->offset));
 
          onStaticModified( slotName, value );
          return;
@@ -3296,6 +3296,9 @@ DefineEngineMethod( SimObject, getGroup, SimGroup*, (),,
 DefineEngineMethod( SimObject, delete, void, (),,
    "Delete and remove the object." )
 {
+   if (!object->isProperlyAdded() || object->isRemoved())
+      return;
+
    object->deleteObject();
 }
 
@@ -3533,15 +3536,13 @@ DefineEngineMethod( SimObject, getDebugInfo, ArrayObject*, (),,
    array->push_back( "Flag|CanSave", object->getCanSave() ? "true" : "false" );
    
    #ifndef TORQUE_DISABLE_MEMORY_MANAGER
-   Memory::Info memInfo;
+   Memory::MemInfo memInfo;
    Memory::getMemoryInfo( object, memInfo );
    
-   array->push_back( "Memory|AllocNumber", String::ToString( memInfo.mAllocNumber ) );
-   array->push_back( "Memory|AllocSize", String::ToString( memInfo.mAllocSize ) );
-   array->push_back( "Memory|AllocFile", memInfo.mFileName );
-   array->push_back( "Memory|AllocLine", String::ToString( memInfo.mLineNumber ) );
-   array->push_back( "Memory|IsGlobal", memInfo.mIsGlobal ? "true" : "false" );
-   array->push_back( "Memory|IsStatic", memInfo.mIsStatic ? "true" : "false" );
+   array->push_back( "Memory|AllocNumber", String::ToString( memInfo.allocId) );
+   array->push_back( "Memory|AllocSize", String::ToString( (U32)memInfo.size) );
+   array->push_back( "Memory|AllocFile", memInfo.file);
+   array->push_back( "Memory|AllocLine", String::ToString( memInfo.line) );
    #endif
    
    return array;

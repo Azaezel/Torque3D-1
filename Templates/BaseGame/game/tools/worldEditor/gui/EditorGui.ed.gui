@@ -32,30 +32,11 @@ $guiContent = new GuiContainer(EditorGui,EditorGuiGroup) {
       isDecoy = "1";
    };
    
-   new GuiTabBookCtrl(EditorGuiMainTabBook) {
-      tabHeight = "20";
-      selectedPage = "0";
-      position = "0 5";
-      extent = "800 595";
-      horizSizing = "width";
-      vertSizing = "height";
-      profile = "ToolsGuiTabBookProfile";
-      tooltipProfile = "GuiToolTipProfile";
-
-      new GuiTabPageCtrl(MainSceneEditorTab) {
-         text = "Main Scene";
-         position = 0 SPC 20;
-         extent = 800 SPC 580;
-         horizSizing = "width";
-         vertSizing = "height";
-         profile = "ToolsGuiTabPageProfile";
-         tooltipProfile = "GuiToolTipProfile";
-         
          new GuiContainer(MainSceneTabPanel) {
             HorizSizing = "width";
             VertSizing = "height";
-            Position = "0 0";
-            Extent = "800 580";
+            Position = "0 5";
+            Extent = "800 595";
             
             new WorldEditor(EWorldEditor) {
                canSaveDynamicFields = "0";
@@ -115,8 +96,8 @@ $guiContent = new GuiContainer(EditorGui,EditorGuiGroup) {
                selectionBoxColor = "255 255 0 255";
                selectionLocked = "0";
                toggleIgnoreList = "0";
-               selectHandle = "ToolsModule:SelectHandle_image";
-               defaultHandle = "ToolsModule:DefaultHandle_image";
+               selectHandleAsset = "ToolsModule:SelectHandle_image";
+               defaultHandleAsset = "ToolsModule:DefaultHandle_image";
                lockedHandleAsset = "ToolsModule:LockedHandle_image";
             };
             new TerrainEditor(ETerrainEditor) {
@@ -1534,7 +1515,7 @@ $guiContent = new GuiContainer(EditorGui,EditorGuiGroup) {
                      internalName = "slider";
                      position = "9 17";
                      extent = "129 15";
-                     bitmap = "tools/gui/images/separator-h.png";  
+                     bitmapAsset = "ToolsModule:separator_h_image"; 
                      HorizSizing = "width";
                      VertSizing = "bottom"; 
                      range = "1 200";
@@ -1569,7 +1550,5 @@ $guiContent = new GuiContainer(EditorGui,EditorGuiGroup) {
                };
             };
          };
-      };
-   };
 };
 //--- OBJECT WRITE END ---

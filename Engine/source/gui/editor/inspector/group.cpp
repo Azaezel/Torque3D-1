@@ -211,7 +211,7 @@ GuiInspectorField *GuiInspectorGroup::findField( const char *fieldName )
 
    for( ; i != mChildren.end(); i++ )
    {
-      if( (*i)->getFieldName() != NULL && dStricmp( (*i)->getFieldName(), fieldName ) == 0 )
+      if( ((*i)->getFieldName() != NULL && dStricmp( (*i)->getFieldName(), fieldName ) == 0) || ((*i)->getCaption() != StringTable->EmptyString() && dStricmp((*i)->getCaption(), fieldName) == 0) )
          return (*i);
    }
 
@@ -282,7 +282,7 @@ bool GuiInspectorGroup::inspectGroup()
             bGrabItems = false;
          continue;
       }
-      
+
       // Skip field if it has the HideInInspectors flag set.
 
       if (field->flag.test(AbstractClassRep::FIELD_HideInInspectors))
@@ -663,9 +663,9 @@ void GuiInspectorGroup::addInspectorField(StringTableEntry name, StringTableEntr
       else if (typeName == StringTable->insert("material"))
          fieldType = TypeMaterialAssetId;
       else if (typeName == StringTable->insert("image"))
-         fieldType = TypeImageAssetId;
+         fieldType = TypeImageAssetPtr;
       else if (typeName == StringTable->insert("shape"))
-         fieldType = TypeShapeAssetId;
+         fieldType = TypeShapeAssetPtr;
       else if (typeName == StringTable->insert("sound"))
          fieldType = TypeSoundAssetId;
       else if (typeName == StringTable->insert("bool"))
@@ -761,6 +761,26 @@ void GuiInspectorGroup::removeInspectorField(StringTableEntry name)
    }
 }
 
+void GuiInspectorGroup::hideInspectorField(StringTableEntry fieldName, bool setHidden)
+{
+   SimObject* inspectObj = mParent->getInspectObject();
+   if (inspectObj == nullptr)
+      return;
+
+   AbstractClassRep::Field* field = const_cast<AbstractClassRep::Field*>(inspectObj->getClassRep()->findField(fieldName));
+
+   if (field == NULL)
+   {
+      Con::errorf("fieldName not found: %s.%s", inspectObj->getName(), fieldName);
+      return;
+   }
+
+   if (setHidden)
+      field->flag.set(AbstractClassRep::FIELD_HideInInspectors);
+   else
+      field->flag.clear(AbstractClassRep::FIELD_HideInInspectors);
+}
+
 DefineEngineMethod(GuiInspectorGroup, createInspectorField, GuiInspectorField*, (), , "createInspectorField()")
 {
    return object->createInspectorField();
@@ -798,9 +818,42 @@ DefineEngineMethod(GuiInspectorGroup, removeField, void, (const char* fieldName)
    object->removeInspectorField(StringTable->insert(fieldName));
 }
 
+DefineEngineMethod(GuiInspectorGroup, hideField, void, (const char* fieldName, bool setHidden), (true),
+   "Removes a Inspector field to this group of a given name.\n"
+   "@param fieldName The name of the field to be removed.")
+{
+   if (dStrEqual(fieldName, ""))
+      return;
+
+   object->hideInspectorField(StringTable->insert(fieldName), setHidden);
+}
+
 DefineEngineMethod(GuiInspectorGroup, setForcedArrayIndex, void, (S32 arrayIndex), (-1),
    "Sets the ForcedArrayIndex for the group. Used to force presentation of arrayed fields to only show a specific field index."
    "@param arrayIndex The specific field index for arrayed fields to show. Use -1 or blank arg to go back to normal behavior.")
 {
    object->setForcedArrayIndex(arrayIndex);
+}
+
+DefineEngineMethod(GuiInspectorGroup, findField, S32, (const char* fieldName),,
+   "Finds an Inspector field in this group of a given name.\n"
+   "@param fieldName The name of the field to be found.\n"
+   "@return Field SimObjectId")
+{
+   if (dStrEqual(fieldName, ""))
+      return 0;
+
+   GuiInspectorField* field = object->findField(StringTable->insert(fieldName));
+   if (field == nullptr)
+      return 0;
+
+   return field->getId();
+}
+
+DefineEngineMethod(GuiInspectorGroup, refresh, void, (), ,
+   "Finds an Inspector field in this group of a given name.\n"
+   "@param fieldName The name of the field to be found.\n"
+   "@return Field SimObjectId")
+{
+   object->inspectGroup();
 }
