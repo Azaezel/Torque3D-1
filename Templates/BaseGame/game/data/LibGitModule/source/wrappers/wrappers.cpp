@@ -53,8 +53,16 @@ S32 fetch_progress(
    void* payload)
 {
    gitProgress* pd = (gitProgress*)payload;
-   pd->mPercent = stats->indexed_deltas / stats->total_deltas;
-   return (S32)(pd->mPercent * 100);
+
+   if (stats->total_deltas > 0)
+      pd->mPercent = stats->indexed_deltas / stats->total_deltas;
+   else
+      pd->mPercent = 1.0f;
+
+   if (pd->mSessionPtr)
+      pd->mSessionPtr->updateProgress(pd);
+
+   return 0;
 }
 
 void checkout_progress(
@@ -64,7 +72,8 @@ void checkout_progress(
    void* payload)
 {
    gitProgress* pd = (gitProgress*)payload;
-   pd->mSessionPtr->updateProgress(pd);
+   if (pd->mSessionPtr)
+      pd->mSessionPtr->updateProgress(pd);
 }
 
 //session object
