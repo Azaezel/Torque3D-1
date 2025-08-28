@@ -55,11 +55,12 @@ S32 fetch_progress(
 {
    gitProgress* pd = (gitProgress*)payload;
 
-   if (stats->total_deltas > 0)
-      pd->mPercent = stats->indexed_deltas / stats->total_deltas;
+   if (stats->total_objects > 0)
+      pd->mPercent = stats->received_objects / stats->total_objects;
    else
       pd->mPercent = 1.0f;
 
+   Con::warnf("fetch_progress %d/%d", stats->received_objects, stats->total_objects);
    if (pd->mSessionPtr)
       pd->mSessionPtr->updateProgress(pd);
 
@@ -130,13 +131,14 @@ void gitObject::processTick()
    Parent::processTick();
    if (mCurPercent != mProgress_data.mPercent)
    {
-      if (mCurPercent == 0)
-         onStart_callback();
-      else if (mProgress_data.mPercent == 1.0f)
+      Con::warnf("tick");
+      if (mProgress_data.mPercent == 1.0f)
       {
          onComplete_callback();
          setProcessTicks(false);
       }
+      else if (mCurPercent == 0)
+         onStart_callback();
       else
          onProgress_callback();
 
