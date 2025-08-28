@@ -51,12 +51,20 @@ class gitObject : public ScriptTickObject
 {
    typedef ScriptTickObject Parent;
 
+public:
+   enum stages
+   {
+      fetch,
+      checkout,
+      stageCount
+   };
+
 protected:
    git_repository* mRepo;
    StringTableEntry mRepoDesc;
    git_clone_options mClone_opts;
-   gitProgress mProgress_data;
-   F32 mCurPercent;
+   gitProgress mProgress_data[stageCount];
+   F32 mCurPercent[stageCount];
 
 public:
    StringTableEntry mUrl;
@@ -69,7 +77,7 @@ public:
    void interpolateTick(F32 delta) override {};
    void processTick() override;
    void advanceTime(F32 timeDelta) override {};
-   void updateProgress(gitProgress *progress);
+   void updateProgress(U32 stage, gitProgress *progress);
 
    S32 openRepo(StringTableEntry path = NULL, StringTableEntry url = NULL);
    S32 cloneRepo(StringTableEntry path = NULL, StringTableEntry url = NULL);
@@ -77,8 +85,8 @@ public:
    static void initPersistFields();
    DECLARE_CONOBJECT(gitObject);
 
-   DECLARE_CALLBACK(void, onProgress, ());
-   DECLARE_CALLBACK(void, onStart, ());
-   DECLARE_CALLBACK(void, onComplete, ());
+   DECLARE_CALLBACK(void, onProgress, (S32 stage, F32 fetchPct, F32 checkoutPct));
+   DECLARE_CALLBACK(void, onStart, (S32 stage));
+   DECLARE_CALLBACK(void, onComplete, (S32 stage));
 };
 #endif

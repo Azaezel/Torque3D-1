@@ -62,7 +62,7 @@ S32 fetch_progress(
 
    Con::warnf("fetch_progress %d/%d", stats->received_objects, stats->total_objects);
    if (pd->mSessionPtr)
-      pd->mSessionPtr->updateProgress(pd);
+      pd->mSessionPtr->updateProgress(gitObject::fetch, pd);
 
    return 0;
 }
@@ -73,38 +73,48 @@ void checkout_progress(
    size_t tot,
    void* payload)
 {
+   Con::warnf("checkout_progress %d/%d", cur, tot);
    gitProgress* pd = (gitProgress*)payload;
+
+   if (tot > 0)
+      pd->mPercent = cur / tot;
+   else
+      pd->mPercent = 1.0f;
+
    if (pd->mSessionPtr)
-      pd->mSessionPtr->updateProgress(pd);
+      pd->mSessionPtr->updateProgress(gitObject::checkout, pd);
 }
 
 //session object
 IMPLEMENT_CONOBJECT(gitObject);
 
-IMPLEMENT_CALLBACK(gitObject, onProgress, void, (), (),
+IMPLEMENT_CALLBACK(gitObject, onProgress, void, (S32 stage, F32 fetchPct, F32 checkoutPct), (stage, fetchPct, checkoutPct),
    "Called every 32ms on the control.");
-IMPLEMENT_CALLBACK(gitObject, onStart, void, (), (),
+IMPLEMENT_CALLBACK(gitObject, onStart, void, (S32 stage), (stage),
    "Called when the control starts to scroll.");
-IMPLEMENT_CALLBACK(gitObject, onComplete, void, (), (),
+IMPLEMENT_CALLBACK(gitObject, onComplete, void, (S32 stage), (stage),
    "Called when the child control has been scrolled in entirety.");
 
 gitObject::gitObject()
    : mRepo(NULL),
-   mCurPercent(0),
    mUrl(StringTable->EmptyString()),
    mLocalPath(StringTable->EmptyString()),
    mRepoDesc(StringTable->EmptyString())
 {
    mCallOnAdvanceTime = false;
-   mProgress_data.mPercent = 0;
-   mProgress_data.mSessionPtr = this;
+   for (U32 stage = 0; stage < stageCount; stage++)
+   {
+      mCurPercent[stage] = 0;
+      mProgress_data[stage].mPercent = 0;
+      mProgress_data[stage].mSessionPtr = this;
+   }
 
    mClone_opts = GIT_CLONE_OPTIONS_INIT;
    mClone_opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
    mClone_opts.checkout_opts.progress_cb = checkout_progress;
-   mClone_opts.checkout_opts.progress_payload = &mProgress_data;
+   mClone_opts.checkout_opts.progress_payload = &mProgress_data[checkout];
    mClone_opts.fetch_opts.callbacks.transfer_progress = fetch_progress;
-   mClone_opts.fetch_opts.callbacks.payload = &mProgress_data;
+   mClone_opts.fetch_opts.callbacks.payload = &mProgress_data[fetch];
 }
 
 bool gitObject::onAdd()
@@ -113,9 +123,12 @@ bool gitObject::onAdd()
       return false;
 
    mRepo = NULL;
-   mProgress_data.mPercent = 0;
-   mCurPercent = 0;
-   mProgress_data.mSessionPtr = this;
+   for (U32 stage = 0; stage < stageCount; stage++)
+   {
+      mCurPercent[stage] = 0;
+      mProgress_data[stage].mPercent = 0;
+      mProgress_data[stage].mSessionPtr = this;
+   }
    setProcessTicks(false);
    return true;
 }
@@ -129,21 +142,27 @@ void gitObject::onRemove()
 void gitObject::processTick()
 {
    Parent::processTick();
-   if (mCurPercent != mProgress_data.mPercent)
+   Con::warnf("tick");
+   bool done[stageCount] = { false, false };
+   for (U32 stage = 0; stage < stageCount; stage++)
    {
-      Con::warnf("tick");
-      if (mProgress_data.mPercent == 1.0f)
+      if (mCurPercent[stage] != mProgress_data[stage].mPercent)
       {
-         onComplete_callback();
-         setProcessTicks(false);
-      }
-      else if (mCurPercent == 0)
-         onStart_callback();
-      else
-         onProgress_callback();
+         if (mProgress_data[stage].mPercent == 1.0f)
+         {
+            onComplete_callback(stage);
+            done[stage] = true;
+         }
+         else if (mCurPercent[stage] == 0)
+            onStart_callback(stage);
+         else
+            onProgress_callback(stage, mProgress_data[fetch].mPercent, mProgress_data[checkout].mPercent);
 
-      mCurPercent = mProgress_data.mPercent;
+         mCurPercent[stage] = mProgress_data[stage].mPercent;
+      }
    }
+   if (done[fetch] && done[checkout])
+      setProcessTicks(false);
 }
 
 S32 gitObject::openRepo(StringTableEntry path, StringTableEntry url)
@@ -160,16 +179,17 @@ S32 gitObject::openRepo(StringTableEntry path, StringTableEntry url)
 
 S32 gitObject::cloneRepo(StringTableEntry path, StringTableEntry url)
 {
-   mProgress_data = { NULL };
+   mProgress_data[fetch] = {NULL};
+   mProgress_data[checkout] = { NULL };
 
    setProcessTicks(true);
    S32 errCode = git_clone(&mRepo, url, path, &mClone_opts);
    return errCode;
 }
 
-void gitObject::updateProgress(gitProgress* progress)
+void gitObject::updateProgress(U32 stage, gitProgress* progress)
 {
-   mProgress_data.mPercent = progress->mPercent;
+   mProgress_data[stage].mPercent = progress->mPercent;
 }
 
 void gitObject::closeRepo()
