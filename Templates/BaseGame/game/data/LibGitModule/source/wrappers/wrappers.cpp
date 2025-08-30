@@ -22,16 +22,18 @@
 
 #include "wrappers.h"
 #include "core/util/path.h"
-
+bool gGitRunning = false;
 //general subsystem
 DefineEngineFunction(git_init, String, (), ,
         "@brief initialize libGit2.\n\n")
 {
+   if (gGitRunning) return  "Error git_init already called";
    S32 error = git_libgit2_init();
 	if (error < 0) {
 		const git_error *e = git_error_last();
 		return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
 	}
+   gGitRunning = true;
 	return "";
 }
 
@@ -41,11 +43,13 @@ DefineEngineFunction(git_shutdown, String, (), ,
         "@note By default, messages will appear white in the console.\n"
         "@ingroup Logging")
 {
+   if (!gGitRunning) return  "Error git_shutdown already called";
    S32 error = git_libgit2_shutdown();
 	if (error < 0) {
 		const git_error *e = git_error_last();
 		return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
 	}
+   gGitRunning = false;
 	return "";
 }
 
@@ -60,7 +64,7 @@ S32 fetch_progress(
    else
       pd->mPercent = 1.0f;
 
-   Con::warnf("fetch_progress %d/%d", stats->received_objects, stats->total_objects);
+   //Con::warnf("fetch_progress %d/%d", stats->received_objects, stats->total_objects);
    if (pd->mSessionPtr)
       pd->mSessionPtr->updateProgress(gitObject::fetch, pd);
 
@@ -73,7 +77,7 @@ void checkout_progress(
    size_t tot,
    void* payload)
 {
-   Con::warnf("checkout_progress %d/%d", cur, tot);
+   //Con::warnf("checkout_progress %d/%d", cur, tot);
    gitProgress* pd = (gitProgress*)payload;
 
    if (tot > 0)
@@ -142,7 +146,7 @@ void gitObject::onRemove()
 void gitObject::processTick()
 {
    Parent::processTick();
-   Con::warnf("tick");
+   //Con::warnf("tick");
    bool done[stageCount] = { false, false };
    for (U32 stage = 0; stage < stageCount; stage++)
    {
@@ -167,6 +171,7 @@ void gitObject::processTick()
 
 S32 gitObject::openRepo(StringTableEntry path, StringTableEntry url)
 {
+   if (!gGitRunning) return GIT_ERROR_INVALID;
    closeRepo();
    git_repository_init_options opts = GIT_REPOSITORY_INIT_OPTIONS_INIT;
 
@@ -179,6 +184,7 @@ S32 gitObject::openRepo(StringTableEntry path, StringTableEntry url)
 
 S32 gitObject::cloneRepo(StringTableEntry path, StringTableEntry url)
 {
+   if (!gGitRunning) return GIT_ERROR_INVALID;
    mProgress_data[fetch] = {NULL};
    mProgress_data[checkout] = { NULL };
 
@@ -194,6 +200,7 @@ void gitObject::updateProgress(U32 stage, gitProgress* progress)
 
 void gitObject::closeRepo()
 {
+   if (!gGitRunning) return;
    git_repository_free(mRepo);
 }
 
