@@ -242,90 +242,133 @@ void gitObject::updateProgress(U32 stage, gitProgress* progress)
 
 bool gitObject::checkState(StringTableEntry remoteName, StringTableEntry branchName)
 {
-   if (!gGitRunning || !mRepo)
+   if (!gGitRunning) return false;
+   git_remote* remote = NULL;
+   git_reference* local_ref = NULL;
+   git_reference* remote_ref = NULL;
+
+   if (mRepo == NULL)
    {
-      Con::errorf("Git: Cannot perform check. Git not ready or repository not open.");
+      Con::errorf("gitObject::checkState failed: Repository not open.");
+      mHasUpdates = false;
       return false;
    }
 
-   git_remote* remote = nullptr;
-   StringTableEntry remoteToUse = remoteName ? remoteName : mRemoteName;
+   mRemoteName = (remoteName == NULL || *remoteName == '\0') ? StringTable->insert("origin") : remoteName;
+   mBranchName = (branchName == NULL || *branchName == '\0') ? StringTable->insert("main") : branchName;
 
-   if (!mRepo || !remoteToUse || git_remote_lookup(&remote, mRepo, remoteToUse) < 0)
+   if (git_remote_lookup(&remote, mRepo, mRemoteName) != 0)
    {
-      Con::errorf("Git: Repository or remote not valid for fetch.");
+      Con::errorf("gitObject::checkState failed: Could not find remote '%s'.", mRemoteName);
+      mHasUpdates = false;
       return false;
    }
 
-   if (git_remote_fetch(remote, nullptr, &mFetchOpts, nullptr) < 0)
+   // --- Handle branch name fallback logic with 'main' and 'master' ---
+   String remoteMainRefPath = String("refs/remotes/") + mRemoteName + "/main";
+   if (git_reference_lookup(&remote_ref, mRepo, remoteMainRefPath.c_str()) != 0)
    {
-      Con::errorf("Git: Failed to fetch remote '%s': %s", remoteToUse, git_error_last()->message);
-      git_remote_free(remote);
-      return false;
-   }
-
-   git_annotated_commit* theirHead = nullptr;
-   git_reference* remoteRef = nullptr;
-   mHasUpdates = false;
-
-   StringTableEntry branchToUse = branchName ? branchName : mBranchName;
-   char remoteBranchRef[256];
-   dSprintf(remoteBranchRef, sizeof(remoteBranchRef), "refs/remotes/%s/%s", remoteToUse, branchToUse);
-
-   if (git_reference_lookup(&remoteRef, mRepo, remoteBranchRef) == 0 &&
-      git_annotated_commit_from_ref(&theirHead, mRepo, remoteRef) == 0)
-   {
-      git_merge_analysis_t analysis;
-      git_merge_preference_t preference;
-      git_merge_analysis(&analysis, &preference, mRepo, (const git_annotated_commit**)&theirHead, 1);
-
-      if (analysis & (GIT_MERGE_ANALYSIS_FASTFORWARD | GIT_MERGE_ANALYSIS_NORMAL)) {
-         mHasUpdates = true;
+      String remoteMasterRefPath = String("refs/remotes/") + mRemoteName + "/master";
+      if (git_reference_lookup(&remote_ref, mRepo, remoteMasterRefPath.c_str()) == 0)
+      {
+         mBranchName = StringTable->insert("master");
+         git_reference_free(remote_ref);
+      }
+      else
+      {
+         Con::errorf("gitObject::checkState failed: No 'main' or 'master' branch found on remote '%s'.", mRemoteName);
+         git_remote_free(remote);
+         mHasUpdates = false;
+         return false;
       }
    }
+   else
+   {
+      git_reference_free(remote_ref);
+   }
 
-   if (theirHead) git_annotated_commit_free(theirHead);
-   if (remoteRef) git_reference_free(remoteRef);
+   if (git_remote_fetch(remote, NULL, NULL, NULL) != 0)
+   {
+      Con::errorf("gitObject::checkState failed: Could not fetch updates from remote '%s'.", mRemoteName);
+      git_remote_free(remote);
+      mHasUpdates = false;
+      return false;
+   }
+
+   // Lookup the local and remote branch references
+   String localRefPath = String("refs/heads/") + mBranchName;
+   String remoteRefPath = String("refs/remotes/") + mRemoteName + "/" + mBranchName;
+
+   if (git_reference_lookup(&local_ref, mRepo, localRefPath.c_str()) != 0 ||
+      git_reference_lookup(&remote_ref, mRepo, remoteRefPath.c_str()) != 0)
+   {
+      Con::errorf("gitObject::checkState failed: Could not find local or remote branch references.");
+      git_remote_free(remote);
+      mHasUpdates = false;
+      return false;
+   }
+
+   const git_oid* local_oid = git_reference_target(local_ref);
+   const git_oid* remote_oid = git_reference_target(remote_ref);
+   mHasUpdates = (git_oid_cmp(local_oid, remote_oid) != 0);
+
+   git_reference_free(local_ref);
+   git_reference_free(remote_ref);
    git_remote_free(remote);
+
    return mHasUpdates;
 }
 
 void gitObject::update(StringTableEntry remoteName, StringTableEntry branchName)
 {
-   if (!gGitRunning || !mRepo)
+   if (!gGitRunning) return;
+   if (mRepo == NULL)
    {
-      Con::errorf("Git: Cannot perform update. Git not ready or repository not open.");
+      Con::errorf("gitObject::update failed: Repository not open.");
       return;
    }
 
-   git_annotated_commit* theirHead = nullptr;
-   git_reference* remoteRef = nullptr;
+   checkState(remoteName, branchName);
 
-   StringTableEntry remoteToUse = remoteName ? remoteName : mRemoteName;
-   StringTableEntry branchToUse = branchName ? branchName : mBranchName;
-
-   char* remoteBranchRef;
-   dSprintf(remoteBranchRef, sizeof(remoteBranchRef), "refs/remotes/%s/%s", remoteToUse, branchToUse);
-
-   if (git_reference_lookup(&remoteRef, mRepo, remoteBranchRef) < 0 ||
-      git_annotated_commit_from_ref(&theirHead, mRepo, remoteRef) < 0)
+   if (mHasUpdates)
    {
-      Con::errorf("Git: Remote reference or annotated commit not valid for merge.");
-      return;
-   }
+      Con::printf("gitObject::update: Merging updates from '%s/%s' into the current branch.", mRemoteName, mBranchName);
 
-   if (git_merge(mRepo, (const git_annotated_commit**)&theirHead, 1, &mMergeOpts, &mCheckoutOpts) < 0)
-   {
-      Con::errorf("Git: Failed to merge changes: %s", git_error_last()->message);
-   }
-   else
-   {
-      Con::printf("Git: Merge from remote '%s' successful.", remoteToUse);
-   }
+      git_annotated_commit* their_head = NULL;
+      git_reference* remote_ref = NULL;
 
-   git_repository_state_cleanup(mRepo);
-   git_annotated_commit_free(theirHead);
-   git_reference_free(remoteRef);
+      String remoteRefPath = String("refs/remotes/") + mRemoteName + "/" + mBranchName;
+
+      int their_head_err = git_reference_lookup(&remote_ref, mRepo, remoteRefPath.c_str());
+      if (their_head_err == 0)
+      {
+         their_head_err = git_annotated_commit_lookup(&their_head, mRepo, git_reference_target(remote_ref));
+      }
+
+      if (their_head_err != 0)
+      {
+         Con::errorf("gitObject::update failed: Could not lookup remote head. Error code: %d", their_head_err);
+         git_reference_free(remote_ref);
+         return;
+      }
+
+      const git_annotated_commit* their_heads[] = { their_head };
+
+      int merge_res = git_merge(mRepo, their_heads, 1, NULL, &mCheckoutOpts);
+      if (merge_res != 0)
+      {
+         Con::errorf("gitObject::update failed: Could not perform fast-forward merge. Error code: %d", merge_res);
+         git_annotated_commit_free(their_head);
+         git_reference_free(remote_ref);
+         return;
+      }
+
+      git_annotated_commit_free(their_head);
+      git_reference_free(remote_ref);
+
+      Con::printf("gitObject::update: Successfully merged updates.");
+      mHasUpdates = false;
+   }
 }
 
 void gitObject::closeRepo()
@@ -371,7 +414,7 @@ DefineEngineMethod(gitObject, cloneRepo, String, (StringTableEntry localPath, St
    return "";
 }
 
-DefineEngineMethod(gitObject, checkState, bool, (StringTableEntry remoteName, StringTableEntry branchName), ("origin", "main"),
+DefineEngineMethod(gitObject, checkState, bool, (StringTableEntry remoteName, StringTableEntry branchName), ("", ""),
    "@brief Fetch updates from the remote repository and check if a merge is needed.\n\n"
    "@param remoteName Name of the remote, defaults to 'origin'.\n\n"
    "@param branchName Name of the branch, defaults to 'main'.\n\n"
@@ -380,7 +423,7 @@ DefineEngineMethod(gitObject, checkState, bool, (StringTableEntry remoteName, St
    return object->checkState(remoteName, branchName);
 }
 
-DefineEngineMethod(gitObject, update, void, (StringTableEntry remoteName, StringTableEntry branchName), ("origin", "main"),
+DefineEngineMethod(gitObject, update, void, (StringTableEntry remoteName, StringTableEntry branchName), ("", ""),
    "@brief Checks for updates and merges them into the current branch.\n\n"
    "@param remoteName Name of the remote, defaults to 'origin'.\n\n"
    "@param branchName Name of the branch, defaults to 'main'.\n\n")
