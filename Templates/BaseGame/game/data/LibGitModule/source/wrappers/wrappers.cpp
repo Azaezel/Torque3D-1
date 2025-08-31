@@ -107,7 +107,8 @@ gitObject::gitObject()
    mCloneOpts(GIT_CLONE_OPTIONS_INIT),
    mFetchOpts(GIT_FETCH_OPTIONS_INIT),
    mMergeOpts(GIT_MERGE_OPTIONS_INIT),
-   mCheckoutOpts(GIT_CHECKOUT_OPTIONS_INIT)
+   mCheckoutOpts(GIT_CHECKOUT_OPTIONS_INIT),
+   mHasUpdates(false)
 {
    mCallOnAdvanceTime = false;
    for (U32 stage = 0; stage < stageCount; stage++)
@@ -239,7 +240,7 @@ void gitObject::updateProgress(U32 stage, gitProgress* progress)
    mProgress_data[stage].mPercent = progress->mPercent;
 }
 
-bool gitObject::checkRemoteState(StringTableEntry remoteName, StringTableEntry branchName)
+bool gitObject::checkState(StringTableEntry remoteName, StringTableEntry branchName)
 {
    if (!gGitRunning || !mRepo)
    {
@@ -265,7 +266,7 @@ bool gitObject::checkRemoteState(StringTableEntry remoteName, StringTableEntry b
 
    git_annotated_commit* theirHead = nullptr;
    git_reference* remoteRef = nullptr;
-   bool hasUpdates = false;
+   mHasUpdates = false;
 
    StringTableEntry branchToUse = branchName ? branchName : mBranchName;
    char remoteBranchRef[256];
@@ -279,14 +280,52 @@ bool gitObject::checkRemoteState(StringTableEntry remoteName, StringTableEntry b
       git_merge_analysis(&analysis, &preference, mRepo, (const git_annotated_commit**)&theirHead, 1);
 
       if (analysis & (GIT_MERGE_ANALYSIS_FASTFORWARD | GIT_MERGE_ANALYSIS_NORMAL)) {
-         hasUpdates = true;
+         mHasUpdates = true;
       }
    }
 
    if (theirHead) git_annotated_commit_free(theirHead);
    if (remoteRef) git_reference_free(remoteRef);
    git_remote_free(remote);
-   return hasUpdates;
+   return mHasUpdates;
+}
+
+void gitObject::update(StringTableEntry remoteName, StringTableEntry branchName)
+{
+   if (!gGitRunning || !mRepo)
+   {
+      Con::errorf("Git: Cannot perform update. Git not ready or repository not open.");
+      return;
+   }
+
+   git_annotated_commit* theirHead = nullptr;
+   git_reference* remoteRef = nullptr;
+
+   StringTableEntry remoteToUse = remoteName ? remoteName : mRemoteName;
+   StringTableEntry branchToUse = branchName ? branchName : mBranchName;
+
+   char* remoteBranchRef;
+   dSprintf(remoteBranchRef, sizeof(remoteBranchRef), "refs/remotes/%s/%s", remoteToUse, branchToUse);
+
+   if (git_reference_lookup(&remoteRef, mRepo, remoteBranchRef) < 0 ||
+      git_annotated_commit_from_ref(&theirHead, mRepo, remoteRef) < 0)
+   {
+      Con::errorf("Git: Remote reference or annotated commit not valid for merge.");
+      return;
+   }
+
+   if (git_merge(mRepo, (const git_annotated_commit**)&theirHead, 1, &mMergeOpts, &mCheckoutOpts) < 0)
+   {
+      Con::errorf("Git: Failed to merge changes: %s", git_error_last()->message);
+   }
+   else
+   {
+      Con::printf("Git: Merge from remote '%s' successful.", remoteToUse);
+   }
+
+   git_repository_state_cleanup(mRepo);
+   git_annotated_commit_free(theirHead);
+   git_reference_free(remoteRef);
 }
 
 void gitObject::closeRepo()
@@ -332,13 +371,24 @@ DefineEngineMethod(gitObject, cloneRepo, String, (StringTableEntry localPath, St
    return "";
 }
 
-DefineEngineMethod(gitObject, checkRemoteState, bool, (StringTableEntry remoteName, StringTableEntry branchName), ("origin", "main"),
+DefineEngineMethod(gitObject, checkState, bool, (StringTableEntry remoteName, StringTableEntry branchName), ("origin", "main"),
    "@brief Fetch updates from the remote repository and check if a merge is needed.\n\n"
    "@param remoteName Name of the remote, defaults to 'origin'.\n\n"
    "@param branchName Name of the branch, defaults to 'main'.\n\n"
    "@return True if updates are available, false otherwise.\n\n")
 {
-   return object->checkRemoteState(remoteName, branchName);
+   return object->checkState(remoteName, branchName);
+}
+
+DefineEngineMethod(gitObject, update, void, (StringTableEntry remoteName, StringTableEntry branchName), ("origin", "main"),
+   "@brief Checks for updates and merges them into the current branch.\n\n"
+   "@param remoteName Name of the remote, defaults to 'origin'.\n\n"
+   "@param branchName Name of the branch, defaults to 'main'.\n\n")
+{
+   if (object->checkState(remoteName, branchName))
+   {
+      object->update(remoteName, branchName);
+   }
 }
 
 DefineEngineMethod(gitObject, closeRepo, void, ( ),,

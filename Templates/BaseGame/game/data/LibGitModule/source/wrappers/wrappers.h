@@ -68,6 +68,7 @@ protected:
    git_fetch_options mFetchOpts;
    git_merge_options mMergeOpts;
    git_checkout_options mCheckoutOpts;
+   bool mHasUpdates;
 
 public:
    StringTableEntry mUrl;
@@ -86,7 +87,8 @@ public:
 
    S32 openRepo(StringTableEntry path = NULL, StringTableEntry url = NULL);
    S32 cloneRepo(StringTableEntry path = NULL, StringTableEntry url = NULL);
-   bool checkRemoteState(StringTableEntry remoteName = NULL, StringTableEntry branchName = NULL);
+   bool checkState(StringTableEntry remoteName = NULL, StringTableEntry branchName = NULL);
+   void update(StringTableEntry remoteName = NULL, StringTableEntry branchName = NULL);
 
    void closeRepo();
    static void initPersistFields();
