@@ -62,14 +62,19 @@ public:
 protected:
    git_repository* mRepo;
    StringTableEntry mRepoDesc;
-   git_clone_options mClone_opts;
+   git_clone_options mCloneOpts;
    gitProgress mProgress_data[stageCount];
    F32 mCurPercent[stageCount];
+   git_fetch_options mFetchOpts;
+   git_merge_options mMergeOpts;
+   git_checkout_options mCheckoutOpts;
 
 public:
    StringTableEntry mUrl;
    StringTableEntry mLocalPath;
-
+   StringTableEntry mRemoteName;
+   StringTableEntry mBranchName;
+   
    gitObject();
    bool onAdd() override;
    void onRemove() override;
@@ -81,6 +86,8 @@ public:
 
    S32 openRepo(StringTableEntry path = NULL, StringTableEntry url = NULL);
    S32 cloneRepo(StringTableEntry path = NULL, StringTableEntry url = NULL);
+   bool checkRemoteState(StringTableEntry remoteName = NULL, StringTableEntry branchName = NULL);
+
    void closeRepo();
    static void initPersistFields();
    DECLARE_CONOBJECT(gitObject);

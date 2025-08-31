@@ -72,7 +72,7 @@ S32 fetch_progress(
 }
 
 void checkout_progress(
-   const char* path,
+   StringTableEntry path,
    size_t cur,
    size_t tot,
    void* payload)
@@ -103,7 +103,11 @@ gitObject::gitObject()
    : mRepo(NULL),
    mUrl(StringTable->EmptyString()),
    mLocalPath(StringTable->EmptyString()),
-   mRepoDesc(StringTable->EmptyString())
+   mRepoDesc(StringTable->EmptyString()),
+   mCloneOpts(GIT_CLONE_OPTIONS_INIT),
+   mFetchOpts(GIT_FETCH_OPTIONS_INIT),
+   mMergeOpts(GIT_MERGE_OPTIONS_INIT),
+   mCheckoutOpts(GIT_CHECKOUT_OPTIONS_INIT)
 {
    mCallOnAdvanceTime = false;
    for (U32 stage = 0; stage < stageCount; stage++)
@@ -113,12 +117,19 @@ gitObject::gitObject()
       mProgress_data[stage].mSessionPtr = this;
    }
 
-   mClone_opts = GIT_CLONE_OPTIONS_INIT;
-   mClone_opts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
-   mClone_opts.checkout_opts.progress_cb = checkout_progress;
-   mClone_opts.checkout_opts.progress_payload = &mProgress_data[checkout];
-   mClone_opts.fetch_opts.callbacks.transfer_progress = fetch_progress;
-   mClone_opts.fetch_opts.callbacks.payload = &mProgress_data[fetch];
+   mFetchOpts.callbacks.transfer_progress = fetch_progress;
+   mFetchOpts.callbacks.payload = &mProgress_data[fetch];
+
+   mCheckoutOpts.checkout_strategy = GIT_CHECKOUT_SAFE;
+   mCheckoutOpts.progress_cb = checkout_progress;
+   mCheckoutOpts.progress_payload = &mProgress_data[checkout];
+
+   mCloneOpts.checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE;
+   mCloneOpts.checkout_opts.progress_cb = checkout_progress;
+   mCloneOpts.checkout_opts.progress_payload = &mProgress_data[checkout];
+   mCloneOpts.fetch_opts.callbacks.transfer_progress = fetch_progress;
+   mCloneOpts.fetch_opts.callbacks.payload = &mProgress_data[fetch];
+
 }
 
 bool gitObject::onAdd()
@@ -146,39 +157,69 @@ void gitObject::onRemove()
 void gitObject::processTick()
 {
    Parent::processTick();
-   //Con::warnf("tick");
-   bool done[stageCount] = { false, false };
+
+   bool allDone = true;
    for (U32 stage = 0; stage < stageCount; stage++)
    {
       if (mCurPercent[stage] != mProgress_data[stage].mPercent)
       {
-         if (mProgress_data[stage].mPercent == 1.0f)
+         if (mProgress_data[stage].mPercent >= 1.0f)
          {
             onComplete_callback(stage);
-            done[stage] = true;
          }
          else if (mCurPercent[stage] == 0)
+         {
             onStart_callback(stage);
+         }
          else
+         {
             onProgress_callback(stage, mProgress_data[fetch].mPercent, mProgress_data[checkout].mPercent);
+         }
 
          mCurPercent[stage] = mProgress_data[stage].mPercent;
       }
+
+      if (mProgress_data[stage].mPercent < 1.0f) {
+         allDone = false;
+      }
    }
-   if (done[fetch] && done[checkout])
+
+   if (allDone) {
       setProcessTicks(false);
+   }
 }
 
 S32 gitObject::openRepo(StringTableEntry path, StringTableEntry url)
 {
    if (!gGitRunning) return GIT_ERROR_INVALID;
-   closeRepo();
-   git_repository_init_options opts = GIT_REPOSITORY_INIT_OPTIONS_INIT;
 
-   /* Customize options */
-   opts.flags |= GIT_REPOSITORY_INIT_MKPATH; /* mkdir as needed to create repo */
-   opts.origin_url = url;
-   S32 errCode = git_repository_init_ext(&mRepo, path, &opts);
+   closeRepo();
+   StringTableEntry path_to_use = path ? path : mLocalPath;
+
+   // First, try to open the repository.
+   int errCode = git_repository_open(&mRepo, path_to_use);
+   if (errCode == 0) {
+      mLocalPath = path_to_use;
+      mUrl = url;
+      // The repository is already open, and 'origin' is likely set by the clone.
+      return 0;
+   }
+
+   // If opening failed because it's not a repository, try to initialize it.
+   if (errCode == GIT_ENOTFOUND) {
+      git_repository_init_options opts = GIT_REPOSITORY_INIT_OPTIONS_INIT;
+      opts.flags |= GIT_REPOSITORY_INIT_MKPATH;
+      opts.origin_url = url;
+      errCode = git_repository_init_ext(&mRepo, path_to_use, &opts);
+      if (errCode == 0) {
+         mLocalPath = path_to_use;
+         mUrl = url;
+         return 0;
+      }
+   }
+
+   // Handle any other errors.
+   Con::errorf("Git: Failed to open or initialize repository at '%s'. Error: %s", path_to_use, git_error_last()->message);
    return errCode;
 }
 
@@ -189,7 +230,7 @@ S32 gitObject::cloneRepo(StringTableEntry path, StringTableEntry url)
    mProgress_data[checkout] = { NULL };
 
    setProcessTicks(true);
-   S32 errCode = git_clone(&mRepo, url, path, &mClone_opts);
+   S32 errCode = git_clone(&mRepo, url, path, &mCloneOpts);
    return errCode;
 }
 
@@ -198,10 +239,61 @@ void gitObject::updateProgress(U32 stage, gitProgress* progress)
    mProgress_data[stage].mPercent = progress->mPercent;
 }
 
+bool gitObject::checkRemoteState(StringTableEntry remoteName, StringTableEntry branchName)
+{
+   if (!gGitRunning || !mRepo)
+   {
+      Con::errorf("Git: Cannot perform check. Git not ready or repository not open.");
+      return false;
+   }
+
+   git_remote* remote = nullptr;
+   StringTableEntry remoteToUse = remoteName ? remoteName : mRemoteName;
+
+   if (!mRepo || !remoteToUse || git_remote_lookup(&remote, mRepo, remoteToUse) < 0)
+   {
+      Con::errorf("Git: Repository or remote not valid for fetch.");
+      return false;
+   }
+
+   if (git_remote_fetch(remote, nullptr, &mFetchOpts, nullptr) < 0)
+   {
+      Con::errorf("Git: Failed to fetch remote '%s': %s", remoteToUse, git_error_last()->message);
+      git_remote_free(remote);
+      return false;
+   }
+
+   git_annotated_commit* theirHead = nullptr;
+   git_reference* remoteRef = nullptr;
+   bool hasUpdates = false;
+
+   StringTableEntry branchToUse = branchName ? branchName : mBranchName;
+   char remoteBranchRef[256];
+   dSprintf(remoteBranchRef, sizeof(remoteBranchRef), "refs/remotes/%s/%s", remoteToUse, branchToUse);
+
+   if (git_reference_lookup(&remoteRef, mRepo, remoteBranchRef) == 0 &&
+      git_annotated_commit_from_ref(&theirHead, mRepo, remoteRef) == 0)
+   {
+      git_merge_analysis_t analysis;
+      git_merge_preference_t preference;
+      git_merge_analysis(&analysis, &preference, mRepo, (const git_annotated_commit**)&theirHead, 1);
+
+      if (analysis & (GIT_MERGE_ANALYSIS_FASTFORWARD | GIT_MERGE_ANALYSIS_NORMAL)) {
+         hasUpdates = true;
+      }
+   }
+
+   if (theirHead) git_annotated_commit_free(theirHead);
+   if (remoteRef) git_reference_free(remoteRef);
+   git_remote_free(remote);
+   return hasUpdates;
+}
+
 void gitObject::closeRepo()
 {
    if (!gGitRunning) return;
    git_repository_free(mRepo);
+   mRepo = NULL;
 }
 
 void gitObject::initPersistFields()
@@ -238,6 +330,15 @@ DefineEngineMethod(gitObject, cloneRepo, String, (StringTableEntry localPath, St
       return String::ToString("Error %d/%d: %s\n", error, e->klass, e->message);
    }
    return "";
+}
+
+DefineEngineMethod(gitObject, checkRemoteState, bool, (StringTableEntry remoteName, StringTableEntry branchName), ("origin", "main"),
+   "@brief Fetch updates from the remote repository and check if a merge is needed.\n\n"
+   "@param remoteName Name of the remote, defaults to 'origin'.\n\n"
+   "@param branchName Name of the branch, defaults to 'main'.\n\n"
+   "@return True if updates are available, false otherwise.\n\n")
+{
+   return object->checkRemoteState(remoteName, branchName);
 }
 
 DefineEngineMethod(gitObject, closeRepo, void, ( ),,
