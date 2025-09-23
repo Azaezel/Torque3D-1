@@ -147,13 +147,14 @@ TSShape* TSShapeLoader::generateShape(const Torque::Path& path)
    // Get all nodes, objects and sequences in the shape
    updateProgress(Load_EnumerateScene, "Enumerating scene...");
    enumerateScene();
+/*
    if (!subshapes.size())
    {
       delete shape;
       Con::errorf("Failed to load shape \"%s\", no subshapes found", path.getFullPath().c_str());
       return NULL;
    }
-
+*/
    // Create the TSShape::Node hierarchy
    generateSubshapes();
 
@@ -1190,7 +1191,20 @@ void TSShapeLoader::install()
    if (!shape->details.size())
    {
       shape->addDetail("detail", 2, 0);
-      shape->subShapeNumObjects.last() = 1;
+
+      if (shape->subShapeNumObjects.size() > 0)
+         shape->subShapeNumObjects.last() = 1;
+      else
+      {
+         shape->subShapeFirstObject.push_back(0);
+         shape->subShapeNumObjects.push_back(0);
+         shape->nodes.increment();
+         shape->nodes[0].nameIndex = 1;
+         shape->nodes[0].parentIndex = -1;
+         shape->nodes[0].firstObject = 0;
+         shape->nodes[0].firstChild = -1;
+         shape->nodes[0].nextSibling = -1;
+      }
 
       shape->meshes.push_back(NULL);
 

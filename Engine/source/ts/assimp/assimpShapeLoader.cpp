@@ -983,21 +983,15 @@ TSShape* assimpLoadShape(const Torque::Path &path)
    if (tss)
    {
       TSShapeLoader::updateProgress(TSShapeLoader::Load_Complete, "Import complete");
-      Con::printf("[ASSIMP] Shape created successfully.");
-
-      // Cache the model to a DTS file for faster loading next time.
-      FileStream dtsStream;
-      if (dtsStream.open(cachedPath.getFullPath(), Torque::FS::File::Write))
-      {
-         Con::printf("Writing cached shape to %s", cachedPath.getFullPath().c_str());
-         tss->write(&dtsStream);
-      }
 
       if (tss->meshes.empty())
       {
          Torque::Path dsqPath(cachedPath);
          dsqPath.setExtension("dsq");
          FileStream animOutStream;
+
+         AssertFatal(tss->sequences.size()>0, "no meshes *and* no animations? wat?");
+
          for (S32 i = 0; i < tss->sequences.size(); i++)
          {
             const String& seqName = tss->getName(tss->sequences[i].nameIndex);
@@ -1009,7 +1003,18 @@ TSShape* assimpLoadShape(const Torque::Path &path)
                tss->exportSequence(&animOutStream, tss->sequences[i], false);
                animOutStream.close();
             }
+         }
+      }
+      else
+      {
+         Con::printf("[ASSIMP] Shape created successfully.");
 
+         // Cache the model to a DTS file for faster loading next time.
+         FileStream dtsStream;
+         if (dtsStream.open(cachedPath.getFullPath(), Torque::FS::File::Write))
+         {
+            Con::printf("Writing cached shape to %s", cachedPath.getFullPath().c_str());
+            tss->write(&dtsStream);
          }
       }
 
