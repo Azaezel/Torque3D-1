@@ -1,7 +1,0 @@
-<MaterialAsset
-    canSave="true"
-    canSaveDynamicFields="true"
-    AssetName="WaterBasicMat"
-    scriptFile="@assetFile=water.tscript"
-    materialDefinitionName="WaterBasicMat"
-    VersionId="1" />

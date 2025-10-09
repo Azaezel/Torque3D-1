@@ -1,7 +1,0 @@
-<MaterialAsset
-    canSave="true"
-    canSaveDynamicFields="true"
-    AssetName="BlankSkyMat"
-    scriptFile="@assetFile=BlankSkyMat.tscript"
-    materialDefinitionName="BlankSkyMat"
-    VersionId="1" />
