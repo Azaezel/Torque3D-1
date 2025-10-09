@@ -16,4 +16,7 @@
 	   canSaveDynamicFields="true"
 	   AssetType="GameObjectAsset"
 	   Recurse="true"/>
+    <DeclaredAssets
+        Extension="asset.baml"
+        Recurse="true"/>
 </ModuleDefinition>

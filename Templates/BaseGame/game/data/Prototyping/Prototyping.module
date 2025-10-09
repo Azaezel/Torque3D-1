@@ -8,4 +8,7 @@
     <DeclaredAssets
         Extension="asset.taml"
         Recurse="true"/>
+    <DeclaredAssets
+        Extension="asset.baml"
+        Recurse="true"/>
 </ModuleDefinition>
