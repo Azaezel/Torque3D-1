@@ -681,7 +681,8 @@ class TSShape
    S32 setDetailSize(S32 oldSize, S32 newSize);
    bool removeDetail(S32 size);
 
-   bool addSequence(const Torque::Path& path, const String& fromSeq, const String& name, S32 startFrame, S32 endFrame, bool padRotKeys, bool padTransKeys);
+   static bool isShapeFileType(Torque::Path filePath);
+   bool addSequence(const Torque::Path& path, const String& assetId, const String& fromSeq, const String& name, S32 startFrame, S32 endFrame, bool padRotKeys, bool padTransKeys);
    bool removeSequence(const String& name);
 
    bool addTrigger(const String& seqName, S32 keyframe, S32 state);

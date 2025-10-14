@@ -231,7 +231,7 @@ void AssimpShapeLoader::enumerateScene()
    // Read the file
    mScene = mImporter.ReadFile(shapePath.getFullPath().c_str(), ppsteps);
 
-   if (!mScene || (mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !mScene->mRootNode) {
+   if (!mScene || !mScene->mRootNode) {
       Con::errorf("[ASSIMP] ERROR: Could not load file: %s", shapePath.getFullPath().c_str());
       Con::errorf("[ASSIMP] Importer error: %s", mImporter.GetErrorString());
       TSShapeLoader::updateProgress(TSShapeLoader::Load_Complete, "Import failed");
@@ -341,24 +341,7 @@ void AssimpShapeLoader::processAssimpNode(const aiNode* node, const aiScene* sce
    else
    {
       currNode = new AssimpAppNode(scene, node, parentNode);
-
-      if (parentNode)
-      {
-         parentNode->addChild(currNode);
-      }
-
-      for (U32 i = 0; i < node->mNumMeshes; i++)
-      {
-         U32 meshIdx = node->mMeshes[i];
-         const aiMesh* mesh = scene->mMeshes[meshIdx];
-         AssimpAppMesh* curMesh = new AssimpAppMesh(mesh, currNode);
-         currNode->addMesh(curMesh);
-      }
-   }
-   // Recursively process child nodes
-   for (U32 i = 0; i < node->mNumChildren; i++)
-   {
-      processAssimpNode(node->mChildren[i], scene, currNode);
+      processNode(currNode);
    }
 }
 
@@ -985,29 +968,41 @@ TSShape* assimpLoadShape(const Torque::Path &path)
       TSShapeLoader::updateProgress(TSShapeLoader::Load_Complete, "Import complete");
       Con::printf("[ASSIMP] Shape created successfully.");
 
-      // Cache the model to a DTS file for faster loading next time.
-      FileStream dtsStream;
-      if (dtsStream.open(cachedPath.getFullPath(), Torque::FS::File::Write))
+      bool realMesh = false;
+      for (U32 i = 0; i < tss->meshes.size(); ++i)
       {
-         Con::printf("Writing cached shape to %s", cachedPath.getFullPath().c_str());
-         tss->write(&dtsStream);
+         if (tss->meshes[i] && tss->meshes[i]->getMeshType() != TSMesh::NullMeshType)
+            realMesh = true;
       }
 
-      Torque::Path dsqPath(cachedPath);
-      dsqPath.setExtension("dsq");
-      FileStream animOutStream;
-      for (S32 i = 0; i < tss->sequences.size(); i++)
+      if (!realMesh)
       {
-         const String& seqName = tss->getName(tss->sequences[i].nameIndex);
-         Con::printf("Writing DSQ Animation File for sequence '%s'", seqName.c_str());
-
-         dsqPath.setFileName(cachedPath.getFileName() + "_" + seqName);
-         if (animOutStream.open(dsqPath.getFullPath(), Torque::FS::File::Write))
+         Torque::Path dsqPath(cachedPath);
+         dsqPath.setExtension("dsq");
+         FileStream animOutStream;
+         for (S32 i = 0; i < tss->sequences.size(); i++)
          {
-            tss->exportSequence(&animOutStream, tss->sequences[i], false);
-            animOutStream.close();
-         }
+            const String& seqName = tss->getName(tss->sequences[i].nameIndex);
+            Con::printf("Writing DSQ Animation File for sequence '%s'", seqName.c_str());
 
+            dsqPath.setFileName(cachedPath.getFileName() + "_" + seqName);
+            if (animOutStream.open(dsqPath.getFullPath(), Torque::FS::File::Write))
+            {
+               tss->exportSequence(&animOutStream, tss->sequences[i], false);
+               animOutStream.close();
+            }
+
+         }
+      }
+      else
+      {
+         // Cache the model to a DTS file for faster loading next time.
+         FileStream dtsStream;
+         if (dtsStream.open(cachedPath.getFullPath(), Torque::FS::File::Write))
+         {
+            Con::printf("Writing cached shape to %s", cachedPath.getFullPath().c_str());
+            tss->write(&dtsStream);
+         }
       }
 
       loader.updateMaterialsScript(path);

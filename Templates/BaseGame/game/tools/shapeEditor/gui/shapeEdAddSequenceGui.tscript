@@ -1,0 +1,62 @@
+function shapeEdAddSequenceGui::show(%seqSourceData)
+{
+   shapeEdAddSequenceWindow-->seqName.setText(ShapeEdSequences.newSeqName);
+   shapeEdAddSequenceWindow-->sourceSeq.setText(%seqSourceData);
+   
+   shapeEdAddSequenceWindow-->startFrame.setText("0");
+   shapeEdAddSequenceWindow-->endFrame.setText("-1");
+   
+   shapeEdAddSequenceWindow.constructor = "";
+   
+   if(AssetDatabase.isDeclaredAsset(%seqSourceData))
+   {
+      %shapeDef = AssetDatabase.acquireAsset(%seqSourceData);
+      %shapeDef.load();
+      
+      shapeEdAddSequenceWindow.constructor = findShapeConstructorByAssetId( %seqSourceData );
+      AssetDatabase.releaseAsset(%seqSourceData);
+   }
+   else if(isFile(%seqSourceData))
+   {
+      shapeEdAddSequenceWindow.constructor = findShapeConstructorByFilename( %seqSourceData );
+   }
+   
+   Canvas.pushDialog(shapeEdAddSequenceGui);
+}
+
+function shapeEdAddSequenceWindow::onWake(%this)
+{
+   %sourceSeq = %this-->sourceSeq.getText();
+   
+   
+   if(!isObject(%this.constructor))
+   {
+      toolsMessageBoxOK("Error!", "Unable to find shape constructor for source animation data. Please close the window and select a different source, or make sure the constructor is valid.");
+      return;  
+   }
+   
+   for(%i=0; %i < %this.constructor.getSequenceCount(); %i++)
+   {
+      %name = %this.constructor.getSequenceName( %i );
+
+      // Ignore __backup__ sequences (only used by editor)
+      if ( !startswith( %name, "__backup__" ) )
+         %this-->fromSeqName.add( %name );
+   }
+   
+   %this-->fromSeqName.setSelected(0);
+}
+
+function onShapeEditorDoAddNewSequence()
+{
+   %seqName = shapeEdAddSequenceWindow-->seqName.getText();
+   %seqSource = shapeEdAddSequenceWindow-->sourceSeq.getText() TAB shapeEdAddSequenceWindow-->fromSeqName.getText();
+   %startFrame = shapeEdAddSequenceWindow-->startFrame.getText();
+   %endFrame = shapeEdAddSequenceWindow-->endFrame.getText();
+   
+   %seqSource = trim(%seqSource);
+
+   ShapeEditor.doAddSequence(%seqName, %seqSource, %startFrame, %endFrame);
+   
+   Canvas.popDialog(shapeEdAddSequenceGui);
+}

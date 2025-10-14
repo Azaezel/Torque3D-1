@@ -1535,9 +1535,27 @@ DefineTSShapeConstructorMethod(addMesh, bool, (const char* meshName, const char*
    "%this.addMesh( \"SimpleShape10\", \"./testShape.dae\", \"MyMesh2\", "" );\n"
    "@endtsexample\n")
 {
+   const char* targShape = StringTable->EmptyString();
+
+   bool found = false;
+
+   if (AssetDatabase.isDeclaredAsset(srcShape))
+   {
+      ShapeAsset* assetShape = AssetDatabase.acquireAsset<ShapeAsset>(srcShape);
+      if (assetShape)
+      {
+         targShape = assetShape->getShapeFile();
+         //Con::printf("Found assetID %s for assetName %s; shape file path %s", assetShape->getAssetId(), srcShape, targShape);
+         found = true;
+      }
+   }
+
+   if (!found)
+      targShape = srcShape;
+
    // Load the shape source file
    char filenameBuf[1024];
-   Con::expandScriptFilename(filenameBuf, sizeof(filenameBuf), srcShape);
+   Con::expandScriptFilename(filenameBuf, sizeof(filenameBuf), targShape);
 
    Resource<TSShape> hSrcShape = ResourceManager::get().load(filenameBuf);
    if (!bool(hSrcShape))
@@ -2129,11 +2147,13 @@ DefineTSShapeConstructorMethod(addSequence, bool,
 {
    String srcName;
    String srcPath(source);
+   StringTableEntry assetId = StringTable->EmptyString();
+
    SplitSequencePathAndName(srcPath, srcName);
 
    if (AssetDatabase.isDeclaredAsset(srcPath))
    {
-      StringTableEntry assetId = StringTable->insert(srcPath.c_str());
+      assetId = StringTable->insert(srcPath.c_str());
       StringTableEntry assetType = AssetDatabase.getAssetType(assetId);
       if (assetType == StringTable->insert("ShapeAsset"))
       {
@@ -2149,7 +2169,7 @@ DefineTSShapeConstructorMethod(addSequence, bool,
       }
    }
 
-   if (!mShape->addSequence(srcPath, srcName, name, start, end, padRot, padTrans))
+   if (!mShape->addSequence(srcPath, assetId, srcName, name, start, end, padRot, padTrans))
       return false;
 
    ADD_TO_CHANGE_SET();

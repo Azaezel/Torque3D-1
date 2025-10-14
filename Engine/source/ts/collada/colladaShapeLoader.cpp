@@ -724,36 +724,47 @@ TSShape* loadColladaShape(const Torque::Path &path)
       if (tss)
       {
 #ifndef DAE2DTS_TOOL
-         // Cache the Collada model to a DTS file for faster loading next time.
-         FileStream dtsStream;
-         
-         if (dtsStream.open(cachedPath.getFullPath(), Torque::FS::File::Write))
-         {
-            Torque::FS::FileSystemRef ref = Torque::FS::GetFileSystem(daePath);
-            if (ref && !String::compare("Zip", ref->getTypeStr().c_str()))
-               Con::errorf("No cached dts file found in archive for %s. Forcing cache to disk.", daePath.getFullFileName().c_str());
 
-            Con::printf("Writing cached COLLADA shape to %s", cachedPath.getFullPath().c_str());
-            tss->write(&dtsStream);
+         bool realMesh = false;
+         for (U32 i = 0; i < tss->meshes.size(); ++i)
+         {
+            if (tss->meshes[i] && tss->meshes[i]->getMeshType() != TSMesh::NullMeshType)
+               realMesh = true;
          }
 
-         Torque::Path dsqPath(cachedPath);
-         dsqPath.setExtension("dsq");
-         FileStream animOutStream;
-         for (S32 i = 0; i < tss->sequences.size(); i++)
+         if (!realMesh)
          {
-            const String& seqName = tss->getName(tss->sequences[i].nameIndex);
-            Con::printf("Writing DSQ Animation File for sequence '%s'", seqName.c_str());
-
-            dsqPath.setFileName(cachedPath.getFileName() + "_" + seqName);
-            if (animOutStream.open(dsqPath.getFullPath(), Torque::FS::File::Write))
+            Torque::Path dsqPath(cachedPath);
+            dsqPath.setExtension("dsq");
+            FileStream animOutStream;
+            for (S32 i = 0; i < tss->sequences.size(); i++)
             {
-               tss->exportSequence(&animOutStream, tss->sequences[i], false);
-               animOutStream.close();
+               const String& seqName = tss->getName(tss->sequences[i].nameIndex);
+               Con::printf("Writing DSQ Animation File for sequence '%s'", seqName.c_str());
+
+               dsqPath.setFileName(cachedPath.getFileName() + "_" + seqName);
+               if (animOutStream.open(dsqPath.getFullPath(), Torque::FS::File::Write))
+               {
+                  tss->exportSequence(&animOutStream, tss->sequences[i], false);
+                  animOutStream.close();
+               }
+
             }
-
          }
+         else
+         {
+            // Cache the Collada model to a DTS file for faster loading next time.
+            FileStream dtsStream;
+            if (dtsStream.open(cachedPath.getFullPath(), Torque::FS::File::Write))
+            {
+               Torque::FS::FileSystemRef ref = Torque::FS::GetFileSystem(daePath);
+               if (ref && !String::compare("Zip", ref->getTypeStr().c_str()))
+                  Con::errorf("No cached dts file found in archive for %s. Forcing cache to disk.", daePath.getFullFileName().c_str());
 
+               Con::printf("Writing cached COLLADA shape to %s", cachedPath.getFullPath().c_str());
+               tss->write(&dtsStream);
+            }
+         }
 #endif // DAE2DTS_TOOL
 
          // Add collada materials to materials.tscript

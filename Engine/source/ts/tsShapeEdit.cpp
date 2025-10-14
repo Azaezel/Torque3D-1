@@ -30,6 +30,7 @@
 #include "ts/tsMaterialList.h"
 #include "core/stream/fileStream.h"
 #include "core/volume.h"
+#include "assets/assetManager.h"
 
 
 //-----------------------------------------------------------------------------
@@ -1356,8 +1357,27 @@ bool TSShape::removeDetail( S32 size )
    return true;
 }
 
+bool TSShape::isShapeFileType(Torque::Path filePath)
+{
+   String fileExt = filePath.getExtension();
+
+   if (
+      fileExt.equal("dts", String::NoCase) ||
+      fileExt.equal("dsq", String::NoCase) ||
+      fileExt.equal("dae", String::NoCase) ||
+      fileExt.equal("fbx", String::NoCase) ||
+      fileExt.equal("blend", String::NoCase) ||
+      fileExt.equal("obj", String::NoCase) ||
+      fileExt.equal("gltf", String::NoCase) ||
+      fileExt.equal("glb", String::NoCase)
+      )
+      return true;
+
+   return false;
+}
+
 //-----------------------------------------------------------------------------
-bool TSShape::addSequence(const Torque::Path& path, const String& fromSeq,
+bool TSShape::addSequence(const Torque::Path& path, const String& assetId, const String& fromSeq,
                           const String& name, S32 startFrame, S32 endFrame,
                           bool padRotKeys, bool padTransKeys)
 {
@@ -1439,8 +1459,7 @@ bool TSShape::addSequence(const Torque::Path& path, const String& fromSeq,
    Resource<TSShape> hSrcShape;
    TSShape* srcShape = this;        // Assume we are copying an existing sequence
 
-   if (path.getExtension().equal("dts", String::NoCase) ||
-       path.getExtension().equal("dae", String::NoCase))
+   if (isShapeFileType(path))
    {
       // DTS or DAE source file
       char filenameBuf[1024];
@@ -1792,7 +1811,11 @@ bool TSShape::addSequence(const Torque::Path& path, const String& fromSeq,
       seq.dirtyFlags |= TSShapeInstance::MatFrameDirty;
 
    // Store information about how this sequence was created
-   seq.sourceData.from = String::ToString("%s\t%s", path.getFullPath().c_str(), oldName.c_str());
+   String fromData = path.getFullPath();
+   if (assetId.isNotEmpty() && AssetDatabase.isDeclaredAsset(assetId.c_str()))
+      fromData = assetId;
+
+   seq.sourceData.from = String::ToString("%s\t%s", fromData.c_str(), oldName.c_str());
    seq.sourceData.total = srcSeq->numKeyframes;
    seq.sourceData.start = startFrame;
    seq.sourceData.end = endFrame;

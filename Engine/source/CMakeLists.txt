@@ -115,7 +115,8 @@ torqueAddSourceDirectories("scene" "scene/culling" "scene/zones" "scene/mixin")
 torqueAddSourceDirectories("math" "math/util")
 
 # Handle persistence
-torqueAddSourceDirectories("persistence/taml" "persistence/taml/binary" "persistence/taml/xml")
+set(TORQUE_INCLUDE_DIRECTORIES ${TORQUE_INCLUDE_DIRECTORIES} "persistence/rapidjson")
+torqueAddSourceDirectories("persistence/taml" "persistence/taml/binary" "persistence/taml/xml" "persistence/taml/json")
 
 # Handle Cinterface
 torqueAddSourceDirectories("cinterface")
@@ -498,6 +499,10 @@ endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 foreach (TORQUE_LIBRARY ${TORQUE_LINK_LIBRARIES})
+  # Skip if it's a raw library file instead of a target
+  if(TORQUE_LIBRARY MATCHES "\\.(lib|a|so|dylib|dll)$")
+    continue()
+  endif()
   set_target_properties(${TORQUE_LIBRARY} PROPERTIES
   FOLDER "Libraries")
   # remove warnings from 3rd parties.
