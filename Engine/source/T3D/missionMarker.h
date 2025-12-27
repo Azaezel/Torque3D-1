@@ -182,7 +182,6 @@ class SpawnSphere : public MissionMarker
       static void initPersistFields();
 
       DECLARE_CONOBJECT(SpawnSphere);
-	  DECLARE_CALLBACK( void, onAdd, ( U32 objectId ) );
 };
 
 
@@ -221,11 +220,6 @@ class CameraBookmark : public MissionMarker
 
       DECLARE_CONOBJECT(CameraBookmark);
       DECLARE_CATEGORY("Markers");
-	  /*DECLARE_CALLBACK( void, onAdd, () );
-	  DECLARE_CALLBACK( void, onRemove, () );
-	  DECLARE_CALLBACK( void, onGroupAdd, () );
-	  DECLARE_CALLBACK( void, onGroupRemove, () );
-	  DECLARE_CALLBACK( void, onInspectPostApply, () );*/
 };
 
 #endif // _MISSIONMARKER_H_

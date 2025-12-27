@@ -315,7 +315,8 @@ void SimDataBlock::performSubstitutions(SimDataBlock* dblock, const SimObject* o
 
 bool SimDataBlock::onAdd()
 {
-   Parent::onAdd();
+   setAdded(true);
+   linkNamespaces();
 
    // This initialization is done here, and not in the constructor,
    // because some jokers like to construct and destruct objects

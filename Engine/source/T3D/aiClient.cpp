@@ -407,8 +407,6 @@ void AIClient::onAdd( const char *nameSpace ) {
       Con::linkNamespaces( mNameSpace->mName, nameSpace );
       mNameSpace = Con::lookupNamespace( nameSpace );
    }
-
-   throwCallback( "onAdd" );
 }
 
 // --------------------------------------------------------------------------------------------

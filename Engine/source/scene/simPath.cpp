@@ -195,7 +195,6 @@ bool Path::onAdd()
    if(!Parent::onAdd())
       return false;
 
-   onAdd_callback(getId());
    return true;
 }
 
@@ -205,10 +204,6 @@ void Path::onPostAdd()
    if (isServerObject())
       updatePath();
 }
-IMPLEMENT_CALLBACK(Path, onAdd, void, (SimObjectId ID), (ID),
-	"Called when this ScriptGroup is added to the system.\n"
-	"@param ID Unique object ID assigned when created (%this in script).\n"
-);
 
 void Path::onRemove()
 {

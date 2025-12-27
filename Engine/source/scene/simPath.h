@@ -88,7 +88,6 @@ class Path : public GameBase
    DECLARE_CONOBJECT(Path);
    DECLARE_CATEGORY("Cinematic");
    static void initPersistFields();
-   DECLARE_CALLBACK(void, onAdd, (SimObjectId ID));
 };
 
 //--------------------------------------------------------------------------

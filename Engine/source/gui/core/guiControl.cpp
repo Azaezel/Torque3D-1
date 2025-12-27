@@ -100,10 +100,6 @@ ConsoleDocClass( GuiControl,
    "@ingroup GuiCore\n"
 );
 
-IMPLEMENT_CALLBACK( GuiControl, onAdd, void, (), (),
-   "Called when the control object is registered with the system after the control has been created." );
-IMPLEMENT_CALLBACK( GuiControl, onRemove, void, (), (),
-   "Called when the control object is removed from the system before it is deleted." );
 IMPLEMENT_CALLBACK( GuiControl, onWake, void, (), (),
    "Called when the control is woken up.\n"
    "@ref GuiControl_Waking" );
@@ -750,9 +746,6 @@ bool GuiControl::onAdd()
       setTooltipProfile( profile );
    }
 
-   // Notify Script.
-   onAdd_callback();
-
    GFXStateBlockDesc d;
 
    d.cullDefined = true;
@@ -775,9 +768,6 @@ void GuiControl::onRemove()
    
    if( mAwake )
       sleep();
-      
-   // Only invoke script callbacks if they can be received
-   onRemove_callback();
 
    if ( mProfile )
    {

@@ -913,7 +913,7 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       void setAutoDelete( bool val ) { if( val ) mFlags.set( AutoDelete ); else mFlags.clear( AutoDelete ); }
       void setEditorOnly( bool val ) { if( val ) mFlags.set( EditorOnly ); else mFlags.clear( EditorOnly ); }
       void setNameChangeAllowed( bool val ) { if( val ) mFlags.clear( NoNameChange ); else mFlags.set( NoNameChange ); }
-
+      void setAdded(bool val) { if (val) mFlags.set(Added); else mFlags.clear(Added); }
       /// Returns boolean specifying if the object can be serialized.
       bool getCanSave() const { return !mFlags.test( CannotSave ); }
       

@@ -93,17 +93,11 @@ void PopupMenu::initPersistFields()
 //-----------------------------------------------------------------------------
 bool PopupMenu::onAdd()
 {
-   if(! Parent::onAdd())
-      return false;
-
-   Con::executef(this, "onAdd");
-   return true;
+   return Parent::onAdd();
 }
 
 void PopupMenu::onRemove()
 {
-   Con::executef(this, "onRemove");
-
    Parent::onRemove();
 }
 

@@ -144,14 +144,6 @@ ConsoleDocClass( Trigger,
    "@ingroup gameObjects\n"
 );
 
-IMPLEMENT_CALLBACK( Trigger, onAdd, void, ( U32 objectId ), ( objectId ),
-   "@brief Called when the Trigger is being created.\n\n"
-   "@param objectId the object id of the Trigger being created\n" );
-
-IMPLEMENT_CALLBACK( Trigger, onRemove, void, ( U32 objectId ), ( objectId ),
-   "@brief Called just before the Trigger is deleted.\n\n"
-   "@param objectId the object id of the Trigger being deleted\n" );
-
 Trigger::Trigger()
 {
    // Don't ghost by default.
@@ -434,8 +426,6 @@ bool Trigger::onAdd()
    if(!Parent::onAdd())
       return false;
 
-   onAdd_callback( getId() );
-
    Polyhedron temp = mTriggerPolyhedron;
    setTriggerPolyhedron(temp);
    mTripped = false;
@@ -451,8 +441,6 @@ bool Trigger::onAdd()
 
 void Trigger::onRemove()
 {
-   onRemove_callback( getId() );
-
    mConvexList->nukeList();
 
    removeFromScene();

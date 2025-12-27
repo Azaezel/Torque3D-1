@@ -129,9 +129,6 @@ class Trigger : public GameBase
    DECLARE_CONOBJECT(Trigger);
    DECLARE_CATEGORY("Volume");
 
-   DECLARE_CALLBACK( void, onAdd, ( U32 objectId ) );
-   DECLARE_CALLBACK( void, onRemove, ( U32 objectId ) );
-
    static void consoleInit();
    static void initPersistFields();
    void testObjects();

@@ -56,7 +56,6 @@ struct ShaderGenVars
    const static String detailScale;
    const static String visibility;
    const static String colorMultiply;
-   const static String tileScale;
    const static String alphaTestValue;
    const static String texMat;
    const static String accumTime;

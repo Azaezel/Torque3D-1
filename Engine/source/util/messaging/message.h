@@ -87,8 +87,6 @@ class Message : public SimObject
 public:
    Message();
    DECLARE_CONOBJECT(Message);
-   DECLARE_CALLBACK( void, onAdd, () );
-   DECLARE_CALLBACK( void, onRemove, () );
 
    //-----------------------------------------------------------------------------
    /// @brief Obtain next available #SimObjectId for messages

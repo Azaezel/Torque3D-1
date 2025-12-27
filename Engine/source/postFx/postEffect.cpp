@@ -56,10 +56,6 @@ ConsoleDocClass( PostEffect,
    "@ingroup Rendering\n"
 );
 
-IMPLEMENT_CALLBACK( PostEffect, onAdd, void, (), (),
-   "Called when this object is first created and registered."
-);
-
 IMPLEMENT_CALLBACK( PostEffect, preProcess, void, (), (),
    "Called when an effect is processed but before textures are bound. This "
    "allows the user to change texture related paramaters or macros at runtime.\n"
@@ -634,9 +630,6 @@ bool PostEffect::onAdd()
 
    if (mNamedTarget.isRegistered() || mNamedTargetDepthStencil.isRegistered())
       GFXTextureManager::addEventDelegate( this, &PostEffect::_onTextureEvent );
-
-   // Call onAdd in script
-   onAdd_callback();
 
    // Should we start enabled?
    if ( mEnabled )

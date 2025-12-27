@@ -354,10 +354,6 @@ SpawnSphere::SpawnSphere()
    mSpawnIf.clear();
 }
 
-IMPLEMENT_CALLBACK( SpawnSphere, onAdd, void, ( U32 objectId ), ( objectId ),
-   "Called when the SpawnSphere is being created.\n"
-   "@param objectId The unique SimObjectId generated when SpawnSphere is created (%%this in script)\n" );
-
 bool SpawnSphere::testCondition()
 {
    if (mSpawnIf.isEmpty())
@@ -385,8 +381,6 @@ bool SpawnSphere::onAdd()
 
    if (!isGhost())
    {
-      onAdd_callback( getId());
-
       if (mAutoSpawn && testCondition())
          spawnObject();
    }
@@ -582,17 +576,11 @@ bool CameraBookmark::onAdd()
       setMaskBits(UpdateNameMask);
    }
 
-   if( isServerObject() && isMethod("onAdd") )
-      Con::executef( this, "onAdd" );
-
    return(true);
 }
 
 void CameraBookmark::onRemove()
 {
-   if( isServerObject() && isMethod("onRemove") )
-      Con::executef( this, "onRemove" );
-
    Parent::onRemove();
 }
 

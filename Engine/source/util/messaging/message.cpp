@@ -85,41 +85,15 @@ ConsoleDocClass( Message,
 );
 
 //-----------------------------------------------------------------------------
-IMPLEMENT_CALLBACK(Message, onAdd, void, (),(),
-				   "Script callback when a message is first created and registered.\n\n"
-				   "@tsexample\n"
-				   "function Message::onAdd(%this)\n"
-				   "{\n"
-				   "	// Perform on add code here\n"
-				   "}\n"
-				   "@endtsexample\n\n"
-				   );
-
 bool Message::onAdd()
 {
    if(! Parent::onAdd())
       return false;
-
-   onAdd_callback();
-   //Con::executef(this, "onAdd");
    return true;
 }
 
-IMPLEMENT_CALLBACK(Message, onRemove, void, (),(),
-				   "Script callback when a message is deleted.\n\n"
-				   "@tsexample\n"
-				   "function Message::onRemove(%this)\n"
-				   "{\n"
-				   "	// Perform on remove code here\n"
-				   "}\n"
-				   "@endtsexample\n\n"
-				   );
-
 void Message::onRemove()
-{   
-   onRemove_callback();
-   //Con::executef(this, "onRemove");
-   
+{      
    Parent::onRemove();
 }
 

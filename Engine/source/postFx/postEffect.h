@@ -396,8 +396,6 @@ public:
 
    /// @name Callbacks
    /// @{
-
-   DECLARE_CALLBACK( void, onAdd, () );
    DECLARE_CALLBACK( void, preProcess, () );
    DECLARE_CALLBACK( void, setShaderConsts, () );
    DECLARE_CALLBACK( bool, onEnabled, () );

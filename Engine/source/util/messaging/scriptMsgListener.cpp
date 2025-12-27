@@ -70,41 +70,15 @@ ConsoleDoc("@class ScriptMsgListener\n"
 );
 
 //-----------------------------------------------------------------------------
-IMPLEMENT_CALLBACK(ScriptMsgListener, onAdd, void, (),(),
-				   "Script callback when a listener is first created and registered.\n\n"
-				   "@tsexample\n"
-				   "function ScriptMsgListener::onAdd(%this)\n"
-				   "{\n"
-				   "	// Perform on add code here\n"
-				   "}\n"
-				   "@endtsexample\n\n"
-				   );
-
 bool ScriptMsgListener::onAdd()
 {
    if(! Parent::onAdd())
       return false;
-
-   onAdd_callback();
-   //Con::executef(this, "onAdd");
    return true;
 }
 
-IMPLEMENT_CALLBACK(ScriptMsgListener, onRemove, void, (),(),
-				   "Script callback when a listener is deleted.\n\n"
-				   "@tsexample\n"
-				   "function ScriptMsgListener::onRemove(%this)\n"
-				   "{\n"
-				   "	// Perform on remove code here\n"
-				   "}\n"
-				   "@endtsexample\n\n"
-				   );
-
 void ScriptMsgListener::onRemove()
-{
-   onRemove_callback();
-   //Con::executef(this, "onRemove");
-   
+{   
    Parent::onRemove();
 }
 

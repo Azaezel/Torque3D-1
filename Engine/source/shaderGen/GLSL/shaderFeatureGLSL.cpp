@@ -364,13 +364,6 @@ Var* ShaderFeatureGLSL::getOutTexCoord(   const char *name,
       texCoord->setStructName( "OUT" );
       texCoord->setType( type );
 
-      // create detail variable
-      Var* tileScale = new Var;
-      tileScale->setType("vec2");
-      tileScale->setName("tileScale");
-      tileScale->uniform = true;
-      tileScale->constSortPos = cspPotentialPrimitive;
-
       if( useTexAnim )
       {
          inTex->setType( "vec4" );
@@ -384,15 +377,15 @@ Var* ShaderFeatureGLSL::getOutTexCoord(   const char *name,
          
 			// Statement allows for casting of different types which
 		   // eliminates vector truncation problems.
-         String statement = String::ToString( "   @ = %s(tMul(@, @).xy * @);\r\n", type );
-			meta->addStatement( new GenOp( statement , texCoord, texMat, inTex, tileScale) );
+         String statement = String::ToString( "   @ = %s(tMul(@, @).xy);\r\n", type );
+			meta->addStatement( new GenOp( statement , texCoord, texMat, inTex ) );      
       }
       else
 		{
 			// Statement allows for casting of different types which
 		   // eliminates vector truncation problems.
-         String statement = String::ToString( "   @ = %s(@ * @);\r\n", type );
-         meta->addStatement( new GenOp( statement, texCoord, inTex, tileScale) );
+         String statement = String::ToString( "   @ = %s(@);\r\n", type );
+         meta->addStatement( new GenOp( statement, texCoord, inTex ) );
 		}
 	}
 

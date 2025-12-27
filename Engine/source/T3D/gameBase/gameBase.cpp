@@ -124,12 +124,6 @@ IMPLEMENT_CALLBACK( GameBase, setControl, void, ( bool controlled ), ( controlle
    "@param controlled true if a client now controls this object, false if no "
    "client controls this object.\n" );
 
-
-IMPLEMENT_CALLBACK(GameBase, onAdd, void, (SimObjectId ID), (ID),
-   "Called when this ScriptObject is added to the system.\n"
-   "@param ID Unique object ID assigned when created (%this in script).\n"
-);
-
 GameBaseData::GameBaseData()
 {
    mCategory = StringTable->EmptyString();
@@ -523,7 +517,6 @@ void GameBase::scriptOnAdd()
    // everything is ready.
    if (mDataBlock && !isGhost())
       mDataBlock->onAdd_callback( this );
-   onAdd_callback(getId());
 }
 
 void GameBase::scriptOnNewDataBlock(bool reload)

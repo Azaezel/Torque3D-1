@@ -310,7 +310,12 @@ bool NetObject::onAdd()
    if(mNetFlags.test(ScopeAlways))
       setScopeAlways();
 
-   return Parent::onAdd();
+   setAdded(true);
+
+   linkNamespaces();
+   if (isServerObject())
+      onAdd_callback(getId());
+   return true;
 }
 
 void NetObject::onRemove()
@@ -318,7 +323,12 @@ void NetObject::onRemove()
    while(mFirstObjectRef)
       mFirstObjectRef->connection->detachObject(mFirstObjectRef);
 
-   Parent::onRemove();
+   setAdded(false);
+
+   if (isServerObject())
+      onRemove_callback(getId());
+
+   unlinkNamespaces();
 }
 
 //-----------------------------------------------------------------------------

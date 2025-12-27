@@ -195,9 +195,6 @@ bool TimeOfDay::onAdd()
    if ( isClientObject() )
       NetConnection::smGhostAlwaysDone.notify( this, &TimeOfDay::_onGhostAlwaysDone );
 
-   if ( isServerObject() )   
-      Con::executef( this, "onAdd" );   
-
    setProcessTick( true );
 
    return true;

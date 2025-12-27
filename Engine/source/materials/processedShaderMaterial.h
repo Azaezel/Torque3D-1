@@ -45,7 +45,6 @@ class ShaderConstHandles
 public:
    GFXShaderConstHandle* mDiffuseColorSC;
    GFXShaderConstHandle* mToneMapTexSC;
-   GFXShaderConstHandle* mTileScaleSC;
    GFXShaderConstHandle* mTexMatSC;
    GFXShaderConstHandle* mORMConfigSC;
    GFXShaderConstHandle* mRoughnessSC;

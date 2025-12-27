@@ -257,10 +257,7 @@ class GuiControl : public SimGroup
       
       /// @name Callbacks
       /// @{
-      
-      DECLARE_CALLBACK( void, onAdd, () );
-      DECLARE_CALLBACK( void, onRemove, () );
-      
+            
       DECLARE_CALLBACK( void, onWake, () );
       DECLARE_CALLBACK( void, onSleep, () );
       

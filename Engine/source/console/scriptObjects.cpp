@@ -51,16 +51,6 @@ ConsoleDocClass( ScriptObject,
    "@ingroup Scripting"
 );
 
-IMPLEMENT_CALLBACK( ScriptObject, onAdd, void, ( SimObjectId ID ), ( ID ),
-   "Called when this ScriptObject is added to the system.\n"
-   "@param ID Unique object ID assigned when created (%this in script).\n"
-);
-
-IMPLEMENT_CALLBACK( ScriptObject, onRemove, void, ( SimObjectId ID ), ( ID ),
-   "Called when this ScriptObject is removed from the system.\n"
-   "@param ID Unique object ID assigned when created (%this in script).\n"
-);
-
 ScriptObject::ScriptObject()
 {
 }
@@ -70,18 +60,11 @@ bool ScriptObject::onAdd()
    if (!Parent::onAdd())
       return false;
 
-   // Call onAdd in script!
-   onAdd_callback(getId());
    return true;
 }
 
 void ScriptObject::onRemove()
-{
-   // We call this on this objects namespace so we unlink them after. - jdd
-   //
-   // Call onRemove in script!
-   onRemove_callback(getId());
-   
+{   
    Parent::onRemove();
 }
 
@@ -225,30 +208,15 @@ ScriptGroup::ScriptGroup()
 {
 }
 
-IMPLEMENT_CALLBACK( ScriptGroup, onAdd, void, ( SimObjectId ID ), ( ID ),
-   "Called when this ScriptGroup is added to the system.\n"
-   "@param ID Unique object ID assigned when created (%this in script).\n" 
-);
-
-IMPLEMENT_CALLBACK( ScriptGroup, onRemove, void, ( SimObjectId ID ), ( ID ),
-   "Called when this ScriptObject is removed from the system.\n"
-   "@param ID Unique object ID assigned when created (%this in script).\n" 
-);
-
 bool ScriptGroup::onAdd()
 {
    if (!Parent::onAdd())
       return false;
 
-   // Call onAdd in script!
-   onAdd_callback(getId());
    return true;
 }
 
 void ScriptGroup::onRemove()
 {
-   // Call onRemove in script!
-   onRemove_callback(getId());
-
    Parent::onRemove();
 }
