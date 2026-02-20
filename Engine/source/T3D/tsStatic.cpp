@@ -109,7 +109,8 @@ F32 TSStatic::smStaticObjectUnfadeableSize = 75;
 TSStatic::TSStatic()
    :
    cubeDescId(0),
-   reflectorDesc(NULL)
+   reflectorDesc(NULL),
+   mCubeReflector(NULL)
 {
    mNetFlags.set(Ghostable | ScopeAlways);
 
@@ -159,6 +160,7 @@ TSStatic::~TSStatic()
    delete mConvexList;
    mConvexList = NULL;
    mShapeAsset.unregisterRefreshNotify();
+   SAFE_DELETE(mCubeReflector);
 }
 
 ImplementEnumType(TSMeshType,
@@ -361,10 +363,17 @@ bool TSStatic::onAdd()
 
    if (isClientObject())
    {
-      mCubeReflector.unregisterReflector();
+      if (mCubeReflector)
+      {
+         mCubeReflector->unregisterReflector();
+         SAFE_DELETE(mCubeReflector);
+      }
 
       if (reflectorDesc)
-         mCubeReflector.registerReflector(this, reflectorDesc);
+      {
+         mCubeReflector = new CubeReflector();
+         mCubeReflector->registerReflector(this, reflectorDesc);
+      }
    }
 
    _updateShouldTick();
@@ -594,8 +603,11 @@ void TSStatic::onRemove()
    mShapeInstance = NULL;
 
    mAmbientThread = NULL;
-   if (isClientObject())
-      mCubeReflector.unregisterReflector();
+   if (isClientObject() && mCubeReflector)
+   {
+      mCubeReflector->unregisterReflector();
+      SAFE_DELETE(mCubeReflector);
+   }
 
    Parent::onRemove();
 }
@@ -780,7 +792,7 @@ void TSStatic::prepRenderImage(SceneRenderState* state)
 
    // If we're currently rendering our own reflection we
    // don't want to render ourselves into it.
-   if (mCubeReflector.isRendering())
+   if (mCubeReflector && mCubeReflector->isRendering())
       return;
 
 
@@ -800,8 +812,8 @@ void TSStatic::prepRenderImage(SceneRenderState* state)
    rdata.setFadeOverride(1.0f);
    rdata.setOriginSort(mUseOriginSort);
 
-   if (mCubeReflector.isEnabled())
-      rdata.setCubemap(mCubeReflector.getCubemap());
+   if (mCubeReflector && mCubeReflector->isEnabled())
+      rdata.setCubemap(mCubeReflector->getCubemap());
 
    // Acculumation
    rdata.setAccuTex(mAccuTex);
@@ -830,13 +842,13 @@ void TSStatic::prepRenderImage(SceneRenderState* state)
    mat.scale(mObjScale);
    GFX->setWorldMatrix(mat);
 
-   if (state->isDiffusePass() && mCubeReflector.isEnabled() && mCubeReflector.getOcclusionQuery())
+   if (state->isDiffusePass() && mCubeReflector && mCubeReflector->isEnabled() && mCubeReflector->getOcclusionQuery())
    {
       RenderPassManager* pass = state->getRenderPass();
       OccluderRenderInst* ri = pass->allocInst<OccluderRenderInst>();
 
       ri->type = RenderPassManager::RIT_Occluder;
-      ri->query = mCubeReflector.getOcclusionQuery();
+      ri->query = mCubeReflector->getOcclusionQuery();
       mObjToWorld.mulP(mObjBox.getCenter(), &ri->position);
       ri->scale.set(mObjBox.getExtents());
       ri->orientation = pass->allocUniqueXform(mObjToWorld);
@@ -924,6 +936,86 @@ void TSStatic::setTransform(const MatrixF& mat)
    // Since this is a static it's render transform changes 1
    // to 1 with it's collision transform... no interpolation.
    setRenderTransform(mat);
+}
+
+U32 TSStatic::partialPackUpdate(NetConnection* conn, U32 mask, BitStream* stream)
+{
+   U32 retMask = Parent::partialPackUpdate(conn,mask,stream);
+
+   if (stream->writeFlag(mask & TransformMask))
+   {
+      mathWrite(*stream, getTransform());
+      retMask &= ~TransformMask;
+   }
+
+   if (stream->writeFlag(mask & AdvancedStaticOptionsMask))
+   {
+      PACK_ASSET_REFACTOR(conn, Shape);
+
+      stream->writeInt(mDecalType, 4);
+
+      stream->writeFlag(mAllowPlayerStep);
+      stream->writeFlag(mMeshCulling);
+      stream->writeFlag(mUseOriginSort);
+
+      stream->write(mRenderNormalScalar);
+
+      stream->write(mForceDetail);
+
+      if (stream->writeFlag(mPlayAmbient && hasAnim()))
+      {
+         if (stream->writeFlag(mAnimOffset != 0.0f))
+            stream->writeFloat(mAnimOffset, 7);
+
+         if (stream->writeFlag(mAnimSpeed != 1.0f))
+            stream->writeSignedFloat(mAnimSpeed / AnimSpeedMax, 7);
+      }
+
+      retMask &= ~AdvancedStaticOptionsMask;
+   }
+
+   return retMask;
+}
+
+void TSStatic::partialUnpackUpdate(NetConnection* conn, BitStream* stream)
+{
+   Parent::partialUnpackUpdate(conn, stream);
+
+   if (stream->readFlag()) // TransformMask
+   {
+      MatrixF mat;
+      mathRead(*stream, &mat);
+      setTransform(mat);
+      setRenderTransform(mat);
+   }
+
+   if (stream->readFlag()) // AdvancedStaticOptionsMask
+   {
+      UNPACK_ASSET_REFACTOR(conn, Shape);
+
+      mDecalType = (MeshType)stream->readInt(4);
+
+      mAllowPlayerStep = stream->readFlag();
+      mMeshCulling = stream->readFlag();
+      mUseOriginSort = stream->readFlag();
+
+      stream->read(&mRenderNormalScalar);
+
+      stream->read(&mForceDetail);
+
+      mPlayAmbient = stream->readFlag();
+      if (mPlayAmbient)
+      {
+         if (stream->readFlag())
+            mAnimOffset = stream->readFloat(7);
+
+         if (stream->readFlag())
+            mAnimSpeed = stream->readSignedFloat(7) * AnimSpeedMax;
+      }
+
+      //update our shape, figuring that it likely changed
+      _createShape();
+   }
 }
 
 U32 TSStatic::packUpdate(NetConnection* con, U32 mask, BitStream* stream)
