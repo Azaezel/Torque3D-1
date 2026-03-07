@@ -22,6 +22,7 @@
 #include "AINavigation.h"
 #include "AIController.h"
 #include "T3D/shapeBase.h"
+#include "SvoBackend.h"
 
 static U32 sAILoSMask = TerrainObjectType | StaticShapeObjectType | StaticObjectType;
 
@@ -257,30 +258,44 @@ NavMesh* AINavigation::findNavMesh() const
 {
    GameBase* gbo = dynamic_cast<GameBase*>(mControllerRef->getAIInfo()->mObj.getPointer());
    // Search for NavMeshes that contain us entirely with the smallest possible
-   // volume.
+   // volume, and match the desired navigation backend type (RECAST or SVO).
    NavMesh* mesh = NULL;
    SimSet* set = NavMesh::getServerSet();
+
+   // Get the desired nav type from the controller's data
+   AIControllerData::Navtype desiredType = mControllerRef->mControllerData->mNavtype;
+
    for (U32 i = 0; i < set->size(); i++)
    {
       NavMesh* m = static_cast<NavMesh*>(set->at(i));
-      if (m->getWorldBox().isContained(gbo->getWorldBox()))
+
+      // Only consider meshes that fully contain the object
+      if (!m->getWorldBox().isContained(gbo->getWorldBox()))
+         continue;
+
+      // Use desiredType as a logic gate for backend selection
+      bool isSVO = dynamic_cast<NavSvo*>(m) != nullptr;
+      if ((desiredType == AIControllerData::SVO && !isSVO) ||
+         (desiredType == AIControllerData::RECAST && isSVO))
+         continue;
+
+      // Check that mesh size is appropriate.
+      if (gbo->isMounted())
       {
-         // Check that mesh size is appropriate.
-         if (gbo->isMounted())
-         {
-            if (!m->mVehicles)
-               continue;
-         }
-         else
-         {
-            if ((getNavSize() == Small && !m->mSmallCharacters) ||
-               (getNavSize() == Regular && !m->mRegularCharacters) ||
-               (getNavSize() == Large && !m->mLargeCharacters))
-               continue;
-         }
-         if (!mesh || m->getWorldBox().getVolume() < mesh->getWorldBox().getVolume())
-            mesh = m;
+         if (!m->mVehicles)
+            continue;
       }
+      else
+      {
+         if ((getNavSize() == Small && !m->mSmallCharacters) ||
+            (getNavSize() == Regular && !m->mRegularCharacters) ||
+            (getNavSize() == Large && !m->mLargeCharacters))
+            continue;
+      }
+
+      // Prefer the smallest mesh that fits
+      if (!mesh || m->getWorldBox().getVolume() < mesh->getWorldBox().getVolume())
+         mesh = m;
    }
    return mesh;
 }

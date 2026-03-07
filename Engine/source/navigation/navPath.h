@@ -127,6 +127,11 @@ public:
    NavPath();
    ~NavPath();
 
+   //manual assigns
+   void setPathPoints(Vector<Point3F>& points) { mPoints.clear(); mPoints.merge(points); };
+   void setPathFlags(Vector<U16>& pointFlags) { mFlags.clear(); mFlags.merge(pointFlags); };
+   void setStatus(U32 status) { mStatus = status; }
+
 protected:
    enum masks {
       PathMask     = Parent::NextFreeMask << 0,

@@ -23,7 +23,6 @@
 #define _AINAVIGATION_H_
 
 #include "AIInfo.h"
-
 #include "navigation/navPath.h"
 #include "navigation/navMesh.h"
 
@@ -80,7 +79,7 @@ struct AINavigation
    void setNavSize(NavSize size) { mNavSize = size; updateNavMesh(); }
    NavSize getNavSize() const { return mNavSize; }
 
-   /// NavMesh we pathfind on.
+   /// NavMesh we pathfind on (can be SvoBackend).
    SimObjectPtr<NavMesh> mNavMesh;
    NavMesh* findNavMesh() const;
    void updateNavMesh();

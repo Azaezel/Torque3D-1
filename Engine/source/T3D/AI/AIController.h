@@ -178,6 +178,12 @@ public:
    S32 mMoveStuckTestDelay;            // The number of ticks to wait before checking if the AI is stuck
    F32 mMoveStuckTolerance;            // Distance tolerance on stuck check
    F32 mHeightTolerance;               // how high above the navmesh are we before we stop trying to repath
+
+   enum Navtype {
+      RECAST = 0,
+      SVO = 1
+   } mNavtype;
+
 #ifdef TORQUE_NAVIGATION_ENABLED
    struct Flocking {
       U32 mChance;                     // chance of flocking
@@ -218,6 +224,7 @@ class AIPlayerControllerData : public AIControllerData
 public:
    AIPlayerControllerData()
    {
+      mNavtype = RECAST;
       resolvePitchPtr.bind(this, &AIPlayerControllerData::resolvePitch);
       resolveTriggerStatePtr.bind(this, &AIPlayerControllerData::resolveTriggerState);
    }
