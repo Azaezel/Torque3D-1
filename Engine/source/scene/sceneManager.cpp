@@ -318,6 +318,9 @@ void SceneManager::renderScene( SceneRenderState* renderState, U32 objectMask, S
    PROFILE_START( SceneGraph_unregisterLights);
       LIGHTMGR->unregisterAllLights();
    PROFILE_END();
+
+   if (SceneContainer::smRenderDebugBins || SceneContainer::smRenderDebugBVHTree)
+      gServerContainer.renderDebug(renderState);
 }
 
 //-----------------------------------------------------------------------------

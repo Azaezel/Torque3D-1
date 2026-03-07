@@ -74,6 +74,9 @@
 #include "scene/sceneQueryUtil.h"
 #endif
 
+#ifndef _TBVH_H_
+#include "tBVH.h"
+#endif
 
 class SceneManager;
 class SceneRenderState;
@@ -90,6 +93,7 @@ class SceneContainer;
 struct ObjectRenderInst;
 struct Move;
 struct SceneRayHelper;
+class BVHNode;
 
 /// A 3D object.
 ///
@@ -303,6 +307,10 @@ class SceneObject : public NetObject, public ProcessObject
 
       /// Object which must be ticked before this object.
       SimObjectPtr< SceneObject > mAfterObject;
+
+public:
+      BVHNode* mBVHNode = NULL;
+protected:
 
       /// @name SceneContainer Interface
       ///

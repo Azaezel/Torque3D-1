@@ -29,7 +29,8 @@
 #include "platform/profiler.h"
 #include "console/engineAPI.h"
 #include "math/util/frustum.h"
-
+#include "gfx/gfxDrawUtil.h"
+#include "scene/sceneRenderState.h"
 
 // [rene, 02-Mar-11]
 //  - *Loads* of copy&paste sin in this file (among its many other sins); all the findObjectXXX methods
@@ -47,6 +48,8 @@ const F32 SceneContainer::csmTotalAxisBinSize = SceneContainer::csmBinSize * Sce
 const U32 SceneContainer::csmOverflowBinIdx = (SceneContainer::csmNumAxisBins * SceneContainer::csmNumAxisBins);
 const U32 SceneContainer::csmTotalNumBins = SceneContainer::csmOverflowBinIdx + 1;
 
+bool SceneContainer::smRenderDebugBins = false;
+bool SceneContainer::smRenderDebugBVHTree = false;
 
 // Statics used by buildPolyList methods
 static AbstractPolyList* sPolyList;
@@ -349,12 +352,205 @@ struct SceneRayHelper
 
 };
 
-
 //=============================================================================
 //    SceneContainer.
 //=============================================================================
 
-//-----------------------------------------------------------------------------
+static BVHVisibility classifyNode(
+   const Frustum& frustum,
+   const Box3F& box)
+{
+   if (!frustum.getBounds().isOverlapped(box))
+      return BVH_Outside;
+
+   if (frustum.getBounds().isContained(box))
+      return BVH_Inside;
+
+   return BVH_Intersect;
+}
+
+void SceneContainer::renderBVHNode( BVHNode* node, const GFXStateBlockDesc& desc, const Frustum& frustum, U32 depth)
+{
+   if (!node)
+      return;
+
+   BVHVisibility vis = classifyNode(frustum, node->bounds());
+
+   // Early-out: node fully outside view
+   if (vis == BVH_Outside)
+   {
+      return;
+   }
+
+   // Choose color based on visibility & node type
+   ColorI color;
+   if (node->isLeaf())
+   {
+      if (vis == BVH_Inside)      color = ColorI(255, 255, 0, 255); // bright yellow
+      else if (vis == BVH_Intersect) color = ColorI(255, 128, 0, 255); // orange
+      else                        color = ColorI(128, 128, 128, 80); // culled leaf
+   }
+   else
+   {
+      if (vis == BVH_Inside)      color = ColorI(0, 255, 0, 255);   // green
+      else if (vis == BVH_Intersect) color = ColorI(0, 128, 255, 255); // blue
+      else                        color = ColorI(64, 64, 64, 60);  // culled internal
+   }
+
+   const Box3F& box = node->bounds();
+   GFX->getDrawUtil()->drawObjectBox(
+      desc,
+      box.getExtents() * 0.5f,
+      box.getCenter(),
+      MatrixF::Identity,
+      color
+   );
+
+   if (!node->isLeaf())
+   {
+      renderBVHNode((BVHNode*)node->getChild(BVH::LEFT), desc, frustum, depth + 1);
+      renderBVHNode((BVHNode*)node->getChild(BVH::RIGHT), desc, frustum, depth + 1);
+   }
+
+   if (!node->isRoot()) return;
+
+   Vector<BVH::CollisionPair> pairs = mSceneBVH->getPotentialCollisionPairs();
+   GFXDrawUtil* drawUtil = GFX->getDrawUtil();
+   ColorI pairLineColor(255, 0, 255, 180); // magenta
+
+   for (const BVH::CollisionPair pair : pairs)
+   {
+      if (!pair.a || !pair.b)
+         continue;
+      Box3F boxA = pair.a->getBounds();
+      Box3F boxB = pair.b->getBounds();
+      Point3F centerA = boxA.getCenter();
+      Point3F centerB = boxB.getCenter();
+
+      // Draw a line between the centers of the two overlapping objects
+      drawUtil->drawLine(centerA, centerB, pairLineColor);
+
+      // self collision warning box
+      if (pair.a == pair.b)
+         drawUtil->drawObjectBox(desc, boxA.getExtents() * 0.5f, centerA, MatrixF::Identity, pairLineColor);
+   }
+}
+
+void SceneContainer::renderGrid(const GFXStateBlockDesc& desc)
+{
+   const F32 binSize = csmBinSize;
+   const S32 numBins = csmNumAxisBins;
+
+   for (S32 x = 0; x < numBins; ++x)
+   {
+      for (S32 y = 0; y < numBins; ++y)
+      {
+         Box3F box;
+         box.minExtents.set(x * binSize, y * binSize, -1.0f);
+         box.maxExtents.set((x + 1) * binSize, (y + 1) * binSize, 1.0f);
+
+         GFX->getDrawUtil()->drawObjectBox(
+            desc,
+            box.getExtents() * 0.5f,
+            box.getCenter(),
+            MatrixF::Identity,
+            ColorI(0, 0, 255, 80)
+         );
+      }
+   }
+}
+
+void SceneContainer::renderDebug(SceneRenderState* state)
+{
+   GFXStateBlockDesc desc;
+   desc.setFillModeWireframe();
+   desc.setZReadWrite(true, false);
+
+   // FIX: Use getter
+   if (smRenderDebugBVHTree && mSceneBVH->getRoot())
+      renderBVHNode(mSceneBVH->getRoot(), desc, state->getCullingFrustum(), 0);
+
+   if (smRenderDebugBins)
+      renderGrid(desc);
+}
+
+void SceneContainer::queryBVHNode(const Box3F& box, BVHNode* node, U32 mask, FindCallback callback, void* key)
+{
+   if (!node)
+      return;
+
+   if (!node->bounds().isOverlapped(box))
+      return;
+
+   if (node->isLeaf())
+   {
+      SceneObjectProxy* objProx = (SceneObjectProxy*)node->object();
+      if (!objProx)
+         return;
+      
+      SceneObject* obj = objProx->mObject;
+      if (!obj || !obj->isProperlyAdded() || !(obj->getTypeMask() & mask))
+         return;
+
+      (*callback)(obj, key);
+      return;
+   }
+
+   queryBVHNode(box, (BVHNode*)node->getChild(BVH::LEFT), mask, callback, key);
+   queryBVHNode(box, (BVHNode*)node->getChild(BVH::RIGHT), mask, callback, key);
+}
+
+void SceneContainer::queryBVHFromLeaf(const Box3F& box, BVHNode* leaf, U32 mask, FindCallback callback, void* key)
+{
+   if (!leaf)
+      return;
+
+   BVHNode* node = leaf;
+
+   while (node->parent)
+   {
+      BVHNode* parent = node->getParent();
+      BVHNode* sibling = (parent->getChild(BVH::LEFT) == node) ? (BVHNode*)parent->getChild(BVH::RIGHT) : (BVHNode*)parent->getChild(BVH::LEFT);
+
+      queryBVHNode(box, sibling, mask, callback, key);
+      node = parent;
+   }
+}
+
+void SceneContainer::queryBVHNode(const Box3F& box, BVHNode* node, U32 mask, Vector< SceneObject* >* outFound)
+{
+   if (!node)
+      return;
+
+   if (!node->bounds().isOverlapped(box))
+      return;
+
+   if (node->isLeaf())
+   {
+      if (!node->bounds().isOverlapped(box))
+         return;
+
+      SceneObjectProxy* objProx = (SceneObjectProxy*)node->object();
+      if (!objProx)
+         return;
+
+      SceneObject* obj = objProx->mObject;
+      if (!obj || !obj->isProperlyAdded() || !(obj->getTypeMask() & mask))
+         return;
+
+      outFound->push_back(obj);
+      return;
+   }
+
+   queryBVHNode(box, (BVHNode*)node->getChild(BVH::LEFT), mask, outFound);
+   queryBVHNode(box, (BVHNode*)node->getChild(BVH::RIGHT), mask, outFound);
+}
+
+void SceneContainer::queryBVH(const Box3F& box, U32 mask, FindCallback callback, void* key)
+{
+   // FIX: Use getter
+   queryBVHNode(box, mSceneBVH->getRoot(), mask, callback, key);  
+}
 
 SceneContainer::SceneContainer()
 {
@@ -372,6 +568,8 @@ SceneContainer::SceneContainer()
    VECTOR_SET_ASSOCIATION( mTerrains );
 
    cleanupSearchVectors();
+
+   mSceneBVH = new BVH;
 }
 
 //-----------------------------------------------------------------------------
@@ -396,6 +594,8 @@ SceneContainer::~SceneContainer()
 
    delete[] mBinArray;
 
+   delete mSceneBVH;
+
    cleanupSearchVectors();
 }
 
@@ -412,10 +612,16 @@ bool SceneContainer::addObject(SceneObject* obj)
    insertIntoBins(obj);
 
    // Also insert water and physical zone types into the special vector.
-   if ( obj->getTypeMask() & ( WaterObjectType | PhysicalZoneObjectType ) )
+   if (obj->getTypeMask() & (WaterObjectType | PhysicalZoneObjectType))
       mWaterAndZones.push_back(obj);
-   if( obj->getTypeMask() & TerrainObjectType )
-      mTerrains.push_back( obj );
+   if (obj->getTypeMask() & TerrainObjectType)
+      mTerrains.push_back(obj);
+
+   SceneObjectProxy* proxy = new SceneObjectProxy(obj);
+   BVHNode* leaf = mSceneBVH->createLeaf(proxy);
+
+   mSceneBVH->insertLeaf(leaf);
+   obj->mBVHNode = leaf;
 
    return true;
 }
@@ -424,10 +630,12 @@ bool SceneContainer::addObject(SceneObject* obj)
 
 bool SceneContainer::removeObject(SceneObject* obj)
 {
+   if (!obj || obj->mContainer == NULL)
+      return false;
+
    U32 existingIndex = obj->mContainerIndex;
    AssertFatal(obj->mContainer == this, "Trying to remove from wrong container.");
    obj->mContainerIndex = 0;
-   obj->mContainer = NULL;
 
    removeFromBins(obj);
 
@@ -454,6 +662,25 @@ bool SceneContainer::removeObject(SceneObject* obj)
       if( iter != mTerrains.end() )
          mTerrains.erase_fast(iter);
    }
+
+   if (obj->mBVHNode)
+   {
+      BVHNode* leaf = obj->mBVHNode;
+      
+      if (leaf->isLeaf())
+      {
+         SceneObjectProxy* proxy = (SceneObjectProxy*)leaf->object();
+         mSceneBVH->removeLeaf(leaf);
+         
+         // Clean up in correct order
+         delete proxy;
+         delete leaf;
+      }
+      
+      obj->mBVHNode = NULL;
+   }
+   
+   obj->mContainer = NULL;
 
    return true;
 }
@@ -571,34 +798,89 @@ void SceneContainer::checkBins(SceneObject* object)
 {
    AssertFatal(object != NULL, "Invalid object");
 
-   if ((BinValueList::ListHandle)object->mContainerLookup.mListHandle == 0)
+   if (!object->mBVHNode)
    {
-      // Failsafe case
+      Con::warnf("SceneContainer::checkBins - object %s (id: %d) missing BVH node, recreating",
+         object->getName(), object->getId());
+      SceneObjectProxy* proxy = new SceneObjectProxy(object);
+      BVHNode* leaf = mSceneBVH->createLeaf(proxy);
+      mSceneBVH->insertLeaf(leaf);
+      object->mBVHNode = leaf;
+   }
+
+   // Check if global bounds state changed
+   bool wasGlobal = object->mContainerLookup.mRange.isGlobal();
+   bool isGlobal = object->isGlobalBounds();
+
+   if (wasGlobal != isGlobal)
+   {
+      // Remove from bins first
+      if (object->mContainerLookup.mListHandle != 0)
+         removeFromBins(object);
+
+      // Move BVH node between global list and tree
+      BVHNode* oldLeaf = object->mBVHNode;
+      if (oldLeaf && oldLeaf->isLeaf())
+      {
+         SceneObjectProxy* oldProxy = (SceneObjectProxy*)oldLeaf->object();
+         mSceneBVH->removeLeaf(oldLeaf);
+         delete oldProxy;
+         delete oldLeaf;
+      }
+
+      // Recreate with new state
+      SceneObjectProxy* proxy = new SceneObjectProxy(object);
+      BVHNode* leaf = mSceneBVH->createLeaf(proxy);
+      mSceneBVH->insertLeaf(leaf);
+      object->mBVHNode = leaf;
+
+      // Re-insert into bins with new state
       insertIntoBins(object);
       return;
    }
 
-   SceneBinRange lookupRange = object->mContainerLookup.mRange;
-   SceneBinRange compareRange;
-
-   if (!object->isGlobalBounds())
+   // Handle bin updates
+   if ((BinValueList::ListHandle)object->mContainerLookup.mListHandle == 0)
    {
-      // Find bin range
-      const Box3F& wBox = object->getWorldBox();
-
-      SceneContainer::getBinRange(wBox.minExtents.asPoint2F(), wBox.maxExtents.asPoint2F(), compareRange);
+      insertIntoBins(object);
    }
    else
    {
-      // Simple case: global
-      compareRange.setGlobal();
+      SceneBinRange lookupRange = object->mContainerLookup.mRange;
+      SceneBinRange compareRange;
+
+      if (!object->isGlobalBounds())
+      {
+         const Box3F& wBox = object->getWorldBox();
+         SceneContainer::getBinRange(wBox.minExtents.asPoint2F(), wBox.maxExtents.asPoint2F(), compareRange);
+      }
+      else
+      {
+         compareRange.setGlobal();
+      }
+
+      if (lookupRange != compareRange)
+      {
+         removeFromBins(object);
+         insertIntoBins(object);
+      }
    }
 
-   // Finally re-insert if required
-   if (lookupRange != compareRange)
+   // BVH now handles query safety internally via QueryScope
+   if (object->mBVHNode)
    {
-      removeFromBins(object);
-      insertIntoBins(object);
+      mSceneBVH->updateLeaf(object->mBVHNode);
+   }
+   else
+   {
+      // Emergency recovery
+      Con::errorf("SceneContainer::checkBins - BVH node lost for object %s (id: %d) during update, forcing recreation",
+         object->getName(), object->getId());
+
+      SceneObjectProxy* proxy = new SceneObjectProxy(object);
+      BVHNode* leaf = mSceneBVH->createLeaf(proxy);
+      mSceneBVH->insertLeaf(leaf);
+      object->mBVHNode = leaf;
    }
 }
 
@@ -624,60 +906,15 @@ void SceneContainer::findObjects(const Box3F& box, U32 mask, FindCallback callba
    }
 
    AssertFatal( !mSearchInProgress, "SceneContainer::findObjects - Container queries are not re-entrant" );
-   mSearchInProgress = true;
-
-   U32 minX, maxX, minY, maxY;
-   getBinRange(box.minExtents.x, box.maxExtents.x, minX, maxX);
-   getBinRange(box.minExtents.y, box.maxExtents.y, minY, maxY);
-   mCurrSeqKey++;
-
-   for (U32 i = minY; i <= maxY; i++)
+   
+   Vector<SceneObject*> results;
+   findObjectList(box, mask, &results);
+   
+   // Invoke callback for each result
+   for (SceneObject* obj : results)
    {
-      U32 insertY = i % csmNumAxisBins;
-      U32 base    = insertY * csmNumAxisBins;
-      for (U32 j = minX; j <= maxX; j++)
-      {
-         U32 insertX = j % csmNumAxisBins;
-
-         ObjectList& chainList = mBinArray[base + insertX];
-         for(SceneObject* object : chainList)
-         {
-            if (object->getContainerSeqKey() != mCurrSeqKey)
-            {
-               object->setContainerSeqKey(mCurrSeqKey);
-
-               if ((object->getTypeMask() & mask) != 0 &&
-                   object->isCollisionEnabled())
-               {
-                  if (object->getWorldBox().isOverlapped(box) || object->isGlobalBounds())
-                  {
-                     (*callback)(object,key);
-                  }
-               }
-            }
-         }
-      }
+      (*callback)(obj, key);
    }
-
-   ObjectList& overflowList = mBinArray[csmOverflowBinIdx];
-   for(SceneObject* object : overflowList)
-   {
-      if (object->getContainerSeqKey() != mCurrSeqKey)
-      {
-         object->setContainerSeqKey(mCurrSeqKey);
-
-         if ((object->getTypeMask() & mask) != 0 &&
-             object->isCollisionEnabled())
-         {
-            if (object->getWorldBox().isOverlapped(box) || object->isGlobalBounds())
-            {
-               (*callback)(object,key);
-            }
-         }
-      }
-   }
-
-   mSearchInProgress = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -688,6 +925,7 @@ void SceneContainer::findObjects( const Frustum &frustum, U32 mask, FindCallback
 
    Box3F searchBox = frustum.getBounds();
 
+   // Handle special cases
    if (  mask == WaterObjectType || 
          mask == PhysicalZoneObjectType ||
          mask == (WaterObjectType|PhysicalZoneObjectType) )
@@ -702,66 +940,20 @@ void SceneContainer::findObjects( const Frustum &frustum, U32 mask, FindCallback
    }
 
    AssertFatal( !mSearchInProgress, "SceneContainer::findObjects - Container queries are not re-entrant" );
-   mSearchInProgress = true;
-
-   U32 minX, maxX, minY, maxY;
-   getBinRange(searchBox.minExtents.x, searchBox.maxExtents.x, minX, maxX);
-   getBinRange(searchBox.minExtents.y, searchBox.maxExtents.y, minY, maxY);
-   mCurrSeqKey++;
-
-   for (U32 i = minY; i <= maxY; i++)
+   
+   Vector<SceneObject*> results;
+   findObjectList(frustum, mask, &results);
+   
+   // Invoke callback for each result
+   for (SceneObject* obj : results)
    {
-      U32 insertY = i % csmNumAxisBins;
-      U32 base    = insertY * csmNumAxisBins;
-      for (U32 j = minX; j <= maxX; j++)
-      {
-         U32 insertX = j % csmNumAxisBins;
-
-         ObjectList& chainList = mBinArray[base + insertX];
-         for(SceneObject* object : chainList)
-         {
-            if (object->getContainerSeqKey() != mCurrSeqKey)
-            {
-               object->setContainerSeqKey(mCurrSeqKey);
-
-               if ((object->getTypeMask() & mask) != 0 &&
-                  object->isCollisionEnabled())
-               {
-                  const Box3F &worldBox = object->getWorldBox();
-                  if ( object->isGlobalBounds() || worldBox.isOverlapped(searchBox) )
-                  {
-                     if ( !frustum.isCulled( worldBox ) )
-                        (*callback)(object,key);
-                  }
-               }
-            }
-         }
-      }
+      (*callback)(obj, key);
    }
-
-   ObjectList& overflowList = mBinArray[csmOverflowBinIdx];
-   for(SceneObject* object : overflowList)
-   {
-      if (object->getContainerSeqKey() != mCurrSeqKey)
-      {
-         object->setContainerSeqKey(mCurrSeqKey);
-
-         if ((object->getTypeMask() & mask) != 0 &&
-            object->isCollisionEnabled())
-         {
-            const Box3F &worldBox = object->getWorldBox();
-
-            if ( object->isGlobalBounds() || worldBox.isOverlapped(searchBox) )
-            {
-               if ( !frustum.isCulled( worldBox ) )
-                  (*callback)(object,key);
-            }
-         }
-      }
-   }
-
-   mSearchInProgress = false;
 }
+
+//-----------------------------------------------------------------------------
+
+
 
 //-----------------------------------------------------------------------------
 
@@ -769,17 +961,17 @@ void SceneContainer::polyhedronFindObjects(const Polyhedron& polyhedron, U32 mas
 {
    PROFILE_SCOPE(ContainerFindObjects_polyhedron);
 
-   U32 i;
    Box3F box;
    box.minExtents.set(1e9, 1e9, 1e9);
    box.maxExtents.set(-1e9, -1e9, -1e9);
 
-   for (i = 0; i < polyhedron.mPointList.size(); i++)
+   for (U32 i = 0; i < polyhedron.mPointList.size(); i++)
    {
       box.minExtents.setMin(polyhedron.mPointList[i]);
       box.maxExtents.setMax(polyhedron.mPointList[i]);
    }
 
+   // Handle special cases
    if (  mask == WaterObjectType || 
          mask == PhysicalZoneObjectType ||
          mask == (WaterObjectType|PhysicalZoneObjectType) )
@@ -794,56 +986,46 @@ void SceneContainer::polyhedronFindObjects(const Polyhedron& polyhedron, U32 mas
    }
 
    AssertFatal( !mSearchInProgress, "SceneContainer::polyhedronFindObjects - Container queries are not re-entrant" );
+   
+   Vector<SceneObject*> results;
+   findObjectList(box, mask, &results);
+   
+   // Invoke callback for each result
+   for (SceneObject* obj : results)
+   {
+      (*callback)(obj, key);
+   }
+}
+void SceneContainer::findObjectList(const Box3F& searchBox, U32 mask, Vector<SceneObject*>* outFound)
+{
+   PROFILE_SCOPE(Container_FindObjectList_Box);
+
+   AssertFatal(!mSearchInProgress, "SceneContainer::findObjectList - Container queries are not re-entrant");
    mSearchInProgress = true;
 
-   U32 minX, maxX, minY, maxY;
-   getBinRange(box.minExtents.x, box.maxExtents.x, minX, maxX);
-   getBinRange(box.minExtents.y, box.maxExtents.y, minY, maxY);
-   mCurrSeqKey++;
+   BVH::QueryScope bvhQuery(mSceneBVH);
 
-   for (i = minY; i <= maxY; i++)
+   outFound->clear();
+
+   queryBVHNode(searchBox, mSceneBVH->getRoot(), mask, outFound);
+   U32 treeCount = outFound->size();
+
+   for (BVHNode* globalNode : mSceneBVH->getGlobalObjects())
    {
-      U32 insertY = i % csmNumAxisBins;
-      U32 base    = insertY * csmNumAxisBins;
-      for (U32 j = minX; j <= maxX; j++)
+      if (!globalNode || !globalNode->isLeaf())
+         continue;
+
+      SceneObjectProxy* proxy = (SceneObjectProxy*)globalNode->object();
+      if (!proxy || !proxy->mObject)
+         continue;
+
+      SceneObject* obj = proxy->mObject;
+      if (!obj->isProperlyAdded())
+         continue;
+
+      if ((obj->getTypeMask() & mask) && obj->isCollisionEnabled())
       {
-         U32 insertX = j % csmNumAxisBins;
-
-         ObjectList& chainList = mBinArray[base + insertX];
-         for(SceneObject* object : chainList)
-         {
-            if (object->getContainerSeqKey() != mCurrSeqKey)
-            {
-               object->setContainerSeqKey(mCurrSeqKey);
-
-               if ((object->getTypeMask() & mask) != 0 &&
-                   object->isCollisionEnabled())
-               {
-                  if (object->getWorldBox().isOverlapped(box) || object->isGlobalBounds())
-                  {
-                     (*callback)(object,key);
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   ObjectList& overflowList = mBinArray[csmOverflowBinIdx];
-   for(SceneObject* object : overflowList)
-   {
-      if (object->getContainerSeqKey() != mCurrSeqKey)
-      {
-         object->setContainerSeqKey(mCurrSeqKey);
-
-         if ((object->getTypeMask() & mask) != 0 &&
-             object->isCollisionEnabled())
-         {
-            if (object->getWorldBox().isOverlapped(box) || object->isGlobalBounds())
-            {
-               (*callback)(object,key);
-            }
-         }
+         outFound->push_back(obj);
       }
    }
 
@@ -852,85 +1034,19 @@ void SceneContainer::polyhedronFindObjects(const Polyhedron& polyhedron, U32 mas
 
 //-----------------------------------------------------------------------------
 
-void SceneContainer::findObjectList( const Box3F& searchBox, U32 mask, Vector<SceneObject*> *outFound )
+void SceneContainer::findObjectList(const Frustum& frustum, U32 mask, Vector<SceneObject*>* outFound)
 {
-   PROFILE_SCOPE( Container_FindObjectList_Box );
-
-   AssertFatal( !mSearchInProgress, "SceneContainer::findObjectList - Container queries are not re-entrant" );
-   mSearchInProgress = true;
-
-   U32 minX, maxX, minY, maxY;
-   getBinRange(searchBox.minExtents.x, searchBox.maxExtents.x, minX, maxX);
-   getBinRange(searchBox.minExtents.y, searchBox.maxExtents.y, minY, maxY);
-   mCurrSeqKey++;
-
-   for (U32 i = minY; i <= maxY; i++)
-   {
-      U32 insertY = i % csmNumAxisBins;
-      U32 base    = insertY * csmNumAxisBins;
-      for (U32 j = minX; j <= maxX; j++)
-      {
-         U32 insertX = j % csmNumAxisBins;
-
-         ObjectList& chainList = mBinArray[base + insertX];
-         for(SceneObject* object : chainList)
-         {
-            if (object->getContainerSeqKey() != mCurrSeqKey)
-            {
-               object->setContainerSeqKey(mCurrSeqKey);
-
-               if ((object->getTypeMask() & mask) != 0 &&
-                  object->isCollisionEnabled())
-               {
-                  const Box3F &worldBox = object->getWorldBox();
-                  if ( object->isGlobalBounds() || worldBox.isOverlapped( searchBox ) )
-                  {
-                     outFound->push_back( object );
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   ObjectList& overflowList = mBinArray[csmOverflowBinIdx];
-   for(SceneObject* object : overflowList)
-   {
-      if (object->getContainerSeqKey() != mCurrSeqKey)
-      {
-         object->setContainerSeqKey(mCurrSeqKey);
-
-         if ((object->getTypeMask() & mask) != 0 &&
-            object->isCollisionEnabled())
-         {
-            const Box3F &worldBox = object->getWorldBox();
-
-            if ( object->isGlobalBounds() || worldBox.isOverlapped( searchBox ) )
-            {
-               outFound->push_back( object );
-            }
-         }
-      }
-   }
-
-   mSearchInProgress = false;
-}
-
-//-----------------------------------------------------------------------------
-
-void SceneContainer::findObjectList( const Frustum &frustum, U32 mask, Vector<SceneObject*> *outFound )
-{
-   PROFILE_SCOPE( Container_FindObjectList_Frustum );
+   PROFILE_SCOPE(Container_FindObjectList_Frustum);
 
    // Do a box find first.
-   findObjectList( frustum.getBounds(), mask, outFound );
-
+   findObjectList(frustum.getBounds(), mask, outFound);
+   
    // Now do the frustum testing.
-   for ( U32 i=0; i < outFound->size(); )
+   for (U32 i = 0; i < outFound->size(); )
    {
-      const Box3F &worldBox = (*outFound)[i]->getWorldBox();
-      if ( frustum.isCulled( worldBox ) )
-         outFound->erase_fast( i );
+      const Box3F& worldBox = (*outFound)[i]->getWorldBox();
+      if (frustum.isCulled(worldBox))
+         outFound->erase_fast(i);
       else
          i++;
    }
@@ -938,80 +1054,80 @@ void SceneContainer::findObjectList( const Frustum &frustum, U32 mask, Vector<Sc
 
 //-----------------------------------------------------------------------------
 
-void SceneContainer::findObjectList( U32 mask, Vector<SceneObject*> *outFound )
+void SceneContainer::findObjectList(U32 mask, Vector<SceneObject*>* outFound)
 {
    for (SceneObject* ptr : mGlobalList)
    {
-      if ( ( ptr->getTypeMask() & mask ) != 0 )
-         outFound->push_back( ptr );
+      if ((ptr->getTypeMask() & mask) != 0)
+         outFound->push_back(ptr);
    }
 }
 
 //-----------------------------------------------------------------------------
 
-void SceneContainer::findObjects( U32 mask, FindCallback callback, void *key )
+void SceneContainer::findObjects(U32 mask, FindCallback callback, void* key)
 {
    for (SceneObject* ptr : mGlobalList)
    {
       if ((ptr->getTypeMask() & mask) != 0 && !ptr->mCollisionCount)
-         (*callback)(ptr,key);
+         (*callback)(ptr, key);
    }
 }
 
 //-----------------------------------------------------------------------------
 
-void SceneContainer::_findSpecialObjects( const Vector< SceneObject* >& vector, U32 mask, FindCallback callback, void *key )
+void SceneContainer::_findSpecialObjects(const Vector< SceneObject* >& vector, U32 mask, FindCallback callback, void* key)
 {
-   PROFILE_SCOPE( Container_findSpecialObjects );
+   PROFILE_SCOPE(Container_findSpecialObjects);
 
    Vector<SceneObject*>::const_iterator iter = vector.begin();
-   for ( ; iter != vector.end(); iter++ )
+   for (; iter != vector.end(); iter++)
    {
-      if ( (*iter)->getTypeMask() & mask )
-         callback( *iter, key );
-   }   
+      if ((*iter)->getTypeMask() & mask)
+         callback(*iter, key);
+   }
 }
 
 //-----------------------------------------------------------------------------
 
-void SceneContainer::_findSpecialObjects( const Vector< SceneObject* >& vector, const Box3F &box, U32 mask, FindCallback callback, void *key )
+void SceneContainer::_findSpecialObjects(const Vector< SceneObject* >& vector, const Box3F& box, U32 mask, FindCallback callback, void* key)
 {
-   PROFILE_SCOPE( Container_findSpecialObjects_Box );
+   PROFILE_SCOPE(Container_findSpecialObjects_Box);
 
    Vector<SceneObject*>::const_iterator iter = vector.begin();
 
-   for ( ; iter != vector.end(); iter++ )
+   for (; iter != vector.end(); iter++)
    {
-      SceneObject *pObj = *iter;
-      
-      if ( pObj->getTypeMask() & mask &&
-           ( pObj->isGlobalBounds() || pObj->getWorldBox().isOverlapped(box) ) )
+      SceneObject* pObj = *iter;
+
+      if (pObj->getTypeMask() & mask &&
+         (pObj->isGlobalBounds() || pObj->getWorldBox().isOverlapped(box)))
       {
-         callback( pObj, key );
+         callback(pObj, key);
       }
-   }  
+   }
 }
 
 //-----------------------------------------------------------------------------
 
-bool SceneContainer::castRay( const Point3F& start, const Point3F& end, U32 mask, RayInfo* info, CastRayCallback callback )
+bool SceneContainer::castRay(const Point3F& start, const Point3F& end, U32 mask, RayInfo* info, CastRayCallback callback)
 {
-   AssertFatal( info->userData == NULL, "SceneContainer::castRay - RayInfo->userData cannot be used here!" );
+   AssertFatal(info->userData == NULL, "SceneContainer::castRay - RayInfo->userData cannot be used here!");
 
-   PROFILE_START( SceneContainer_CastRay );
-   bool result = _castRay( CollisionGeometry, start, end, mask, info, callback );
+   PROFILE_START(SceneContainer_CastRay);
+   bool result = _castRay(CollisionGeometry, start, end, mask, info, callback);
    PROFILE_END();
    return result;
 }
 
 //-----------------------------------------------------------------------------
 
-bool SceneContainer::castRayRendered( const Point3F& start, const Point3F& end, U32 mask, RayInfo* info, CastRayCallback callback )
+bool SceneContainer::castRayRendered(const Point3F& start, const Point3F& end, U32 mask, RayInfo* info, CastRayCallback callback)
 {
-   AssertFatal( info->userData == NULL, "SceneContainer::castRayRendered - RayInfo->userData cannot be used here!" );
+   AssertFatal(info->userData == NULL, "SceneContainer::castRayRendered - RayInfo->userData cannot be used here!");
 
-   PROFILE_START( SceneContainer_CastRayRendered );
-   bool result = _castRay( RenderedGeometry, start, end, mask, info, callback );
+   PROFILE_START(SceneContainer_CastRayRendered);
+   bool result = _castRay(RenderedGeometry, start, end, mask, info, callback);
    PROFILE_END();
    return result;
 }
@@ -1030,9 +1146,9 @@ bool SceneContainer::castRayRendered( const Point3F& start, const Point3F& end, 
 //             rasterizer for anti-aliased lines that will serve better than what
 //             we have below.
 
-bool SceneContainer::_castRay( U32 type, const Point3F& start, const Point3F& end, U32 mask, RayInfo* info, CastRayCallback callbackFunc )
+bool SceneContainer::_castRay(U32 type, const Point3F& start, const Point3F& end, U32 mask, RayInfo* info, CastRayCallback callbackFunc)
 {
-   AssertFatal( !mSearchInProgress, "SceneContainer::_castRay - Container queries are not re-entrant" );
+   AssertFatal(!mSearchInProgress, "SceneContainer::_castRay - Container queries are not re-entrant");
    bool foundCandidate = false;
    mSearchInProgress = true;
 
@@ -1066,7 +1182,7 @@ bool SceneContainer::_castRay( U32 type, const Point3F& start, const Point3F& en
    mSearchInProgress = false;
 
    // Bump the normal into worldspace if appropriate.
-   if(foundCandidate)
+   if (foundCandidate)
    {
       PlaneF fakePlane;
       fakePlane.x = info->normal.x;
@@ -1090,10 +1206,10 @@ bool SceneContainer::_castRay( U32 type, const Point3F& start, const Point3F& en
 //-----------------------------------------------------------------------------
 
 // collide with the objects projected object box
-bool SceneContainer::collideBox(const Point3F &start, const Point3F &end, U32 mask, RayInfo * info)
+bool SceneContainer::collideBox(const Point3F& start, const Point3F& end, U32 mask, RayInfo* info)
 {
-   AssertFatal( !mSearchInProgress, "SceneContainer::_castRay - Container queries are not re-entrant" );
-   AssertFatal( info->userData == NULL, "SceneContainer::collideBox - RayInfo->userData cannot be used here!" );
+   AssertFatal(!mSearchInProgress, "SceneContainer::_castRay - Container queries are not re-entrant");
+   AssertFatal(info->userData == NULL, "SceneContainer::collideBox - RayInfo->userData cannot be used here!");
 
    bool foundCandidate = false;
    mSearchInProgress = true;
@@ -1112,14 +1228,14 @@ bool SceneContainer::collideBox(const Point3F &start, const Point3F &end, U32 ma
          {
             Point3F xformedStart, xformedEnd;
             ptr->mWorldToObj.mulP(*delParams.start, &xformedStart);
-            ptr->mWorldToObj.mulP(*delParams.end,   &xformedEnd);
+            ptr->mWorldToObj.mulP(*delParams.end, &xformedEnd);
             xformedStart.convolveInverse(ptr->mObjScale);
             xformedEnd.convolveInverse(ptr->mObjScale);
 
             RayInfo ri;
-            if(ptr->collideBox(xformedStart, xformedEnd, &ri))
+            if (ptr->collideBox(xformedStart, xformedEnd, &ri))
             {
-               if(ri.t < currentT)
+               if (ri.t < currentT)
                {
                   *delInfo = ri;
                   delInfo->point.interpolate(*delParams.start, *delParams.end, delInfo->t);
@@ -1145,14 +1261,14 @@ bool SceneContainer::collideBox(const Point3F &start, const Point3F &end, U32 ma
          {
             Point3F xformedStart, xformedEnd;
             ptr->mWorldToObj.mulP(*delParams.start, &xformedStart);
-            ptr->mWorldToObj.mulP(*delParams.end,   &xformedEnd);
+            ptr->mWorldToObj.mulP(*delParams.end, &xformedEnd);
             xformedStart.convolveInverse(ptr->mObjScale);
             xformedEnd.convolveInverse(ptr->mObjScale);
 
             RayInfo ri;
-            if(ptr->collideBox(xformedStart, xformedEnd, &ri))
+            if (ptr->collideBox(xformedStart, xformedEnd, &ri))
             {
-               if(ri.t < currentT)
+               if (ri.t < currentT)
                {
                   *delInfo = ri;
                   delInfo->point.interpolate(*delParams.start, *delParams.end, delInfo->t);
@@ -1195,13 +1311,13 @@ bool SceneContainer::collideBox(const Point3F &start, const Point3F &end, U32 ma
 
 //-----------------------------------------------------------------------------
 
-static void buildCallback(SceneObject* object,void *key)
+static void buildCallback(SceneObject* object, void* key)
 {
    SceneContainer::CallbackInfo* info = reinterpret_cast<SceneContainer::CallbackInfo*>(key);
-   object->buildPolyList(info->context,info->polyList,info->boundingBox,info->boundingSphere);
+   object->buildPolyList(info->context, info->polyList, info->boundingBox, info->boundingSphere);
 }
 
-bool SceneContainer::buildPolyList(PolyListContext context, const Box3F &box, U32 mask, AbstractPolyList *polyList)
+bool SceneContainer::buildPolyList(PolyListContext context, const Box3F& box, U32 mask, AbstractPolyList* polyList)
 {
    CallbackInfo info;
    info.context = context;
@@ -1214,7 +1330,7 @@ bool SceneContainer::buildPolyList(PolyListContext context, const Box3F &box, U3
    info.boundingSphere.radius = bv.len();
 
    sPolyList = polyList;
-   findObjects(box,mask,buildCallback,&info);
+   findObjects(box, mask, buildCallback, &info);
    return !polyList->isEmpty();
 }
 
@@ -1267,8 +1383,8 @@ static S32 QSORT_CALLBACK cmpSearchPointers(const void* inP1, const void* inP2)
 }
 
 void SceneContainer::initRadiusSearch(const Point3F& searchPoint,
-                                 const F32      searchRadius,
-                                 const U32      searchMask)
+   const F32      searchRadius,
+   const U32      searchMask)
 {
    cleanupSearchVectors();
 
@@ -1294,9 +1410,9 @@ void SceneContainer::initRadiusSearch(const Point3F& searchPoint,
       for (U32 j = 0; j < 3; j++)
       {
          if (pPoint[j] < bMins[j])
-            sum += (pPoint[j] - bMins[j])*(pPoint[j] - bMins[j]);
+            sum += (pPoint[j] - bMins[j]) * (pPoint[j] - bMins[j]);
          else if (pPoint[j] > bMaxs[j])
-            sum += (pPoint[j] - bMaxs[j])*(pPoint[j] - bMaxs[j]);
+            sum += (pPoint[j] - bMaxs[j]) * (pPoint[j] - bMaxs[j]);
       }
       if (sum < radiusSquared || queryList.mList[i]->isGlobalBounds())
       {
@@ -1308,7 +1424,7 @@ void SceneContainer::initRadiusSearch(const Point3F& searchPoint,
    {
       sgSortReferencePoint = mSearchReferencePoint;
       dQsort(mSearchList.address(), mSearchList.size(),
-             sizeof(SimObjectPtr<SceneObject>*), cmpSearchPointers);
+         sizeof(SimObjectPtr<SceneObject>*), cmpSearchPointers);
    }
 }
 
@@ -1323,14 +1439,14 @@ void SceneContainer::initTypeSearch(const U32      searchMask)
 
    for (U32 i = 0; i < queryList.mList.size(); i++)
    {
-         mSearchList.push_back(new SimObjectPtr<SceneObject>);
-         *(mSearchList.last()) = queryList.mList[i];
+      mSearchList.push_back(new SimObjectPtr<SceneObject>);
+      *(mSearchList.last()) = queryList.mList[i];
    }
    if (mSearchList.size() != 0)
    {
       sgSortReferencePoint = mSearchReferencePoint;
       dQsort(mSearchList.address(), mSearchList.size(),
-             sizeof(SimObjectPtr<SceneObject>*), cmpSearchPointers);
+         sizeof(SimObjectPtr<SceneObject>*), cmpSearchPointers);
    }
 }
 
@@ -1356,7 +1472,7 @@ SceneObject* SceneContainer::containerSearchNextObject()
 U32 SceneContainer::containerSearchNext()
 {
    SceneObject* object = containerSearchNextObject();
-   if( !object )
+   if (!object)
       return 0;
    return object->getId();
 }
@@ -1368,7 +1484,7 @@ F32 SceneContainer::containerSearchCurrDist()
    AssertFatal(mCurrSearchPos != -1, "Error, must call containerSearchNext before containerSearchCurrDist");
 
    if (mCurrSearchPos == -1 || mCurrSearchPos >= mSearchList.size() ||
-       bool(*mSearchList[mCurrSearchPos]) == false)
+      bool(*mSearchList[mCurrSearchPos]) == false)
       return 0.0;
 
    Point3F pos;
@@ -1383,7 +1499,7 @@ F32 SceneContainer::containerSearchCurrRadiusDist()
    AssertFatal(mCurrSearchPos != -1, "Error, must call containerSearchNext before containerSearchCurrDist");
 
    if (mCurrSearchPos == -1 || mCurrSearchPos >= mSearchList.size() ||
-       bool(*mSearchList[mCurrSearchPos]) == false)
+      bool(*mSearchList[mCurrSearchPos]) == false)
       return 0.0;
 
    Point3F pos;
@@ -1407,14 +1523,14 @@ F32 SceneContainer::containerSearchCurrRadiusDist()
 
 //-----------------------------------------------------------------------------
 
-void SceneContainer::getBinRange( const F32 min, const F32 max, U32& minBin, U32& maxBin )
+void SceneContainer::getBinRange(const F32 min, const F32 max, U32& minBin, U32& maxBin)
 {
    AssertFatal(max >= min, avar("Error, bad range in getBinRange. min: %f, max: %f", min, max));
 
    if ((max - min) >= (SceneContainer::csmTotalAxisBinSize - SceneContainer::csmBinSize))
    {
       F32 minCoord = mFmod(min, SceneContainer::csmTotalAxisBinSize);
-      if (minCoord < 0.0f) 
+      if (minCoord < 0.0f)
       {
          minCoord += SceneContainer::csmTotalAxisBinSize;
 
@@ -1432,12 +1548,12 @@ void SceneContainer::getBinRange( const F32 min, const F32 max, U32& minBin, U32
       maxBin = minBin + (SceneContainer::csmNumAxisBins - 1);
       return;
    }
-   else 
+   else
    {
 
       F32 minCoord = mFmod(min, SceneContainer::csmTotalAxisBinSize);
-      
-      if (minCoord < 0.0f) 
+
+      if (minCoord < 0.0f)
       {
          minCoord += SceneContainer::csmTotalAxisBinSize;
 
@@ -1461,7 +1577,7 @@ void SceneContainer::getBinRange( const F32 min, const F32 max, U32& minBin, U32
 
       minBin = U32(minCoord / SceneContainer::csmBinSize);
       maxBin = U32(maxCoord / SceneContainer::csmBinSize); // NOTE: this should use same logic as minBin to allow for simplification case when coords match
-      maxBin = maxBin >= SceneContainer::csmNumAxisBins ? SceneContainer::csmNumAxisBins-1 : maxBin;
+      maxBin = maxBin >= SceneContainer::csmNumAxisBins ? SceneContainer::csmNumAxisBins - 1 : maxBin;
       AssertFatal(minBin < SceneContainer::csmNumAxisBins, avar("Error, bad clipping(min)! (%g, %d)", maxCoord, minBin));
       AssertFatal(maxBin < SceneContainer::csmNumAxisBins, avar("Error, bad clipping(max)! (%g, %d)", maxCoord, maxBin));
 
@@ -1741,4 +1857,200 @@ DefineEngineFunction(materialRayCast, const char*,
    return(returnBuffer);
 }
 
-ConsoleFunctionGroupEnd( Containers );
+ConsoleFunctionGroupEnd(Containers);
+
+#ifdef TORQUE_DEBUG
+
+DefineEngineFunction(validateBVH, const char*, (bool useServerContainer), (true),
+   "@brief Validates the scene BVH tree structure and returns diagnostic information.\n\n"
+   "Checks the BVH tree for corruption, validates invariants, and reports statistics.\n"
+   "@param useServerContainer Optionally indicates validation should check the "
+   "server container's BVH (default). Use false for client container.\n"
+   "@return Diagnostic information string\n"
+   "@ingroup Scene")
+{
+   SceneContainer* pContainer = useServerContainer ? &gServerContainer : &gClientContainer;
+
+   BVH* bvh = pContainer->getBVH();
+   if (!bvh) return "Error: Container has no BVH";
+
+   BVH::DiagnosticInfo info = bvh->validateAndDiagnose();
+
+   Con::printf("=== BVH Validation Results (%s) ===", useServerContainer ? "Server" : "Client");
+   Con::printf("%s", info.toString());
+
+   if (info.corruptedNodes > 0)
+      Con::errorf("BVH validation FAILED: %u corrupted nodes detected!", info.corruptedNodes);
+   else
+      Con::printf("BVH validation PASSED: Tree structure is healthy");
+
+   return info.toString();
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineFunction(debugBVH, void, (bool enable, bool useServerContainer), (true, true),
+   "@brief Enables or disables BVH debug visualization.\n\n"
+   "@param enable True to enable debug rendering, false to disable\n"
+   "@param useServerContainer Optionally indicates the server container's BVH "
+   "should be visualized (default). Use false for client container.\n"
+   "@ingroup Scene")
+{
+   SceneContainer* pContainer = useServerContainer ? &gServerContainer : &gClientContainer;
+
+   pContainer->setDebugRenderBVH(enable);
+
+   Con::printf("BVH debug rendering %s for %s container",
+      enable ? "enabled" : "disabled",
+      useServerContainer ? "server" : "client");
+}
+
+//-----------------------------------------------------------------------------
+
+DefineEngineFunction(bvhStats, const char*, (bool useServerContainer), (true),
+   "@brief Returns quick statistics about the BVH without full validation.\n\n"
+   "@param useServerContainer Optionally indicates the server container's BVH "
+   "(default). Use false for client container.\n"
+   "@return Statistics string\n"
+   "@ingroup Scene")
+{
+   SceneContainer* pContainer = useServerContainer ? &gServerContainer : &gClientContainer;
+
+   BVH* bvh = pContainer->getBVH();
+   if (!bvh)
+      return "Error: No BVH";
+
+   bool hasRoot = bvh->hasRoot();
+   bool queryActive = bvh->isQueryActive();
+
+   static char buffer[256];
+   dSprintf(buffer, sizeof(buffer),
+      "BVH Quick Stats (%s):\n"
+      "  Has Root: %s\n"
+      "  Active Queries: %s",
+      useServerContainer ? "Server" : "Client",
+      hasRoot ? "Yes" : "No",
+      queryActive ? "Yes" : "No");
+
+   Con::printf("%s", buffer);
+   return buffer;
+}
+
+DefineEngineFunction(debugBins, void, (bool enable), ,
+   "@brief Enables or disables bin grid debug visualization.\n\n"
+   "@param enable True to enable debug rendering, false to disable\n"
+   "@ingroup Scene")
+{
+   SceneContainer::smRenderDebugBins = enable;
+   Con::printf("Bin grid debug rendering %s", enable ? "enabled" : "disabled");
+}
+
+// Minimal dummy BVHProxy for testing
+class DummyBVHProxy : public BVHProxy
+{
+   Box3F mBounds;
+public:
+   DummyBVHProxy(const Point3F& center, F32 size = 1.0f)
+   {
+      mBounds.minExtents = center - Point3F(size, size, size) * 0.5f;
+      mBounds.maxExtents = center + Point3F(size, size, size) * 0.5f;
+   }
+   Box3F getBounds() const override { return mBounds; }
+   BVHNode* getBVHNode() const override { return NULL; }
+   bool castRay(const Point3F&, const Point3F&, RayInfo*) const override { return false; }
+   bool castRayRendered(const Point3F&, const Point3F&, RayInfo*) const override { return false; }
+};
+
+DefineEngineFunction(testBVHIntegrity, void, (), ,
+   "@brief Runs a self-contained BVH integrity test: insert, remove, move, and validate dummy objects in a local BVH.\n"
+   "Prints validation results after each operation.\n"
+   "@ingroup Scene")
+{
+   Con::printf("=== BVH Integrity Unit Test (Self-contained) ===");
+
+   BVH bvh;
+   Vector<BVH::Node*> nodes;
+
+   // Insert dummy proxies
+   for (U32 i = 0; i < 10; ++i)
+   {
+      DummyBVHProxy* proxy = new DummyBVHProxy(Point3F(i * 2.0f, 0, 0));
+      BVH::Node* node = bvh.createLeaf(proxy);
+      bvh.insertLeaf(node);
+
+      auto diag = bvh.validateAndDiagnose();
+      AssertFatal(diag.corruptedNodes == 0, "BVH corruption detected after insertion");
+
+      nodes.push_back(node);
+   }
+
+   // Validate after insertions
+   Con::printf("After insertions:");
+   Con::printf("%s", bvh.validateAndDiagnose().toString());
+
+   // Remove half the nodes
+   for (U32 i = 0; i < 5; ++i)
+   {
+      bvh.removeLeaf(nodes[i]);
+      auto diag = bvh.validateAndDiagnose();
+      AssertFatal(diag.corruptedNodes == 0, "BVH corruption detected after removal");
+      delete nodes[i]->object();
+      delete nodes[i];
+   }
+
+   // Validate after removals
+   Con::printf("After removals:");
+   Con::printf("%s", bvh.validateAndDiagnose().toString());
+
+   // Move remaining proxies and update BVH
+   for (U32 i = 5; i < 10; ++i)
+   {
+      DummyBVHProxy* proxy = static_cast<DummyBVHProxy*>(nodes[i]->object());
+      // Move the box
+      *const_cast<Box3F*>(&proxy->getBounds()) = Box3F(Point3F(i * 2.0f, 5, 0) - Point3F(0.5f, 0.5f, 0.5f),
+         Point3F(i * 2.0f, 5, 0) + Point3F(0.5f, 0.5f, 0.5f));
+      bvh.updateLeaf(nodes[i]);
+      auto diag = bvh.validateAndDiagnose();
+      AssertFatal(diag.corruptedNodes == 0, "BVH corruption detected after update");
+   }
+
+   // Validate after updates
+   Con::printf("After updates:");
+   Con::printf("%s", bvh.validateAndDiagnose().toString());
+
+   // Minimal test: change bounds without updateLeaf (should cause bounds mismatch)
+   if (!nodes.empty())
+   {
+      DummyBVHProxy* proxy = static_cast<DummyBVHProxy*>(nodes[5]->object());
+      // Move the box without updating the BVH
+      *const_cast<Box3F*>(&proxy->getBounds()) = Box3F(Point3F(100, 100, 0) - Point3F(0.5f, 0.5f, 0.5f),
+         Point3F(100, 100, 0) + Point3F(0.5f, 0.5f, 0.5f));
+      Con::printf("After moving proxy[5] without updateLeaf:");
+      Con::printf("%s", bvh.validateAndDiagnose().toString());
+
+      // Now update the BVH and validate again
+      bvh.updateLeaf(nodes[5]);
+      auto diag = bvh.validateAndDiagnose();
+      AssertFatal(diag.corruptedNodes == 0, "BVH corruption detected after updateLeaf on proxy[5]");
+      Con::printf("After updateLeaf on proxy[5]:");
+      Con::printf("%s", bvh.validateAndDiagnose().toString());
+   }
+
+   // Clean up
+   for (U32 i = 5; i < 10; ++i)
+   {
+      bvh.removeLeaf(nodes[i]);
+      auto diag = bvh.validateAndDiagnose();
+      AssertFatal(diag.corruptedNodes == 0, "BVH corruption detected during cleanup");
+      delete nodes[i]->object();
+      delete nodes[i];
+   }
+   nodes.clear();
+
+   // Final validation (should be empty)
+   Con::printf("After cleanup:");
+   Con::printf("%s", bvh.validateAndDiagnose().toString());
+
+   Con::printf("=== BVH Integrity Unit Test Complete ===");
+}
+#endif // TORQUE_DEBUG
