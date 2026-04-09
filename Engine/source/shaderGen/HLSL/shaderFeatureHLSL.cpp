@@ -3228,3 +3228,39 @@ void ReflectionProbeFeatHLSL::setTexData(Material::StageData &stageDat,
       passData.mTexType[texIndex++] = Material::Standard;
    }
 }
+
+U32 ConstantMultFeature::getOutputTargets(const MaterialFeatureData& fd) const
+{
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+}
+
+void ConstantMultFeature::processPix(Vector<ShaderComponent*>& componentList, const MaterialFeatureData& fd)
+{
+   // Find the constant value
+   Var* multConst = (Var*)(LangElement::find("multConst"));
+   if (multConst == NULL)
+   {
+      multConst = new Var;
+      multConst->setType(GFX->getAdapterType() == OpenGL ? "vec4" : "float4");
+      multConst->setName("multConst");
+      multConst->constSortPos = cspPotentialPrimitive;
+      multConst->uniform = true;
+   }
+
+   ShaderFeature::OutputTarget targ = ShaderFeature::DefaultTarget;
+   if (fd.features[MFT_isDeferred])
+      targ = ShaderFeature::RenderTarget1;
+
+   // Find output fragment
+   Var* color = (Var*)LangElement::find(getOutputTargetVarName(targ));
+   if (!color)
+   {
+      color = new Var;
+      color->setType(GFX->getAdapterType() == OpenGL ? "vec4" : "fragout");
+      color->setName(getOutputTargetVarName(targ));
+      color->setStructName("OUT");
+
+      output = new GenOp("@ = @", color, multConst);
+   }
+   output = new GenOp("   @ *= @;\r\n", color, multConst);
+}

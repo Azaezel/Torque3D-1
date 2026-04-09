@@ -684,7 +684,8 @@ void ProcessedDeferredMaterial::_determineFeatures( U32 stageNum,
                   type == MFT_DiffuseVertColor ||
                   type == MFT_DetailMap ||
                   type == MFT_DiffuseMapAtlas||
-                  type == MFT_GlowMask)
+                  type == MFT_GlowMask ||
+                  type == MFT_ConstantMult)
          newFeatures.addFeature( type );
 
       // Add any transform features.

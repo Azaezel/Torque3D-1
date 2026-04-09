@@ -704,4 +704,19 @@ public:
    }
 };
 
+
+class ConstantMultFeature : public ShaderFeature
+{
+public:
+   virtual void processPix(Vector<ShaderComponent*>& componentList, const MaterialFeatureData& fd);
+   U32 getOutputTargets(const MaterialFeatureData& fd) const;
+   virtual String getName() { return "ConstantMultFeature"; }
+
+   // These methods aren't used
+   virtual Var* getVertTexCoord(const String& name) { return NULL; }
+   virtual LangElement* setupTexSpaceMat(Vector<ShaderComponent*>& componentList, Var** texSpaceMat) { return NULL; }
+   virtual LangElement* expandNormalMap(LangElement* sampleNormalOp, LangElement* normalDecl, LangElement* normalVar, const MaterialFeatureData& fd) { return NULL; }
+   virtual LangElement* assignColor(LangElement* elem, Material::BlendOp blend, LangElement* lerpElem = NULL, ShaderFeature::OutputTarget outputTarget = ShaderFeature::DefaultTarget) { return NULL; }
+};
+
 #endif // _SHADERGEN_HLSL_SHADERFEATUREHLSL_H_

@@ -106,6 +106,8 @@ public:
    GFXShaderConstHandle* mNodeTransforms;
 
    GFXShaderConstHandle* mIsCapturingSC;
+   GFXShaderConstHandle* mMultConstSC;
+
    struct customHandleData
    {
 	   StringTableEntry handleName;

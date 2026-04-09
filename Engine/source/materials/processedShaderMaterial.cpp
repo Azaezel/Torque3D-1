@@ -128,6 +128,8 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/)
 
    // Deferred Shading
    mMatInfoFlagsSC = shader->getShaderConstHandle(ShaderGenVars::matInfoFlags);
+
+   mMultConstSC = shader->getShaderConstHandle("$multConst");
 }
 
 ///
@@ -540,6 +542,9 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    {
       fd.features.addFeature( MFT_HardwareSkinning );
    }
+
+   if (mMaterial->mMultConstant.alpha > -1.0f)
+      fd.features.addFeature(MFT_ConstantMult);
 
    // Now disable any features that were 
    // not part of the input feature handle.
@@ -1083,7 +1088,8 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
    }
 
    shaderConsts->setSafe(handles->mFogColorSC, sgData.fogColor);
-
+   if (handles->mMultConstSC->isValid())
+      shaderConsts->set(handles->mMultConstSC, mMaterial->mMultConstant);
    if( handles->mOneOverFarplane->isValid() )
    {
       const F32 &invfp = 1.0f / state->getFarPlane();

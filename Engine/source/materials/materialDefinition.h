@@ -250,6 +250,7 @@ public:
    /// or if it has a texture it is multiplied against 
    /// the diffuse texture color.
    LinearColorF mDiffuse[MAX_STAGES];
+   LinearColorF mMultConstant;
 
    F32 mRoughness[MAX_STAGES];
    F32 mMetalness[MAX_STAGES];

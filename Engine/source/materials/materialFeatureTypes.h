@@ -194,4 +194,8 @@ DeclareFeatureType( MFT_isDeferred );
 DeclareFeatureType( MFT_isBackground );
 DeclareFeatureType( MFT_SkyBox );
 DeclareFeatureType( MFT_MatInfoFlags );
+
+
+DeclareFeatureType(MFT_ConstantMult);
+
 #endif // _MATERIALFEATURETYPES_H_

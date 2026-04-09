@@ -77,7 +77,7 @@ void AdvancedLightingFeatures::registerFeatures( const GFXFormat &deferredTarget
       FEATUREMGR->registerFeature(MFT_ReflectionProbes, new ReflectionProbeFeatHLSL);
 #endif
    }
-
+   FEATUREMGR->registerFeature(MFT_ConstantMult, new ConstantMultFeature);
    NamedTexTarget *target = NamedTexTarget::find( "deferred" );
    if ( target )
       target->setConditioner( cond );

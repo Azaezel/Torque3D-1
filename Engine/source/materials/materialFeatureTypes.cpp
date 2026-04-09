@@ -107,3 +107,5 @@ ImplementFeatureType( MFT_isBackground, MFG_Transform, 1.0f, false );
 ImplementFeatureType( MFT_SkyBox, MFG_Transform, 2.0f, false );
 ImplementFeatureType( MFT_HardwareSkinning, MFG_Transform,-2.0, false );
 
+
+ImplementFeatureType(MFT_ConstantMult, MFG_PostProcess, 999.0f, true);

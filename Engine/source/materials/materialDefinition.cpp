@@ -234,6 +234,8 @@ Material::Material()
 
    mDirectSoundOcclusion = 1.f;
    mReverbSoundOcclusion = 1.0;
+
+   mMultConstant.set(1.0f, 1.0f, 1.0f, -1.0f);
 }
 
 IRangeValidator bmpChanRange(0, 3);
@@ -404,6 +406,8 @@ void Material::initPersistFields()
    endArray("Stages");
 
    addGroup("Advanced Properties (All Layers)");
+
+      addField("multConstant", TypeColorF, Offset(mMultConstant, Material));
       addField("doubleSided", TypeBool, Offset(mDoubleSided, Material),
          "Disables backface culling casing surfaces to be double sided. "
          "Note that the lighting on the backside will be a mirror of the front "
